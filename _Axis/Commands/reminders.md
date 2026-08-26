@@ -1,0 +1,10 @@
+# ^reminders
+> **Purpose:** Review and manage the portable Reminder queue.
+
+1. Read [Practices > Reminders], [Practices > Timestamps], the `Project Time Zone` Setting, and every open Reminder's Subject and structured fields. Obtain trustworthy current UTC time; if unavailable, identify due state as unverified.
+2. With no arguments, list malformed items first, then overdue/due items, then upcoming by `due-at`, then Subject. Show at most 20 and report the full count. Include exact path links. STOP.
+3. For **add**, identify a standalone meaning or one exact target. Deduplicate. Resolve local/relative time under the Practice, restate local time/zone/UTC, and obtain any required ambiguity or past-time confirmation. Mint, safely write/read back the open record, Log, report its path and due time, then advance `reminder-check` only when current time is trustworthy. STOP.
+4. For **reschedule** or **snooze**, resolve exactly one open record and the new instant; apply the same timezone and past-time confirmation rules; keep identity, advance `updated`, safely replace/read back, Log, and report. STOP.
+5. For **acknowledge**, **complete**, or **cancel**, resolve exactly one record. Complete any substantive target change first; for cancellation add a concise reason. Set the matching terminal `outcome`, advance `updated`, safely write/read back, create and validate the on-demand archive directory exactly as the Practice requires, move the record unchanged to `_Axis/Archive/Reminders/`, verify source absence and destination bytes, then Log and report. STOP.
+6. For **reopen**, resolve one archived Reminder, mint a new identity, copy only still-current intent, set `reopens:` to the old ID and `outcome: N/A`, require a new due instant, safely write/read back, Log, and report. STOP.
+7. Never create recurrence, an external scheduler job, a host binding, or authorization for a separately gated action. If the request does not resolve to one operation and exact record, ask one concise question and STOP.

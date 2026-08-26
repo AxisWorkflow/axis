@@ -1,0 +1,14 @@
+# Axis-owned protocol text uses one portable representation. User binaries and
+# project content are intentionally outside this narrow rule set.
+AGENTS.md text eol=lf
+CLAUDE.md text eol=lf
+GEMINI.md text eol=lf
+.gitattributes text eol=lf
+.gitignore text eol=lf
+_Axis/**/*.md text eol=lf
+_Axis/LICENSE text eol=lf
+_Axis/Dashboard/*.html text eol=lf
+_Axis/Dashboard/*.js text eol=lf
+_Axis/Dashboard/*.py text eol=lf
+_Axis/Resources/*.sh text eol=lf
+_Axis/Secrets/.capsule.age -text

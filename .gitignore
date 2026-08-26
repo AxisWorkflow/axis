@@ -1,0 +1,72 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Obsidian
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+.obsidian/cache
+.obsidian/plugins/*/data.json
+.trash/
+
+# Claude Code
+.claude/settings.local.json
+
+# Node (if using Obsidian plugins or tools)
+node_modules/
+
+# General
+*.log
+*.tmp
+*.swp
+*.bak
+*~
+.env
+.env.*
+Thumbs.db
+.fuse_hidden*
+__pycache__/
+
+# Axis
+_Temp/*
+!_Temp/.gitkeep
+_Dev/Releases/*
+!_Dev/Releases/.gitkeep
+_Dev/Scripts/tmp-*
+
+# Subprojects are parent-tracked by default. For an independent nested repository,
+# add that child's exact path, for example: /Clients/Acme/
+Wiki/*
+!Wiki/Inbox
+Wiki/Inbox/*
+!Wiki/Inbox/.gitkeep
+_Axis/Secrets/*
+!_Axis/Secrets/.gitkeep
+!_Axis/Secrets/.recipient
+!_Axis/Secrets/.capsule.age
+_Trash/*
+!_Trash/.gitkeep
+_Axis/Agents/*
+!_Axis/Agents/.gitkeep
+_Axis/Tracking/*
+!_Axis/Tracking/.gitkeep
+# BEGIN GENERATED: flag-ignore
+_Axis/Flags/starting
+_Axis/Flags/session-id
+_Axis/Flags/dev-mode
+_Axis/Flags/promote
+_Axis/Flags/model
+_Axis/Flags/host-spawn
+_Axis/Flags/host-parallel
+_Axis/Flags/host-shell
+_Axis/Flags/host-local-llm
+_Axis/Flags/host-cloud-sync
+_Axis/Flags/host-storage
+_Axis/Flags/reminder-check
+_Axis/Flags/environment-binding
+_Axis/Flags/local-aptitude
+# END GENERATED: flag-ignore

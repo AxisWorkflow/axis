@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<!--
+  Axis Dashboard (default, minimal)
+  Purpose: Give the User a live, one-page overview of the Axis Workflow at work:
+  a dark header band (title + Project Name, compact Metrics at the top right),
+  A conditional full-width findings card appears first when findings exist,
+  with no redundant title. Configuration, Mindset, and Agents then form one
+  coordinated row before a thin divider. Project runs tall in the left column
+  beside a right-hand stack of Ideas, Notes, Logs, Reminders, User Follow Up,
+  and Agent Activity. A conditional Wiki card follows when data exists.
+  Another thin divider leads to the full-width Plan card (with the ^plan
+  diagram rendered inline when possible), followed directly by full-width
+  Tasks and an always-visible full-width Status Report card. Metrics sit in the header;
+  the fixed footer carries the refresh timestamp and Reload control.
+
+  The Dashboard is the LIVE view of the project and it always refreshes on its
+  own; there is no static or snapshot mode and no way to turn refreshing off.
+  The static, portable, shareable view of a project is a Status Report - run
+  `^status` for one. That split is deliberate: see [Practices > Dashboard].
+
+  How to launch:
+  - Best: ask your Agent to run the `^dashboard` command.
+  - Manual: from the PROJECT ROOT run
+    `python3 _Axis/Dashboard/server.py --port 8000`
+    then open  http://127.0.0.1:8000/_Axis/Dashboard/
+  - A web server is REQUIRED - live file reads and directory listings do not
+    work from a `file://` page. Without one there is no Dashboard; use
+    `^status` instead.
+  - Never substitute a general-purpose project-root server. The bundled server
+    is loopback-only, read-only, and exposes only the Dashboard read contract.
+  - Mermaid diagrams use the pinned same-origin bundle shipped beside this
+    file; if it is unavailable, the page falls back to the source link.
+
+  This is the rudimentary default that ships with Axis. Ask your Agent to
+  revise and extend it to fit your project (see [Practices > Dashboard]).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Axis Dashboard</title>
+<style>
+  :root { --bg:#f6f5f2; --card:#ffffff; --ink:#1f1e1c; --muted:#6d6a63; --line:#e3e0d8; --rule:#cbc6bc; --accent:#7a5c3e; --chip:#efece5; --warn:#a04d10; --danger:#a65f5f; --ok:#1d6b35;
+          --band:#26231f; --band-ink:#f2efe9; --band-muted:#b3ac9f; --band-line:#4a453d; --band-warn:#f0a45c; --foot:#403d39; --foot-shadow:rgba(0,0,0,.18); --alert-code-bg:rgba(255,255,255,.14);
+          --findings-bg:#f7ebe6; --findings-line:#ead2c8;
+          --config-bg:#f3f0e8; --config-line:#e2dbc9; --mindset-bg:#edf1ee; --mindset-line:#d7e0d9; --agents-bg:#eef0f4; --agents-line:#d9dde6;
+          --plan-bg:#edf2f5; --plan-line:#d6e0e6; --status-bg:#f7ebe3; --status-line:#ecd5c3; --tasks-bg:#eff4eb; --tasks-line:#d9e4d0;
+          --ideas-bg:#f7f0de; --ideas-line:#e9dcba; --notes-bg:#eaf1f6; --notes-line:#d4e2ec; --logs-bg:#f1ecf6; --logs-line:#ddd1e8;
+          --reminders-bg:#eaf3ed; --reminders-line:#d1e4d7; --followups-bg:#f5edf3; --followups-line:#e5d5df; --agent-activity-bg:#f3eee7; --agent-activity-line:#e2d8c9; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#191817; --card:#22211f; --ink:#eceae5; --muted:#a09c93; --line:#37342f; --rule:#4a4640; --accent:#c8a87e; --chip:#2c2a26; --warn:#e0904a; --danger:#d08383; --ok:#6fb98a;
+            --band:#100f0e; --band-ink:#eceae5; --band-muted:#8f8b82; --band-line:#3a362f; --band-warn:#e0904a; --foot:#2e2c29; --foot-shadow:rgba(0,0,0,.4); --alert-code-bg:rgba(255,255,255,.12);
+            --findings-bg:#2a201d; --findings-line:#47332d;
+            --config-bg:#27241d; --config-line:#413b2e; --mindset-bg:#202621; --mindset-line:#334036; --agents-bg:#202329; --agents-line:#343a45;
+            --plan-bg:#1e2529; --plan-line:#303e46; --status-bg:#2a1e17; --status-line:#463122; --tasks-bg:#1e241d; --tasks-line:#31402f;
+            --ideas-bg:#282213; --ideas-line:#43371d; --notes-bg:#1b2329; --notes-line:#2c3d49; --logs-bg:#231e28; --logs-line:#3a3044;
+            --reminders-bg:#1c2620; --reminders-line:#2d4435; --followups-bg:#271f25; --followups-line:#423442; --agent-activity-bg:#262220; --agent-activity-line:#413a31; }
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:24px 24px 76px; background:var(--bg); color:var(--ink);
+         font:15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  header { display:flex; align-items:center; gap:10px 16px; flex-wrap:wrap;
+           background:var(--band); color:var(--band-ink);
+           margin:-24px -24px 18px; padding:16px 24px; }
+  h1 { font-size:22px; font-weight:600; margin:0; color:var(--band-ink); }
+  #projname { font-size:26px; font-weight:600; margin-left:10px; }
+  h2 { font-size:13px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin:0 0 10px; }
+  .card > h2 { font-weight:650; }
+  h3 { font-weight:600; }
+  b, strong { font-weight:500; }
+  #metrics { margin-left:auto; max-width:68%; color:var(--band-muted); font-size:12.5px; text-align:right; }
+  #meta { color:var(--band-muted); font-size:13px; }
+  footer { position:fixed; left:0; right:0; bottom:0; display:flex; align-items:center; justify-content:space-between; gap:16px;
+           background:var(--foot); color:var(--band-ink); padding:10px 24px; box-shadow:0 -2px 8px var(--foot-shadow); }
+  footer button { min-width:98px; border:1px solid var(--band-line); background:var(--band-ink); color:var(--foot); font-weight:600;
+                  border-radius:8px; padding:4px 14px; cursor:pointer; font-size:13px; transition:border-color .15s ease, color .15s ease, opacity .15s ease; }
+  footer button:hover { border-color:var(--accent); }
+  footer button:focus-visible { outline:3px solid var(--band-warn); outline-offset:2px; }
+  footer button:disabled { cursor:wait; opacity:.82; }
+  footer button.is-reloaded { border-color:var(--ok); color:var(--ok); }
+  #footright { display:flex; align-items:center; gap:14px; justify-self:end; }
+  .grid { display:grid; gap:16px; grid-template-columns:repeat(12, minmax(0, 1fr)); align-items:stretch; }
+  .card { min-width:0; height:100%; background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px 18px; }
+  .wide { grid-column:1 / -1; }
+  #config { grid-column:span 5; }
+  #mindset { grid-column:span 3; }
+  #agents { grid-column:span 4; }
+  #comments, #wiki, #plan, #tasks, #status { grid-column:1 / -1; }
+  .project-activity { grid-column:1 / -1; display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, 1fr); gap:16px; align-items:stretch; }
+  .activity-stack { min-width:0; display:grid; gap:16px; align-content:start; }
+  .activity-stack > .card { height:auto; }
+  #project { height:100%; }
+  .section-divider { grid-column:1 / -1; height:0; margin:4px 0; border:0; border-top:1px solid var(--rule); }
+  .cols { display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:2px 20px; }
+  .kv { margin:2px 0; } .kv b { font-weight:500; }
+  .detail-list { margin:0; }
+  .detail-row { display:grid; grid-template-columns:minmax(120px, .8fr) minmax(0, 1.2fr); gap:8px 16px; padding:5px 0; border-bottom:1px solid var(--line); }
+  .detail-row:last-child { border-bottom:0; }
+  .detail-row dt { color:var(--muted); }
+  .detail-row dd { min-width:0; margin:0; font-weight:500; overflow-wrap:anywhere; }
+  .detail-row dd.routine-value { font-weight:400; }
+  .muted { color:var(--muted); }
+  .chip { display:inline-block; background:var(--chip); border:1px solid var(--line);
+          border-radius:999px; padding:2px 10px; margin:2px 4px 2px 0; font-size:13px; }
+  .warnchip { display:inline-block; background:var(--chip); border:1px solid var(--warn); color:var(--warn);
+          border-radius:999px; padding:2px 10px; margin:2px 4px 2px 0; font-size:13px; }
+  .agechip { font-size:12px; border-radius:6px; padding:1px 7px; border:1px solid var(--warn); color:var(--warn); }
+  .stage { display:inline-flex; align-items:center; }
+  .stage + .stage::before { content:"→"; margin:0 8px; color:var(--muted); }
+  .status { font-size:12px; border-radius:6px; padding:1px 7px; border:1px solid var(--line); }
+  .Active { color:var(--ok); } .Blocked { color:var(--warn); } .Completed { color:var(--muted); } .Cancelled { color:var(--muted); text-decoration:line-through; }
+  ul { margin:6px 0; padding-left:20px; } li { margin:3px 0; }
+  .listcard .scrollbody { max-height:300px; overflow-y:auto; padding-right:6px; }
+  #mindset .detail-row { grid-template-columns:minmax(8.5rem, 11rem) max-content; justify-content:start; gap:8px 16px; }
+  #mindset .detail-row dd { text-align:left; }
+  #comments { height:auto; padding:12px 18px; }
+  #comments .comments-list { margin:0; padding-left:20px; }
+  #comments .comments-list li { margin:2px 0; }
+  #comments .status-important { color:var(--danger); font-weight:550; }
+  #wiki .cols { align-items:start; }
+  .spark { display:flex; align-items:flex-end; gap:2px; height:26px; margin:2px 0 4px; }
+  .sparkbar { flex:1 1 0; min-width:3px; background:var(--accent); opacity:.6; border-radius:2px 2px 0 0; }
+  .sparkbar.empty { opacity:.18; }
+  #comments { background:var(--findings-bg); border-color:var(--findings-line); }
+  #config { background:var(--config-bg); border-color:var(--config-line); }
+  #mindset { background:var(--mindset-bg); border-color:var(--mindset-line); }
+  #agents { background:var(--agents-bg); border-color:var(--agents-line); }
+  #plan { background:var(--plan-bg); border-color:var(--plan-line); }
+  #tasks { background:var(--tasks-bg); border-color:var(--tasks-line); }
+  #ideas { background:var(--ideas-bg); border-color:var(--ideas-line); }
+  #notes { background:var(--notes-bg); border-color:var(--notes-line); }
+  #logs { background:var(--logs-bg); border-color:var(--logs-line); }
+  #reminders { background:var(--reminders-bg); border-color:var(--reminders-line); }
+  #followups { background:var(--followups-bg); border-color:var(--followups-line); }
+  #agent-activity { background:var(--agent-activity-bg); border-color:var(--agent-activity-line); }
+  #status { background:var(--status-bg); border-color:var(--status-line); }
+  @media (max-width:1050px){
+    #config { grid-column:span 7; }
+    #mindset { grid-column:span 5; }
+    #agents { grid-column:1 / -1; }
+  }
+  @media (max-width:760px){
+    html, body { max-width:100%; overflow-x:hidden; }
+    body { padding-left:16px; padding-right:16px; }
+    header { margin-left:-16px; margin-right:-16px; padding-left:16px; padding-right:16px; }
+    #config, #mindset, #agents, #comments, #wiki, #plan, #tasks, #status { grid-column:1 / -1; }
+    .grid, .card, .detail-list, .detail-row, .detail-row dt, .detail-row dd { min-width:0; }
+    .detail-row, #mindset .detail-row { grid-template-columns:minmax(0, .8fr) minmax(0, 1.2fr); }
+    .detail-row dt { overflow-wrap:anywhere; }
+    #metrics { flex:1 1 100%; max-width:100%; margin-left:0; text-align:left; overflow-wrap:anywhere; }
+    .project-activity { grid-template-columns:1fr; }
+    footer { padding-left:16px; padding-right:16px; }
+    #meta { min-width:0; overflow-wrap:anywhere; }
+  }
+  #banner { display:none; background:var(--chip); border:1px solid var(--line); border-radius:10px;
+            padding:10px 14px; margin-bottom:16px; font-size:13.5px; }
+  #project h3 { font-size:14px; margin:12px 0 4px; }
+  #project .gloss { font-weight:400; font-size:12.5px; color:var(--muted); }
+  #project .cols { grid-template-columns:1fr; gap:4px; }
+  code { background:var(--chip); padding:1px 5px; border-radius:5px; font-size:12.5px; }
+  a { color:var(--accent); }
+  #plan svg { max-width:100%; height:auto; }
+  @media print {
+    footer, #banner { display:none }
+    body { background:#fff; padding:0 }
+    header { background:#fff; color:#000; margin:0 0 12px; padding:0 }
+    h1 { color:#000 }
+    .card { border:none; break-inside:avoid }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Axis Dashboard<span id="projname"></span></h1>
+  <div id="metrics">loading…</div>
+</header>
+
+<div id="banner"></div>
+
+<div class="grid">
+  <section class="card wide" id="comments" style="display:none"></section>
+  <section class="card" id="config"><h2>Configuration</h2><div class="muted">loading…</div></section>
+  <section class="card" id="mindset"><h2>Mindset</h2><div class="muted">loading…</div></section>
+  <section class="card listcard" id="agents"><h2>Agents</h2><div class="muted">loading…</div></section>
+  <hr class="section-divider" aria-hidden="true">
+  <div class="project-activity">
+    <section class="card" id="project"><h2>Project</h2><div class="muted">loading…</div></section>
+    <div class="activity-stack">
+      <section class="card listcard" id="ideas"><h2>Ideas</h2><div class="muted">loading…</div></section>
+      <section class="card listcard" id="notes"><h2>Notes</h2><div class="muted">loading…</div></section>
+      <section class="card listcard" id="logs"><h2>Logs</h2><div class="muted">loading…</div></section>
+      <section class="card listcard" id="reminders"><h2>Reminders</h2><div class="muted">loading…</div></section>
+      <section class="card listcard" id="followups"><h2>User Follow Up</h2><div class="muted">loading…</div></section>
+      <section class="card listcard" id="agent-activity"><h2>Agent Activity</h2><div class="muted">loading…</div></section>
+    </div>
+  </div>
+  <section class="card wide" id="wiki" style="display:none"><h2>Wiki</h2><div class="muted">loading…</div></section>
+  <hr class="section-divider" aria-hidden="true">
+  <section class="card wide" id="plan"><h2>Plan</h2><div class="muted">loading…</div></section>
+  <section class="card wide listcard" id="tasks"><h2>Tasks</h2><div class="muted">loading…</div></section>
+  <section class="card wide listcard" id="status"><h2>Status Report</h2><div class="muted">loading…</div></section>
+</div>
+
+<footer>
+  <span id="meta">loading…</span>
+  <span id="footright">
+    <button id="reloadButton" type="button" onclick="loadAll(true)" aria-live="polite" aria-busy="false">Reload</button>
+  </span>
+</footer>
+
+<script>
+"use strict";
+// Paths are relative to _Axis/Dashboard/ ( ".." = _Axis, "../.." = project root ).
+const F = { changelog:"../CHANGELOG.md", project:"../PROJECT.md", settings:"../SETTINGS.md", plan:"../PLAN.md", tasks:"../TASKS.md" };
+const FOLLOWUPS_DIR = "../Followups/";
+const REMINDERS_DIR = "../Reminders/";
+const DIRS = { Agents:"../Agents/", Tasks:"../Tasks/", Ideas:"../Ideas/", Notes:"../Notes/", Logs:"../Logs/", Status:"../Status/",
+               Snapshots:"../Snapshots/", CX:"../CX/", Audit:"../Audit/" };   // metrics render in this order - keep the card order first
+/* BEGIN GENERATED: flag-domains */
+const FLAG_DOMAINS = {
+  "host-spawn": ["yes","no"],
+  "host-parallel": ["yes","no"],
+  "host-shell": ["yes","no"],
+  "host-local-llm": ["yes","no"],
+  "host-cloud-sync": ["yes","no"],
+  "host-storage": ["atomic","serialized","unknown"]
+};
+/* END GENERATED: flag-domains */
+const LOCK_TIMEOUT_HOURS = 10 / 3600;
+const KEYS = ["Reasoning","Exploration","Eagerness","Skepticism","Familiarity","Verbosity","Simplicity",
+              "Precision","Generalization","Rigor","Creativity","Transparency","Budget","CX Frequency"];
+const PROFILES = {
+  Fast:     {Reasoning:-1,Exploration:-2,Eagerness:1, Skepticism:-1,Familiarity:2, Verbosity:-1,Simplicity:1,Precision:0,Generalization:-1,Rigor:-1,Creativity:-1,Transparency:-1,Budget:-1,"CX Frequency":0},
+  Standard: {Reasoning:0, Exploration:0, Eagerness:-1,Skepticism:0, Familiarity:0, Verbosity:0, Simplicity:0,Precision:0,Generalization:0, Rigor:1, Creativity:0, Transparency:0, Budget:0, "CX Frequency":1},
+  Deep:     {Reasoning:2, Exploration:1, Eagerness:-2,Skepticism:1, Familiarity:-1,Verbosity:1, Simplicity:0,Precision:2,Generalization:0, Rigor:2, Creativity:1, Transparency:2, Budget:1, "CX Frequency":2}
+};
+
+const NEEDS_SERVER = "The Dashboard is live and needs a running web server - ask your Agent for <code>^dashboard</code>. " +
+                      "For a view that works without one, run <code>^status</code>.";
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const el = id => document.getElementById(id);
+async function read(url){
+  const r = await fetch(url, {cache:"no-store"});
+  if (!r.ok) { const error = new Error(url); error.status = r.status; throw error; }
+  return r.text();
+}
+function markPartial(partial, card){ if (partial instanceof Set) partial.add(card); }
+function markUnlessMissing(partial, card, error){ if (!error || error.status !== 404) markPartial(partial, card); }
+async function listDir(url){                       // parse the filtered Axis server directory listing
+  const html = await read(url); const out = [];
+  for (const m of html.matchAll(/href="([^"?]+\.md)"/g)) out.push(decodeURIComponent(m[1]).split("/").pop());
+  return [...new Set(out)];
+}
+async function listAgentEntries(){                 // one listing carries Markers and their kill tombstones
+  const html = await read(DIRS.Agents); const out = [];
+  for (const m of html.matchAll(/href="([^"?]+\.(?:md|kill))"/g)) out.push(decodeURIComponent(m[1]).split("/").pop());
+  return [...new Set(out)];
+}
+async function readFlag(name, partial){            // Capability Flags: value on Line 1
+  try { const value = (await read("../Flags/" + name)).split("\n")[0].trim();
+        if (!value || value === "cleared") return null;
+        const domain = FLAG_DOMAINS[name];
+        return domain && !domain.includes(value) ? null : value; }
+  catch(e){ markUnlessMissing(partial, "Configuration", e); return null; }
+}
+async function fileAgeHours(url, partial=null, card=""){ // age via the HTTP Last-Modified header (mtime)
+  try { const r = await fetch(url, {method:"HEAD", cache:"no-store"});
+        if (!r.ok) throw new Error(url);
+        const lm = r.headers.get("last-modified");
+        if (!lm) throw new Error(url);
+        return (Date.now() - new Date(lm).getTime()) / 3600000; }
+  catch(e){ if (card) markPartial(partial, card); return null; }
+}
+function loadMermaid(){                            // lazy same-origin load; resolves null when the vendored renderer is unavailable
+  return new Promise(res => {
+    if (window.mermaid) { res(window.mermaid); return; }
+    if (window._mermaidFailed) { res(null); return; }
+    const s = document.createElement("script");
+    s.src = "./mermaid-11.16.1.min.js";
+    s.integrity = "sha256-GDJ773DZb7UF/nKH2fanNi6/B/9ldt36/7Ggbz4aKVQ=";
+    s.onload = () => { try {
+        window.mermaid.initialize({ startOnLoad:false,
+          theme: matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "default" });
+        res(window.mermaid);
+      } catch(e){ window._mermaidFailed = true; res(null); } };
+    s.onerror = () => { window._mermaidFailed = true; res(null); };
+    document.head.appendChild(s);
+  });
+}
+
+function parseSettings(md){
+  const vals = {};
+  for (const chunk of md.split(/\n### /).slice(1)) {
+    const name = chunk.split("\n")[0].trim();
+    const m = chunk.match(/\*\*Value:\*\*\s*(.+)/);
+    if (m) vals[name] = m[1].trim();
+  }
+  return vals;
+}
+function parseAxisVersion(md){
+  const matches = [...md.matchAll(/^current-version:[ \t]*(\d{2}\.\d{2}\.\d{2}(?:-\d+)?)[ \t]*$/gm)];
+  return matches.length === 1 ? matches[0][1] : "Unknown";
+}
+function parseInfrastructureSummary(md){          // safe Snapshot summary only; never read ENVIRONMENT or Secrets here
+  const matches = [...String(md || "").matchAll(/^infrastructure:[ \t]*(.*)$/gm)];
+  if (!matches.length) return null;               // pre-inventory Snapshot: no new claim
+  const malformed = () => ({state:"Unverified", entries:[], omitted:0, malformed:true});
+  if (matches.length !== 1) return malformed();
+  const m = matches[0][1].match(/^(Ready|Degraded|Unverified);[ \t]*declared=\{([^{}]*)\};[ \t]*undeclared-signals=\{([^{}]*)\}[ \t]*$/);
+  if (!m || m[2].length > 2000) return malformed();
+  const entries = [], seen = new Set();
+  let omitted = 0;
+  const declared = m[2].trim();
+  if (declared && declared !== "None") {
+    const parts = declared.split(/,[ \t]*/);
+    if (parts.length > 21) return malformed();
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i].trim();
+      const more = part.match(/^\+(\d+) more$/);
+      if (more) {
+        if (i !== parts.length - 1 || omitted || +more[1] < 1) return malformed();
+        omitted = +more[1];
+        continue;
+      }
+      const item = part.match(/^(.+?)=(present|absent|unverified|not-applicable)$/);
+      if (!item) return malformed();
+      const name = item[1].trim(), key = name.toLocaleLowerCase();
+      if (!name || [...name].length > 60 || /[\u0000-\u001f\u007f,={}\\/]/.test(name) || seen.has(key)) return malformed();
+      seen.add(key);
+      entries.push({name, status:item[2]});
+    }
+  } else if (declared !== "None") return malformed();
+  return {state:m[1], entries, omitted, malformed:false};
+}
+function infrastructureStatusItems(md){
+  const summary = parseInfrastructureSummary(md);
+  if (!summary) return [];
+  if (summary.malformed) {
+    return ["The latest Snapshot's infrastructure summary could not be verified; use ^save to replace it with a current assessment."];
+  }
+  const names = status => summary.entries.filter(item => item.status === status).map(item => item.name);
+  const absent = names("absent"), unverified = names("unverified"), items = [];
+  if (absent.length) items.push(`The latest Snapshot reports missing infrastructure that must be re-established: ${absent.join(", ")}.`);
+  if (unverified.length) items.push(`The latest Snapshot could not verify this infrastructure: ${unverified.join(", ")}. Use ^resume to revalidate it on this platform.`);
+  if (!items.length && summary.state === "Degraded") {
+    items.push("The latest Snapshot reports infrastructure that needs re-establishment, but its bounded declaration summary does not name the affected item; use ^resume for the complete assessment.");
+  } else if (!items.length && summary.state === "Unverified") {
+    items.push("The latest Snapshot could not verify all declared infrastructure; use ^resume to revalidate it on this platform.");
+  }
+  return items.map(esc);
+}
+function axisTimestampMs(value){
+  const m = String(value || "").match(/^(\d{4})\.(\d{2})\.(\d{2})\.(\d{2})\.(\d{2})\.(\d{2})\.(\d{3})Z$/);
+  if (!m) return null;
+  const ms = Date.UTC(+m[1], +m[2]-1, +m[3], +m[4], +m[5], +m[6], +m[7]);
+  const d = new Date(ms);
+  return d.getUTCFullYear() === +m[1] && d.getUTCMonth() === +m[2]-1 && d.getUTCDate() === +m[3] &&
+    d.getUTCHours() === +m[4] && d.getUTCMinutes() === +m[5] && d.getUTCSeconds() === +m[6] ? ms : null;
+}
+async function recordAgeHours(file, url, partial=null, card=""){ // durable record time; mtime is only a malformed-name fallback
+  const stem = String(file || "").replace(/\.md$/, "");
+  const createdMs = axisTimestampMs(stem);
+  return createdMs === null ? fileAgeHours(url, partial, card) : (Date.now() - createdMs) / 3600000;
+}
+function detectProfile(vals){
+  for (const [name,p] of Object.entries(PROFILES))
+    if (KEYS.every(k => String(p[k]) === String(vals[k]))) return name;
+  return "Custom";
+}
+function parseTasks(md){                           // shared by the Tasks card and Status assessment
+  return md.split(/\n## /).slice(1).map(chunk => {
+    const lines = chunk.split("\n");
+    const get = f => (chunk.match(new RegExp("^"+f+":[ \\t]*(.+)$","m")) || [,""])[1].trim();
+    const body = lines.slice(1).map(l => l.trim()).filter(l => l && !/^(label|status|created|updated|completed|cancelled|delivers):/.test(l) && !l.includes("[Details"));
+    const dm = chunk.match(/\[Details\.\.\.\]\(((?:Tasks|Archive\/Tasks)\/[^)]+)\)/);
+    return { name: lines[0].trim(), label: get("label"), status: get("status"), updated: get("updated"), delivers: get("delivers"),
+             desc: body[0] || "", details: dm ? "../" + dm[1] : null };
+  }).filter(t => t.status && !t.status.includes("{{"));
+}
+
+function parseReminder(md, file){
+  const normalized = md.replace(/\r\n/g, "\n"), lines = normalized.split("\n");
+  const keys = ["created", "updated", "due-at", "timezone", "target", "reopens", "outcome"];
+  const get = key => ((normalized.match(new RegExp("^"+key+":[ \\t]*(.*)$", "m")) || [,""])[1]).trim();
+  const id = file.replace(/\.md$/, ""), subjectLine = (lines[0] || "").trim();
+  const created = get("created"), updated = get("updated"), dueAt = get("due-at"), timezone = get("timezone");
+  const target = get("target"), targetParts = target.split("/");
+  const targetValid = target === "N/A" || (!!target && !target.startsWith("/") && !target.startsWith("~") &&
+    !/^[A-Za-z]:\//.test(target) && !target.includes("\\") && !target.includes(":") &&
+    targetParts.every(part => part && part !== "." && part !== "..") && targetParts[0] !== "_X" &&
+    !(targetParts[0] === "_Axis" && targetParts[1] === "Secrets"));
+  const body = lines.slice(10).join("\n").trim().split(/\n\s*\n/)[0].replace(/\s+/g, " ");
+  let zoneValid = timezone === "UTC";
+  if (!zoneValid && timezone) { try { new Intl.DateTimeFormat("en", {timeZone:timezone}); zoneValid = true; } catch(e){} }
+  const exactHeader = lines[1] === "" && keys.every((key,index) => new RegExp("^"+key+":[ \\t]*.*$").test(lines[index+2] || "")) && lines[9] === "";
+  const valid = /^Reminder: .+/.test(subjectLine) && subjectLine.length <= 80 && axisTimestampMs(id) !== null && created === id &&
+    axisTimestampMs(updated) !== null && updated >= created && axisTimestampMs(dueAt) !== null && zoneValid && exactHeader &&
+    targetValid && (get("reopens") === "N/A" || axisTimestampMs(get("reopens")) !== null) && get("outcome") === "N/A" && !!body;
+  return {file, id, subject:subjectLine.replace(/^Reminder:\s*/, "") || file, dueAt, dueMs:axisTimestampMs(dueAt), body, valid:!!valid};
+}
+
+function reminderDueState(item, nowMs){
+  if (!item.valid || item.dueMs === null) return "review";
+  if (!Number.isFinite(nowMs)) return "unverified";
+  return item.dueMs <= nowMs ? "due" : "upcoming";
+}
+
+function parseFollowup(md, file){                  // exact open-queue fields; malformed rows remain visible for review
+  const normalized = md.replace(/\r\n/g, "\n");
+  const lines = normalized.split("\n");
+  const keys = ["type", "raised", "updated", "due", "blocks", "resolved", "outcome", "resolution-ref"];
+  const get = key => ((normalized.match(new RegExp("^"+key+":[ \\t]*(.*)$", "m")) || [,""])[1]).trim();
+  const subjectLine = (lines[0] || "").trim();
+  const raised = get("raised"), updated = get("updated"), due = get("due"), resolved = get("resolved"), outcome = get("outcome"), ref = get("resolution-ref");
+  const ask = lines.slice(11).join("\n").trim().split(/\n\s*\n/)[0].replace(/\s+/g, " ");
+  const id = file.replace(/\.md$/, "");
+  const stamp = value => /^\d{4}\.\d{2}\.\d{2}\.\d{2}\.\d{2}\.\d{2}\.\d{3}Z$/.test(value);
+  const calendarDate = value => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+    const parsed = new Date(value + "T00:00:00Z");
+    return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0,10) === value;
+  };
+  const exactHeader = lines[1] === "" && keys.every((key, index) => new RegExp("^"+key+":[ \\t]*.*$").test(lines[index + 2] || "")) && lines[10] === "";
+  const valid = /^Follow-Up: .+/.test(subjectLine) && subjectLine.length <= 80 && stamp(id) && raised === id && stamp(updated) && updated >= raised && exactHeader &&
+    /^(question|decision|action)$/.test(get("type")) && (due === "N/A" || calendarDate(due)) &&
+    get("blocks") && resolved === "N/A" && outcome === "N/A" && ref === "N/A" && ask;
+  return { file, id, subject:subjectLine.replace(/^Follow-Up:\s*/, "") || file, type:get("type"), raised, due, blocks:get("blocks"), ask, valid:!!valid };
+}
+
+function followupSort(a, b){
+  const today = new Date(); today.setHours(0,0,0,0);
+  const date = item => item.due && item.due !== "N/A" ? new Date(item.due + "T00:00:00") : null;
+  const ad = date(a), bd = date(b);
+  const ar = ad ? (ad < today ? 0 : 1) : 2, br = bd ? (bd < today ? 0 : 1) : 2;
+  if (ar !== br) return ar - br;
+  if (ad && bd && ad.getTime() !== bd.getTime()) return ad - bd;
+  return String(a.raised || a.id).localeCompare(String(b.raised || b.id));
+}
+
+
+const CX_GLOSS = {"0":"Never","1":"Final deliverables","2":"Key steps","3":"Every step"};
+const MINDSET_GLOSS = {"-2":"Much Less -2","-1":"Less -1","0":"-","1":"More +1","2":"Much More +2"};
+const ROUTINE_VALUES = new Set(["Standard","✓","-"]);
+function detailValue(value){
+  return `<dd${ROUTINE_VALUES.has(value) ? ` class="routine-value"` : ""}>${esc(value)}</dd>`;
+}
+
+async function renderConfiguration(partial){       // Settings and validated Host facts rendered as one ordered list plus Status evidence
+  let name = "Unknown", version = "Unknown", vals = {};
+  try { const bg = await read(F.project);
+        const m = bg.match(/^#\s+Project:\s*(.+)/m);
+        name = (m && !m[1].includes("{{")) ? m[1].trim() : "Not set";
+  } catch(e){ markPartial(partial, "Configuration"); }
+  try { version = parseAxisVersion(await read(F.changelog)); } catch(e){ markPartial(partial, "Configuration"); }
+  try { vals = parseSettings(await read(F.settings)); } catch(e){ markPartial(partial, "Configuration"); }
+  el("projname").textContent = name === "Not set" ? "" : ": " + name;
+  const profile = Object.keys(vals).length ? detectProfile(vals) : "Unknown";
+  const model = (await readFlag("model", partial)) || "Unknown";
+  const hs = await readFlag("host-spawn", partial), hp = await readFlag("host-parallel", partial), hsh = await readFlag("host-shell", partial);
+  const ll = await readFlag("host-local-llm", partial), cs = await readFlag("host-cloud-sync", partial), storage = await readFlag("host-storage", partial);
+  let snap = "Unknown";
+  let portability = "Unverified";
+  let infrastructureItems = [];
+  try { const sf = (await listDir(DIRS.Snapshots)).sort().reverse()[0];
+        if (!sf) snap = "None";
+        else { const h = await recordAgeHours(sf, DIRS.Snapshots + sf, partial, "Configuration");
+               snap = h === null ? "" : h < 1 ? "under an hour ago" : h < 48 ? Math.round(h) + "h ago" : Math.round(h/24) + "d ago";
+               try { const smd = await read(DIRS.Snapshots + sf);
+                     const pm = smd.match(/^portability:[ \t]*(Ready|Degraded|Unverified)[ \t]*$/m);
+                     if (pm) portability = pm[1];
+                     infrastructureItems = infrastructureStatusItems(smd); }
+               catch(e){ markPartial(partial, "Configuration"); } } }
+  catch(e){ markPartial(partial, "Configuration"); }
+  const cxf = vals["CX Frequency"] ?? "?";
+  const storagePolicy = vals["Storage Policy"];
+  let cxm = vals["CX Model"] || "?";
+  if (cxm === "same-as-host") cxm = model === "Unknown" ? "Same as host" : model;   // resolve to the actual host model
+  const cloudSafe = storagePolicy === "auto"
+    ? (storage === "atomic" ? "yes" : storage === "serialized" ? "no" : null)
+    : storagePolicy === "single-writer" ? "no" : null;
+
+  const selected = vals["Local Model"] || "?";
+  let platform = "Unknown";
+  if (ll === "no") {
+    platform = "N/A";
+  } else if (selected === "?" || selected === "<unset>") {
+    platform = "Unknown";
+  } else {
+    try {
+      const lines = (await read("../Flags/local-aptitude")).split("\n").map(s => s.trim());
+      const testedModel = !lines[0] || lines[0] === "cleared" ? null : lines[0];
+      if (!testedModel || !lines[1] || !/^(?:PASS|RETRY|FAIL)(?: (?:PASS|RETRY|FAIL)){4}$/.test(lines[2] || "")) throw new Error("absent");
+      if (testedModel === selected) {
+        const scores = lines[2].split(" ");
+        platform = scores.every(s => s === "PASS") ? "Ready"
+                 : scores.includes("FAIL") ? "Review"
+                 : "Retest";
+      }
+    } catch(e){ markUnlessMissing(partial, "Configuration", e); }
+  }
+
+  const downgrades = [];
+  try {
+    const files = (await listDir(DIRS.Logs)).sort().reverse().slice(0, 60);
+    for (const f of files) {
+      try {
+        const md = await read(DIRS.Logs + f);
+        const subject = (md.split("\n")[0] || "").trim();
+        if (!subject.startsWith("Capability downgrade:")) continue;
+        const field = name => ((md.match(new RegExp(`^${name}:[ \\t]*(.+)$`, "m")) || [,""])[1]).trim();
+        const feature = field("feature") || subject.slice("Capability downgrade:".length).trim() || "an unspecified feature";
+        const missing = field("missing-capability"), behavior = field("behavior-used");
+        const skipped = field("work-skipped"), impact = field("user-impact");
+        const message = missing && behavior && skipped && impact
+          ? `Axis recorded a capability downgrade for ${feature} because ${missing}. It used ${behavior} instead, skipped ${skipped}, and recorded this user impact: ${impact}.`
+          : `Axis recorded a capability downgrade for ${feature}, but its record is incomplete; open the record for the available details.`;
+        downgrades.push({href:DIRS.Logs + encodeURIComponent(f), message});
+      } catch(e){ markPartial(partial, "Status"); }
+    }
+  } catch(e){ markPartial(partial, "Status"); }
+
+  const availability = value => value === null ? "Unknown" : value === "yes" ? "✓" : "Unavailable";
+  const row = (label, value) => `<div class="detail-row"><dt>${esc(label)}</dt>${detailValue(value)}</div>`;
+  const configRows = [
+    row("Version", version),
+    row("Profile", profile),
+    row("Main Model", model),
+    row("Local Model", selected),
+    row("CX Model", cxm),
+    row("CX Frequency", CX_GLOSS[cxf] ?? cxf),
+    row("Last Snapshot", snap),
+    row("Portability", portability),
+    row("Spawn", availability(hs)),
+    row("Parallel", availability(hp)),
+    row("Shell", availability(hsh)),
+    row("Cloud-Safe", availability(cloudSafe)),
+    row("Local Endpoint", availability(ll)),
+    row("Local Subagents", availability(ll)),
+    row("Local Platform", platform)
+  ].join("");
+
+  const capabilityFacts = [
+    {value:hs,
+     missing:"This host cannot start additional agents, so delegated work must remain in the current session.",
+     unknown:"The Dashboard could not confirm whether this host can start additional agents."},
+    {value:hp,
+     missing:"Parallel agent work is unavailable in this session, so delegated work will run serially.",
+     unknown:"The Dashboard could not confirm whether this host supports parallel agent work."},
+    {value:hsh,
+     missing:"Shell access is unavailable in this session, so commands that require the terminal cannot run.",
+     unknown:"The Dashboard could not confirm whether shell access is available in this session."},
+    {value:ll,
+     missing:"Local Subagents are unavailable in this session because no local model endpoint was detected.",
+     unknown:"The Dashboard could not confirm whether a local model endpoint is available, so Local Subagent availability is unknown."},
+    {value:cloudSafe,
+     missing:storagePolicy === "single-writer"
+       ? "This project deliberately uses serialized one-writer behavior because Storage Policy is set to single-writer."
+       : `This project uses the serialized storage profile${cs === "yes" ? " because cloud-sync behavior was detected" : ""}; use one writer and complete synchronization before switching environments.`,
+     unknown:"Storage Policy or the current storage profile is unknown, so Axis uses serialized single-writer behavior and cannot verify concurrent-write safety."}
+  ];
+  const statusItems = capabilityFacts
+    .filter(f => f.value === "no" || f.value === null)
+    .map(f => esc(f.value === "no" ? f.missing : f.unknown));
+  statusItems.push(...downgrades.map(d => `<a href="${esc(d.href)}">${esc(d.message)}</a>`));
+  statusItems.push(...infrastructureItems);
+  if (portability !== "Ready") statusItems.push(esc(`The latest saved portability assessment is ${portability}; use ^save to create a current assessed checkpoint.`));
+
+  el("config").innerHTML = `<h2>Configuration</h2><dl class="detail-list">${configRows}</dl>`;
+  return {items:statusItems, downgradeCount:downgrades.length};
+}
+
+async function renderReminders(partial){
+  try {
+    const files = (await listDir(REMINDERS_DIR)).sort();
+    if (!files.length) { el("reminders").innerHTML = "<h2>Reminders</h2><div class='muted'>No open Reminders.</div>"; return; }
+    const items = [];
+    for (const file of files) {
+      try { items.push(parseReminder(await read(REMINDERS_DIR + file), file)); }
+      catch(e){ markPartial(partial, "Reminders"); }
+    }
+    items.sort((a,b) => (!a.valid ? -1 : !b.valid ? 1 : (a.dueMs ?? Infinity) - (b.dueMs ?? Infinity) || a.id.localeCompare(b.id)));
+    const now = Date.now();
+    const label = item => {
+      const state = reminderDueState(item, now);
+      if (state === "review") return `<span class="agechip">review</span>`;
+      if (state === "unverified") return `<span class="agechip">time unverified</span>`;
+      if (state === "due") return `<span class="warnchip">overdue</span>`;
+      return `<span class="muted" style="font-size:12px">due ${esc(new Date(item.dueMs).toLocaleString())}</span>`;
+    };
+    const rows = items.slice(0,20).map(item => `<li>${label(item)} <a href="${REMINDERS_DIR + encodeURIComponent(item.file)}"><b>${esc(item.subject)}</b></a>` +
+      (item.body ? `<br><span class="muted" style="font-size:12.5px">${esc(item.body)}</span>` : "") + `</li>`);
+    const health = items.some(item => !item.valid) ? ` · <span class="agechip">review malformed record</span>` : "";
+    el("reminders").innerHTML = `<h2>Reminders</h2><div class="muted" style="font-size:12.5px;margin-bottom:4px">${items.length} open${health}</div><div class="scrollbody"><ul>${rows.join("")}</ul></div>`;
+  } catch(e){
+    markPartial(partial, "Reminders");
+    el("reminders").innerHTML = "<h2>Reminders</h2><div class='muted'>Could not read Reminders.</div>";
+  }
+}
+
+async function renderMindset(partial){             // every Mindset Setting in aligned label/value rows
+  let md = "";
+  try { md = await read(F.settings); }
+  catch(e){ markPartial(partial, "Mindset"); el("mindset").innerHTML = "<h2>Mindset</h2><div class='muted'>Could not read SETTINGS.md</div>"; return; }
+  const sec = (md.split(/\n## Mindset Settings/)[1] || "").split(/\n## /)[0];
+  const items = [];
+  for (const chunk of sec.split(/\n### /).slice(1)) {
+    const key = chunk.split("\n")[0].trim();
+    const m = chunk.match(/\*\*Value:\*\*\s*(.+)/);
+    if (m) { const v = m[1].trim();
+             const disp = MINDSET_GLOSS[v] || "Unknown";
+             items.push(`<div class="detail-row"><dt>${esc(key)}</dt>${detailValue(disp)}</div>`); }
+  }
+  el("mindset").innerHTML = `<h2>Mindset</h2>` +
+    (items.length ? `<dl class="detail-list">` + items.join("") + `</dl>` : `<div class="muted">None</div>`);
+}
+
+async function renderStatus(partial){              // newest Status Report distilled to its opening synopsis
+  let files = [];
+  try { files = (await listDir(DIRS.Status)).sort().reverse(); }
+  catch(e){ markPartial(partial, "Status Report"); el("status").innerHTML = "<h2>Status Report</h2><div class='muted'>Could not read Status Reports.</div>"; return; }
+  if (!files.length) {
+    el("status").innerHTML = "<h2>Status Report</h2><div class='muted'>No Status Report yet - use <code>^status</code>.</div>";
+    return;
+  }
+  let html = "";
+  try {
+    const md = await read(DIRS.Status + files[0]);
+    const lines = md.split("\n");
+    const topic = lines[0].replace(/^#*\s*Status:\s*/i, "").trim() || "Status Report";
+    const paras = lines.slice(2).join("\n").split(/\n\s*\n/).map(s => s.trim()).filter(s => s && !/^#/.test(s));
+    let syn = (paras[0] || "").replace(/\*\*/g, "");
+    if (syn.length > 420) syn = syn.slice(0, 420) + "…";
+    const age = await recordAgeHours(files[0], DIRS.Status + files[0], partial, "Status Report");
+    const when = age === null ? "" : age < 1 ? "under an hour ago" : age < 48 ? Math.round(age) + "h ago" : Math.round(age/24) + "d ago";
+    html = `<div class="kv"><b>${esc(topic)}</b>${when ? ` <span class="muted">· ${esc(when)}</span>` : ""}</div>` +
+           (syn ? `<div>${esc(syn)}</div>` : `<div class="muted">No synopsis in the latest report.</div>`);
+  } catch(e){ markPartial(partial, "Status Report"); el("status").innerHTML = "<h2>Status Report</h2><div class='muted'>Could not read the newest Status Report.</div>"; return; }
+  el("status").innerHTML = `<h2>Status Report</h2><div class="scrollbody">` + html + `</div>`;
+}
+
+async function collectOperationalNotices(partial){ // actionable notices for the Status assessment
+  const notices = [];
+  let vals = {};
+  try { vals = parseSettings(await read(F.settings)); } catch(e){ markPartial(partial, "Status"); }
+  try {                                            // stale Markers (> 1 hour)
+    const names = await listAgentEntries();
+    const kills = new Set(names.filter(n => n.endsWith(".kill")));
+    const files = names.filter(n => n.endsWith(".md") && !kills.has(n.replace(/\.md$/, ".kill")));
+    let stale = 0;
+    for (const f of files.slice(0, 20)) {
+      const age = await fileAgeHours(DIRS.Agents + f, partial, "Status");
+      if (age !== null && age > 1) stale++;
+    }
+    if (stale) notices.push({html:`${stale} stale Marker${stale>1?"s":""} in _Axis/Agents/ - <code>^refresh</code> sweeps them`, important:false});
+  } catch(e){ markPartial(partial, "Status"); }
+  try {                                            // stale locks only; fresh locks are active work, not a Status notice
+    const locks = [];
+    for (const base of ["../../", "../", ...Object.values(DIRS)]) {
+      try { const html = await read(base);
+            for (const m of html.matchAll(/href="([^"?]+\.lock)\/"/g)) {
+              const href = m[1];
+              const age = await fileAgeHours(base + href + "/", partial, "Status");
+              if (age !== null && age > LOCK_TIMEOUT_HOURS)
+                locks.push(decodeURIComponent(href).split("/").pop() + ".lock/");
+            } } catch(e){ markPartial(partial, "Status"); }
+    }
+    const u = [...new Set(locks)];
+    if (u.length) notices.push({html:`A stale write lock may be blocking work: ${esc(u.slice(0,3).join(", "))}${u.length>3?" …":""}.`, important:false});
+  } catch(e){ markPartial(partial, "Status"); }
+  try {                                            // requests waiting in the queue - normally empty; a boot or served turn drains it
+    const nreq = (await listDir("../Requests/")).length;
+    if (nreq) notices.push({html:`${nreq} request${nreq>1?"s are":" is"} awaiting a Main Agent - say hello in a session to triage.`, important:false});
+  } catch(e){ markPartial(partial, "Status"); }
+  try {                                            // Notes over the Max Notes limit
+    const max = parseInt(vals["Max Notes"], 10);
+    if (!isNaN(max)) { const n = (await listDir(DIRS.Notes)).length;
+      if (n > max) notices.push({html:`Notes exceed the configured limit (${n}/${max}) - <code>^refresh</code> archives them.`, important:false}); }
+  } catch(e){ markPartial(partial, "Status"); }
+  try {                                            // project setup incomplete
+    if ((await read(F.project)).includes("{{")) notices.push({html:`⚠&nbsp; Project setup incomplete - ask your Agent for help.`, important:true});
+  } catch(e){ markPartial(partial, "Status"); }
+  return notices;
+}
+
+function renderDashboardStatus(configuration, operational){
+  const notices = Array.isArray(operational) ? operational : [];
+  const important = notices.filter(n => n.important);
+  const ordinary = notices.filter(n => !n.important);
+  const details = configuration && Array.isArray(configuration.items) ? configuration.items : [];
+  const rows = [
+    ...important.map(n => `<li class="status-important">${n.html}</li>`),
+    ...ordinary.map(n => `<li>${n.html}</li>`),
+    ...details.map(item => `<li>${item}</li>`)
+  ];
+  const card = el("comments");
+  if (!rows.length) {
+    card.style.display = "none";
+    card.innerHTML = "";
+    return;
+  }
+  card.style.display = "";
+  card.innerHTML = `<ul class="comments-list">${rows.join("")}</ul>`;
+}
+
+async function renderFollowups(partial){           // open User-owned actions, ordered by the Follow-Up Practice
+  try {
+    const files = (await listDir(FOLLOWUPS_DIR)).sort();
+    const items = [];
+    for (const file of files) {
+      try { items.push(parseFollowup(await read(FOLLOWUPS_DIR + file), file)); }
+      catch(e){ markPartial(partial, "User Follow Up"); }
+    }
+    items.sort(followupSort);
+    if (!items.length) {
+      el("followups").innerHTML = "<h2>User Follow Up</h2><div class='muted'>No open Follow-Ups.</div>";
+      return;
+    }
+    const today = new Date(); today.setHours(0,0,0,0);
+    const dueLabel = item => {
+      if (!item.valid) return `<span class="agechip">review</span>`;
+      if (!item.due || item.due === "N/A") return "";
+      const date = new Date(item.due + "T00:00:00");
+      const days = Math.round((date - today) / 86400000);
+      if (days < 0) return `<span class="warnchip">overdue ${Math.abs(days)}d</span>`;
+      if (days === 0) return `<span class="warnchip">due today</span>`;
+      return `<span class="muted" style="font-size:12px">due ${esc(item.due)}</span>`;
+    };
+    const rows = items.map(item =>
+      `<li>${dueLabel(item)} <a href="${FOLLOWUPS_DIR + encodeURIComponent(item.file)}"><b>${esc(item.subject)}</b></a>` +
+      (item.ask ? `<br><span class="muted" style="font-size:12.5px">${esc(item.ask)}</span>` : "") + `</li>`);
+    const health = items.some(item => !item.valid) ? ` · <span class="agechip">review malformed record</span>` : "";
+    el("followups").innerHTML = `<h2>User Follow Up</h2><div class="muted" style="font-size:12.5px;margin-bottom:4px">${items.length} open${health}</div>` +
+      `<div class="scrollbody"><ul>${rows.join("")}</ul></div>`;
+  } catch(e){
+    markPartial(partial, "User Follow Up");
+    el("followups").innerHTML = "<h2>User Follow Up</h2><div class='muted'>Could not read Follow-Ups.</div>";
+  }
+}
+
+async function renderAgentActivity(partial){       // Agent-owned due work, ranked by how overdue - findings cover what is broken
+  let served = true, anyLogs = false;               // activity gate: a brand-new project is not overdue for anything
+  try { anyLogs = (await listDir(DIRS.Logs)).length > 0; }
+  catch(e){ served = false; markPartial(partial, "Agent Activity"); }
+  if (!served) { el("agent-activity").innerHTML = "<h2>Agent Activity</h2><div class='muted'>Could not refresh Agent Activity.</div>"; return; }
+  const rows = [];
+  try {                                             // oldest Active Task by durable updated field (7-day rule)
+    const entries = parseTasks(await read(F.tasks)).filter(t => t.status === "Active");
+    let worst = null;
+    for (const t of entries.slice(0, 12)) {
+      const updatedMs = axisTimestampMs(t.updated);
+      if (t.updated === "Unknown" || updatedMs === null) { rows.push({rank:Infinity, warn:true,
+        html:`Active task <b>${esc(t.name)}</b> has unknown portable recency - <code>^refresh</code> to review it`}); continue; }
+      const age = (Date.now() - updatedMs) / 3600000;
+      if (age !== null && (!worst || age > worst.age)) worst = { name:t.name, age };
+    }
+    if (worst && worst.age > 168) rows.push({ rank: worst.age, warn: true,
+      html: `Active task <b>${esc(worst.name)}</b> untouched ${Math.round(worst.age/24)}d - <code>^refresh</code> to realign it` });
+  } catch(e){ markPartial(partial, "Agent Activity"); }
+  if (anyLogs) {
+    try {                                           // Snapshot recency (48-hour nudge)
+      const sf = (await listDir(DIRS.Snapshots)).sort().reverse()[0];
+      const age = sf ? await recordAgeHours(sf, DIRS.Snapshots + sf, partial, "Agent Activity") : null;
+      if (!sf) rows.push({ rank: 900, warn: true, html: `No Snapshot yet - <code>^save</code> before stepping away` });
+      else if (age !== null && age > 48) rows.push({ rank: age, warn: true,
+        html: `Last Snapshot ${Math.round(age/24)}d ago - <code>^save</code>` });
+    } catch(e){ markPartial(partial, "Agent Activity"); }
+    try {                                           // Status Report cadence (7-day window)
+      const sf = (await listDir(DIRS.Status)).sort().reverse()[0];
+      const age = sf ? await recordAgeHours(sf, DIRS.Status + sf, partial, "Agent Activity") : null;
+      if (!sf) rows.push({ rank: 800, warn: true, html: `No Status Report yet - <code>^status</code>` });
+      else if (age !== null && age > 168) rows.push({ rank: age, warn: true,
+        html: `Last Status Report ${Math.round(age/24)}d ago - <code>^status</code>` });
+    } catch(e){ markPartial(partial, "Agent Activity"); }
+  }
+  try {                                             // Ideas that have never been reviewed
+    const files = await listDir(DIRS.Ideas);
+    let n = 0;
+    for (const f of files.slice(0, 40)) {
+      try { const head = (await read(DIRS.Ideas + f)).split("\n").slice(0, 8).join("\n");
+            const m = head.match(/^reviewed:[ \t]*(.*)$/m);
+            if (!m || !m[1].trim() || /tbd|\{\{/i.test(m[1])) n++; }
+      catch(e){ markPartial(partial, "Agent Activity"); }
+    }
+    if (n) rows.push({ rank: 20 + n, warn: false,
+      html: `${n} Idea${n>1?"s":""} never reviewed - <code>^ideas</code>` });
+  } catch(e){ markPartial(partial, "Agent Activity"); }
+  if (!rows.length) { el("agent-activity").innerHTML = "<h2>Agent Activity</h2><div class='muted'>Nothing is overdue.</div>"; return; }
+  rows.sort((a,b) => b.rank - a.rank);
+  el("agent-activity").innerHTML = "<h2>Agent Activity</h2><div class=\"scrollbody\"><ul>" +
+    rows.map(r => `<li>${r.warn ? '<span class="warnchip">due</span> ' : ""}${r.html}</li>`).join("") + "</ul></div>";
+}
+
+function sparkline(files, days){                   // one bar per day, from timestamp filenames alone - no file reads, no parsing
+  const counts = {};
+  for (const f of files) { const k = f.slice(0, 10); if (/^\d{4}\.\d{2}\.\d{2}$/.test(k)) counts[k] = (counts[k] || 0) + 1; }
+  const buckets = [];
+  for (let i = days - 1; i >= 0; i--) {             // filenames are UTC, so bucket in UTC
+    const d = new Date(); d.setUTCDate(d.getUTCDate() - i);
+    const k = d.getUTCFullYear() + "." + String(d.getUTCMonth()+1).padStart(2,"0") + "." + String(d.getUTCDate()).padStart(2,"0");
+    buckets.push([k, counts[k] || 0]);
+  }
+  const max = Math.max(1, ...buckets.map(b => b[1]));
+  const total = buckets.reduce((s,b) => s + b[1], 0);
+  return `<div class="spark" role="img" aria-label="Events per day, last ${days} days">` +
+    buckets.map(([k,n]) => `<span class="sparkbar${n ? "" : " empty"}" style="height:${Math.max(2, Math.round(n/max*24))}px" title="${esc(k)}: ${n}"></span>`).join("") +
+    `</div><div class="muted" style="font-size:12px;margin-bottom:6px">${total} in the last ${days} days</div>`;
+}
+
+async function renderPlan(partial){
+  try {
+    const md = await read(F.plan);
+    const section = h => { const m = md.match(new RegExp("## "+h+"\\n([\\s\\S]*?)(?=\\n## |$)")); return m ? m[1].trim() : ""; };
+    const summary = section("Executive Summary");
+    const path = section("Execution Path");
+    const sumHtml = (!summary || summary.includes("{{"))
+      ? "<span class='muted'>No Plan drafted yet - use <code>^plan</code></span>"
+      : esc(summary).replace(/\n\n/g,"<br><br>");
+    const stages = (!path || path.includes("{{")) ? [] :
+      path.split("\n").map(l => l.replace(/^[-*\d.\s]+/,"").trim()).filter(Boolean);
+    const diagram = stages.length
+      ? "<div style='margin-top:10px'>" + stages.map(s=>`<span class="stage"><span class="chip">${esc(s)}</span></span>`).join("") + "</div>" : "";
+    let dhtml = "";
+    let fn = null;                                 // probe by name: this directory holds index.html, so it never lists
+    for (const cand of ["plan-diagram.svg", "plan-diagram.png", "plan-diagram.mermaid"]) {
+      if ((await fileAgeHours("./" + cand)) !== null) { fn = cand; break; }
+    }
+    if (fn) {
+      if (/\.(svg|png)$/i.test(fn)) {
+        dhtml = `<div style="margin-top:10px"><img src="${fn}" alt="Plan diagram" style="max-width:100%"></div>`;
+      } else {                                       // .mermaid: render with the pinned local bundle; always retain a link fallback
+        try {
+          const code = await read("./" + fn);
+          const mer = await loadMermaid();
+          if (mer) { const { svg } = await mer.render("planDiagram", code); dhtml = `<div style="margin-top:10px">${svg}</div>`; }
+          else markPartial(partial, "Plan");
+        } catch(e){ markPartial(partial, "Plan"); }
+      }
+      if (!dhtml) dhtml = `<div class="muted" style="margin-top:8px">Plan diagram: <a href="${fn}">${esc(fn)}</a></div>`;
+    }
+    el("plan").innerHTML = `<h2>Plan</h2><div>${sumHtml}</div>${diagram}${dhtml}`;
+  } catch(e){ markPartial(partial, "Plan"); el("plan").innerHTML = "<h2>Plan</h2><div class='muted'>Could not read PLAN.md</div>"; }
+}
+
+async function renderAgents(partial){             // Markers in _Axis/Agents/: role, start time, run time; .kill sibling = stopped
+  try {
+    const names = await listAgentEntries();
+    const kills = new Set(names.filter(n => n.endsWith(".kill")));
+    const files = names.filter(n => n.endsWith(".md")).sort().reverse().slice(0, 15);
+    const items = [];
+    for (const f of files) {
+      let subject = f;
+      try { subject = ((await read(DIRS.Agents + f)).split("\n")[0] || "").trim() || f; }
+      catch(e){ markPartial(partial, "Agents"); }
+      const stopped = kills.has(f.replace(/\.md$/, ".kill"));   // tombstoned = dead at any age, per [Practices > Markers]
+      const m = f.match(/^(\d{4})\.(\d{2})\.(\d{2})\.(\d{2})\.(\d{2})\.(\d{2})\.(\d{3})Z/);
+      let meta = stopped && !m ? ' <span class="agechip">stopped</span>' : "";
+      if (m) {
+        const start = Date.UTC(+m[1], +m[2]-1, +m[3], +m[4], +m[5], +m[6], +m[7]);
+        const mins = (Date.now() - start) / 60000;   // filename = when it started
+        const run = mins < 1 ? "under a minute" : mins < 60 ? Math.round(mins) + "m" : mins < 2880 ? Math.round(mins/60) + "h" : Math.round(mins/1440) + "d";
+        const idle = await fileAgeHours(DIRS.Agents + f, partial, "Agents"); // mtime = last heartbeat; Markers are touched on every Log write
+        const stale = !stopped && idle !== null && idle > 1;     // dead at mtime > 1 hour, per [Practices > Markers]
+        meta = `<br><span class="muted" style="font-size:12.5px">started ${esc(new Date(start).toLocaleString())} · ${stopped ? "session stopped" : stale ? "last seen " + esc(Math.round(idle) + "h") + " ago" : "running " + esc(run)}</span>` +
+               (stopped ? ' <span class="agechip">stopped</span>' : stale ? ' <span class="agechip">stale</span>' : "");
+      }
+      let doing = "";
+      try {                                          // Tracking tail: the live "doing now" line, per [Practices > Tracking]
+        const tl = (await read("../Tracking/" + f)).trim().split("\n").filter(Boolean).pop() || "";
+        const seg = tl.split(" - ");
+        if (seg.length >= 3) doing = `<br><span class="muted" style="font-size:12.5px">${stopped ? "last" : "doing"}: ${esc(seg.slice(2).join(" - "))}</span>`;
+      } catch(e){ markUnlessMissing(partial, "Agents", e); }
+      items.push(`<li><b>${esc(subject)}</b>${meta}${doing}</li>`);
+    }
+    el("agents").innerHTML = "<h2>Agents</h2>" + (items.length ? "<div class=\"scrollbody\"><ul>"+items.join("")+"</ul></div>" : "<div class='muted'>No live Agents.</div>");
+  } catch(e){ markPartial(partial, "Agents"); el("agents").innerHTML = "<h2>Agents</h2><div class='muted'>" + NEEDS_SERVER + "</div>"; }
+}
+
+async function renderTasks(partial){
+  try {
+    const entries = parseTasks(await read(F.tasks));
+    if (!entries.length) { el("tasks").innerHTML = "<h2>Tasks</h2><div class='muted'>No tasks yet.</div>"; return; }
+    const order = {Active:0, Blocked:1, Completed:2, Cancelled:3};
+    const counts = ["Active","Blocked","Completed","Cancelled"]
+      .map(s => [s, entries.filter(t => t.status === s).length]).filter(([,n]) => n)
+      .map(([s,n]) => `${n} ${s}`).join(" · ");
+    entries.sort((a,b)=>(order[a.status]??9)-(order[b.status]??9));
+    const items = [];
+    for (const t of entries.slice(0,25)) {
+      let agechip = "";
+      if (t.status === "Active") {                 // durable age label; amber past the 7-day staleness rule
+        const updatedMs = axisTimestampMs(t.updated);
+        if (t.updated === "Unknown" || updatedMs === null) agechip = ` <span class="agechip">recency unknown</span>`;
+        else { const age = (Date.now() - updatedMs) / 3600000;
+          const label = age < 24 ? Math.round(age) + "h" : Math.round(age/24) + "d";
+          agechip = age > 168 ? ` <span class="agechip">${label}</span>` : ` <span class="muted" style="font-size:12px">${label}</span>`;
+        }
+      }
+      items.push(`<li><span class="status ${esc(t.status)}">${esc(t.status)}</span> <b>${esc(t.name)}</b>${agechip}` +
+        (t.label && !t.label.includes("{{") ? ` <span class="muted">- ${esc(t.label)}</span>` : "") +
+        (t.delivers && !t.delivers.includes("{{") && t.delivers !== "N/A" ? ` <span class="chip" style="font-size:11.5px">→ ${esc(t.delivers)}</span>` : "") +
+        (t.status === "Blocked" && t.desc && !t.desc.includes("{{") ? `<br><span class="muted" style="font-size:12.5px">${esc(t.desc)}</span>` : "") + "</li>");
+    }
+    el("tasks").innerHTML = `<h2>Tasks</h2><div class="muted" style="font-size:12.5px;margin-bottom:4px">${esc(counts)}</div><div class="scrollbody"><ul>` + items.join("") + "</ul></div>";
+  } catch(e){ markPartial(partial, "Tasks"); el("tasks").innerHTML = "<h2>Tasks</h2><div class='muted'>Could not read TASKS.md</div>"; }
+}
+
+async function renderIdeas(partial){
+  try {
+    const files = (await listDir(DIRS.Ideas)).slice(0,40);
+    const ideas = [];
+    for (const f of files) {
+      try { const t = await read(DIRS.Ideas + f);
+            const lines = t.split("\n"), head = lines.slice(0, 8).join("\n");
+            const get = k => (head.match(new RegExp("^"+k+":[ \\t]*(.+)$","m")) || [,""])[1].trim();
+            ideas.push({ subject:(lines[0]||"").trim()||f, status:get("status"), priority:get("priority"), created:get("created")||f });
+      } catch(e){ markPartial(partial, "Ideas"); }
+    }
+    if (!ideas.length) { el("ideas").innerHTML = "<h2>Ideas</h2><div class='muted'>No ideas yet - use <code>^idea</code>.</div>"; return; }
+    const pRank = {high:0, medium:1, low:2}, sRank = {concrete:0, promising:1, speculative:2};
+    ideas.sort((a,b)=>(pRank[a.priority]??3)-(pRank[b.priority]??3) || (sRank[a.status]??3)-(sRank[b.status]??3) || (a.created<b.created?1:-1));
+    el("ideas").innerHTML = "<h2>Ideas</h2><div class=\"scrollbody\"><ul>" + ideas.slice(0,25).map(i =>
+      `<li><b>${esc(i.subject)}</b> <span class="muted">- ${esc(i.status||"?")} · priority ${esc(i.priority||"?")}</span></li>`).join("") + "</ul></div>";
+  } catch(e){ markPartial(partial, "Ideas"); el("ideas").innerHTML = "<h2>Ideas</h2><div class='muted'>" + NEEDS_SERVER + "</div>"; }
+}
+
+async function renderNotes(partial){               // Line-1 subjects of the most recent Notes
+  try {
+    const files = (await listDir(DIRS.Notes)).sort().reverse().slice(0, 25);
+    const items = [];
+    for (const f of files) {
+      try { const t = await read(DIRS.Notes + f);
+            items.push(`<li>${esc((t.split("\n")[0]||"").trim() || f)}</li>`); }
+      catch(e){ markPartial(partial, "Notes"); }
+    }
+    el("notes").innerHTML = "<h2>Notes</h2>" + (items.length ? "<div class=\"scrollbody\"><ul>"+items.join("")+"</ul></div>" : "<div class='muted'>No notes yet - use <code>^note</code>.</div>");
+  } catch(e){ markPartial(partial, "Notes"); el("notes").innerHTML = "<h2>Notes</h2><div class='muted'>" + NEEDS_SERVER + "</div>"; }
+}
+
+async function renderLogs(partial){
+  try {
+    const all = await listDir(DIRS.Logs);
+    const files = all.slice().sort().reverse().slice(0, 25);
+    const items = [];
+    for (const f of files) {
+      try { const t = await read(DIRS.Logs + f);
+            items.push(`<li><span class="muted">${esc(f.slice(0,16))}</span> ${esc((t.split("\n")[0]||"").trim())}</li>`); }
+      catch(e){ markPartial(partial, "Logs"); }
+    }
+    el("logs").innerHTML = "<h2>Logs</h2>" + (items.length ? sparkline(all, 14) + "<div class=\"scrollbody\"><ul>"+items.join("")+"</ul></div>" : "<div class='muted'>No logs yet.</div>");
+  } catch(e){ markPartial(partial, "Logs"); el("logs").innerHTML = "<h2>Logs</h2><div class='muted'>" + NEEDS_SERVER + "</div>"; }
+}
+
+async function renderWiki(partial){                // shown only when the Wiki is in use
+  try {
+    const idx = await read("../../_Axis/Wiki/Library-Index.md");
+    if (idx.includes("{{")) return;
+    const pages = (idx.match(/^- /gm) || []).length;
+    let last = "";
+    try { const act = await read("../../_Axis/Wiki/Library-Activity.md");
+          const m = act.match(/^## \[.*$/gm); if (m) last = m[m.length - 1].replace(/^## /, ""); }
+    catch(e){ markUnlessMissing(partial, "Wiki", e); }
+    let oq = "";
+    try {                                          // newest open-questions section of the Library Status record
+      const st = await read("../../_Axis/Wiki/Library-Status.md");
+      const secs = st.split(/\n(?=## \[)/).map(s => s.trim()).filter(s => /^## \[[^\]]*\]\s*open-questions\b/.test(s));
+      if (secs.length) {
+        const sec = secs[secs.length - 1];
+        const date = (sec.match(/^## \[([^\]]*)\]/) || [,""])[1];
+        const qs = sec.split("\n").slice(1).map(l => l.trim()).filter(l => l.startsWith("- ")).slice(0, 3);
+        if (qs.length) oq = "<div class=\"kv\"><b>Open questions</b>" +
+          (date ? " <span class=\"muted\">· " + esc(date) + "</span>" : "") + "</div><ul>" +
+          qs.map(q => "<li>" + esc(q.slice(2)) + "</li>").join("") + "</ul>";
+      }
+    } catch(e){ markUnlessMissing(partial, "Wiki", e); }
+    if (!oq) oq = "<div class=\"kv muted\">No open questions on record - <code>^wiki lint</code> finds them.</div>";
+    el("wiki").style.display = "";
+    el("wiki").innerHTML = "<h2>Wiki</h2><div class=\"cols\">" +
+      "<div><div class=\"kv\"><b>Pages indexed:</b> " + pages + "</div>" +
+      (last ? "<div class=\"kv\"><span class=\"muted\">Last activity:</span> " + esc(last) + "</div>" : "") + "</div>" +
+      "<div style=\"grid-column:span 2\">" + oq + "</div></div>";
+  } catch(e){ markUnlessMissing(partial, "Wiki", e); }
+}
+
+function mdSection(body){                          // minimal markdown for the Project card: bullets + paragraphs; {{...}} shown as unfilled
+  const filled = s => s.replace(/\{\{[^}]*\}\}/g, '<span class="muted"><i>TBD</i></span>');
+  const lines = body.split("\n");
+  let html = "", list = false, para = [];
+  const flush = () => { if (para.length) { html += `<p style="margin:4px 0">${filled(esc(para.join(" ")))}</p>`; para = []; } };
+  for (const raw of lines) {
+    const l = raw.trim();
+    if (l.startsWith("> ")) { flush(); if (list) { html += "</ul>"; list = false; } continue; }   // template helper lines: replaced by the gloss map
+    if (l.startsWith("- ")) { flush(); if (!list) { html += "<ul>"; list = true; }
+      html += `<li>${filled(esc(l.slice(2)))}</li>`; continue; }
+    if (l === "") { flush(); if (list) { html += "</ul>"; list = false; } continue; }
+    para.push(l);
+  }
+  flush(); if (list) html += "</ul>";
+  return html;
+}
+
+async function renderProject(partial){             // full _Axis/PROJECT.md, section by section
+  try {
+    const md = await read(F.project);
+    const nameM = md.match(/^#\s+Project:\s*(.+)/m);
+    const title = (nameM && !nameM[1].includes("{{")) ? `Project: ${esc(nameM[1].trim())}` : "Project";
+    const parts = md.split(/\n## /).slice(1);
+    let html = `<h2>${title}</h2>`;
+    if (!parts.length) { html += "<div class='muted'>No sections in _Axis/PROJECT.md</div>"; }
+    else {
+      const GLOSS = { Background:"open-form description of the context",
+        Aspirations:"higher-level", Objectives:"lower-level",
+        Scope:"what falls inside of, and outside of, the project",
+        Constraints:"time, budget, limitations, and other",
+        Deliverables:"concrete work products", Criteria:"standards and tests" };
+      html += "<div class=\"cols\">" + parts.map(chunk => {
+        const nl = chunk.indexOf("\n");
+        const head = (nl === -1 ? chunk : chunk.slice(0, nl)).trim();
+        const body = nl === -1 ? "" : chunk.slice(nl + 1);
+        const gloss = GLOSS[head] ? ` <span class="gloss">(${GLOSS[head]})</span>` : "";
+        return `<div><h3>${esc(head)}${gloss}</h3>${mdSection(body)}</div>`;
+      }).join("") + "</div>";
+    }
+    el("project").innerHTML = html;
+  } catch(e){ markPartial(partial, "Project"); el("project").innerHTML = "<h2>Project</h2><div class='muted'>Could not read _Axis/PROJECT.md</div>"; }
+}
+
+async function renderMetrics(partial){             // count line in the header, in DIRS order
+  const parts = [];
+  let anyFail = false;
+  let anyLogs = false;                             // same activity gate as Next Actions: a brand-new project is not overdue
+  try { anyLogs = (await listDir(DIRS.Logs)).length > 0; } catch(e){ markPartial(partial, "Header Metrics"); }
+  const CADENCE = { Snapshots: 48, Status: 168 };  // hours - the documented 48-hour Snapshot and 7-day Status cadences
+  for (const [label,dir] of Object.entries(DIRS)) {
+    const displayLabel = label === "Status" ? "Status Reports" : label;
+    try {
+      const files = await listDir(dir); const n = files.length;
+      let overdue = false;
+      if (anyLogs && CADENCE[label]) {
+        const newest = files.slice().sort().reverse()[0];
+        const age = newest ? await recordAgeHours(newest, dir + newest, partial, "Header Metrics") : null;
+        overdue = !newest || (age !== null && age > CADENCE[label]);
+      }
+      parts.push(overdue ? `<span style="color:var(--band-warn)">${n} ${esc(displayLabel)}</span>` : `${n} ${esc(displayLabel)}`);
+    }
+    catch(e){ anyFail = true; markPartial(partial, "Header Metrics"); parts.push(`- ${esc(displayLabel)}`); }
+  }
+  el("metrics").innerHTML = parts.join(" · ");
+  if (anyFail) {
+    const b = el("banner");
+    if (b.style.display !== "block") {
+      b.style.display = "block";
+      b.innerHTML = "This page could not read the project. The Dashboard is the live view and needs the bundled server: " +
+                    "ask your Agent to run <code>^dashboard</code>, or run <code>python3 _Axis/Dashboard/server.py --port 8000</code> from the project root " +
+                    "and open <code>http://127.0.0.1:8000/_Axis/Dashboard/</code>. If you cannot run the server, run <code>^status</code> " +
+                    "instead - a Status Report is the static view and needs nothing to read it.";
+    }
+  }
+}
+
+function banner(){
+  if (location.protocol === "file:") {
+    const b = el("banner"); b.style.display = "block";
+    b.innerHTML = "Opened as a local file, so this page can read nothing - browsers block file reads from <code>file://</code>. " +
+                  "The Dashboard is always live and needs the bundled server: ask your Agent to run <code>^dashboard</code>, or run " +
+                  "<code>python3 _Axis/Dashboard/server.py --port 8000</code> from the project root and open <code>http://127.0.0.1:8000/_Axis/Dashboard/</code>. " +
+                  "If you cannot run the server, run <code>^status</code> instead - a Status Report is the static view.";
+  }
+}
+
+async function loadAll(manual=false){
+  const reload = el("reloadButton");
+  const partial = new Set();
+  if (manual) {
+    clearTimeout(window._axisReloadFeedback);
+    reload.disabled = true;
+    reload.classList.remove("is-reloaded");
+    reload.setAttribute("aria-busy", "true");
+    reload.textContent = "Reloading…";
+  }
+  el("meta").textContent = "Refreshing…";
+  banner();
+  let completed = false;
+  try {
+    const configuration = renderConfiguration(partial);
+    const operational = collectOperationalNotices(partial);
+    await Promise.all([configuration, operational, renderMindset(partial), renderStatus(partial), renderReminders(partial), renderFollowups(partial), renderAgentActivity(partial), renderPlan(partial), renderAgents(partial), renderTasks(partial),
+                       renderIdeas(partial), renderNotes(partial), renderWiki(partial), renderLogs(partial), renderProject(partial), renderMetrics(partial)]);
+    renderDashboardStatus(await configuration, await operational);
+    completed = true;
+  } finally {
+    const stamp = new Date().toLocaleString();
+    el("meta").textContent = (partial.size || !completed ? "Partial Refresh on: " : "") + stamp;
+    if (manual) {
+      reload.disabled = false;
+      reload.setAttribute("aria-busy", "false");
+      if (completed) reload.classList.add("is-reloaded");
+      else reload.classList.remove("is-reloaded");
+      reload.textContent = completed ? "Reloaded ✓" : "Reload failed";
+      window._axisReloadFeedback = setTimeout(() => {
+        reload.classList.remove("is-reloaded");
+        reload.textContent = "Reload";
+      }, 1800);
+    }
+  }
+}
+window._axisTimer = setInterval(loadAll, 30000);   // always live - a Dashboard that is not refreshing is a Status Report
+loadAll();
+</script>
+</body>
+</html>
