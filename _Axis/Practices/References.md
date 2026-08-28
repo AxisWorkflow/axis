@@ -28,6 +28,7 @@ An Axis Reference is an internal pointer to another file (and optionally a secti
 | [Detect-Capabilities], [Resources > Detect-Capabilities] | `_Axis/Resources/Detect-Capabilities.md` |
 | [Draft-Mindset], [Resources > Draft-Mindset] | `_Axis/Resources/Draft-Mindset.md` |
 | [Lock-File], [Resources > Lock-File] | `_Axis/Resources/Lock-File.md` |
+| [Load-Project-Overlay], [Resources > Load-Project-Overlay] | `_Axis/Resources/Load-Project-Overlay.md` |
 | [Refresh-Project-README], [Resources > Refresh-Project-README] | `_Axis/Resources/Refresh-Project-README.md` |
 | [Start-Project], [Resources > Start-Project] | `_Axis/Resources/Start-Project.md` |
 | [Start-External], [Resources > Start-External] | `_Axis/Resources/Start-External.md` |
@@ -53,4 +54,4 @@ Rules of use:
 
 ## Axis User Manual Boundary
 
-The Axis User Manual at [Axis README] is explanatory, never operational authority. Session Start and ordinary work do not load it. Load one relevant section only when User requests it through `^help` or when the shipped Command, Practice, and Rule set leaves a genuine ambiguity and the host establishes a high-capability frontier Main Agent. External Agents and Subagents do not use the manual as a fallback. Development Mode follows its own protocol and loads the complete manual for maximal implementation context.
+The Axis User Manual at [Axis README] is explanatory, never operational authority. Session Start and ordinary work do not load it. Load one relevant section only when User requests it through `^help` or when the shipped Command, Practice, and Rule set leaves a genuine ambiguity and the host establishes a high-capability frontier Main Agent. External Agents and Subagents do not use the manual as a fallback. A validated project overlay may add bounded project guidance, but it does not change this manual boundary.

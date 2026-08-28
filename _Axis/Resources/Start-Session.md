@@ -92,7 +92,7 @@ Perform both phases quietly BEFORE the banner, greeting, or any project setup be
 
 ### Phase B - Commit readiness
 
-1. Quietly delete `_Axis/Flags/dev-mode` if it exists. A normal Axis session never inherits Development Mode from an earlier conversation (if deletion is blocked, follow [Rules > HostAndMeta > Deletion Fallback]).
+1. Quietly delete `_Axis/Flags/project-overlay` if it exists. A new normal session never inherits an overlay result from an earlier session; identity is revalidated only after the normal banner and greeting (if deletion is blocked, follow [Rules > HostAndMeta > Deletion Fallback]).
 2. Write `_Axis/Flags/session-id` as exactly your Session ID on Line 1 and a current UTC timestamp on Line 2. READ it back: Line 1 must match, Line 2 must be a valid timestamp not earlier than the Session ID, and `mtime` must be under 60 seconds. On failure, leave `starting` set, do not print the banner or greet, name the path to User, and STOP.
 3. Delete `_Axis/Flags/starting`; if deletion is blocked, follow [Rules > HostAndMeta > Deletion Fallback]. This must be the last write of the startup protocol before the banner.
 4. READ `_Axis/Flags/starting` again: only missing or Line 1 `cleared` passes. READ `session-id` once more and require the same valid state. If either check fails, do not print the banner or greet; warn User and STOP. No startup write follows this final read-back.
@@ -102,14 +102,14 @@ Perform both phases quietly BEFORE the banner, greeting, or any project setup be
 1. Only after both Step 3 phases pass, construct the completion response. First check the conversation above: if the host suppressed the loading notice, begin with that notice verbatim from the entry-point file. Then print this Session ID banner exactly once, substituting the validated Session ID:
 
 ```
--------------------------------------
+------------------------------------
 
     *
 <  . .  >     The Axis Workflow
     -
     
 Session ID: {yyyy.mm.dd.hh.mm.ss.xxxZ}
--------------------------------------
+------------------------------------
 
 ```
 
@@ -136,7 +136,12 @@ User response-shape instructions such as `reply exactly`, `nothing else`, or an 
 	- Follow only those elements from direct parent that do not conflict with child.
 	- Never search farther upward for another parent.
 
-## Step 6: Setup Project (if necessary)
+## Step 6: Load Project Overlay (if declared)
+
+1. Only after the normal Session Start completion boundary and direct-parent detection above, follow `_Axis/Resources/Load-Project-Overlay.md`.
+2. An absent declaration returns silently. A valid declaration loads its project guidance and caches the validated result for this normal Main session. A failed declaration leaves ordinary Axis active but cannot enable partial overlay behavior.
+
+## Step 7: Setup Project (if necessary)
 
 1. Quietly read `_Axis/Flags/project-ready` under [Practices > Flags > Reading Flags]. The only valid set value is a UTC timestamp; missing, blank, malformed, or `cleared` is absent.
 2. If the Flag is absent:

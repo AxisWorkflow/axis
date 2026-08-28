@@ -14,7 +14,7 @@ A Flag is a persistent file that records durable workflow state. A Flag remains 
 | `skip-wiki` | per-project | `{yyyy.mm.dd.hh.mm.ss.xxxZ}` | - |
 | `starting` | per-session | `{yyyy.mm.dd.hh.mm.ss.xxxZ}` | < 2 minutes while startup is in flight |
 | `session-id` | per-session | `{yyyy.mm.dd.hh.mm.ss.xxxZ}` | < 60 seconds for the post-start completion check |
-| `dev-mode` | per-session | `{yyyy.mm.dd.hh.mm.ss.xxxZ}` | - |
+| `project-overlay` | per-session | `{yyyy.mm.dd.hh.mm.ss.xxxZ}` | current Session ID on Line 1; validation timestamp, overlay ID, and declared path on Lines 2-4 |
 | `promote` | per-session | `{yyyy.mm.dd.hh.mm.ss.xxxZ}` | < 10 minutes while a promotion awaits its trusted-surface approval |
 | `model` | per-session | model name or `unknown` | - |
 | `host-spawn` | per-session | `yes` or `no` | - |
@@ -36,7 +36,7 @@ The lifetime decides whether a Flag is committed: per-project state is committed
 - `skip-wiki` - User declined or deferred Wiki setup. Set by [Start-Project]; checked by [Start-Wiki].
 - `starting` - Session Start is in flight (an in-flight lock; body = the Session ID). Set by the entry-point files; refreshed (`mtime` touch) as [Start-Session] runs; deleted or cleared only after the startup-artifact gate passes and as the final startup write before the Session ID banner and greeting; treated as stale after 2 minutes.
 - `session-id` - Session identity and completion. Line 1 = the Session ID (the timestamp printed in the successful-completion Session ID banner; it also names the Main Marker); Line 2 = a UTC timestamp, refreshed on session resume and by `^save` (so `mtime` reads as last activity). Written and read back by [Start-Session] after all startup artifacts validate, then verified again after `starting` is released and before the banner; compared BY VALUE - never by age - by the entry-point resume ladder.
-- `dev-mode` - Development Mode for this Session only. Line 1 = the Development Session ID printed by `^dev`; Line 2 = enabled timestamp. On a non-new conversation, the entry-point Development Mode fast path delegates recovery to `^dev`'s Continuation rules instead of Session Start. The Development procedures treat it as active only when that ID is visible in the current conversation, and every development-only command verifies the Flag before it acts. A brand-new conversation ignores this Flag; normal [Start-Session] clears it.
+- `project-overlay` - cache for one overlay validated by [Load-Project-Overlay] in this normal Main session. Line 1 = current Session ID; Line 2 = validation timestamp; Line 3 = exact declared overlay ID; Line 4 = exact declared project-root-relative path. The Resource revalidates `_Axis/PROJECT.md`, the overlay file, `session-id`, and the Main Marker before writing or applying it. Existence, age, or content of this Flag alone never grants project identity, role, command availability, or authority. A fresh [Start-Session] clears it before optional reactivation.
 - `model` - the running model's name as reported by the host. Written by [Start-Session]; shown on the Dashboard and used to resolve `same-as-host`.
 - `host-spawn` - written by [Start-Session] and set to `no` on a failed spawn.
 - `host-parallel` - written by [Start-Session].

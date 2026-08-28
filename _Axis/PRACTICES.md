@@ -19,7 +19,7 @@
 - [Practices > Agents] - Full operating detail for all Agents, plus the Host Harness.
   *Load when you are a Subagent or an External Agent, or before coordinating roles, spawns, or parallel work.*
 
-- [Practices > OpenClaw] - Identity, persona files, and conduct on the OpenClaw host.
+- [Practices > OpenClaw] - Thin-harness policy for channels, agents, cron, tools, and disabled Host memory/persona layers.
   *Load when running under an OpenClaw Agent Harness - every Agent on that host follows it.*
 
 - [Practices > Tracking] - Append-only activity telemetry: who doing what, right now.

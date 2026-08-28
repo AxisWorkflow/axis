@@ -53,7 +53,7 @@
 - `_Axis/CLA.md` - Canonical Contributor License Agreement and Copyright Assignment.
 - `_Axis/CONTRIBUTING.md` - Contribution intake policy and CLA gate.
 - `_Axis/LICENSE` - Canonical FSL-1.1-MIT License and trademark notice for Axis-authored Workflow files.
-- `_Axis/README.md` - Canonical Axis User Manual; explanatory and lazy-loaded outside Development Mode.
+- `_Axis/README.md` - Canonical Axis User Manual; explanatory and lazy-loaded during ordinary operation.
 - `_Axis/DIRECTIVES.md`
 - `_Axis/ENVIRONMENT.md`
 - `_Axis/GLOSSARY.md`
@@ -174,6 +174,7 @@
 - `_Axis/Resources/Detect-Capabilities.md`
 - `_Axis/Resources/Draft-Mindset.md`
 - `_Axis/Resources/Lock-File.md`
+- `_Axis/Resources/Load-Project-Overlay.md`
 - `_Axis/Resources/Refresh-Project-README.md`
 - `_Axis/Resources/secrets-capsule.sh` - optional encrypted Secrets transport helper.
 - `_Axis/Resources/Start-External.md`

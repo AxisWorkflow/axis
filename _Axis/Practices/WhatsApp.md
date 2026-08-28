@@ -2,24 +2,23 @@
 > **Purpose:** Protocols to set up messaging between WhatsApp and an OpenClaw agent. OpenClaw must already be installed and its onboard process completed before you can set up text messaging with WhatsApp.
 
 ## Enable WhatsApp
-> **Purpose:** Enable the WhatsApp channel in OpenClaw. Run this section ("Enable WhatsApp") just **one time** per machine - if WhatsApp is already enabled, SKIP this section.
+> **Purpose:** Enable the WhatsApp channel in the selected Axis OpenClaw profile. Run this section once per profile - if WhatsApp is already enabled there, SKIP its linking steps.
 
-**Tell User what is about to happen, before starting.** In your own words: this connects WhatsApp to this computer once, and every project on it reuses the same connection afterwards. They will need a second phone number - the bot's number - with its own WhatsApp account, kept separate from their personal one; that is the number their projects will speak through. Three things need User: getting that number, logging this computer into its WhatsApp account, and sending one message from their own phone so the bot can recognize them as its owner. Everything else is setup you handle. Say roughly how long it will take and that it is one-time, then begin.
+**Tell User what is about to happen, before starting.** In your own words: this connects WhatsApp to the selected OpenClaw profile, and Axis projects on that profile reuse the connection. They will need a second phone number - the bot's number - with its own WhatsApp account, kept separate from their personal one; that is the number their projects will speak through. Three things need User: deciding whether the Gateway is Axis-only or needs a dedicated `axis` profile, getting that number, and logging the profile into its WhatsApp account plus sending one message from their own phone so the bot can recognize them as its owner. Everything else is setup you handle. Say roughly how long it will take and that linking is one-time per profile, then begin.
 
-- **Check whether this is already done.** Enablement is a fact about the OpenClaw installation on this machine, not durable workflow state, so ask OpenClaw rather than recording a Flag: OpenClaw can be re-linked, unpaired, or reinstalled without Axis ever hearing about it, and a Flag would then assert something false. Run both commands. WhatsApp is already enabled when the channel reports linked and connected AND the Owner list carries a `whatsapp:` entry - if both hold, SKIP to **Harden an already-enabled install** at the end of this section. If only one holds, enablement is half-finished: work through the section, which is safe to re-run.
+- **Select and preserve the Axis profile.** Follow [Practices > OpenClaw > Schema-Adaptive Hardening] before any onboarding or channel change. If the existing Gateway also serves non-Axis agents, propose a dedicated `axis` profile and obtain approval for its separate state, port/service, and channel login. Run every command below against that same selected profile; do not switch profiles mid-procedure or apply Axis hardening to unrelated agents. The examples omit a profile flag for readability: when a named profile is selected, insert `--profile <AXIS_PROFILE>` immediately after `openclaw` in every command and derive any state location from that profile's `openclaw config file` result rather than `~/.openclaw`.
+
+- **Check whether this is already done.** Enablement is a fact about the selected OpenClaw profile, not durable workflow state, so ask OpenClaw rather than recording a Flag: OpenClaw can be re-linked, unpaired, or reinstalled without Axis ever hearing about it, and a Flag would then assert something false. Run both commands against the selected profile. WhatsApp is already enabled when the channel reports linked and connected AND the Owner list carries a `whatsapp:` entry - if both hold, SKIP to **Harden an already-enabled install** at the end of this section. If only one holds, enablement is half-finished: work through the section, which is safe to re-run.
 
   `openclaw channels status`
 
   `openclaw config get commands.ownerAllowFrom`
 
-- Confirm that the OpenClaw installation and onboarding process is complete:
+- Confirm that the OpenClaw installation and onboarding process is complete. Onboarding may offer memory, skills, persona, heartbeat, and other assistant features; decline those optional layers for the Axis profile. It does not replace the hardening readback below:
 
   `openclaw onboard`
 
-- **Skip future bootstraps.**
-  OpenClaw will seed six template files into your project folder if it keeps trying to complete the bootstrap process. OpenClaw persona files are not needed and are overridden by Axis, so you can skip bootstrapping with this command:
-
-  `openclaw config set agents.defaults.skipBootstrap true`
+- **Apply the thin-harness baseline.** Follow [Practices > OpenClaw > Schema-Adaptive Hardening] against the live schema. This preserves `AGENTS.md` while disabling optional bootstrap/persona files, non-Axis bootstrap hooks, memory search and plugins, session-memory capture, inferred commitments, dreaming, generic heartbeat, default skills, and broad tools. Do not copy a fixed config key from this Practice merely because one release used it.
 
 - **Link a dedicated WhatsApp account to OpenClaw.**
   Instruct the User to obtain a separate phone number (the "bot number") and establish a WhatsApp account with it for OpenClaw to use. That phone number is separate from the WhatsApp phone number/account used by the User. When User is ready and is running WhatsApp with the bot number, you can add yourself (this OpenClaw "device") to the account by following this command:
@@ -30,10 +29,7 @@
 
   `openclaw channels status`
 
-- **Enable tools for outbound messaging.**
-  The current session will not see the new tools, so you need to start a new session and then continue (but you do NOT need to restart the OpenClaw gateway).
-
-  `openclaw config set tools.profile full`
+- **Verify the outbound messaging tool.** Session Start needs the narrow outbound messaging surface to deliver its early loading notice. Confirm that the effective Axis-agent allowlist includes messaging/session-send without broadening it to `tools.profile: full`. A current session may need to restart before it sees the revised surface.
 
 - **Do NOT set `plugins.allow`.** OpenClaw prints "plugins.allow is empty; may auto-load" on unrelated commands and invites you to silence it by trusting the plugin. Do not: setting it broke model resolution outright on a measured run, and the damage surfaces later and looks like an unrelated problem. The warning is cosmetic. See **Harden an already-enabled install** below for the evidence.
 
@@ -51,13 +47,13 @@
 
 ### Harden an already-enabled install
 
-Arrive here either by working through the section above or by skipping it. The skip is the point: a machine that enabled WhatsApp before this Practice existed satisfies the enablement check on its first line and would otherwise never receive the hardening steps buried in the middle of it. Those steps are cheap, idempotent, and easy to leave undone forever. Run these two checks every time, skip or no skip.
+Arrive here either by working through the section above or by skipping it. The skip is the point: a profile that enabled WhatsApp before this Practice existed may satisfy the channel check while still carrying persona, memory, heartbeat, skills, or unrestricted tools. Run the targeted hardening audit every time, skip or no skip.
 
 - **Plugin trust - do NOT set `plugins.allow`, despite what the warning says.** An empty `plugins.allow` lets discovered plugins auto-load and prints "plugins.allow is empty; may auto-load" on unrelated commands. That warning is cosmetic. Acting on it is not: setting `plugins.allow` to `["whatsapp"]` on OpenClaw 2026.7.1-2 left the model unresolvable (`Unknown model: claude-cli/claude-opus-5 ... no matching models.providers["claude-cli"].models[] entry`) and a freshly registered agent could not run at all, while agents with an established session binding kept working - so the breakage looks partial and arrives later than the change. `openclaw config unset plugins.allow` restored it immediately and the identical probe then booted in full (measured 2026-08-06, both directions). `plugins.allow` is an allowlist over more than the plugin named in the warning. Leave it unset unless you are prepared to re-run the boot probe for every agent afterwards and revert the moment one fails.
 
-- **Outbound tools.** Session Start delivers the early loading notice to the channel explicitly ([Practices > OpenClaw]); the validated Session ID banner rides the final greeting. The early notice needs the full tool profile. Confirm it, and set it if absent - a session already running will not see new tools until it restarts.
+- **Thin-harness audit.** Follow `^audit openclaw` read-only. If it reports `Degraded` or `Unverified`, preview and obtain approval for `^install openclaw` to apply only the resolved semantic controls in [Practices > OpenClaw]. Do not authenticate, mutate, restart, move legacy files, or erase old state merely because the audit found it.
 
-  `openclaw config get tools.profile`
+- **Outbound tools.** Session Start delivers the early loading notice to the channel explicitly ([Practices > OpenClaw]); the validated Session ID banner rides the final greeting. Confirm the effective tool surface includes the narrow messaging/session-send capability and explicitly does not use `tools.profile: full`. A session already running may not see a changed policy until it restarts.
 
 ## Pair a WhatsApp Group
 > **Purpose:** Register an OpenClaw Agent to receive/send via a WhatsApp Group. You must first enable WhatsApp (see section above) before you can pair a particular Agent to a WhatsApp group (the purpose of this section).
@@ -123,14 +119,7 @@ Arrive here either by working through the section above or by skipping it. The s
 
   `openclaw gateway restart`
 
-- Have User send ONE message **in** the new group, then read the group's JID from the raw log. Only a message sent AFTER the window opened will appear. Take the JID from this log and nowhere else - the two commands that look like they would list it both mislead, and **Traps** below says how.
-    ```
-    grep -o '"from":"[0-9]*@g\.us"' ~/.openclaw/tmp/openclaw-*/openclaw-$(date +%F).log | tail -1
-    ```
-    If more than one group is live on this gateway, `tail -1` can return the wrong one. List the distinct JIDs seen today and confirm which is new:
-    ```
-    grep -o '"from":"[0-9]*@g\.us"' ~/.openclaw/tmp/openclaw-*/openclaw-$(date +%F).log | sort -u
-    ```
+- Start the selected profile's Gateway log stream with `openclaw logs --follow --json --no-color`, then have User send ONE message **in** the new group. Stop the stream as soon as the new inbound event arrives and take the group JID from that event's `from` field ending `@g.us`. Only a message sent AFTER the window opened will appear. Do not paste or save the raw event in Axis - it may contain phone numbers, message content, and channel identifiers. If several groups are active, compare the distinct new `from` values and use the event's `to` field only to confirm which bot account received it; ask User when still ambiguous. The two commands that look like they would list the group can mislead, and **Traps** below explains them.
 
 - Lock down and bind the sender gate. This takes sender numbers, not group IDs - putting a JID here silently drops every message. Like the two gates below it, this key is gateway-wide and `config set` replaces the whole array, so READ it first:
     ```
@@ -176,10 +165,7 @@ Arrive here either by working through the section above or by skipping it. The s
 
    `openclaw gateway restart`
 
-- Confirm that OpenClaw is Listening for WhatsApp inbound messages. The listener line names the gate that is wrong: "blocked by empty groupPolicy allowlist" means the Policy gate is set to `allowlist` while nothing is allowlisted; "sender allowlist configured" means the sender gate holds non-sender values (a JID sitting where a phone number belongs); "all groups" or "no group allowlist configured" means the Group gate is unset; "DM + N configured group(s)" is correct.
-  ```
-    grep -o '"message":"Listening for WhatsApp[^"]*"' ~/.openclaw/tmp/openclaw-*/openclaw-$(date +%F).log | tail -1
-  ```
+- Confirm that OpenClaw is Listening for WhatsApp inbound messages by reading the selected profile's recent stream with `openclaw logs --json --limit 200 --no-color` and locating the newest WhatsApp listener event without quoting its identifiers. The listener line names the gate that is wrong: "blocked by empty groupPolicy allowlist" means the Policy gate is set to `allowlist` while nothing is allowlisted; "sender allowlist configured" means the sender gate holds non-sender values (a JID sitting where a phone number belongs); "all groups" or "no group allowlist configured" means the Group gate is unset; "DM + N configured group(s)" is correct.
 
 - **Pre-warm the group's own session before User ever writes to it.** The probe above booted a session; it did not boot THIS one, and each session boots on its own. Boot the group session directly by naming its exact session key - the same key the channel will use - so the Workflow is already running when User's first message lands. Omit `--deliver`: nothing is sent to the group.
 
@@ -194,17 +180,9 @@ Arrive here either by working through the section above or by skipping it. The s
 
 - Ask User in the group to send a message asking Agent to return something that confirms access to the project (e.g., a note from, or a fact about, the project). Confirm with User that Agent responded correctly. The reply should come back promptly now - the pre-warm already paid the 30-to-60-second startup cost. Do not coach User on what to write: if a plain question fails to reach a booted Workflow, that is a defect to surface, not to paper over.
 
-- Confirm the **correct** agent handled the message - not merely that a reply went out. Expect a key of the form `agent:<agent-id>:whatsapp:group:<GROUP_JID>`:
-  ```
-  python3 -c "import json; print(list(json.load(open('$HOME/.openclaw/agents/<agent-id>/sessions/sessions.json')).keys()))"
-  ```
-  Finding the key under the agent you expected is only half the answer: it proves that agent handled A message, not that no other agent also woke. Check the agents you did NOT bind and confirm none of them holds a session for this JID:
-  ```
-  for a in $(openclaw agents list | grep -o '^- [a-z0-9-]*' | cut -d' ' -f2); do
-    f="$HOME/.openclaw/agents/$a/sessions/sessions.json"
-    [ -f "$f" ] && echo "$a: $(python3 -c "import json;print([k for k in json.load(open('$f')) if '<GROUP_JID>' in k])")"
-  done
-  ```
+- Confirm the **correct** agent handled the message - not merely that a reply went out. Resolve the selected profile's private state root from `openclaw config file` without reporting it, then inspect only the session-key names in that profile's per-agent session indexes. Require the exact expected key shape `agent:<agent-id>:whatsapp:group:<GROUP_JID>` under the bound agent. Return only PASS/FAIL to User; do not print the session keys or state path.
+
+  Finding the key under the expected agent is only half the answer: it proves that agent handled a message, not that no other agent also woke. Enumerate the selected profile's registered agent IDs, inspect each other agent's session-key names, and require no match for `<GROUP_JID>`. Do not read transcript bodies. A match under any other agent is a routing failure: close the Policy gate, report the conflicting agent ID only, and fix the binding before continuing.
 
 - **Confirm the Agent actually booted the Workflow - a correct answer does not prove it.** A right reply proves routing and workspace access; it does not prove Session Start ran. An Agent can read a project file and answer from it without ever entering the Workflow (observed 2026-08-06: a correct canary answer, cwd correct, and not one Session Start artifact on disk). Check the workspace for boot evidence:
   ```
@@ -272,9 +250,10 @@ This Practice runs rarely, so nothing here should depend on remembering it. Read
 - `openclaw directory groups list` reports "No groups found" even for working
   groups. Don't use it to discover JIDs - use the log.
 
-- `openclaw channels logs --channel whatsapp` hides group traffic. Group inbound
-  logs under module web-inbound, not gateway/channels/whatsapp/inbound. Read
-  the raw file at `~/.openclaw/tmp/openclaw-*/openclaw-<date>.log`.
+- `openclaw channels logs --channel whatsapp` may hide group traffic. Group inbound
+  logs under module web-inbound, not gateway/channels/whatsapp/inbound. Use the
+  selected profile's `openclaw logs --follow --json --no-color` stream instead
+  of assuming the default profile's raw log path.
 
 - `tail -1` returns the most recent group, not necessarily yours. On a gateway
   with several live groups, list distinct JIDs with `sort -u` and identify the

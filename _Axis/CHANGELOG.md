@@ -1,7 +1,7 @@
 # Changelog
 > **Purpose:** Record Axis release identity and the structural migrations needed to update an existing project safely.
 
-current-version: 26.08.26-2
+current-version: 26.08.28
 changelog-format: 1
 self-update-baseline: 26.08.19
 
@@ -9,7 +9,7 @@ self-update-baseline: 26.08.19
 
 `current-version` is the installed Axis release and uses the full release tag without its leading `v`. `changelog-format` versions this document's update contract. `self-update-baseline` remains `pending` until the first release that ships both this file and `^update`; at that publication it becomes that release's full version.
 
-Development Mode records every upgrade-relevant structural change under `Unreleased` in the same pass as the change. At publication, `^pub` moves that material into a new immutable release section, updates `current-version`, sets the baseline when still pending, and recreates the empty headings under `Unreleased`.
+The RSI Controller records every upgrade-relevant structural change under `Unreleased` in the same pass as the change. At publication, `^pub` moves that material into a new immutable release section, updates `current-version`, sets the baseline when still pending, and recreates the empty headings under `Unreleased`.
 
 Published release sections use an exact `## {version}` heading and the following stable subsections. `^update` reads applicable sections from oldest to newest. Paths are project-root-relative and literal.
 
@@ -22,7 +22,7 @@ Each release carries `update-impact: automatic`, `review`, or `manual`. `automat
 
 ## Unreleased
 
-update-impact: review
+update-impact: automatic
 
 ### Structural Changes
 
@@ -31,6 +31,38 @@ update-impact: review
 ### Retired Paths
 
 ### Verification
+
+## 26.08.28
+
+released: 2026-08-28
+update-impact: review
+
+### Structural Changes
+
+- Added a production-safe project-overlay mechanism that runs only after ordinary Main Session Start succeeds. `_Axis/PROJECT.md` may declare one bounded overlay file; [Load-Project-Overlay] revalidates that declaration, file identity, current normal Session ID, and Main lease before writing a per-session `project-overlay` cache. The cache alone grants no role, project identity, command, or authority.
+- Converted the Axis development repository to an RSI Controller project. Its overlay maps exactly `^benchmark`, `^compile`, `^eval`, `^pub`, and `^test` to development-only files while retaining the root `_Axis/` tree as the sole Controller state and WORM record plane.
+- Made all three entry files use the same generic project-overlay continuation hook. Ordinary projects with no declaration remain silent and unchanged; External Agents and Subagents never load a Main overlay.
+- Recast OpenClaw as an optional thin channels-and-orchestration harness. [Practices > OpenClaw] now keeps channels, exact routing, agent/session lifecycle, directed message delivery, explicit cron, operational transcripts, and required runtime tools while disabling Host persona/bootstrap files and instruction-injection hooks, semantic memory/search, memory plugins and hooks, inferred commitments, dreaming, generic heartbeat, default skills, wildcard agent messaging, and unrestricted tools.
+- Added a schema-adaptive `^install openclaw` route. It distinguishes Axis-only from mixed Gateways, prefers a dedicated `axis` profile for mixed use, resolves every semantic control against the installed CLI schema, previews and dry-runs a secret-free patch, requires bounded Host-mutation approval, validates readback, and boot-probes without making OpenClaw a dependency.
+- Added targeted `^audit openclaw` with `Ready`, `Degraded`, and `Unverified` outcomes. The audit reads only non-secret controls and legacy-path existence, distinguishes disabled memory from erased old state, and never authenticates, restarts, sends a probe, reads memory/persona content, or changes the Host.
+- Updated WhatsApp setup to harden the selected Axis profile before pairing, preserve its required channel/provider plugins, require the narrow messaging surface for startup notices, and retire the `tools.profile: full` recommendation.
+
+### Project-State Migrations
+
+- The Axis development repository adds the exact project-overlay declaration and RSI Controller file, records `project-ready`, and preserves its existing `_Axis/` project state. Ordinary User projects add no declaration and activate no overlay. `^update` preserves an existing declaration and declared project file without loading either during the update; the mandatory fresh session revalidates them.
+- Retire any stale per-session `dev-mode` Flag when adopting this release. The generated ignore contract now owns `project-overlay` instead. Do not infer an overlay from `_Dev/` presence, a Flag, a repository name, or any other heuristic.
+- Existing OpenClaw integrations require review. Decide whether the current Gateway is Axis-only or mixed; a mixed Gateway should move Axis agents to a dedicated profile before hardening so unrelated agents remain unchanged.
+- Existing project-root `SOUL.md`, `IDENTITY.md`, `USER.md`, `MEMORY.md`, `memory/`, `DREAMS.md`, `HEARTBEAT.md`, `BOOTSTRAP.md`, and `TOOLS.md` are never read or removed automatically. With User approval, move selected paths intact to `_Trash/OpenClaw-Legacy/{timestamp}/`; User separately decides archive or purge for old OpenClaw profile state, indexes, and transcripts.
+
+### Retired Paths
+
+- Retired `_Dev/Commands/dev.md`, the `^dev` command, the `dev-mode` Flag, and the entry-point bypass that formerly replaced normal Session Start. The RSI Controller is now a validated post-start project overlay.
+- Retired OpenClaw persona and memory files as supported Axis overlays. Axis identity, instructions, mindset, User/project facts, and durable memory now live only in the existing Axis project files and records.
+
+### Verification
+
+- The RSI Controller regression contract verifies fresh activation after normal Session Start, same-session continuation with full revalidation, silence in a clean non-RSI project, fail-closed malformed or mismatched declarations, exact five-command dispatch, updater preservation without execution, synchronized entry files, and zero development-only material in a production release.
+- The OpenClaw Thin Harness regression contract verifies live-schema adaptation, preserved `AGENTS.md` injection, layered memory/persona shutdown, least-privilege tools, exact Request-first messaging, explicit cron with portable intent, bounded operational sessions, reversible legacy handling, targeted audit behavior, WhatsApp hardening, and the absence of any active `tools.profile: full` recommendation.
 
 ## 26.08.26-2
 

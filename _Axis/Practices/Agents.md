@@ -81,7 +81,7 @@ The stale-lock sweep in Session Start does not acquire target files, but it MUST
 
 ## Host Harness
 
-A Host Harness (or just "host") is the agent harness on which Axis runs - e.g., Cowork, Claude Code, Cursor, or a local Ollama session. Most host harnesses provide their own task trackers, memory features, artifact stores, and scheduling tools. The Axis Workflow does not suppress those - it uses them, but at different layers.
+A Host Harness (or just "host") is the agent harness on which Axis runs - e.g., Cowork, Claude Code, Cursor, OpenClaw, or a local Ollama session. Most host harnesses provide their own task trackers, memory features, artifact stores, and scheduling tools. Axis uses only the layers its Host-specific Practice permits; an integration may deliberately disable a competing memory or personality layer.
 
 **Principle:**
 
@@ -91,7 +91,7 @@ Axis owns the canonical, persistent, portable layer. The host harness owns the e
 
 - **Host task trackers:** `_Axis/TASKS.md` is canonical. Use the host's widget for in-session step tracking; update Axis Tasks at meaningful checkpoints, not on every host-task transition.
 
-- **Host memory:** `_Axis/Notes/` is canonical. Write to host memory opportunistically for in-host continuity, but always read from Axis Notes on session start. Periodically dump useful host-memory facts into Axis Notes so they survive a host switch.
+- **Host memory:** `_Axis/Notes/` is canonical. Use a Host memory feature only when its integration Practice permits it, and copy every durable fact into the owning Axis record. [Practices > OpenClaw] forbids OpenClaw memory, search, personality, and background-consolidation layers entirely; same-session transcripts and compaction remain Host mechanics, not memory.
 
 - **Host artifacts:** Project Subfolders are canonical for persistent deliverables (see [Practices > Folders]). Use host artifacts freely for interactive or live views; when an artifact represents something the User will want to keep, also save the source into the appropriate Project Subfolder.
 

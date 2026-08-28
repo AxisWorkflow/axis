@@ -57,7 +57,7 @@ _Axis/Tracking/*
 # BEGIN GENERATED: flag-ignore
 _Axis/Flags/starting
 _Axis/Flags/session-id
-_Axis/Flags/dev-mode
+_Axis/Flags/project-overlay
 _Axis/Flags/promote
 _Axis/Flags/model
 _Axis/Flags/host-spawn
