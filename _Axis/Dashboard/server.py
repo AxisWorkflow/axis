@@ -74,7 +74,10 @@ class DeniedPath(ValueError):
 
 def normalize_request_path(target: str) -> tuple[tuple[str, ...], bool]:
     """Return decoded path components and whether the URL requested a directory."""
-    raw = urlsplit(target).path
+    parsed = urlsplit(target)
+    if parsed.scheme or parsed.netloc or parsed.fragment or target.startswith("//"):
+        raise DeniedPath("only origin-form request paths are accepted")
+    raw = parsed.path
     if len(raw) > 4096 or not raw.startswith("/"):
         raise DeniedPath("invalid request path")
 
@@ -200,6 +203,20 @@ def visible_directory_entries(root: Path, parts: tuple[str, ...]) -> list[tuple[
 
 class AxisDashboardHandler(BaseHTTPRequestHandler):
     server_version = "AxisDashboard/1"
+
+    def parse_request(self) -> bool:
+        if not super().parse_request():
+            return False
+        # Loopback binding alone does not constrain the browser's HTTP origin.
+        # Reject duplicates as well as comma-joined authorities; never resolve DNS.
+        hosts = self.headers.get_all("Host", [])
+        if len(hosts) != 1:
+            self.send_error(400, "one Host header is required")
+            return False
+        if hosts[0].lower() not in self.server.allowed_authorities:
+            self.send_error(403, "unsupported Dashboard authority")
+            return False
+        return True
 
     @property
     def project_root(self) -> Path:
@@ -328,6 +345,7 @@ class AxisDashboardHandler(BaseHTTPRequestHandler):
 class AxisDashboardServer(ThreadingHTTPServer):
     daemon_threads = True
     project_root: Path
+    allowed_authorities: set[str]
 
 
 class AxisDashboardServerV6(AxisDashboardServer):
@@ -348,6 +366,11 @@ def create_server(bind: str, port: int, root: Path) -> AxisDashboardServer:
     server_class = AxisDashboardServerV6 if address.version == 6 else AxisDashboardServer
     server = server_class((bind, port), AxisDashboardHandler)
     server.project_root = root
+    actual_port = server.server_address[1]
+    host = f"[{address.compressed}]" if address.version == 6 else address.compressed
+    server.allowed_authorities = {f"{name}:{actual_port}" for name in (host, "localhost")}
+    if actual_port == 80:
+        server.allowed_authorities.update({host, "localhost"})
     return server
 
 

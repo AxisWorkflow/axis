@@ -9,4 +9,4 @@
 
 4. Consider the new Note in the context of the project (see [Practices > Notes]): if it implies something important, surface that with User and suggest how to incorporate it.
 
-5. If the active count now exceeds [Settings > Max Notes], follow [Practices > Archiving > Automatic Note Overflow]. If any Note moves, tell User and Log one Event listing the paths and verification result. STOP.
+5. If the active count now exceeds [Settings > Max Notes], an External Agent writes a Request for Main to review overflow, reports the saved Note, and STOPs without moving any record. Main alone follows [Practices > Archiving > Automatic Note Overflow]. If any Note moves, tell User and Log one Event listing the paths and verification result. STOP.

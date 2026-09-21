@@ -171,6 +171,7 @@
 
 ### Resources
 
+- `_Axis/Resources/Claim-Session.md`
 - `_Axis/Resources/Detect-Capabilities.md`
 - `_Axis/Resources/Draft-Mindset.md`
 - `_Axis/Resources/Lock-File.md`

@@ -1,7 +1,7 @@
 # Changelog
 > **Purpose:** Record Axis release identity and the structural migrations needed to update an existing project safely.
 
-current-version: 26.08.28
+current-version: 26.09.21
 changelog-format: 1
 self-update-baseline: 26.08.19
 
@@ -26,11 +26,45 @@ update-impact: automatic
 
 ### Structural Changes
 
+- None.
+
 ### Project-State Migrations
+
+- None.
 
 ### Retired Paths
 
+- None.
+
 ### Verification
+
+- None.
+
+## 26.09.21
+
+released: 2026-09-21
+update-impact: automatic
+
+### Structural Changes
+
+- Added `_Axis/Resources/Claim-Session.md` and owned `_Axis/Flags/starting.lock/` admission. Startup rechecks foreign Mains while holding admission; initial Main/External Markers use a narrow first-Marker exception, owned timestamp claims, full-domain post-claim checks, and exclusive creation.
+- Secrets receipt verifies rollback and retains protected `_Axis/Secrets/.recovery.*/` originals if restoration fails, returning `error:recovery-required` (exit 4) and blocking subsequent Secrets mutation.
+- External Command checkpoints are read-only; Note overflow, Project README refresh, and Wiki intake remain Main-owned.
+- Dashboard Tasks has status filters, pages of 25, explicit range/total, and retained selection/focus. The server validates exactly one supported loopback Host authority against the actual port.
+
+### Project-State Migrations
+
+- Migrate admission and lock formats only with all other writers, delayed holders, schedules, and launches stopped. Stale locks and claims are findings; reclaim them only in a quiescent maintenance window. Preserve all existing record identities and bodies.
+- Preserve `_Axis/Secrets/.recovery.*/` through update, transfer, and maintenance. Never seal it into a capsule or expose its names or contents; resolve recovery on a trusted local surface before Secrets synchronization resumes.
+
+### Retired Paths
+
+- Retired age-based lock/claim theft and check-then-write startup admission. No project content path is removed.
+
+### Verification
+
+- Verify owned admission, first-Marker bootstrap, full-domain timestamp recheck, quiescent stale recovery, and Main-owned command effects, including overlay loading. Controlled schedules and negative controls are mechanical evidence, not live-host compliance.
+- Verify capsule restoration or protected recovery, hostile/duplicate/malformed Host denial including IPv4/IPv6, and crowded Task navigation. Preserve current RSI manifest gates and public release history.
 
 ## 26.08.28
 

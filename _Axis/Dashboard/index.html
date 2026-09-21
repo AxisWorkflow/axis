@@ -126,6 +126,11 @@
   #mindset { background:var(--mindset-bg); border-color:var(--mindset-line); }
   #agents { background:var(--agents-bg); border-color:var(--agents-line); }
   #plan { background:var(--plan-bg); border-color:var(--plan-line); }
+  .task-controls { display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; margin-bottom:10px; }
+  .task-controls select, .task-controls button { font:inherit; font-size:13px; color:var(--ink); background:var(--card); border:1px solid var(--line); border-radius:6px; padding:6px 10px; }
+  .task-controls button:disabled { opacity:.5; }
+  .task-controls select:focus-visible, .task-controls button:focus-visible { outline:3px solid var(--band-warn); outline-offset:2px; }
+  #taskExtent { font-size:12.5px; }
   #tasks { background:var(--tasks-bg); border-color:var(--tasks-line); }
   #ideas { background:var(--ideas-bg); border-color:var(--ideas-line); }
   #notes { background:var(--notes-bg); border-color:var(--notes-line); }
@@ -197,7 +202,15 @@
   <section class="card wide" id="wiki" style="display:none"><h2>Wiki</h2><div class="muted">loading…</div></section>
   <hr class="section-divider" aria-hidden="true">
   <section class="card wide" id="plan"><h2>Plan</h2><div class="muted">loading…</div></section>
-  <section class="card wide listcard" id="tasks"><h2>Tasks</h2><div class="muted">loading…</div></section>
+  <section class="card wide listcard" id="tasks"><h2>Tasks</h2>
+    <div class="task-controls">
+      <label for="taskFilter">Status <select id="taskFilter" onchange="changeTaskFilter(this.value)"><option value="All">All</option><option>Active</option><option>Blocked</option><option>Completed</option><option>Cancelled</option></select></label>
+      <button id="taskPrevious" type="button" onclick="changeTaskPage(-1)" aria-controls="taskRows" disabled>Previous</button>
+      <button id="taskNext" type="button" onclick="changeTaskPage(1)" aria-controls="taskRows" disabled>Next</button>
+      <span class="muted" id="taskExtent" role="status" aria-live="polite"></span>
+    </div>
+    <div class="muted" id="taskCounts"></div><div class="scrollbody" id="taskRows">loading…</div>
+  </section>
   <section class="card wide listcard" id="status"><h2>Status Report</h2><div class="muted">loading…</div></section>
 </div>
 
@@ -875,17 +888,25 @@ async function renderAgents(partial){             // Markers in _Axis/Agents/: r
   } catch(e){ markPartial(partial, "Agents"); el("agents").innerHTML = "<h2>Agents</h2><div class='muted'>" + NEEDS_SERVER + "</div>"; }
 }
 
-async function renderTasks(partial){
-  try {
-    const entries = parseTasks(await read(F.tasks));
-    if (!entries.length) { el("tasks").innerHTML = "<h2>Tasks</h2><div class='muted'>No tasks yet.</div>"; return; }
-    const order = {Active:0, Blocked:1, Completed:2, Cancelled:3};
-    const counts = ["Active","Blocked","Completed","Cancelled"]
-      .map(s => [s, entries.filter(t => t.status === s).length]).filter(([,n]) => n)
-      .map(([s,n]) => `${n} ${s}`).join(" · ");
-    entries.sort((a,b)=>(order[a.status]??9)-(order[b.status]??9));
+let taskEntries = [], taskFilter = "All", taskPage = 0;
+const TASK_PAGE_SIZE = 25;
+function changeTaskFilter(value){
+  taskFilter = ["All", "Active", "Blocked", "Completed", "Cancelled"].includes(value) ? value : "All";
+  taskPage = 0;
+  renderTaskPage();
+}
+function changeTaskPage(delta){ taskPage += delta; renderTaskPage(); }
+function renderTaskPage(){
+    const entries = taskEntries.filter(t => taskFilter === "All" || t.status === taskFilter);
+    taskPage = Math.max(0, Math.min(taskPage, Math.ceil(entries.length / TASK_PAGE_SIZE) - 1));
+    const start = taskPage * TASK_PAGE_SIZE;
+    el("taskExtent").textContent = entries.length
+      ? `Showing ${start + 1}–${Math.min(start + TASK_PAGE_SIZE, entries.length)} of ${entries.length}${taskFilter === "All" ? " tasks" : ` ${taskFilter.toLowerCase()} tasks (${taskEntries.length} total)`}`
+      : `Showing 0 of ${entries.length} tasks (${taskEntries.length} total)`;
+    el("taskPrevious").disabled = taskPage === 0;
+    el("taskNext").disabled = start + TASK_PAGE_SIZE >= entries.length;
     const items = [];
-    for (const t of entries.slice(0,25)) {
+    for (const t of entries.slice(start, start + TASK_PAGE_SIZE)) {
       let agechip = "";
       if (t.status === "Active") {                 // durable age label; amber past the 7-day staleness rule
         const updatedMs = axisTimestampMs(t.updated);
@@ -900,8 +921,21 @@ async function renderTasks(partial){
         (t.delivers && !t.delivers.includes("{{") && t.delivers !== "N/A" ? ` <span class="chip" style="font-size:11.5px">→ ${esc(t.delivers)}</span>` : "") +
         (t.status === "Blocked" && t.desc && !t.desc.includes("{{") ? `<br><span class="muted" style="font-size:12.5px">${esc(t.desc)}</span>` : "") + "</li>");
     }
-    el("tasks").innerHTML = `<h2>Tasks</h2><div class="muted" style="font-size:12.5px;margin-bottom:4px">${esc(counts)}</div><div class="scrollbody"><ul>` + items.join("") + "</ul></div>";
-  } catch(e){ markPartial(partial, "Tasks"); el("tasks").innerHTML = "<h2>Tasks</h2><div class='muted'>Could not read TASKS.md</div>"; }
+    el("taskRows").innerHTML = items.length ? "<ul>" + items.join("") + "</ul>" : "<div class='muted'>No tasks in this view.</div>";
+}
+async function renderTasks(partial){
+  try {
+    const order = {Active:0, Blocked:1, Completed:2, Cancelled:3};
+    taskEntries = parseTasks(await read(F.tasks)).sort((a,b)=>(order[a.status]??9)-(order[b.status]??9));
+    el("taskCounts").textContent = ["Active","Blocked","Completed","Cancelled"]
+      .map(s => [s, taskEntries.filter(t => t.status === s).length]).filter(([,n]) => n)
+      .map(([s,n]) => `${n} ${s}`).join(" · ");
+    renderTaskPage(); // Controls stay mounted, preserving keyboard focus across refreshes.
+  } catch(e){
+    markPartial(partial, "Tasks"); taskEntries = []; taskPage = 0;
+    renderTaskPage(); el("taskCounts").textContent = ""; el("taskExtent").textContent = "Task extent unavailable";
+    el("taskRows").innerHTML = "<div class='muted'>Could not read TASKS.md</div>";
+  }
 }
 
 async function renderIdeas(partial){

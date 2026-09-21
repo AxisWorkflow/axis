@@ -15,7 +15,7 @@ The Axis User Manual remains at `_Axis/README.md`. The Axis license remains at `
 
 ## Procedure
 
-1. Run only in one of these cases: [Start-Project] is completing setup; `^status` has saved a new report; `^save` is preparing its Snapshot checkpoint; or `^git` is about to make an outgoing checkpoint. Otherwise STOP silently. Outside Project Setup, require a valid `project-ready` Flag before changing the root README.
+1. Main Agent only. External Agents return a Request candidate to their owning Command and STOP without writing the README. Subagents return to Main without mutation. Run only in one of these cases: [Start-Project] is completing setup; `^status` has saved a new report; `^save` is preparing its Snapshot checkpoint; or `^git` is about to make an outgoing checkpoint. Otherwise STOP silently. Outside Project Setup, require a valid `project-ready` Flag before changing the root README.
 
 2. Read only public-safe project sources needed for a compact synopsis:
 	- `_Axis/PROJECT.md`: project name, Background, Deliverables, and Criteria.

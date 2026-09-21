@@ -7,7 +7,7 @@ The project root is an open workspace. The Workflow reserves three underscore-pr
 
 - Main Agent creates Project Subfolders as work is generated: when a work product has no natural home, create one with a short, clear, human-readable name (e.g., `Reports/`, `Drafts/`, `Data/`, `Research/`). Prefer a few broad Subfolders over many narrow ones. Creating a new Subfolder for new work needs no approval.
 
-- ONLY Main Agent creates, renames, merges, splits, moves, or retires Project Subfolders. Subagents never touch folder structure - they route any folder need through Main Agent. A single structure owner prevents race conditions and contention.
+- Main Agent owns creation and all restructuring of Project Subfolders. The sole External exception is create-only acquisition of the User-named content folder or root `Drafts/` needed for an allowed contribution under [Practices > Agents > External Agent]; reuse a safe existing ordinary folder, never overwrite a collision, and never rename, move, or reorganize it. All destination, Subproject, `_U`, `_X`, and dotfolder exclusions still apply. Subagents never touch folder structure - they route any folder need through Main Agent.
 
 - REORGANIZING existing content (rename, consolidate, divide, or move files between Subfolders) requires User approval first: propose the change, apply it only on a Yes.
 

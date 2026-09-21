@@ -29,6 +29,8 @@ RECEIVE_BACKUP=""
 RECEIVE_QUARANTINE=""
 RECEIVE_BINDING_BACKUP=""
 RECEIVE_BINDING_EXISTED=0
+RECEIVE_RECOVERY=""
+RECEIVE_ORIGINAL_DIGEST=""
 
 safe_error() {
   printf 'error:%s\n' "$1"
@@ -36,15 +38,20 @@ safe_error() {
 }
 
 cleanup() {
-  local path
+  local path result=$?
+  trap - EXIT
   if [ "$RECEIVE_ACTIVE" -eq 1 ] && declare -F rollback_receive >/dev/null 2>&1; then
-    rollback_receive "$RECEIVE_BACKUP" "$RECEIVE_QUARANTINE" || true
-    if [ "$RECEIVE_BINDING_EXISTED" -eq 1 ]; then
-      cp -p -- "$RECEIVE_BINDING_BACKUP" "$BINDING_FILE" || true
+    if rollback_receive "$RECEIVE_BACKUP" "$RECEIVE_QUARANTINE"; then
+      rm -rf -- "$RECEIVE_RECOVERY" || true
     else
-      rm -f -- "$BINDING_FILE"
+      # Recovery is inside ignored Secrets, never in the temporary cleanup set.
+      # Retain the backup, binding, retired originals and quarantine on any doubt.
+      printf 'error:recovery-required\n'
+      result=4
     fi
     RECEIVE_ACTIVE=0
+  elif [ -n "$RECEIVE_RECOVERY" ]; then
+    rm -rf -- "$RECEIVE_RECOVERY" || true
   fi
   for path in "${TMP_PATHS[@]:-}"; do
     [ -n "$path" ] || continue
@@ -57,6 +64,7 @@ cleanup() {
     [ -n "$INIT_CONFIG_TEMP" ] && rm -f -- "$INIT_CONFIG_TEMP"
     rm -f -- "$CONFIG_FILE" "$CAPSULE_FILE" "$BINDING_FILE"
   fi
+  exit "$result"
 }
 trap cleanup EXIT
 trap 'exit 130' HUP INT TERM
@@ -87,7 +95,7 @@ require_age() {
 
 is_reserved_name() {
   case "$1" in
-    .gitkeep|.recipient|.capsule.age|.binding|.recipient.tmp.*|.capsule.age.tmp.*|.binding.tmp.*) return 0 ;;
+    .gitkeep|.recipient|.capsule.age|.binding|.recipient.tmp.*|.capsule.age.tmp.*|.binding.tmp.*|.recovery.*) return 0 ;;
     *) return 1 ;;
   esac
 }
@@ -96,6 +104,7 @@ skip_path() {
   local base_dir=$1 path=$2 rel
   [ "$base_dir" = "$SECRETS_DIR" ] || return 1
   rel=${path#"$base_dir"/}
+  case "$rel" in .recovery.*) return 0 ;; esac
   case "$rel" in */*) return 1 ;; esac
   is_reserved_name "$rel"
 }
@@ -234,6 +243,13 @@ validate_archive() {
 }
 
 current_status() {
+  local recovery
+  for recovery in "$SECRETS_DIR"/.recovery.*; do
+    if [ -e "$recovery" ] || [ -L "$recovery" ]; then
+      printf 'recovery-required\n'
+      return 0
+    fi
+  done
   if [ ! -e "$CONFIG_FILE" ] && [ ! -e "$CAPSULE_FILE" ]; then
     printf 'disabled\n'
     return 0
@@ -280,7 +296,7 @@ seal_core() {
       --exclude='./.binding' \
       --exclude='./.recipient.tmp.*' \
       --exclude='./.capsule.age.tmp.*' \
-      --exclude='./.binding.tmp.*' -cf - . 2>"$temp/tar-error"
+      --exclude='./.binding.tmp.*' --exclude='./.recovery.*' -cf - . 2>"$temp/tar-error"
   ) | age -r "$RECIPIENT" -o "$candidate" 2>"$temp/age-error"; then
     safe_error seal-failed
   fi
@@ -323,9 +339,19 @@ copy_plain_children() {
 
 rollback_receive() {
   local backup=$1 quarantine=$2
-  mkdir -p "$quarantine"
-  move_plain_children "$SECRETS_DIR" "$quarantine" || true
-  move_children "$backup" "$SECRETS_DIR" || true
+  mkdir -p "$quarantine" || return 1
+  move_plain_children "$SECRETS_DIR" "$quarantine" || return 1
+  # Copy, do not consume the last verified backup during an attempted recovery.
+  copy_plain_children "$backup" "$SECRETS_DIR" || return 1
+  validate_tree "$SECRETS_DIR" || return 1
+  [ "$(tree_digest "$SECRETS_DIR")" = "$RECEIVE_ORIGINAL_DIGEST" ] || return 1
+  if [ "$RECEIVE_BINDING_EXISTED" -eq 1 ]; then
+    cp -p -- "$RECEIVE_BINDING_BACKUP" "$BINDING_FILE" || return 1
+    cmp -s "$RECEIVE_BINDING_BACKUP" "$BINDING_FILE" || return 1
+  else
+    rm -f -- "$BINDING_FILE" || return 1
+    [ ! -e "$BINDING_FILE" ] || return 1
+  fi
 }
 
 receive_core() {
@@ -338,6 +364,7 @@ receive_core() {
     conflict|unbound) safe_error secret-conflict 2 ;;
     missing-tool) safe_error missing-age 3 ;;
     missing-identity) safe_error missing-identity 3 ;;
+    recovery-required) safe_error recovery-required 4 ;;
     *) safe_error "$status" ;;
   esac
   read_config || safe_error malformed-config
@@ -346,20 +373,27 @@ receive_core() {
   new_temp_dir
   temp=$NEW_TEMP
   extract="$temp/new"
-  backup="$temp/old"
-  retired="$temp/retired"
-  quarantine="$temp/rollback-new"
-  mkdir -p "$extract" "$backup" "$retired" "$quarantine"
+  mkdir -p "$extract"
   if ! age -d -i "$IDENTITY_FILE" "$CAPSULE_FILE" 2>"$temp/decrypt-error" \
       | tar -xf - -C "$extract" 2>"$temp/extract-error"; then
     safe_error capsule-extract-failed
   fi
   validate_tree "$extract" || safe_error unsafe-capsule-tree
   expected=$(tree_digest "$extract") || safe_error incoming-digest-failed
+  RECEIVE_ORIGINAL_DIGEST=$(tree_digest "$SECRETS_DIR") || safe_error local-digest-failed
+  RECEIVE_RECOVERY=$(mktemp -d "$SECRETS_DIR/.recovery.XXXXXX") || safe_error recovery-unavailable
+  chmod 700 "$RECEIVE_RECOVERY" || safe_error recovery-permissions
+  backup="$RECEIVE_RECOVERY/old"
+  retired="$RECEIVE_RECOVERY/retired"
+  quarantine="$RECEIVE_RECOVERY/rollback-new"
+  mkdir -p "$backup" "$retired" "$quarantine"
   copy_plain_children "$SECRETS_DIR" "$backup" || safe_error local-backup-failed
+  [ "$(tree_digest "$backup")" = "$RECEIVE_ORIGINAL_DIGEST" ] || safe_error local-backup-mismatch
+  printf '%s\n' "$RECEIVE_ORIGINAL_DIGEST" > "$RECEIVE_RECOVERY/original-digest"
   if [ -f "$BINDING_FILE" ]; then
-    RECEIVE_BINDING_BACKUP="$temp/old-binding"
+    RECEIVE_BINDING_BACKUP="$RECEIVE_RECOVERY/old-binding"
     cp -p -- "$BINDING_FILE" "$RECEIVE_BINDING_BACKUP" || safe_error binding-backup-failed
+    cmp -s "$BINDING_FILE" "$RECEIVE_BINDING_BACKUP" || safe_error binding-backup-mismatch
     RECEIVE_BINDING_EXISTED=1
   else
     RECEIVE_BINDING_BACKUP=""
@@ -382,6 +416,7 @@ receive_core() {
 
 init_capsule() {
   require_age
+  [ "$(current_status)" != recovery-required ] || safe_error recovery-required 4
   [ ! -e "$CONFIG_FILE" ] && [ ! -e "$CAPSULE_FILE" ] && [ ! -e "$BINDING_FILE" ] \
     || safe_error already-configured
   mkdir -p "$KEY_DIR" || safe_error key-directory-unavailable
@@ -430,6 +465,7 @@ case "$command" in
       incoming|conflict|unbound) safe_error secret-conflict 2 ;;
       missing-tool) safe_error missing-age 3 ;;
       missing-identity) safe_error missing-identity 3 ;;
+      recovery-required) safe_error recovery-required 4 ;;
       *) safe_error "$status" ;;
     esac
     ;;

@@ -1,7 +1,7 @@
 # ^status
 > **Purpose:** Generate a Status Report.
 
-1. Mint a project-unique identifier timestamp for the report per [Practices > Timestamps].
+1. Confirm the role allows a new Status Report. An External uses only already recorded, non-secret portability/infrastructure summaries and marks current unverified health accordingly; it never probes Secrets, authentication, environment bindings, or other Main-owned state. Prepare the report before claiming its identifier; do not hold a timestamp claim while doing the analysis below.
 
 2. Review recent Status Reports, if any, to see what has changed (`ls -t _Axis/Status/ | head -3`).
 
@@ -43,10 +43,10 @@
 	- g. **Reminders healthy?** Every live Reminder is open and well-shaped, due/update times are coherent, every target/reopen reference resolves, and every terminal Reminder is archived.
 	- h. **Portability current?** The latest Snapshot contains one valid Continuity block, every infrastructure declaration has a current exact status, bounded discovery ran, and no unresolved storage-policy/replica, path, case/NFC, conflict-copy, link, or text-normalization finding is hidden.
 
-7. Save the report to `_Axis/Status/{timestamp}.md` per the **Index-Detail Pattern:** Line 1 `Status: {short topic}` (≤ 80 chars); Line 2 blank; Lines 3+ body.
+7. Mint and claim the project-unique identifier per [Practices > Timestamps], then exclusively save and read back the prepared report to `_Axis/Status/{timestamp}.md` per the **Index-Detail Pattern:** Line 1 `Status: {short topic}` (≤ 80 chars); Line 2 blank; Lines 3+ body.
 
-8. When `project-ready` is valid, follow `_Axis/Resources/Refresh-Project-README.md` so its bounded summary can cite the new report. Preserve User-authored README content; a refresh failure does not alter the WORM Status Report.
+8. External Agents skip README mutation and write a Request for Main to refresh it when needed. Main alone, when `project-ready` is valid, follows `_Axis/Resources/Refresh-Project-README.md` so its bounded summary can cite the new report. Preserve User-authored README content; a refresh failure does not alter the WORM Status Report.
 
-9. Log an Event that includes the path to the new report and the Project README refresh result.
+9. Log an Event that includes the path to the new report and the Project README refresh result (or `deferred to Main` for an External).
 
 10. Present to User: a clickable link to the report plus a short summary. STOP.

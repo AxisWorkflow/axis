@@ -26,6 +26,9 @@ The live project is `local`. If the base tag cannot be obtained, or the target d
 
 ## Build the Migration Plan
 
+Preserve all `_Axis/Secrets/.recovery.*/` exactly through staging, apply, rollback, and cleanup. Recovery originals are protected local Secrets, never scratch or release content. Do not read or enumerate their names or contents merely to update; unresolved recovery blocks Secrets synchronization, not unrelated verified migration work.
+
+
 8. Hash files without printing their contents. Read applicable published changelog sections after the origin from oldest to newest, then compare `base`, `local`, and `target` for managed Workflow paths. The managed set is the three root entry files and `.gitattributes`; `_Axis/Commands/`, `Practices/`, `Rules/`, `Resources/`, and `Dashboard/`; and `_Axis/CHANGELOG.md`, `CLA.md`, `CONTRIBUTING.md`, `LICENSE`, `README.md`, `GLOSSARY.md`, `MANIFEST.md`, `PRACTICES.md`, `PRINCIPLES.md`, and `RULES.md`. Never cross into a nested Subproject while enumerating it.
 
 - When local equals base and target changed, stage the target version.
