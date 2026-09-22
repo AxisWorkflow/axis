@@ -1,7 +1,7 @@
 # Changelog
 > **Purpose:** Record Axis release identity and the structural migrations needed to update an existing project safely.
 
-current-version: 26.09.21
+current-version: 26.09.22
 changelog-format: 1
 self-update-baseline: 26.08.19
 
@@ -39,6 +39,26 @@ update-impact: automatic
 ### Verification
 
 - None.
+
+## 26.09.22
+
+update-impact: automatic
+
+### Structural Changes
+
+- Add `_Axis/Resources/Check-Remote-Freshness.md` and `remote-freshness.py`; wire one optional Main-start check into `_Axis/Resources/Start-Session.md`. Update the Manifest, compiled context, Git Practice and User Manual.
+
+### Project-State Migrations
+
+- Add the `Remote Freshness` Application Setting with default `off`; missing means off. Preserve existing Settings and explicit choices. `on` is separate User authorization for a bounded upstream fetch and notification only. Ignored `_Temp/axis-remote-freshness/` receipts are disposable and never transported as handoff state.
+
+### Retired Paths
+
+- None.
+
+### Verification
+
+- Verify off/missing settings make no startup network request; opted-in checks preserve local work, suppress duplicates, and keep unavailable/offline outcomes unverified. Existing synchronization and startup authority gates remain intact.
 
 ## 26.09.21
 

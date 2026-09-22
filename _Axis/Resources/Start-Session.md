@@ -78,6 +78,8 @@ session: {Session ID}
 
 19. Quietly list `_Axis/Requests/` and read Line 1 of each file present - detection only, no triage yet. An empty directory is the normal case: note nothing and move on. Otherwise carry the list into Step 4 item 5, which adjudicates AFTER the greeting; startup stays fast, and acting on a request can mean real work.
 
+20. Quietly follow `_Axis/Resources/Check-Remote-Freshness.md` once after the standing User instructions above. This opt-in enhancement may queue one greeting notice; unavailable remote freshness never prevents normal startup completion. Do not fetch on fast-path turns or automatically run `^resume`.
+
 ## Step 3: Validate and Commit Session Started
 
 Perform both phases quietly BEFORE the banner, greeting, or any project setup below. Read back disk state; remembering an intended write is not validation.

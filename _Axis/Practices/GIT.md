@@ -38,6 +38,12 @@ After local setup, or whenever an exact-root repository has no remote, finish th
 
 Creating the remote is the authorization boundary. After it is connected, ordinary `^git`, `^save`, and `^resume` may synchronize with that upstream without asking on each operation. Public visibility, a new remote, or a remote/visibility change always requires a fresh explicit decision.
 
+## Optional Startup Freshness
+
+[Settings > Remote Freshness] is a separate opt-in boundary. Its default `off` preserves existing projects' Command-only network authority. `on` permits only the bounded once-per-Main-start check in [Check-Remote-Freshness], using an already configured upstream and existing authentication. The helper never merges, stages, commits, pushes, creates an upstream or configures credentials. It suppresses prompts and stops its Git operations within ten seconds. Offline, timeout, unsafe repository/storage or unavailable Python/Git leaves freshness unverified and canonical Axis usable.
+
+Fresh remote ancestry may recommend `^resume`; it does not authorize receipt or prove that another machine's writer stopped. Local work is preserved even when histories diverge. There is no background check or per-turn fetch. Normal `^git`, `^save` and `^resume` keep the state machine below and never use this earlier observation as a substitute for their own fresh fetch.
+
 ## Shared Synchronization State Machine
 
 `^git`, `^save`, and `^resume` use this one procedure. Fetch before classifying whenever an upstream exists. `git fetch {remote}` updates remote-tracking references but does not merge project files. Suppress credential-bearing output and never place a remote URL in a Log.

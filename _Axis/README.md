@@ -1,12 +1,12 @@
 # Axis Workflow
 
 [![License: FSL-1.1-MIT](https://img.shields.io/badge/License-FSL--1.1--MIT-2ea44f.svg)](/_Axis/LICENSE)
-[![Version](https://img.shields.io/badge/Version-26.09.21-blue.svg)](https://github.com/AxisWorkflow/axis)
+[![Version](https://img.shields.io/badge/Version-26.09.22-blue.svg)](https://github.com/AxisWorkflow/axis)
 [![Works with](https://img.shields.io/badge/Works%20with-Claude%20Cowork%20%7C%20Claude%20Code%20%7C%20ChatGPT%20Work%20%7C%20Codex%20%7C%20Cursor%20%7C%20Gemini%20CLI-6f42c1.svg)](https://github.com/AxisWorkflow/axis)
 
 The [**Axis Workflow™**](https://github.com/AxisWorkflow/axis) is a source-available project developed by [SimAxis](https://simaxis.ai). Current releases use [FSL-1.1-MIT](/_Axis/LICENSE): most use is allowed immediately, Competing Use is prohibited, and each version converts to MIT two years after that version is made available. The license grants no trademark rights. If you like **Axis**, [please buy us a coffee](https://buymeacoffee.com/SimAxis).
 
-This is version 26.09.21.
+This is version 26.09.22.
 
 Please **[star the repo](https://github.com/AxisWorkflow/axis)** - it helps others to find it.
 
@@ -407,6 +407,10 @@ Axis always supports the simplest fallback: `^save`, stop the old session, copy 
 - **`^undo` adds recovery history.** It shows the exact target and asks before restoring. It uses a revert or a new restore commit; it never silently resets history, force-pushes, or discards later work.
 
 Bare `^git` is convenient, but normal handoff is easier to remember as **save on the computer you are leaving, resume on the computer you are joining**. Routine `^save` does not shut down, because it is also useful as an ordinary checkpoint. When you say that the save is for a handoff, shutdown, or another computer, Axis completes the send and then performs `^shutdown`. You can also run `^shutdown` yourself. Do not keep editing the sending copy after that point.
+
+#### Optional Startup Check
+
+Set **Remote Freshness** to `on` to check the configured Git upstream once when a Main session starts. Incoming commits produce a recommendation to run `^resume`; local files stay untouched, and no merge or push runs automatically. The default is `off`, including existing projects without the Setting. The optional check needs Git, Python 3 and supported local storage; offline or unavailable checks report freshness as unverified while Axis remains usable. It adds no background polling and does not replace saving and shutting down the other computer.
 
 #### First-Time Git Setup
 
@@ -1032,13 +1036,13 @@ The **Axis Workflow** runs directly from markdown - you do not need to install a
 Axis itself cannot change parameters in the outer-harness of the LLM on which it runs. As such, the User may need to configure API settings (and/or the AI host harness) manually.
 
 <!-- BEGIN GENERATED: api-parameter-contract -->
-Provider parameters change independently, so the Profile is an outcome-level intent rather than a timeless set of knobs. Match the exact model family and API surface below; if the selected model's current documentation differs, the provider documentation wins. This matrix was reviewed on **2026-09-21**.
+Provider parameters change independently, so the Profile is an outcome-level intent rather than a timeless set of knobs. Match the exact model family and API surface below; if the selected model's current documentation differs, the provider documentation wins. This matrix was reviewed on **2026-09-22**.
 
 | Provider and model family | API surface | Fast Profile | Standard Profile | Deep Profile | Compatibility note |
 | --- | --- | --- | --- | --- | --- |
 | Anthropic models with adaptive thinking | Messages API | `thinking.type: adaptive`; `output_config.effort: low` | adaptive; `output_config.effort: medium` | adaptive; `output_config.effort: high` (or a higher level only when the model supports it) | Leave `temperature` unset - non-default values are rejected on the current families. Manual `thinking.budget_tokens` is removed on the current families (400) and deprecated on the preceding generation. See [Anthropic thinking](https://platform.claude.com/docs/en/build-with-claude/extended-thinking) and [effort](https://platform.claude.com/docs/en/build-with-claude/effort). |
 | Anthropic legacy manual-thinking models | Messages API | disable thinking only when the model supports it | `thinking.type: enabled`; `thinking.budget_tokens` at least 1024 | enabled with a larger evaluated `thinking.budget_tokens` | Modified `temperature` is incompatible with thinking. Treat this as a legacy compatibility row. |
-| OpenAI GPT-5.6 family | Responses API | `reasoning.effort: low`; `text.verbosity: low` | `reasoning.effort: medium`; `text.verbosity: medium` | `reasoning.effort: high`; `text.verbosity: high` | Supported effort levels run from `none` through `max`; omit `temperature` unless the exact model documentation supports it. See [OpenAI model guidance](https://developers.openai.com/api/docs/guides/latest-model). |
+| OpenAI GPT-5.6 family | Responses API | `reasoning.effort: low`; `text.verbosity: low` | `reasoning.effort: medium`; `text.verbosity: medium` | `reasoning.effort: high`; `text.verbosity: high` | Supported effort levels run from `none` through `max`; omit `temperature` unless the exact model documentation supports it. See [OpenAI model guidance](https://developers.openai.com/api/docs/guides/latest-model?model=gpt-5.6). |
 | Gemini 3.x | Interactions API | `generation_config.thinking_level: low` (or `minimal` when supported) | `generation_config.thinking_level: medium` or the model default | `generation_config.thinking_level: high` | Leave `generation_config.temperature` unset. Supported levels vary by model. See [Gemini Interactions thinking](https://ai.google.dev/gemini-api/docs/thinking). |
 | Gemini 3.x legacy compatibility | GenerateContent API | `generationConfig.thinkingConfig.thinkingLevel: low` (or `minimal` when supported) | `thinkingLevel: medium` or the model default | `thinkingLevel: high` | Numeric `thinkingBudget` is legacy compatibility and must not be combined with `thinkingLevel`. See [Gemini GenerateContent thinking](https://ai.google.dev/gemini-api/docs/generate-content/thinking). |
 | Gemini 2.5 legacy compatibility | GenerateContent API | use a low valid `generationConfig.thinkingConfig.thinkingBudget`; `0` only on models that support disabling | dynamic/automatic thinking | a higher valid model-specific `thinkingBudget` | 2.5 Pro cannot disable thinking. Use this row only for an intentionally pinned 2.5 model. |
