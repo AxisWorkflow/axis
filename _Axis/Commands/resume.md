@@ -22,3 +22,5 @@
 10. Summarize in one glance: Git/remote freshness when applicable; portability and encrypted Secrets state; infrastructure to re-establish (logical names/status only); where the project left off; what is active/blocked; Follow-Ups; due/upcoming Reminders; Trash count; and anything else unresolved. Stay quiet about unchanged healthy infrastructure beyond one `Ready` label. Never expose secret values/names, accounts, local paths, or host job IDs.
 
 11. Propose the next 1-3 actions and wait for User direction. STOP.
+
+Presentation follows `_Axis/Resources/Lifecycle-Presentation.md` > Compact notices. Preserve every required cause, disclosure and decision. This notice never creates another startup success banner or changes the booted role.

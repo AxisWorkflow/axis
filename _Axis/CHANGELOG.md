@@ -1,7 +1,7 @@
 # Changelog
 > **Purpose:** Record Axis release identity and the structural migrations needed to update an existing project safely.
 
-current-version: 26.09.22
+current-version: 26.09.23
 changelog-format: 1
 self-update-baseline: 26.08.19
 
@@ -9,7 +9,7 @@ self-update-baseline: 26.08.19
 
 `current-version` is the installed Axis release and uses the full release tag without its leading `v`. `changelog-format` versions this document's update contract. `self-update-baseline` remains `pending` until the first release that ships both this file and `^update`; at that publication it becomes that release's full version.
 
-The RSI Controller records every upgrade-relevant structural change under `Unreleased` in the same pass as the change. At publication, `^pub` moves that material into a new immutable release section, updates `current-version`, sets the baseline when still pending, and recreates the empty headings under `Unreleased`.
+The RSI Controller records every upgrade-relevant structural change under `Unreleased` in the same pass as the change. Before publication, the owning release cycle moves that material into a new immutable release section, updates `current-version`, sets the baseline when still pending, and recreates the empty headings under `Unreleased`. `^pub` verifies and publishes those frozen bytes.
 
 Published release sections use an exact `## {version}` heading and the following stable subsections. `^update` reads applicable sections from oldest to newest. Paths are project-root-relative and literal.
 
@@ -18,7 +18,7 @@ Published release sections use an exact `## {version}` heading and the following
 - `Retired Paths` - obsolete paths and their replacement, if any. An updater stages retirement reversibly and never destroys a locally modified file silently.
 - `Verification` - release-specific facts that must hold before the new version is committed.
 
-Each release carries `update-impact: automatic`, `review`, or `manual`. `automatic` permits the ordinary three-way plan, preview, and confirmation when no unresolved choice remains. `review` requires every semantic choice to be surfaced and settled in the preview. `manual` forbids auto-apply: `^update` reports the applicable migration notes and stops before mutation. An unknown value also stops. The changelog guides a migration but never authorizes executing downloaded code, overwriting project state, or resolving a local customization without review.
+Each release carries `update-impact: automatic`, `review`, or `manual`. `automatic` permits the ordinary three-way plan and concise preview under User's `^update` invocation when no unresolved choice remains; there is no additional blanket confirmation token. `review` requires every semantic choice to be surfaced and settled in the preview. `manual` forbids auto-apply: `^update` reports the applicable migration notes and stops before mutation. An unknown value also stops. The changelog guides a migration but never authorizes executing downloaded code, overwriting project state, or resolving a local customization without review.
 
 ## Unreleased
 
@@ -39,6 +39,39 @@ update-impact: automatic
 ### Verification
 
 - None.
+
+## 26.09.23
+
+released: 2026-09-23
+
+update-impact: automatic
+
+### Structural Changes
+
+- Add `_Axis/Resources/update-transaction.py`, `Check-Update-Handoff.md` and empty `_Axis/Updates/`. Retain start-first update plans, pinned original recovery machinery, exact preimages/payloads, write-prefix journal, terminal and consumption receipts as project evidence. The runtime lock alone is ignored by Git. Updated entry, claim and External paths classify pending handoffs; fresh Main startup reconciles and consumes verified success before ordinary project context.
+- Routine expected User-invoked updates proceed without a second `UPDATE` entry. Review cases require their exact decisions; unknown/manual migration, invalid source, downgrade, unsafe concurrency/storage or changed scoped inputs stop. A durable authorization Event independently pins the plan scope and original installed recovery engine before any managed write.
+
+- Add `_Axis/Resources/Lifecycle-Presentation.md` and optional read-only `overlay-identity.py`. Shared compact Markdown/plain-text blocks replace startup and shutdown artwork; one validated RSI startup block replaces the standard block. Final application responses receive a divider unless an exact-output contract applies.
+- Update `Load-Project-Overlay.md`, startup and Flag contracts for preparation before presentation and guidance activation after normal completion.
+
+### Project-State Migrations
+
+- Create `_Axis/Updates/` with `.gitkeep` when absent; preserve all existing transaction evidence. Do not migrate or erase historical ignored-only journals automatically. The first adoption from a legacy updater needs its separately reviewed durable handoff; old boot instructions cannot gain new hooks retroactively. Keep startup admission fail-closed through apply and retain the old accepted recovery code.
+- Preserve all Settings values during predictable automatic additions. A Storage Policy transition away from `auto` requires a reviewed manual migration because it invalidates this transaction's exclusive primitives.
+
+- Preserve existing overlay declarations and files. New declarations use schema 2 with an approved content hash and a six-line cache. Schema 1 remains compatible only with an independent approved content pin. Every RSI overlay requires independent approval that agrees with its sealed assurance qualification; absent proof disables only the overlay with a notice. Never silently approve different guidance by hashing its current bytes. Ordinary projects need no overlay or Python.
+
+### Retired Paths
+
+- None.
+
+### Verification
+
+- Verify preserved records remain exact through update and change only after the durable fresh-session reconciliation phase; terminal Follow-Ups move to their declared archive path with live absence and exact terminal identity. Inspect pending updates on the continuation ladder before context or overlay.
+
+- Verify routine invocation has no second token; exact-source/authority checks precede apply; every write boundary yields deterministic inspect/recovery; corruption or third values refuse writes; release resumes only under unchanged ownership; canonical reconciliation precedes one consumed receipt; and completed updates are never requested again from stale selectors. Confirm both userlands, unavailable acceleration, entry parity/size and production exclusion of live `_Axis/Updates/` evidence.
+
+- Verify exactly one completed Main banner; no RSI claim from stale or malformed identity; no guidance before normal completion; independent-pin substitution refusal; Main-only activation; strict-output/final-turn examples; and entry parity/size.
 
 ## 26.09.22
 

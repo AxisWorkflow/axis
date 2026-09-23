@@ -11,16 +11,6 @@
 
 5. Hand back the identity, Main only. READ `_Axis/Flags/session-id`; if Line 1 is NOT your Session ID, leave it alone - it belongs to someone else. If it IS yours, do not leave it pointing at a session that no longer exists: when a fresh (`mtime` < 1 hour) foreign `Main: session` Marker remains in `_Axis/Agents/`, write THAT Marker's session on Line 1, because the surviving Main is the project's identity now; otherwise write `cleared`, so the next boot reads it as absent and runs a full Session Start. Skipping this strands the Flag on a dead session (measured 2026-08-06), and a surviving Main that later takes the resume ladder then finds Line 1 disagreeing with its own ID and treats every shared file as contended for the rest of its life.
 
-6. If step 2 wrote a Snapshot, identify its path immediately before the following block. Reply with:
-```
-========================================
-
-              SHUT DOWN
-
-       This session has stopped.
-    Start a new session to continue.
-
-========================================
-```
+6. If step 2 wrote a Snapshot, identify its path immediately before the exit block. Use `_Axis/Resources/Lifecycle-Presentation.md` > Shutdown and update: one compact `Stopped` block with the booted role and the instruction to start a new session. Preserve the validated RSI boot brand for an RSI Main. Do not add a second final-response divider.
 
 7. STOP SERVING: for the rest of this conversation, answer any message with a single line pointing User to start a new session. STOP.

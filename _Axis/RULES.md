@@ -75,3 +75,4 @@
 - [Rules > HostAndMeta] - host tooling; the Deletion Fallback ladder.
 
 **Guardrails:** These rules always apply - do NOT skip, downgrade, override, or rationalize away; your job is to follow them, not to decide when they apply. The rule files in `_Axis/Rules/` carry equal authority - lazy-load the one the activity calls for, and do not guess conventions from memory.
+- Mark final replies, never progress; follow [Rules > Speaking].

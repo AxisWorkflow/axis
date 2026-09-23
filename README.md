@@ -1,12 +1,12 @@
 # Axis Workflow
 
 [![License: FSL-1.1-MIT](https://img.shields.io/badge/License-FSL--1.1--MIT-2ea44f.svg)](/_Axis/LICENSE)
-[![Version](https://img.shields.io/badge/Version-26.09.22-blue.svg)](https://github.com/AxisWorkflow/axis)
+[![Version](https://img.shields.io/badge/Version-26.09.23-blue.svg)](https://github.com/AxisWorkflow/axis)
 [![Works with](https://img.shields.io/badge/Works%20with-Claude%20Cowork%20%7C%20Claude%20Code%20%7C%20ChatGPT%20Work%20%7C%20Codex%20%7C%20Cursor%20%7C%20Gemini%20CLI-6f42c1.svg)](https://github.com/AxisWorkflow/axis)
 
 The [**Axis Workflow™**](https://github.com/AxisWorkflow/axis) is a source-available project developed by [SimAxis](https://simaxis.ai). Current releases use [FSL-1.1-MIT](/_Axis/LICENSE): most use is allowed immediately, Competing Use is prohibited, and each version converts to MIT two years after that version is made available. The license grants no trademark rights. If you like **Axis**, [please buy us a coffee](https://buymeacoffee.com/SimAxis).
 
-This is version 26.09.22.
+This is version 26.09.23.
 
 Please **[star the repo](https://github.com/AxisWorkflow/axis)** - it helps others to find it.
 
@@ -228,7 +228,7 @@ No. Axis has no add-on runtime dependency: its canonical Markdown workflow conti
 In `_Axis/Secrets/`. Plaintext there never enters Git, and Agents only open it when a task needs a credential - and never copy values anywhere else. Optional encrypted transport can commit only a public recipient and verified ciphertext so authorized computers can restore the plaintext with a separate private identity (see Portability and Limitations for the honest caveat).
 
 **How do I update to a newer Axis?**
-Run `^update`. Your Agent downloads an exact official release into temporary staging, compares it with both your installed release and local project, previews the migration, and waits for `UPDATE` before applying anything. After a successful migration, `^update` shuts down the old Axis session itself - do not run `^shutdown` afterward. Close that window (or terminal) and start a new session so the updated Workflow loads.
+Run `^update`. Your Agent downloads an exact official release into temporary staging, compares it with both your installed release and local project, previews the migration, and proceeds when it is expected and unexceptional. Your `^update` invocation is sufficient; there is no extra `UPDATE` entry. A conflict or exceptional migration asks only for the specific decision needed. After a successful migration, `^update` shuts down the old Axis session itself - do not run `^shutdown` afterward. Close that window (or terminal) and start a new session so the updated Workflow loads.
 
 **Does it run on Windows?**
 Yes. WSL or Git Bash unlocks the complete shell-backed feature set. Without a POSIX-like shell, the canonical file workflow still runs through the host's file tools; shell-dependent enhancements report the limitation and use their documented fallback where one exists.
@@ -1036,7 +1036,7 @@ The **Axis Workflow** runs directly from markdown - you do not need to install a
 Axis itself cannot change parameters in the outer-harness of the LLM on which it runs. As such, the User may need to configure API settings (and/or the AI host harness) manually.
 
 <!-- BEGIN GENERATED: api-parameter-contract -->
-Provider parameters change independently, so the Profile is an outcome-level intent rather than a timeless set of knobs. Match the exact model family and API surface below; if the selected model's current documentation differs, the provider documentation wins. This matrix was reviewed on **2026-09-22**.
+Provider parameters change independently, so the Profile is an outcome-level intent rather than a timeless set of knobs. Match the exact model family and API surface below; if the selected model's current documentation differs, the provider documentation wins. This matrix was reviewed on **2026-09-23**.
 
 | Provider and model family | API surface | Fast Profile | Standard Profile | Deep Profile | Compatibility note |
 | --- | --- | --- | --- | --- | --- |
@@ -1063,7 +1063,7 @@ The Axis Workflow has several limitations:
   The file lock protocols protect Agents, not Users - real humans can still do damage when working at cross purposes. That is of course unavoidable on any multi-party project. However, we caution that multiple humans editing the same project folder should always use `git`, and `git commit`, for version control.
 
 - **Updates Are Model-Mediated.**
-  `^update` gives a standard-capability Main Agent a structured changelog, an official installed-version base, a target release, a rollback boundary, and explicit confirmation. It is not a binary package manager or a blanket backward-compatibility guarantee: local customizations and semantic state migrations still require model judgment, and conflicts stop for User review. After success, `^update` automatically shuts down the old Axis session; close that window (or terminal) and start a new session so the new instructions load. Managed self-update begins with the fixed baseline named in the Changelog; a copy without a valid Changelog and baseline requires a manual reviewed migration instead of an inferred overlay.
+  `^update` gives a standard-capability Main Agent a structured changelog, an official installed-version base, a target release, a durable rollback boundary, and your explicit `^update` authorization. It is not a binary package manager or a blanket backward-compatibility guarantee: local customizations and semantic state migrations still require model judgment, and conflicts stop for User review. Each transaction retains a durable journal and rollback outside Temp. Startup blocks an interrupted or inconsistent update; a verified success is reconciled with project records and consumed once before ordinary resume. Recovery after a lost owner requires an explicitly quiescent trusted surface; stale age alone is not permission to continue. After success, `^update` automatically shuts down the old Axis session; close that window (or terminal) and start a new session so the new instructions load. Managed self-update begins with the fixed baseline named in the Changelog; a copy without a valid Changelog and baseline requires a manual reviewed migration instead of an inferred overlay.
 
 - **The Dashboard Needs a Local Web Server**
   The Dashboard is deliberately the *live* view: it reads approved project files continuously and refreshes itself every 30 seconds, which browsers only permit over HTTP. `^dashboard` starts the bundled read-only server for you when your Agent has shell access, and hands you a one-line command when it does not. The server accepts only loopback connections and exposes only the Dashboard's declared read paths; do not replace it with a general-purpose project-root server. There is no static or offline version of the Dashboard - the static view is a Status Report (`^status`), which is dated, portable, needs no tooling to read, and can be filed or emailed.

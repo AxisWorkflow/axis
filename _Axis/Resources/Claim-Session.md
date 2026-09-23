@@ -3,6 +3,8 @@
 
 Run after the loading notice and initial timestamp recipe, before [Start-Session]. This is first-boot admission, not lease renewal. Never use it to resurrect a missing live Marker.
 
+Before admission, follow `_Axis/Resources/Check-Update-Handoff.md` in `inspect` phase. An incomplete or inconsistent update stops before ordinary startup; only absent/closed evidence or verified ready success may reach the normal claim. Never reclaim an update barrier to enter this boot.
+
 1. Establish an exclusive admission primitive for this authoritative folder. On a filesystem supporting atomic `mkdir`, acquire `_Axis/Flags/starting.lock/` and exclusively create its `OWNER` file with a fresh random nonce retained in this context. Read it back. Existing, malformed, or stale admission state stops this boot; age never authorizes deletion. Other I/O or permission errors stop as errors. Recovery follows [Lock-File > Quiescent Recovery] in an established quiescent window only. If the host cannot establish exclusive creation, require a User-confirmed serialized maintenance window with other sessions, launches, and schedules stopped before proceeding through file tools; report that concurrency is unavailable. Missing shell alone is not a failure when file tools provide exclusive creation.
 
 2. While admission is held, READ `_Axis/Flags/starting` directly. Missing, blank, or Line 1 `cleared` is absent. A remaining value means incomplete startup: release only your own admission claim and STOP for quiescent recovery. Never overwrite an unfinished startup merely because two minutes passed.

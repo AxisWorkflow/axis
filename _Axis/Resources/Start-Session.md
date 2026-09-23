@@ -50,6 +50,8 @@ session: {Session ID}
 
 5. Quietly record your model and detect your **Host Capabilities** as Flags: follow `_Axis/Resources/Detect-Capabilities.md` (definitions and the feature-requirements table live in [Rules > Capabilities]). Queue the one-line notices it produces (non-POSIX shell; cloud-synced folder) for delivery with the greeting (Step 4).
 
+Before item 6, follow `_Axis/Resources/Check-Update-Handoff.md` in `consume` phase when inspection found a verified ready update. Use this boot's fresh Capability results and current admission. Reconcile and consume before ordinary project or continuity loading; a failure leaves startup incomplete.
+
 6. Quietly load [Practices > Portability > Optional Environment Signature]. Normalize the current harness class, OS class, interaction class (`interactive`, `headless`, `channel`, or `unknown`), and storage profile. When permitted, read `~/.axis/instance-id`; if absent, create its parent directory and write/read back one standard Axis timestamp once. Read the old project-local `_Axis/Flags/environment-binding` before changing it. Missing/malformed binding, an external-ID mismatch, or a changed normalized field triggers [Practices > Portability > Environment-Change Validation], including the bounded latest-Continuity delta and infrastructure revalidation; it never becomes a full `^resume`. After that validation completes without a hard safety failure, write/read back the current binding in its exact six-line shape. Never expose or copy the opaque ID into tracked state, Snapshots, Logs, Tracking, Dashboard, or output. If either local location is inaccessible, continue without rewriting the binding, classify the signature as unavailable, and queue one concise unverified notice; the signature never blocks startup.
 
 7. Quietly confirm no missing folders or files listed in the **Manifest**. If a folder or file is missing, queue a one-line notice naming each missing item and deliver it with the greeting.
@@ -80,6 +82,8 @@ session: {Session ID}
 
 20. Quietly follow `_Axis/Resources/Check-Remote-Freshness.md` once after the standing User instructions above. This opt-in enhancement may queue one greeting notice; unavailable remote freshness never prevents normal startup completion. Do not fetch on fast-path turns or automatically run `^resume`.
 
+21. **Prepare presentation identity.** Quietly read `_Axis/Resources/Lifecycle-Presentation.md`, then follow `_Axis/Resources/Load-Project-Overlay.md` in `prepare` phase. Validate identity before applying overlay guidance; apply nothing during preparation. Retain the result or queue the precise inactive-overlay notice. Absence or failed overlay identity does not waive or fail ordinary Main startup.
+
 ## Step 3: Validate and Commit Session Started
 
 Perform both phases quietly BEFORE the banner, greeting, or any project setup below. Read back disk state; remembering an intended write is not validation.
@@ -96,26 +100,14 @@ Perform both phases quietly BEFORE the banner, greeting, or any project setup be
 
 ### Phase B - Commit readiness
 
-1. Quietly delete `_Axis/Flags/project-overlay` if it exists. A new normal session never inherits an overlay result from an earlier session; identity is revalidated only after the normal banner and greeting (if deletion is blocked, follow [Rules > HostAndMeta > Deletion Fallback]).
+1. Quietly delete `_Axis/Flags/project-overlay` if it exists. A new normal session never inherits an overlay result from an earlier session; identity was prepared as data and must be revalidated before presentation and later activation (if deletion is blocked, follow [Rules > HostAndMeta > Deletion Fallback]).
 2. Write `_Axis/Flags/session-id` as exactly your Session ID on Line 1 and a current UTC timestamp on Line 2. READ it back: Line 1 must match, Line 2 must be a valid timestamp not earlier than the Session ID, and `mtime` must be under 60 seconds. On failure, leave `starting` set, do not print the banner or greet, name the path to User, and STOP.
 3. Recheck admission ownership and the foreign-Main gate once more. Delete `_Axis/Flags/starting`; if deletion is blocked, follow [Rules > HostAndMeta > Deletion Fallback]. Then release only your owned admission claim per [Claim-Session]. These completion writes must be the last writes of the startup protocol before the banner. A failed release is failed startup, not success.
 4. READ `_Axis/Flags/starting` again: only missing or Line 1 `cleared` passes. READ `session-id` once more and require the same valid state. Verify the admission claim was released. If any check fails, do not print the banner or greet; warn User and STOP. No startup write follows this final read-back.
 
 ## Step 4: Greet User
 
-1. Only after both Step 3 phases pass, construct the completion response. First check the conversation above: if the host suppressed the loading notice, begin with that notice verbatim from the entry-point file. Then print this Session ID banner exactly once, substituting the validated Session ID:
-
-```
-------------------------------------
-
-    *
-<  . .  >     The Axis Workflow
-    -
-    
-Session ID: {yyyy.mm.dd.hh.mm.ss.xxxZ}
-------------------------------------
-
-```
+1. Only after both Step 3 phases pass, construct the completion response. Revalidate the prepared overlay identity read-only against its retained bytes and independent pin, now under completed-session checks. If it changed or cannot validate, disable that overlay for this boot, queue its failure notice and select standard presentation. Apply no guidance yet. If the host suppressed the loading notice, begin with that notice verbatim from the entry file. Then emit exactly one Main startup block from `_Axis/Resources/Lifecycle-Presentation.md`: `Axis RSI | Ready` for the independently validated RSI result, otherwise `Axis Workflow | Ready`. Include the validated Session ID and installed version. Never emit the standard block as well as the RSI block.
 
 Immediately below the banner, with no tool call, narration, or status line between them, say hello and introduce yourself in your own voice (e.g., "Hi Bob - I'm Axel."). The banner is the successful-completion boundary: never print it on a failed gate, and never print it more than once.
 User response-shape instructions such as `reply exactly`, `nothing else`, or an application output contract begin only after this mandatory completion response. They never suppress the loading notice, Session ID banner, greeting, or completion checks.
@@ -142,7 +134,7 @@ User response-shape instructions such as `reply exactly`, `nothing else`, or an 
 
 ## Step 6: Load Project Overlay (if declared)
 
-1. Only after the normal Session Start completion boundary and direct-parent detection above, follow `_Axis/Resources/Load-Project-Overlay.md`.
+1. Only after the normal Session Start completion boundary and direct-parent detection above, follow `_Axis/Resources/Load-Project-Overlay.md` in `activate` phase with the exact retained preparation result. If presentation validation disabled the overlay, apply nothing this boot. Parent guidance cannot weaken the selected independent pin.
 2. An absent declaration returns silently. A valid declaration loads its project guidance and caches the validated result for this normal Main session. A failed declaration leaves ordinary Axis active but cannot enable partial overlay behavior.
 
 ## Step 7: Setup Project (if necessary)

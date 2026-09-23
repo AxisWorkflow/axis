@@ -14,3 +14,5 @@
 - Convert all timestamps into UTC (the Z at end of timestamp indicates Zulu time).
 - Agents and Users working across time zones should coordinate timing in UTC.
 - Files in the twelve Index-Detail directories (Tasks, Follow-Ups, Reminders, Snapshots, Logs, Notes, Ideas, CX, Audit, Status, Supervision, Agents) are named with a timestamp.
+
+- An `_Axis/Updates/{ID}/` transaction refers to its scoped authorization Log Event ID; it is evidence for that same Event, not a second Index-Detail record or uniqueness domain.

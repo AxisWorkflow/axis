@@ -178,7 +178,11 @@
 - `_Axis/Resources/Detect-Capabilities.md`
 - `_Axis/Resources/Draft-Mindset.md`
 - `_Axis/Resources/Lock-File.md`
+- `_Axis/Resources/Check-Update-Handoff.md`
+- `_Axis/Resources/update-transaction.py`
 - `_Axis/Resources/Load-Project-Overlay.md`
+- `_Axis/Resources/Lifecycle-Presentation.md`
+- `_Axis/Resources/overlay-identity.py`
 - `_Axis/Resources/Refresh-Project-README.md`
 - `_Axis/Resources/secrets-capsule.sh` - optional encrypted Secrets transport helper.
 - `_Axis/Resources/Start-External.md`

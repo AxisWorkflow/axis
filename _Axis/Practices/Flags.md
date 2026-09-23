@@ -14,7 +14,7 @@ A Flag is a persistent file that records durable workflow state. A Flag remains 
 | `skip-wiki` | per-project | `{yyyy.mm.dd.hh.mm.ss.xxxZ}` | - |
 | `starting` | per-session | `{yyyy.mm.dd.hh.mm.ss.xxxZ}` | < 2 minutes while startup is in flight |
 | `session-id` | per-session | `{yyyy.mm.dd.hh.mm.ss.xxxZ}` | < 60 seconds for the post-start completion check |
-| `project-overlay` | per-session | `{yyyy.mm.dd.hh.mm.ss.xxxZ}` | current Session ID on Line 1; validation timestamp, overlay ID, and declared path on Lines 2-4 |
+| `project-overlay` | per-session | `{yyyy.mm.dd.hh.mm.ss.xxxZ}` | current Session ID on Line 1; schema 1 has four lines; schema 2 has six lines including Project and overlay SHA-256 |
 | `promote` | per-session | `{yyyy.mm.dd.hh.mm.ss.xxxZ}` | < 10 minutes while a promotion awaits its trusted-surface approval |
 | `model` | per-session | model name or `unknown` | - |
 | `host-spawn` | per-session | `yes` or `no` | - |
@@ -36,7 +36,7 @@ The lifetime decides whether a Flag is committed: per-project state is committed
 - `skip-wiki` - User declined or deferred Wiki setup. Set by [Start-Project]; checked by [Start-Wiki].
 - `starting` - Session Start is in flight (an in-flight lock; body = the Session ID). Set under exclusive [Claim-Session] admission; refreshed (`mtime` touch) as [Start-Session] runs; deleted or cleared only after the startup-artifact gate passes before releasing the admission claim as the final startup writes before the Session ID banner and greeting. Age over 2 minutes is diagnostic only; never delete or overwrite unfinished startup without quiescent recovery.
 - `session-id` - Session identity and completion. Line 1 = the Session ID (the timestamp printed in the successful-completion Session ID banner; it also names the Main Marker); Line 2 = a UTC timestamp, refreshed on session resume and by `^save` (so `mtime` reads as last activity). Written and read back by [Start-Session] after all startup artifacts validate, then verified again after `starting` is released and before the banner; compared BY VALUE - never by age - by the entry-point resume ladder.
-- `project-overlay` - cache for one overlay validated by [Load-Project-Overlay] in this normal Main session. Line 1 = current Session ID; Line 2 = validation timestamp; Line 3 = exact declared overlay ID; Line 4 = exact declared project-root-relative path. The Resource revalidates `_Axis/PROJECT.md`, the overlay file, `session-id`, and the Main Marker before writing or applying it. Existence, age, or content of this Flag alone never grants project identity, role, command availability, or authority. A fresh [Start-Session] clears it before optional reactivation.
+- `project-overlay` - validated optional Main overlay cache, never authority. Compatible schema 1 has four lines: Session ID, UTC validation time, ID, path; independently pinned schema 2 has six lines, adding complete Project SHA-256 and overlay SHA-256. Revalidate durable identity and approved content before every load per [Load-Project-Overlay]. Fresh startup clears any previous cache.
 - `model` - the running model's name as reported by the host. Written by [Start-Session]; shown on the Dashboard and used to resolve `same-as-host`.
 - `host-spawn` - written by [Start-Session] and set to `no` on a failed spawn.
 - `host-parallel` - written by [Start-Session].
@@ -57,3 +57,5 @@ Every Flag consumer follows this rule; file existence alone never means a Flag i
 3. Follow the consumer's missing-Flag branch. For a per-session Capability, re-detect it when safe; if re-detection is unavailable, treat the Capability as unavailable and use the documented safe degraded behavior. Never grant a Capability from malformed state.
 4. Line 2 is metadata, not truth, except where a named protocol explicitly checks freshness (`starting` and the post-start `session-id` completion check).
 5. When clearing a Flag and deletion is blocked, write `cleared` on Line 1 under [Rules > HostAndMeta > Deletion Fallback]; every reader therefore sees the same absent state.
+
+An active update may own the normal startup admission barrier under [Check-Update-Handoff]. Its token and inode are bound to durable evidence; age never permits startup or cleanup to steal it. The `starting` Flag uses the owning current Session ID until exact release. Ordinary startup must classify durable updates before admission.

@@ -54,6 +54,8 @@ _Axis/Agents/*
 !_Axis/Agents/.gitkeep
 _Axis/Tracking/*
 !_Axis/Tracking/.gitkeep
+# Runtime update lock only; durable transaction evidence remains tracked.
+_Axis/Updates/operation.lck
 # BEGIN GENERATED: flag-ignore
 _Axis/Flags/starting
 _Axis/Flags/session-id

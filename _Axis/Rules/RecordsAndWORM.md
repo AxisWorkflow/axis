@@ -31,3 +31,5 @@
 - Open Follow-Ups live only in `_Axis/Followups/`; terminal Follow-Ups self-archive unchanged under `_Axis/Archive/Followups/` and are never restored.
 - Open Reminders live only in `_Axis/Reminders/`; terminal Reminders self-archive unchanged under `_Axis/Archive/Reminders/` and reopening creates a new identity.
 - `_Axis/Supervision/` keeps the newest 30 active records; oldest excess records move unchanged to `_Axis/Archive/Supervision/` and remain WORM.
+
+- Durable update evidence in `_Axis/Updates/` is append-only; never rewrite a completed receipt or erase interrupted prefixes. It is project state, never Temp or release content.

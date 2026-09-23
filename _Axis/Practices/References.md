@@ -27,6 +27,9 @@ An Axis Reference is an internal pointer to another file (and optionally a secti
 | [Dashboard] | `_Axis/Dashboard/` |
 | [Detect-Capabilities], [Resources > Detect-Capabilities] | `_Axis/Resources/Detect-Capabilities.md` |
 | [Draft-Mindset], [Resources > Draft-Mindset] | `_Axis/Resources/Draft-Mindset.md` |
+| [Check-Remote-Freshness] | `_Axis/Resources/Check-Remote-Freshness.md` |
+| [Check-Update-Handoff] | `_Axis/Resources/Check-Update-Handoff.md` |
+| [Lifecycle-Presentation] | `_Axis/Resources/Lifecycle-Presentation.md` |
 | [Claim-Session], [Resources > Claim-Session] | `_Axis/Resources/Claim-Session.md` |
 | [Lock-File], [Resources > Lock-File] | `_Axis/Resources/Lock-File.md` |
 | [Load-Project-Overlay], [Resources > Load-Project-Overlay] | `_Axis/Resources/Load-Project-Overlay.md` |
