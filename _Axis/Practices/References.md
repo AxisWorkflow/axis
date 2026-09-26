@@ -23,6 +23,7 @@ An Axis Reference is an internal pointer to another file (and optionally a secti
 | [Directives] | `_Axis/DIRECTIVES.md` |
 | [Plan] | `_Axis/PLAN.md` |
 | [Tasks] | `_Axis/TASKS.md` |
+| [Initiatives] | `_Axis/INITIATIVES.md` |
 | [Snapshots] | `_Axis/SNAPSHOTS.md` |
 | [Dashboard] | `_Axis/Dashboard/` |
 | [Detect-Capabilities], [Resources > Detect-Capabilities] | `_Axis/Resources/Detect-Capabilities.md` |
@@ -30,6 +31,8 @@ An Axis Reference is an internal pointer to another file (and optionally a secti
 | [Check-Remote-Freshness] | `_Axis/Resources/Check-Remote-Freshness.md` |
 | [Check-Update-Handoff] | `_Axis/Resources/Check-Update-Handoff.md` |
 | [Lifecycle-Presentation] | `_Axis/Resources/Lifecycle-Presentation.md` |
+| [Continue-Session] | `_Axis/Resources/Continue-Session.md` |
+| [Load-Starting-Context] | `_Axis/Resources/Load-Starting-Context.md` |
 | [Claim-Session], [Resources > Claim-Session] | `_Axis/Resources/Claim-Session.md` |
 | [Lock-File], [Resources > Lock-File] | `_Axis/Resources/Lock-File.md` |
 | [Load-Project-Overlay], [Resources > Load-Project-Overlay] | `_Axis/Resources/Load-Project-Overlay.md` |

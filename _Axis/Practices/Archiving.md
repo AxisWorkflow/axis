@@ -74,6 +74,8 @@ Tasks and Snapshots remain visible in their canonical indices after archiving. M
 - `Tasks/{timestamp}.md` becomes `Archive/Tasks/{timestamp}.md`
 - `Snapshots/{timestamp}.md` becomes `Archive/Snapshots/{timestamp}.md`
 
+For an archived Task with `initiative:` membership, also update its reciprocal link in the matching `_Axis/INITIATIVES.md` section under [Practices > Initiatives], retaining the Task timestamp and Initiative key. Do not archive the Initiative automatically.
+
 The links are relative to `_Axis/TASKS.md` and `_Axis/SNAPSHOTS.md`. A sync check accepts either live or Archive detail path, but every linked file must exist and every eligible detail file must have exactly one index entry.
 
 ## Safe Move and Restore

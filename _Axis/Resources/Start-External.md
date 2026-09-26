@@ -5,7 +5,7 @@
 
 Before loading any context or creating an External Marker, follow `_Axis/Resources/Check-Update-Handoff.md` in `inspect` phase. A pending transaction waits for its owner or a fresh Main; External never recovers, consumes or serves through that gate.
 
-1. Quietly load the Starting Context: check `_Axis/Resources/Starting-Context.md` freshness, then read it through its terminal `<!-- axis:starting-context:end -->` marker. If it is missing, stale, or truncated before that marker, read the ten source files named by [Start-Session > Step 1: Load Key Concepts] directly. No notices, no repairs - just load.
+1. Quietly load `_Axis/Resources/Load-Starting-Context.md` and follow its exact source table and freshness checks; read the selected bundle through its terminal `<!-- axis:starting-context:end -->` marker. Missing, stale or truncated compiled context takes the direct-source fallback; missing required source stops. No notices or repairs. Never consult Main-only Start-Session. Load [Practices > IndexDetail] before bootstrap records and [Practices > Agents] before External work.
 
 2. Reserve a fresh Session ID per [Practices > Timestamps > Bootstrap Markers]. This first Marker alone bypasses the prior-Marker lease check; take the claim, recheck the full uniqueness domain, and retain its owner token through step 3. Never use this exception to replace a lost existing lease.
 

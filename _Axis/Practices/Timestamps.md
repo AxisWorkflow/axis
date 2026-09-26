@@ -31,6 +31,10 @@ Every record in an Index-Detail directory is named by its timestamp, and that na
 
 5. Release only the claim whose `OWNER` still matches your retained token: remove that file and `rmdir` the claim directory. On mismatch or failed removal, stop and report; never remove a replacement owner's claim. The committed record now reserves the identity permanently. Delete-blocked claims remain for recovery; never clear them in place or use recursive deletion at an active claim name. STOP.
 
+## Optional Startup Helper
+
+The independently qualified installed `startup-state.py` may perform the exact Claim-Session/Start-Session record operations specified by those Resources. Inside this optional helper, Python standard-library real UTC milliseconds are equivalent to the recipe for subsequent record IDs; the entry still runs its exact first timestamp command. The complete uniqueness domain, unconditional claim, post-claim scan, no-overwrite/readback,10-second bound, owned release and lease checks remain required. No other caller gains a minting shortcut. Missing helper support uses the complete manual procedure above.
+
 ## Bootstrap Markers
 
 A fresh Main or External has no prior Marker to read. Only the first Marker of a newly booting session may bypass the prior-Marker lease check in step 3. Main must hold [Claim-Session] admission; External must have been routed by the entry protocol. Use the initial timestamp as a candidate, complete the claim and post-claim checks above, and commit the final Session ID only after they succeed. Hold the claim through exclusive Marker creation and exact readback, then release it. Check for a `.kill` sibling before and after creation. If a tombstone exists, stop; it is not permission to mint another identity. A partial/failed bootstrap stops without a success greeting.

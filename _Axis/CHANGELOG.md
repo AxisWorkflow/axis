@@ -1,13 +1,13 @@
 # Changelog
 > **Purpose:** Record Axis release identity and the structural migrations needed to update an existing project safely.
 
-current-version: 26.09.23
+current-version: 1.00
 changelog-format: 1
 self-update-baseline: 26.08.19
 
 ## Contract
 
-`current-version` is the installed Axis release and uses the full release tag without its leading `v`. `changelog-format` versions this document's update contract. `self-update-baseline` remains `pending` until the first release that ships both this file and `^update`; at that publication it becomes that release's full version.
+`current-version` is the installed Axis release and uses the full release tag without its leading `v`. Releases from 1.00 onward use `MAJOR.MINOR` with a two-digit minor (for example `1.03`); earlier releases used date-style `YY.MM.DD` or `YY.MM.DD-N`, and every date-style version is older than 1.00. `changelog-format` versions this document's update contract. `self-update-baseline` remains `pending` until the first release that ships both this file and `^update`; at that publication it becomes that release's full version.
 
 The RSI Controller records every upgrade-relevant structural change under `Unreleased` in the same pass as the change. Before publication, the owning release cycle moves that material into a new immutable release section, updates `current-version`, sets the baseline when still pending, and recreates the empty headings under `Unreleased`. `^pub` verifies and publishes those frozen bytes.
 
@@ -39,6 +39,52 @@ update-impact: automatic
 ### Verification
 
 - None.
+
+## 1.00
+
+released: 2026-09-26
+
+- Adopt numeric release versions. Axis now uses `MAJOR.MINOR` with a two-digit minor ("Version 1.00"), tags `v{MAJOR.MINOR}` and Release titles `Axis Workflow {MAJOR.MINOR}`. `_Axis/Commands/update.md`, `_Axis/Resources/update-transaction.py` and the Dashboard accept both numeric and historical date-style versions; date-style versions sort before 1.00. This release was prepared as 26.09.26 and is published as 1.00; no 26.09.26 release exists. Updaters installed before 1.00 accept only date-style versions and cannot read `v1.00`, so moving an existing project to 1.00 is a one-time manual upgrade; `^update` works normally from 1.00 onward.
+
+- Clarify a single completed instruction load across `_Axis/Resources/Load-Starting-Context.md` and `Start-Session.md`; later startup actions reuse the full current text. Preserve truncated/changed/lost-context recovery, source freshness, External separation, file-only fallback and all live readiness checks. Regenerate `Starting-Context.md`; no new records, Flags, dependencies or project-state migration.
+
+- Update `_Axis/Resources/startup-state.py` with optional read-only Task/Snapshot index inspection, retaining the manual comparison and existing startup ownership and write operations. Group mandatory instruction retrieval in `_Axis/Resources/Claim-Session.md`, `Load-Starting-Context.md` and `Start-Session.md` without moving their execution or ready gates; regenerate `Starting-Context.md`.
+- Replace lifecycle presentation with a brand section and verified Project, Folder, Agent and Session details; use Ready, Stopped or Updated and stopped as appropriate. Remove the assigned mascot/persona from managed Rules, Glossary, OpenClaw guidance and both manuals. Preserve project-owned instructions and existing session history; no record migration or new Flag is needed.
+- Final application answers use the single-divider TURN COMPLETE - WAITING: boundary under `_Axis/Rules/Speaking.md`; retain exact-output, host-format and terminal-lifecycle exceptions. Verify startup/shutdown role identity, unavailable presentation metadata, list mismatch/error handling and unchanged readiness before release.
+
+- Change managed `_Axis/Resources/Start-Session.md`, the Reminder trigger in `_Axis/PRACTICES.md`, and generated `_Axis/Resources/Starting-Context.md` to inventory Follow-Up, Reminder, and Trash queues before loading their full handling instructions. Only confirmed empty queues take the short path; preserve trusted time, reminder-check writes/readbacks, populated/error handling, Trash initialization/ownership, and readiness ordering. No helper, dependency, record-shape or project-state migration; preserve existing queues and history. Verify empty, populated, malformed, unreadable, hidden-residue, untrusted-time and missing-placeholder branches before release.
+
+- Add optional project-owned `_Axis/INITIATIVES.md` and managed `_Axis/Practices/Initiatives.md`, with relevant planning, Task, status, continuity, reference, and Dashboard integration. Initiative sections use stable local keys; this adds no timestamp record family or mandatory startup detail read. The optional `initiative:` field is mirrored in Task index/detail metadata; omitted/blank/`N/A` remains standalone.
+- Preserve existing Initiative content, Task identities, and history. Existing projects may leave `_Axis/INITIATIVES.md` absent until they use the feature; do not copy an empty release template over existing content or automatically convert parent Tasks. Empty-template release checks exclude live Initiative state. Update reconciliation may name the optional document when it already exists; this does not authorize managed replacement of it.
+- Verify empty/absent projects, linked and standalone Task parsing, stable Initiative links, terminal outcome semantics, project-state preservation, and unchanged ordinary startup ordering before release.
+
+- Add managed `_Axis/Resources/Startup-Records-Manual.md` and route manual startup records there; preserve complete fallback and all semantic steps. Inline ordinary continuation checks in entry sources; keep identity recovery deferred. Extend optional `startup-state.py` to prepare `_Axis/Archive/Requests/` safely and record explicitly observed capabilities under its retained owner. Request adjudication preflights archive destinations and stops on partial state. No history, Settings, record schema or project-state migration; existing archives remain intact.
+
+
+- Add optional managed `_Axis/Resources/startup-state.py` for local Main admission and startup records, plus an LF rule for Resource Python files. Missing Python/POSIX support retains complete manual startup. Existing record shapes, capability probes, Settings, project state, update authority, queue handling and presentation order are unchanged. New temporary helper OWNER metadata remains inside the existing admission directory; never migrate or rewrite retained history.
+
+
+- Startup loading adds managed Resources `_Axis/Resources/Continue-Session.md` and `_Axis/Resources/Load-Starting-Context.md`. Synchronized entry aliases retain mandatory startup and continuation; the shared loader defines canonical full-file/section inputs and a direct-file fallback. Main Marker shape now has one pre-admission owner in Markers. Standing project instructions load before optional probes. No project-state migration, Flag-domain change or record rewrite is required; preserve User data, Settings and history.
+- Routine confirmations omit Axis provenance boilerplate while preserving their gates and higher-priority explanations.
+
+
+update-impact: manual
+
+### Structural Changes
+
+- `_Axis/Commands/update.md` and `_Axis/Resources/update-transaction.py` accept `MAJOR.MINOR` versions and `v{MAJOR.MINOR}` tags as well as historical date-style versions.
+
+### Project-State Migrations
+
+- One-time manual upgrade for projects on any date-style version from `26.08.19`: stop every Axis session in the project; back up `_Axis/` and the root entry files; for each Axis-managed path (the three entry files, `.gitattributes`, `_Axis/Commands/`, `Practices/`, `Rules/`, `Resources/`, `Dashboard/`, and `_Axis/CHANGELOG.md`, `CLA.md`, `CONTRIBUTING.md`, `LICENSE`, `README.md`, `GLOSSARY.md`, `MANIFEST.md`, `PRACTICES.md`, `PRINCIPLES.md`, `RULES.md`) take the 1.00 file when the local file still equals the project's installed release, and review any local customization; apply the Project-State Migrations of every release after the installed one (for example create `_Axis/Updates/` and `_Axis/Supervision/` with `.gitkeep`, add missing Settings with their defaults, merge new `.gitignore` and `.gitattributes` rules); preserve all project records, Settings values, Wiki, Secrets, Archive and Subprojects; then start a new session.
+
+### Retired Paths
+
+- None.
+
+### Verification
+
+- `current-version` is `1.00`, the newest release section is `## 1.00`, and the installed `update-transaction.py` accepts both `1.00` and `26.08.19`.
 
 ## 26.09.23
 

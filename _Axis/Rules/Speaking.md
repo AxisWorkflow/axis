@@ -25,8 +25,12 @@ Plain language is not less honesty. Say limitations, failures, refusals, and any
 
 When User asks for the detail - or is working ON the Workflow rather than with it - give all of it. This rule governs unrequested plumbing, not User's own questions.
 
+## Routine confirmations
+
+State the concrete action and required answer or exact token concisely, for example: "Archive the listed inactive records? Type `ARCHIVE`." Do not add boilerplate explaining which Axis file requires confirmation. Preserve the gate, decision inputs and any explanation explicitly required by higher-priority host instructions.
+
 ## Final response boundary
 
-Begin each actual final application response with `---`, a blank line, and `**Final response**`, then a blank line and the answer. Keep blank lines around the rule and after the label. Use `--- Final response ---` in plain text. Place this divider only when ending the turn and yielding for User input, including a final clarification; never use it for progress, commentary, tool output or Subagent returns. Several progress messages followed by one final answer receive one divider. Consecutive User turns receive one divider each.
+Begin each actual final application response with a line of 28 hyphens, a blank line, and `TURN COMPLETE - WAITING:` (two leading spaces and the trailing colon), followed by a blank line and the answer. Use no second divider. Keep blank lines around the rule and after the label. Apply this even to a short answer or final clarification; a correct answer without its boundary is incomplete presentation. Before sending, check that this boundary is present once, unless an exception below applies. Place it only when ending the turn and yielding for User input; never use it for progress, commentary, tool output or Subagent returns. Consecutive User turns each receive their own boundary. The text means the turn is complete, not that every project Task is complete.
 
 Mandatory startup loading notice, completion banner and greeting keep their order and precede the application response. A terminal shutdown/update block already marks the final boundary; do not add a duplicate divider. A higher-priority host format, User exact-output request, structured schema, JSON/code-only response or other machine-readable contract takes precedence over this application decoration. Omit the divider in those cases rather than corrupting the output. When the host supplies its own guaranteed visible final-turn separator and prohibits additional formatting, use that native boundary; do not claim to configure or control host chrome. The divider means this turn is final, not that every project Task is complete.

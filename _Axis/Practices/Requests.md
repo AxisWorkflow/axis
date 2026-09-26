@@ -77,6 +77,8 @@ This accelerated path is best effort, not a fourth delivery guarantee. If it wak
 	- b. **Declined** - say why. Declining is a normal outcome, not a failure; a request past its `expires:` is declined on sight.
 	- c. **Referred** - it needs User, or more work than this turn holds. Raise a Task ([Practices > Tasks]) and let the ordinary backlog carry it. Referring is how a request leaves the queue without being dropped.
 
+Before appending a resolution, under your lease and the applicable [Lock-File] ownership, verify `_Axis/Archive/` and ensure `_Axis/Archive/Requests/` is an ordinary physical directory (create the missing last directory only). Reject a file, symlink, special object or destination filename collision; never overwrite an archived request. If this fails, preserve the live request and STOP before ordinary serving. After interruption, inspect the exact request, archive destination, owned lock and existing outcome: complete the same terminal resolution once, without repeating its action, appending another terminal resolution or duplicating its Log. Ambiguous partial state stops for reviewed recovery.
+
 4. Append the resolution to the request file - this is the one mutation a request permits, and the reason requests are not WORM:
 
 		resolved: {accepted | declined | referred} - {Session ID} - {yyyy.mm.dd.hh.mm.ss.xxxZ}

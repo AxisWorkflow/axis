@@ -1,7 +1,7 @@
 # Tasks
 > **Purpose:** Define how to record, track, and update Tasks.
 
-Break Plan down into congruent Tasks for actual execution. Keep Plan and Tasks synchronized - do not let them drift.
+Break Plan down into congruent Tasks for actual execution. Keep Plan and Tasks synchronized - do not let them drift. Related Tasks may optionally share an Initiative under [Practices > Initiatives]; keep shared outcomes and phase decisions there, and concrete execution here.
 
 Record each Axis Task in `_Axis/TASKS.md` with the following shape:
 
@@ -13,10 +13,11 @@ Record each Axis Task in `_Axis/TASKS.md` with the following shape:
 - **Completed** - field; timestamp when Status reached **Completed**; `N/A` otherwise.
 - **Cancelled** - field; timestamp when Status reached **Cancelled**; `N/A` otherwise.
 - **Delivers** - field; optional; names the Deliverable in `_Axis/PROJECT.md` this task aims at; `N/A` when the task serves no single Deliverable.
+- **Initiative** - optional `initiative:` field; one stable key from [Initiatives], or omitted/blank/`N/A` for a standalone Task. Keep it identical in the index and detail. Before working on a linked Task, load its matching Initiative section and check the reciprocal Task link under [Practices > Initiatives].
 - **Description** - short body paragraph of < 100 words (blank line before and after).
 - **Details** - A link for `[Details...](Tasks/{yyyy.mm.dd.hh.mm.ss.xxxZ}.md)`, or `Archive/Tasks/{timestamp}.md` after a terminal Task is archived.
 
-Field keys in `_Axis/TASKS.md` are exactly `label:`, `status:`, `created:`, `updated:`, `completed:`, `cancelled:`, `delivers:` - lowercase, one per line, YAML-parseable (the Dashboard depends on these keys). Each value ends at its own line break; a key with no value reads as empty, never as the next line. Every material edit to an open Task advances `updated:`; terminal Tasks carry the terminal timestamp there. Do not use filesystem `mtime` as durable Task recency because copy, checkout, and sync operations rewrite it.
+Field keys in `_Axis/TASKS.md` are exactly `label:`, `status:`, `created:`, `updated:`, `completed:`, `cancelled:`, `delivers:`, and optional `initiative:` - lowercase, one per line, YAML-parseable (the Dashboard depends on these keys). Each value ends at its own line break; a key with no value reads as empty, never as the next line. Every material edit to an open Task advances `updated:`; terminal Tasks carry the terminal timestamp there. Do not use filesystem `mtime` as durable Task recency because copy, checkout, and sync operations rewrite it.
 
 ## Deliverable Coverage
 

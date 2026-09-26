@@ -1,12 +1,12 @@
 # Axis Workflow
 
 [![License: FSL-1.1-MIT](https://img.shields.io/badge/License-FSL--1.1--MIT-2ea44f.svg)](/_Axis/LICENSE)
-[![Version](https://img.shields.io/badge/Version-26.09.23-blue.svg)](https://github.com/AxisWorkflow/axis)
+[![Version](https://img.shields.io/badge/Version-1.00-blue.svg)](https://github.com/AxisWorkflow/axis)
 [![Works with](https://img.shields.io/badge/Works%20with-Claude%20Cowork%20%7C%20Claude%20Code%20%7C%20ChatGPT%20Work%20%7C%20Codex%20%7C%20Cursor%20%7C%20Gemini%20CLI-6f42c1.svg)](https://github.com/AxisWorkflow/axis)
 
 The [**Axis Workflow™**](https://github.com/AxisWorkflow/axis) is a source-available project developed by [SimAxis](https://simaxis.ai). Current releases use [FSL-1.1-MIT](/_Axis/LICENSE): most use is allowed immediately, Competing Use is prohibited, and each version converts to MIT two years after that version is made available. The license grants no trademark rights. If you like **Axis**, [please buy us a coffee](https://buymeacoffee.com/SimAxis).
 
-This is version 26.09.23.
+This is version 1.00.
 
 Please **[star the repo](https://github.com/AxisWorkflow/axis)** - it helps others to find it.
 
@@ -39,7 +39,7 @@ The following illustrates using Axis to manage *Meridian* - a paid monthly resea
 >
 > **Agent:** *(loading notice; startup validates, Session ID `2026.07.27.08.30.02.114Z`)*
 >
-> Good morning - I'm Axel. Type `^help` at any time for a list of commands.
+> Axis is ready. Type `^help` at any time for a list of commands.
 >
 > **User:** where did we leave off?
 >
@@ -209,8 +209,8 @@ You can see the same state at a glance. `^dashboard` opens a live view that read
 
 ## FAQ
 
-**Who is Axel?**
-That is the name your Agent introduces itself with - the persona for the Main Agent that coordinates your project. Subagents it spawns (for cross-examination, or Wiki work) are unnamed.
+**Who coordinates my project?**
+The Main Agent coordinates your project using its normal identity. Axis assigns no mascot or persona name. The startup block shows the project, folder, Agent role and Session ID.
 
 **Is my data local?**
 By default. Axis is just files in your project folder - no remote Axis backend, account, or telemetry. The optional Dashboard uses a loopback-only server on your own computer. If you choose a Git remote for portability, tracked project state is also stored by that provider; plaintext Secrets remain excluded unless you deliberately enable the encrypted capsule. Whatever your AI tool sends to its model is governed by that tool, not by Axis.
@@ -1036,7 +1036,7 @@ The **Axis Workflow** runs directly from markdown - you do not need to install a
 Axis itself cannot change parameters in the outer-harness of the LLM on which it runs. As such, the User may need to configure API settings (and/or the AI host harness) manually.
 
 <!-- BEGIN GENERATED: api-parameter-contract -->
-Provider parameters change independently, so the Profile is an outcome-level intent rather than a timeless set of knobs. Match the exact model family and API surface below; if the selected model's current documentation differs, the provider documentation wins. This matrix was reviewed on **2026-09-23**.
+Provider parameters change independently, so the Profile is an outcome-level intent rather than a timeless set of knobs. Match the exact model family and API surface below; if the selected model's current documentation differs, the provider documentation wins. This matrix was reviewed on **2026-09-26**.
 
 | Provider and model family | API surface | Fast Profile | Standard Profile | Deep Profile | Compatibility note |
 | --- | --- | --- | --- | --- | --- |
@@ -1116,7 +1116,7 @@ The local-first claim applies to Axis storage, not necessarily to model processi
 
 #### Execution Model
 
-`AGENTS.md`, `CLAUDE.md`, and `GEMINI.md` contain synchronized entry protocols for different host conventions. Before startup, they require the system context or host configuration to establish a standard-capability Main Agent; otherwise they stop without touching project state. An admitted Main Agent establishes a timestamp-based Session ID, loads one compiled starting context, records its model, detects Host Capabilities, and writes the results as Flags. Capability gates determine whether work may be delegated or parallelized. Missing or malformed Capability state fails toward the documented lower-capability behavior.
+`AGENTS.md`, `CLAUDE.md`, and `GEMINI.md` contain synchronized entry protocols for different host conventions. Before startup, they require the system context or host configuration to establish a standard-capability Main Agent; otherwise they stop without touching project state. An admitted Main Agent establishes a timestamp-based Session ID, loads one compiled starting context, records its model, detects Host Capabilities, and writes the results as Flags. The shared core loader selects canonical sources and falls back to direct file reads when its bundle is stale or incomplete. An optional local Python helper performs startup record operations; full manual startup remains available, and capability probes and project decisions stay with their owning procedures. Detailed reference material loads at explicit first-use triggers; continuation revalidates the existing identity rather than booting again. Capability gates determine whether work may be delegated or parallelized. Missing or malformed Capability state fails toward the documented lower-capability behavior.
 
 Persistent state is coordinated through files:
 
@@ -1213,3 +1213,9 @@ Current releases are source-available under the **Functional Source License, Ver
 Third-party components retain their own copyright and licenses, including the bundled Mermaid renderer. See the complete [Axis License](/_Axis/LICENSE), [Contributor License Agreement and Copyright Assignment](/_Axis/CLA.md), and [Trademarks](#trademarks).
 
 Copyright 2026 Kenneth A. Younge. All rights reserved except as expressly licensed.
+
+## Initiatives
+
+Use an Initiative when several Tasks pursue one shared outcome. For example, a Plan to grow a service might include an Initiative to improve first-time setup, with separate Tasks to investigate delays, make a change, and check the result. The Plan holds priorities, the Initiative holds shared scope and current phase, and Tasks hold the actual work.
+
+Ask your Agent to create or update an Initiative, or use `^plan` and `^tasks`. Its shared record lives in `_Axis/INITIATIVES.md`; Tasks can link to it with an optional `initiative:` key. The Dashboard shows an Initiative link beside linked Tasks. Small projects can keep using only their Plan and Tasks. A completed Task does not automatically mean the shared outcome is achieved.

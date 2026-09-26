@@ -43,7 +43,7 @@ AXIS_RECORD_FAMILIES = {
     "CX",
     "Audit",
 }
-AXIS_ROOT_FILES = {"CHANGELOG.md", "PROJECT.md", "SETTINGS.md", "PLAN.md", "TASKS.md"}
+AXIS_ROOT_FILES = {"CHANGELOG.md", "PROJECT.md", "SETTINGS.md", "PLAN.md", "INITIATIVES.md", "TASKS.md"}
 DASHBOARD_FILES = {
     "index.html",
     "mermaid-11.16.1.min.js",

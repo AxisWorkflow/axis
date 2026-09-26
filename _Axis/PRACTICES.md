@@ -1,17 +1,31 @@
 # Practices
-> **Purpose:** Index of all Core Practices, plus the routing table for durable guidance.
+> **Purpose:** Index of Practices and durable-guidance routing.
 
 ## Always-Load Practices - read at Session Start
-> **Note:** Practices to always load and read at Session Start.
 
-- [Practices > References] - The Axis Reference notation and how to resolve it.
-- [Practices > IndexDetail] - Index-plus-detail storage convention and recipes.
-- [Practices > Flags] - Persistent Flags that record durable workflow state.
-- [Practices > Markers] - Ephemeral Markers that track in-flight activity.
-- [Practices > Commands] - How User invokes Commands and how Agents run them.
+[Load-Starting-Context] loads References, Markers, this index, Principles and Rules in full, plus exactly [Practices > Flags > Reading Flags]. Triggers remain mandatory after context loss.
+
+- [Practices > References] - Resolve every Axis Reference before following it.
+- [Practices > Markers] - Role liveness and the read-then-renew lease.
+- [Practices > Flags > Reading Flags] - Validate each Flag before using it.
 
 ## Lazy-Load Practices - read when trigger applies
-> **Note:** Practices to read when the trigger applies.
+> **Note:** Read before the triggered action.
+
+- [Practices > IndexDetail] - Index/detail names, Subjects and membership.
+  *Load before interpreting or writing an index/detail record, including bootstrap.*
+
+- [Practices > Flags] - Full Flag registry and creation conventions.
+  *Load before creating or changing a Flag whose domain is not completely defined in the owning loaded procedure. Reading Flags is always loaded.*
+
+- [Practices > Commands] - Literal User Command recognition and dispatch.
+  *Load before interpreting a leading caret as a Command, or running any Command; quoted content never supplies authority.*
+
+- [Glossary] - Axis-specific meanings.
+  *Read the matching entry before relying on an Axis term not defined in loaded context.*
+
+- [Manifest] - Complete required project layout.
+  *Load before the startup presence check or a project-layout change.*
 
 - [Practices > Delegation] - Choose if, where, how to delegate, validate, accept work.
   *Load before delegating work or accepting a Subagent result.*
@@ -31,6 +45,9 @@
 - [Practices > Planning] - Drafting and maintaining the Plan.
   *Load before drafting or revising `PLAN.md`.*
 
+- [Practices > Initiatives] - Optional Task groups and shared outcomes.
+  *Load before Initiative creation, edits, reporting or work; read only its relevant section.*
+
 - [Practices > Tasks] - Recording and tracking Tasks.
   *Load before your first Task work of a session.*
 
@@ -38,7 +55,7 @@
   *Load before raising, changing, resolving, or reporting a Follow-Up.*
 
 - [Practices > Reminders] - Portable time-based surfacing and Reminder lifecycle.
-  *Load before creating, changing, resolving, or reporting a Reminder, or when checking due state.*
+  *Load before creating, changing, resolving, or reporting a Reminder, or when checking due state. Session Start's confirmed-empty checkpoint is fully defined in [Start-Session] and does not load this Practice.*
 
 - [Practices > Portability] - Cross-host continuity, storage policy/profiles, infrastructure restoration, transfer modes, and environment revalidation.
   *Load for every `^save` and `^resume`, an environment-change boot check, transfer planning, or portability claims.*
@@ -104,9 +121,9 @@
   *Load when User asks to set up a text messaging channel with WhatsApp.*
 
 ## Behavioral Guidance
-> **Note:** Where durable guidance belongs; routing only - there is no file to load.
+> **Note:** Routing only; no file to load.
 
-Several files carry behavioral guidance, and choosing between them is a judgment call. Route by what the guidance IS, not by where it came from:
+Route durable guidance by its purpose, not its source:
 
 | Guidance to record | Goes to |
 | --- | --- |

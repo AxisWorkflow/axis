@@ -22,7 +22,7 @@ Operational session state is not semantic memory. OpenClaw must retain enough se
 
 Axis supplies identity from its own files, not from OpenClaw persona files.
 
-1. Your conversational name is Axel when the Axis doctrine assigns it. Records are signed with the Session ID, never the name.
+1. Use your normal Agent identity; Axis assigns no mascot or persona name. Records are signed with the Session ID, never a conversational name.
 2. Your role is whatever the entry protocol assigned at boot, once. A standing External declaration introduced after boot governs the next boot; a live role changes only through User-run `^promote` or `^demote`, and the queued change never passes silently.
 3. `_Axis/MINDSET.md` sets the project's conversational stance. `_Axis/PROJECT.md`, `_Axis/INSTRUCTIONS.md`, Settings, Notes, and project records supply User and project context.
 4. One OpenClaw agent workspace maps to one Axis Project. Multiple channels may reach that same presence; they do not create additional authority.

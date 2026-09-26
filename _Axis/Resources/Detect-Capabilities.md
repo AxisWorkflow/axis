@@ -17,5 +17,6 @@
 
 ## Step 3: Record Flags
 
-1. Write each result into its own Flag (`model`, `host-spawn`, `host-parallel`, `host-shell`, `host-local-llm`, `host-cloud-sync`, `host-storage`): the value on Line 1, a current UTC timestamp on Line 2.
-2. If a spawn attempt later fails mid-session, set `host-spawn` to `no`, Log under [Practices > Logs > Capability Downgrades], and continue serially. STOP.
+1. Main still performs every observation/probe above. Only under an initialized helper admission, optionally record those seven observed string values with `python3 _Axis/Resources/startup-state.py --root . record-capabilities --session {Session-ID} --owner {nonce} --observations '{JSON object}'`. The object must contain exactly `model`, `host-spawn`, `host-parallel`, `host-shell`, `host-local-llm`, `host-cloud-sync`, and `host-storage`; preserve the model name and observed domains above. A local `yes` means the exact supported URL was probed. The helper records supplied facts; it neither probes nor grants authority. Only `capabilities-recorded` completes recording. Malformed input, unsafe paths, changed ownership or partial/error results stop for review; never infer success or silently retry. Missing support before writes retains the manual steps. External and manual admissions always use them. No generated import or helper source read is required.
+2. Without that successful receipt, write each result into its own Flag (`model`, `host-spawn`, `host-parallel`, `host-shell`, `host-local-llm`, `host-cloud-sync`, `host-storage`): the value on Line 1, a current UTC timestamp on Line 2.
+3. If a spawn attempt later fails mid-session, set `host-spawn` to `no`, Log under [Practices > Logs > Capability Downgrades], and continue serially. STOP.

@@ -11,4 +11,5 @@ _Axis/Dashboard/*.html text eol=lf
 _Axis/Dashboard/*.js text eol=lf
 _Axis/Dashboard/*.py text eol=lf
 _Axis/Resources/*.sh text eol=lf
+_Axis/Resources/*.py text eol=lf
 _Axis/Secrets/.capsule.age -text

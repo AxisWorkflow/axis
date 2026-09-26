@@ -17,7 +17,7 @@ except ImportError:
 ID=r'\d{4}(?:\.\d{2}){5}\.\d{3}Z'
 ENTRIES=('AGENTS.md','CLAUDE.md','GEMINI.md')
 PROJECT=('_Axis/PROJECT.md','_Axis/SETTINGS.md','_Axis/MINDSET.md','_Axis/DIRECTIVES.md','_Axis/ENVIRONMENT.md')
-MUTABLE=('_Axis/PLAN.md','_Axis/TASKS.md','_Axis/SNAPSHOTS.md',*PROJECT)
+MUTABLE=('_Axis/PLAN.md','_Axis/INITIATIVES.md','_Axis/TASKS.md','_Axis/SNAPSHOTS.md',*PROJECT)
 TOP=('.gitattributes','.gitignore','README.md','LICENSE',*ENTRIES)
 MANAGED=('_Axis/CHANGELOG.md','_Axis/CLA.md','_Axis/CONTRIBUTING.md','_Axis/LICENSE','_Axis/README.md','_Axis/GLOSSARY.md','_Axis/MANIFEST.md','_Axis/PRACTICES.md','_Axis/PRINCIPLES.md','_Axis/RULES.md')
 PREFIX=('_Axis/Commands/','_Axis/Practices/','_Axis/Rules/','_Axis/Resources/','_Axis/Dashboard/')
@@ -70,8 +70,10 @@ def replace(p,data,mode):
         if os.path.exists(n):os.unlink(n)
     require(read(p)==data and stat.S_IMODE(p.stat().st_mode)==mode,'write readback failed')
 def version(s):
-    require(isinstance(s,str) and re.fullmatch(r'\d{2}\.\d{2}\.\d{2}(?:-[1-9]\d*)?',s),'invalid version')
-    d,sep,n=s.partition('-');y,m,day=map(int,d.split('.'));datetime.date(2000+y,m,day);return y,m,day,int(n) if sep else 1
+    require(isinstance(s,str) and re.fullmatch(r'(?:\d{2}\.\d{2}\.\d{2}(?:-[1-9]\d*)?|[1-9]\d*\.\d{2})',s),'invalid version')
+    if s.count('.')==1:
+        major,minor=map(int,s.split('.'));return 1,major,minor,0,0
+    d,sep,n=s.partition('-');y,m,day=map(int,d.split('.'));datetime.date(2000+y,m,day);return 0,y,m,day,int(n) if sep else 1
 
 def classification(p):
     try:

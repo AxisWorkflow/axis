@@ -75,6 +75,10 @@
 - `_Axis/Dashboard/server.py`
 - `_Axis/Dashboard/plan-diagram.{mermaid|svg|png}` - optional Plan illustration.
 
+### Optional project files
+
+- `_Axis/INITIATIVES.md` - optional shared outcomes and Task groups; absent is valid, and no startup detail load is required.
+
 ### Practices
 
 - `_Axis/Practices/Agents.md`
@@ -90,6 +94,7 @@
 - `_Axis/Practices/GIT.md`
 - `_Axis/Practices/Ideas.md`
 - `_Axis/Practices/IndexDetail.md`
+- `_Axis/Practices/Initiatives.md`
 - `_Axis/Practices/Logs.md`
 - `_Axis/Practices/Markers.md`
 - `_Axis/Practices/Mindset.md`
@@ -174,6 +179,10 @@
 - `_Axis/Resources/Check-Remote-Freshness.md`
 - `_Axis/Resources/remote-freshness.py` - optional bounded startup Git check.
 
+- `_Axis/Resources/Continue-Session.md`
+- `_Axis/Resources/Load-Starting-Context.md`
+- `_Axis/Resources/Startup-Records-Manual.md` - complete manual startup record fallback, loaded only when selected.
+- `_Axis/Resources/startup-state.py` - optional local startup record accelerator; manual startup remains available.
 - `_Axis/Resources/Claim-Session.md`
 - `_Axis/Resources/Detect-Capabilities.md`
 - `_Axis/Resources/Draft-Mindset.md`

@@ -311,7 +311,7 @@ function parseSettings(md){
   return vals;
 }
 function parseAxisVersion(md){
-  const matches = [...md.matchAll(/^current-version:[ \t]*(\d{2}\.\d{2}\.\d{2}(?:-\d+)?)[ \t]*$/gm)];
+  const matches = [...md.matchAll(/^current-version:[ \t]*(\d{2}\.\d{2}\.\d{2}(?:-[1-9]\d*)?|[1-9]\d*\.\d{2})[ \t]*$/gm)];
   return matches.length === 1 ? matches[0][1] : "Unknown";
 }
 function parseInfrastructureSummary(md){          // safe Snapshot summary only; never read ENVIRONMENT or Secrets here
@@ -384,9 +384,9 @@ function parseTasks(md){                           // shared by the Tasks card a
   return md.split(/\n## /).slice(1).map(chunk => {
     const lines = chunk.split("\n");
     const get = f => (chunk.match(new RegExp("^"+f+":[ \\t]*(.+)$","m")) || [,""])[1].trim();
-    const body = lines.slice(1).map(l => l.trim()).filter(l => l && !/^(label|status|created|updated|completed|cancelled|delivers):/.test(l) && !l.includes("[Details"));
+    const body = lines.slice(1).map(l => l.trim()).filter(l => l && !/^(label|status|created|updated|completed|cancelled|delivers|initiative):/.test(l) && !l.includes("[Details"));
     const dm = chunk.match(/\[Details\.\.\.\]\(((?:Tasks|Archive\/Tasks)\/[^)]+)\)/);
-    return { name: lines[0].trim(), label: get("label"), status: get("status"), updated: get("updated"), delivers: get("delivers"),
+    return { name: lines[0].trim(), label: get("label"), status: get("status"), updated: get("updated"), delivers: get("delivers"), initiative: get("initiative"),
              desc: body[0] || "", details: dm ? "../" + dm[1] : null };
   }).filter(t => t.status && !t.status.includes("{{"));
 }
@@ -918,6 +918,7 @@ function renderTaskPage(){
       }
       items.push(`<li><span class="status ${esc(t.status)}">${esc(t.status)}</span> <b>${esc(t.name)}</b>${agechip}` +
         (t.label && !t.label.includes("{{") ? ` <span class="muted">- ${esc(t.label)}</span>` : "") +
+        (t.initiative && /^[a-z][a-z0-9-]*$/.test(t.initiative) ? ` <a class="chip" href="../INITIATIVES.md#${encodeURIComponent(t.initiative)}">Initiative</a>` : "") +
         (t.delivers && !t.delivers.includes("{{") && t.delivers !== "N/A" ? ` <span class="chip" style="font-size:11.5px">→ ${esc(t.delivers)}</span>` : "") +
         (t.status === "Blocked" && t.desc && !t.desc.includes("{{") ? `<br><span class="muted" style="font-size:12.5px">${esc(t.desc)}</span>` : "") + "</li>");
     }

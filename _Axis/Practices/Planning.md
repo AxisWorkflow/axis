@@ -7,6 +7,7 @@ Agent should draft a Plan for every project:
 - Focus more on how parts fit together (less on execution details - those are in Tasks.)
 - Include info-graphics, charts, and diagrams to help User understand the big picture.
 - Keep the specifics of execution and implementation in Tasks - the Plan is high-level.
+- When related Tasks share an outcome, optionally use [Practices > Initiatives]. Put a brief Initiative summary and link in the Plan, shared decisions in [Initiatives], and execution details in Tasks. Standalone Tasks and projects without Initiatives remain valid.
 - Save Plan as `_Axis/PLAN.md` so User can inspect, approve, give feedback.
 - Save the Plan illustration as `_Axis/Dashboard/plan-diagram.{mermaid|svg|png}`, overwriting any previous one, so the Dashboard renders the current diagram (see `^plan` step 7).
 - Verify Plan with User before implementing.

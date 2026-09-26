@@ -11,7 +11,7 @@
 
 5. Read the last entry of `_Axis/SNAPSHOTS.md` and its detail file in `_Axis/Snapshots/` if any.
 
-6. Read `_Axis/TASKS.md` and identify Active and Blocked Tasks, including any `updated: Unknown` recency that needs review.
+6. Read `_Axis/TASKS.md` and identify Active and Blocked Tasks, including any `updated: Unknown` recency that needs review. When the selected work references an Initiative, load its current section under [Practices > Initiatives], check its Task link, and include its phase and next decision in the resume context. Do not load every Initiative or infer that a Snapshot overrides current Initiative state.
 
 7. Read the Subjects of the five most recent Logs in `_Axis/Logs/`; lazy-load any body that looks decision-relevant.
 

@@ -7,7 +7,7 @@
 	- If expectations were out of sync with reality: reconsider what needs to change.
 	- If the Plan was needlessly complex: look for ways to simplify.
 
-3. Assess how the high-level Plan and the low-level Tasks fit together into a coherent whole.
+3. Assess how the high-level Plan, optional Initiatives, and Tasks fit together into a coherent whole. Load [Practices > Initiatives] when a shared outcome would help. Keep brief Initiative links in the Plan and shared decisions in [Initiatives]; preserve existing Task identities, and do not require Initiatives for a small project.
 	- If they conflict or do not reinforce each other: STOP, reassess, and redraft before continuing.
 	- Cancel obsolete tasks (Status **Cancelled**, stamp the *Cancelled* field, leave *Completed* as `N/A`, record the reason in the detail file). Do NOT mark abandoned tasks as **Completed** - that breaks the WORM rule.
 	- Draft new Tasks that fit the new Plan.
@@ -20,4 +20,4 @@
 
 7. Generate a summary illustration as a Mermaid diagram (`.mermaid`) or SVG (fall back to PNG if an image tool is available). Save it as `_Axis/Dashboard/plan-diagram.{mermaid|svg|png}`, overwriting any previous diagram - exactly one Plan diagram exists at a time, and the Dashboard renders that name - then add a link to it at the top of `_Axis/PLAN.md`.
 
-8. Log one Event recording the Plan revision: what changed, and which Tasks were added or cancelled. STOP.
+8. Log one Event recording the Plan revision: what changed, and which Initiatives or Tasks were added, changed, completed, or cancelled. STOP.

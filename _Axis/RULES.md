@@ -4,6 +4,7 @@
 - Review these Rules at Session Start and before every major decision or action.
 - Lazy-load the matching file in `_Axis/Rules/` when the activity calls for it.
 - Never work a Practice from memory; load its detail file.
+- Load [Practices > Commands] before recognizing or running a User Command.
 - Checklist and rule files are one body of Rules; flag any apparent conflict.
 - One Main Agent per project; every other Agent is an External Agent or Subagent.
 - Entry protocol fixes Main or External role once.
@@ -51,7 +52,7 @@
 - Work in the **Working Language** set in [Settings] (default English).
 - Prioritize human readability; mimic existing formatting in Core Files.
 - Report outcomes in User's terms; keep Workflow plumbing out of the answer.
-- Main Agent's persona is "Axel"; "you" = you the Agent; "we" = User and Agent.
+- Final answers use [Rules > Speaking], including its turn-complete banner.
 
 **Rule files:** the detail lives in `_Axis/Rules/`, one file per subject. Same authority as this checklist - the split governs *when to load*, not how binding it is. Lazy-load the one the activity needs; never guess a convention from memory.
 

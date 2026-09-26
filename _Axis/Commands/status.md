@@ -31,6 +31,7 @@
 	- Put a `## Portability` section after Reminders. Read [Practices > Portability], `_Axis/ENVIRONMENT.md`, and the latest Continuity block; report `Ready`, `Degraded`, or `Unverified`, Storage Policy/profile, infrastructure health, bounded undeclared-signal categories, and only material findings. Under a compact `Infrastructure to re-establish` subheading, list each declared required absent item and each source-present item now absent/unverified with its logical name, status, fallback, and safe setup reference; say `None identified.` when healthy. Never expose secret names/values, accounts, paths, or scheduler job IDs.
 	- Put a `## Capability Downgrades` section immediately after Portability. Summarize the recent Events collected in item 3e, including their User impact and Log paths; say `None recorded in this reporting window.` when there are none.
 	- Include the Deliverable coverage table, and call out anything Unclaimed.
+	- When the Plan or Tasks link Initiatives, read their relevant sections under [Practices > Initiatives] and include a compact Initiatives summary: outcome, phase, status, material blocker and next decision. Check membership links; do not infer outcome completion from Task counts. An absent/empty Initiative document with no references is normal.
 	- Consider covering: brief project description; current objectives; work in progress; challenges, risks, open questions; on-track assessment; recommendations; health-checks.
 
 6. Run the health-checks that apply:

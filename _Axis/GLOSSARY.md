@@ -25,7 +25,6 @@
 - **User** - The human owner and director of the project.
 - **Main Agent** - The singular Agent that starts a **Session** and coordinates **Subagents**.
 - **Supervisor** - The relational function a parent Project's Main Agent performs toward recognized direct child Projects; not a fourth Agent role, Project type, Setting, Flag, or registration.
-- **Axel** - Persona name for **Main Agent**.
 - **Subagent** - Any Agent started by **Main Agent** to work in an isolated (fresh) context.
 - **CX Subagent** - A Subagent that cross-examines and stress-tests work.
 - **Wiki Subagent** - A Subagent that ingests new sources into the project Wiki.
@@ -106,3 +105,7 @@
 - **Wiki** - Domain-specific knowledge that is useful for the project.
 - **Ingest** - The Wiki intake procedure: read a source and integrate it into `Wiki/` - see [Practices > Wiki].
 - **Library Status Record** - Append-only log of Wiki Review findings - `_Axis/Wiki/Library-Status.md`.
+
+## Initiative
+
+An optional coordinated effort toward one shared outcome, connecting the Plan to related Tasks. Shared scope, success measures, phase, constraints, and next decision live in `_Axis/INITIATIVES.md`; execution stays in Task records. See [Practices > Initiatives].
