@@ -21,6 +21,7 @@ MUTABLE=('_Axis/PLAN.md','_Axis/INITIATIVES.md','_Axis/TASKS.md','_Axis/SNAPSHOT
 TOP=('.gitattributes','.gitignore','README.md','LICENSE',*ENTRIES)
 MANAGED=('_Axis/CHANGELOG.md','_Axis/CLA.md','_Axis/CONTRIBUTING.md','_Axis/LICENSE','_Axis/README.md','_Axis/USERMANUAL.md','_Axis/SPECIFICATION.md','_Axis/GLOSSARY.md','_Axis/MANIFEST.md','_Axis/PRACTICES.md','_Axis/PRINCIPLES.md','_Axis/RULES.md')
 PREFIX=('_Axis/Commands/','_Axis/Practices/','_Axis/Rules/','_Axis/Resources/','_Axis/Dashboard/')
+DECLARABLE=r'_Axis/[A-Z][A-Z0-9_-]*(?:\.md)?'
 
 def require(v,m):
     if not v:raise ValueError(m)
@@ -75,6 +76,19 @@ def version(s):
         major,minor=map(int,s.split('.'));return 1,major,minor,0,0
     d,sep,n=s.partition('-');y,m,day=map(int,d.split('.'));datetime.date(2000+y,m,day);return 0,y,m,day,int(n) if sep else 1
 
+def declared(changelog,origin,target):
+    """Top-level _Axis/ files named literally under Structural Changes or Retired Paths of releases after origin through target."""
+    lo,hi=version(origin),version(target);out=set();keep=False;sub=None
+    for line in changelog.splitlines():
+        if line.startswith('## '):
+            try:keep=lo<version(line[3:].strip())<=hi
+            except ValueError:keep=False
+            sub=None
+        elif line.startswith('### '):sub=line[4:].strip()
+        elif keep and sub in ('Structural Changes','Retired Paths'):
+            out.update(n for n in re.findall(r'`([^`]+)`',line) if re.fullmatch(DECLARABLE,n))
+    return out-set(MUTABLE)-{'_Axis/INSTRUCTIONS.md'}
+
 def classification(p):
     try:
         require(p.get('schema')==1 and p.get('origin_supported') is True,'unsupported origin')
@@ -124,8 +138,10 @@ def validate_plan(root,p):
     require(classification(p)['classification'] in ('routine','approved-exception'),'update requires resolved authority and preconditions')
     authorization(root,p)
     require(isinstance(p['changes'],list) and p['changes'],'empty plan');seen=set();migrations=p.get('migration_paths',[]);require(isinstance(migrations,list) and all(n in PROJECT for n in migrations),'invalid semantic migration scope')
+    log=[v for v in p['changes'] if isinstance(v,dict) and v.get('path')=='_Axis/CHANGELOG.md' and isinstance(v.get('staged'),str) and v['staged'].startswith('_Temp/')]
+    extra=declared(read(safe(root,log[0]['staged'])).decode(),p['from_version'],p['to_version']) if len(log)==1 else set()
     for v in p['changes']:
-        require(set(v)=={'path','before','after','staged'},'invalid change fields');n=v['path'];safe(root,n);require(n in TOP or n in MANAGED or n.startswith(PREFIX) or n in migrations or n=='.github/README.md' and v['after'] is None,'unmanaged or protected mutation target');require(n.casefold() not in seen,'duplicate target');seen.add(n.casefold());valid_identity(v['before']);valid_identity(v['after']);require(v['before']!=v['after'],'no-op change')
+        require(set(v)=={'path','before','after','staged'},'invalid change fields');n=v['path'];safe(root,n);require(n in TOP or n in MANAGED or n.startswith(PREFIX) or n in extra or n in migrations or n=='.github/README.md' and v['after'] is None,'unmanaged or protected mutation target');require(n.casefold() not in seen,'duplicate target');seen.add(n.casefold());valid_identity(v['before']);valid_identity(v['after']);require(v['before']!=v['after'],'no-op change')
         if v['after'] is None:require(v['staged'] is None,'deletion has payload')
         else:require(v['staged'].startswith('_Temp/'),'payload must be reviewed local staging');require(identity(safe(root,v['staged']))==v['after'],'staged bytes changed')
     for field in ('preserved','source_checks'):

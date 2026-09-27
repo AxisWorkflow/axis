@@ -5,7 +5,7 @@
 
 Use the two-section block below in one fenced `text` block when Markdown is available, or the same lines as plain text. The fence preserves spaces and prevents divider interpretation. The brand section uses three lines with `│`, `+`, `│`, framed by 40 `━` characters. Follow it with the session details and one closing divider. Use ordinary spaces, no color codes, emoji, mascot or invented persona. At narrow widths shorten dividers or use flowing text; never shorten an identity. If Unicode is unavailable use `-` for `━` and `|` for `│`.
 
-Use the Project name from Line 1 of `_Axis/PROJECT.md`, the verified current project root as Folder, and the booted role as Agent. Shorten a known home prefix to `~/` only when that relationship is already verified; do not inspect private home configuration to decorate output. Show `Not set` for an unfilled Project template and `Unavailable` for an unverified folder. Never print template tokens or guess. The `Session:` row is the Session ID: retain its complete validated timestamp. Do not add a redundant identity line outside the block. The `Version:` row shows `current-version` from the installed `_Axis/CHANGELOG.md` exactly as written (for example `1.01`); show `Unavailable` when that file is missing, unreadable or has no single valid `current-version` line. Never take the version from memory, a release page or the folder name.
+The session rows appear in this order: Agent, Status, Version, Project, Folder, Session. Use the Project name from Line 1 of `_Axis/PROJECT.md`, the verified current project root as Folder, and the booted role as Agent. Always show a folder inside the User's home directory as `~/` plus the rest of its path (for example `~/Axis`), using the home directory the host reports (such as `$HOME`); show any other folder in full. Never guess the home directory, and never inspect private home configuration to decorate output. Show `Not set` for an unfilled Project template and `Unavailable` for an unverified folder. Never print template tokens or guess. The `Session:` row is the Session ID: retain its complete validated timestamp. Do not add a redundant identity line outside the block. The `Version:` row shows `current-version` from the installed `_Axis/CHANGELOG.md` exactly as written (for example `1.01`); show `Unavailable` when that file is missing, unreadable or has no single valid `current-version` line. Never take the version from memory, a release page or the folder name.
 
 ## Main startup
 
@@ -18,11 +18,11 @@ Only after every startup completion gate passes, emit exactly one block and imme
   │
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+  │   Agent:    Main
   │   Status:   Ready
   │   Version:  {installed Axis Workflow version}
   │   Project:  {verified Project name}
   │   Folder:   {verified project folder}
-  │   Agent:    Main
   │   Session:  {yyyy.mm.dd.hh.mm.ss.xxxZ}
 
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -42,4 +42,4 @@ Resume, External readiness, role changes and startup failures remain compact not
 
 ## Final response
 
-Before each actual final application answer, apply [Rules > Speaking] and its summary header and `READY FOR YOUR INPUT...` closing line. Do not use the lifecycle brand block for an ordinary answer. Progress and Subagent returns have no final-response decoration. Exact-output and machine-readable contracts retain their required shape.
+Before each actual final application answer, apply [Rules > Speaking] and its header naming `DONE`, the folder and `{role} Agent`, and its `READY FOR INPUT...` closing block, using this banner's Folder value. Do not use the lifecycle brand block for an ordinary answer. Progress and Subagent returns have no final-response decoration. Exact-output and machine-readable contracts retain their required shape.

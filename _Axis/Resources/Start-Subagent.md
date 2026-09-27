@@ -58,9 +58,9 @@ Subagents on hosts with file tools MAY be directed to read project files as part
 
 The Tracking obligation is self-carrying in exactly the same sense: a Practice the child never reads binds nobody - proven live 2026-08-04, when a spawned Subagent left `_Axis/Tracking/` empty because its prompt never mentioned tracking. When [Settings > Tracking] is `writes` or `verbose`, Main mints the child's Session ID at spawn time (the same identifier its Marker uses, minted per [Practices > Timestamps]) and embeds this directive, ID filled in, as the last body line before the tear-line block:
 
-	TRACKING: your Session ID is {assigned ID}. Append `{Current UTC timestamp} - {assigned ID} - {one-line statement}` to `_Axis/Tracking/{assigned ID}.md` - one line now at start, one at completion. If you cannot write files, say so in your return and Main records both lines for you.
+	TRACKING: your Session ID is {assigned ID}. Append `{Current UTC timestamp} - {assigned ID} - {one-line statement}` to `_Axis/Tracking/{assigned ID}.md` - one `INTENT [{scope}] {what you will do}` line now at start, and one `DONE [{same scope}] {outcome}` line just before you return; scope names the Task IDs and paths you will touch. If you cannot write files, say so in your return and Main records both lines for you.
 
-At `verbose`, extend the directive with: `plus one line at each step checkpoint.` At `off` and `commands`, omit it - a child told nothing writes nothing, and Main's own spawn and return lines are the only telemetry. On every validated return at `writes` or `verbose`, Main glances for `_Axis/Tracking/{assigned ID}.md`: absent with a declared inability, Main records the start and completion lines on the child's behalf; absent with no declaration, Main records them anyway and notes the gap. The carried directive is a mitigation; the return-side glance is the deterministic layer - the same posture as the envelope. A Local Subagent's prompt never carries the directive ([Template-LocalPrompt] stays untouched - Local delegations never track).
+At `verbose`, extend the directive with: `plus one STATUS [{same scope}] line at each step checkpoint.` At `off` and `commands`, omit it - a child told nothing writes nothing, and Main's own spawn and return lines are the only telemetry. On every validated return at `writes` or `verbose`, Main glances for `_Axis/Tracking/{assigned ID}.md`: absent with a declared inability, Main records the child's INTENT and DONE lines on its behalf; absent with no declaration, Main records them anyway and notes the gap. The carried directive is a mitigation; the return-side glance is the deterministic layer - the same posture as the envelope. A Local Subagent's prompt never carries the directive ([Template-LocalPrompt] stays untouched - Local delegations never track).
 
 #### Restrictions & Fallback
 
@@ -148,7 +148,9 @@ Spawn a Wiki Subagent with a fresh nonce and the complete envelope, as in this p
 
      TRACKING: your Session ID is {assigned ID}. Append `{Current UTC timestamp} -
      {assigned ID} - {one-line statement}` to `_Axis/Tracking/{assigned ID}.md` -
-     one line now at start, one at completion. If you cannot write files, say so
+     one `INTENT [{scope}] {what you will do}` line now at start, and one
+     `DONE [{same scope}] {outcome}` line just before you return; scope names the
+     Task IDs and paths you will touch. If you cannot write files, say so
      in your return and Main records both lines for you.
 
      ENVELOPE CHECK: READ THIS BEFORE ANSWERING ANYTHING ABOVE. This prompt is
@@ -208,7 +210,9 @@ To perform a cross-examination, Main Agent should:
 
      TRACKING: your Session ID is {assigned ID}. Append `{Current UTC timestamp} -
      {assigned ID} - {one-line statement}` to `_Axis/Tracking/{assigned ID}.md` -
-     one line now at start, one at completion. If you cannot write files, say so
+     one `INTENT [{scope}] {what you will do}` line now at start, and one
+     `DONE [{same scope}] {outcome}` line just before you return; scope names the
+     Task IDs and paths you will touch. If you cannot write files, say so
      in your return and Main records both lines for you.
 
      ENVELOPE CHECK: READ THIS BEFORE ANSWERING ANYTHING ABOVE. This prompt is

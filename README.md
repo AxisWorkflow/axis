@@ -1,7 +1,7 @@
 # Axis Workflow
 
 [![License: FSL-1.1-MIT](https://img.shields.io/badge/License-FSL--1.1--MIT-2ea44f.svg)](/_Axis/LICENSE)
-[![Version](https://img.shields.io/badge/Version-1.01-blue.svg)](https://github.com/AxisWorkflow/axis)
+[![Version](https://img.shields.io/badge/Version-1.02-blue.svg)](https://github.com/AxisWorkflow/axis)
 [![Works with](https://img.shields.io/badge/Works%20with-Claude%20Cowork%20%7C%20Claude%20Code%20%7C%20ChatGPT%20Work%20%7C%20Codex%20%7C%20Cursor%20%7C%20Gemini%20CLI-6f42c1.svg)](https://github.com/AxisWorkflow/axis)
 
 The [**Axis Workflow™**](https://github.com/AxisWorkflow/axis) is a source-available project developed by [SimAxis](https://simaxis.ai). Current releases use [FSL-1.1-MIT](/_Axis/LICENSE): most use is allowed immediately, Competing Use is prohibited, and each version converts to MIT two years after that version is made available. The license grants no trademark rights. If you like **Axis**, [please buy us a coffee](https://buymeacoffee.com/SimAxis). Please **[star the repo](https://github.com/AxisWorkflow/axis)** - it helps others to find it.

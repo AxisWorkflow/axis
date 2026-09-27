@@ -55,7 +55,7 @@
 - **Flag** - A persistent file to record durable workflow state - saved in `_Axis/Flags/`.
 - **Marker** - An ephemeral file tracking live Agents (Main, External, and Subagent sessions) - in `_Axis/Agents/`.
 - **Request** - A cross-boundary message in `_Axis/Requests/`, triaged by the receiving Main Agent - see [Practices > Requests].
-- **Tracking** - Append-only per-agent activity telemetry in `_Axis/Tracking/` - one line per checkpoint; telemetry, not evidence (see [Practices > Tracking]).
+- **Tracking** - Append-only per-agent activity channel in `_Axis/Tracking/` - INTENT, STATUS, ASK, REPLY and DONE lines that let every Agent see what others are doing; telemetry, not evidence (see [Practices > Tracking]).
 - **External Agent** - The third Agent role: a restricted always-on agent (read-only, append-only, and Write-new classes) serving beside Main - see [Practices > Agents > External Agent].
 - **Tombstone** - `_Axis/Agents/{ID}.kill` - the kill signal that revokes an Agent's Marker lease (see [Practices > Markers > The Lease]).
 - **Protected Content** - Name-suffix access control: `_U` = User-controlled, read-only for Agents; `_X` = excluded, invisible to Agents (see [Practices > Protected]).

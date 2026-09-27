@@ -89,7 +89,7 @@
 
 ### Tracking
 
-**Description:** Activity tracking writes one append-only line per checkpoint to `_Axis/Tracking/{Session ID}.md` - the live "who is doing what" record that Agents, `^audit`, and External Agents read (see [Practices > Tracking]). Levels: `off` = never write; `commands` = session start, each Command start and finish, each Subagent spawn and return; `writes` = `commands` plus one line naming each mutating write to a shared file; `verbose` = `writes` plus step-level statements inside long protocols. Standard-capability Subagents track at `writes` and above; Local delegations never track (Main writes their lifecycle lines instead).
+**Description:** Activity tracking writes append-only lines to `_Axis/Tracking/{Session ID}.md` - the live channel where each Agent says what it intends, is doing, asks and finished, which every Agent, `^board`, `^audit` and the Dashboard read (see [Practices > Tracking]). Levels: `off` = never write; `commands` = session start, INTENT and DONE for each Command that changes something and each Subagent spawn and return, plus every ASK and REPLY; `writes` = `commands` plus INTENT and DONE for each unit of work that writes a shared file, with STATUS at milestones; `verbose` = `writes` plus step-level STATUS inside long protocols. Standard-capability Subagents track at `writes` and above; Local delegations never track (Main writes their INTENT and DONE lines instead).
 
 **Range:** `off`, `commands`, `writes`, `verbose`
 

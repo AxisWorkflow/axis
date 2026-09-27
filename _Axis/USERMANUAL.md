@@ -1,6 +1,6 @@
 # Axis Workflow User Manual
 > **Purpose:** How to use the Axis Workflow day to day: setup, commands, the Dashboard, the Wiki, working across tools and machines, and working with Agents and models. For the technical and compliance reference, see [SPECIFICATION](/_Axis/SPECIFICATION.md).
-> **Version:** 1.01
+> **Version:** 1.02
 
 
 
@@ -99,6 +99,8 @@ Your own content lives in normal folders that your Agent creates and organizes a
 
 ### Tips
 
+- **Tell side-by-side sessions apart.** Every finished answer starts with a header naming the project folder and agent role, for example `DONE`, `~/Axis` and `Main Agent` spaced apart on one line, and ends with `READY FOR INPUT...`. The startup banner lists Agent, Status, Version, Project, Folder and Session, in that order. When you run several projects in split terminal panes, a glance shows which project each pane belongs to and whether it is waiting for you.
+
 - **Save and Resume.** Type `^save` when you leave and `^resume` when you return. With a configured Git remote, save sends a linear checkpoint and resume receives one before reconstructing the work. Both still run the complete portability and infrastructure checks; use explicit handoff language or `^shutdown` when changing computers so only one copy remains active.
 
 - **Use Reminders for time, Follow-Ups for ownership.** Ask naturally ("remind me Tuesday at 9") or run `^reminders`. A Reminder records when Axis should surface information at its next checkpoint; it is portable Markdown, not a background alarm. A Follow-Up remains the queue of actions only you can complete.
@@ -194,6 +196,7 @@ For example, the text...
 | `^archive`   | Move selected inactive history into reversible, low-context Archive storage.                                   |
 | `^audit`     | Run a read-only project audit - records, hygiene, delegation, coverage - and save the findings as a report.    |
 | `^backup`    | Back up the entire project to a User-named location outside the project folder.                                |
+| `^board`     | Show what every Agent is doing - open work, questions between Agents, and overlaps. |
 | `^cx`        | Launch a Cross-Examination.                                                                                    |
 | `^dashboard` | Launch the Axis Dashboard in a browser.                                                                        |
 | `^demote`    | Step the current Main Agent down to an External Agent (User-only).                                             |
@@ -499,6 +502,14 @@ A project has exactly ONE Main Agent - and an **External Agent** is what any add
 - **Never** edit an existing file, touch `_Axis/` doctrine, change the Plan or Tasks, open Secrets, or spawn Subagents.
 
 That boundary is the honest security story for leaving an agent reachable around the clock: even a fully hijacked External is limited to additive, clearly-stamped contributions that one sweep reverses - it cannot rewrite existing meaning, reach credentials, or seize the project. Becoming Main is a gated ceremony (`^promote`): the request counts only from the gateway-verified owner, the agent discloses its full footprint first, User confirms with a literal reply, a contested project additionally requires approval from a trusted surface, and the grant executes as a full re-boot that leaves a write-once record. Earlier dated rehearsals exercised these scenarios on specific hosts and versions. Current deterministic tests cover the revised protocols and failure schedules; they do not prove that every host or model follows them. Current channel delivery and GUI behavior remain limited by the evidence described below.
+
+### Coordinating Agents
+
+When several agents work on one project - Main, External agents on channels, Subagents it spawns, even agents from different tools - each keeps a short running diary in `_Axis/Tracking/`, one file per agent. Before starting a piece of work an agent writes an INTENT line naming what it is about to do and which Tasks or files it will touch; along the way it adds STATUS lines; it can ASK another agent (or Main, or anyone) a question and receive a REPLY; and just before it finishes it writes DONE with the outcome. Because each agent writes only its own file, this works on any storage and with any tool that can read and write files.
+
+At each checkpoint - a new turn, before changing a shared file, before starting or returning from a Subagent - every agent reads what the others have posted since it last looked. That is how it notices a question addressed to it, or that another agent is already working on the same file. Type `^board` for the Board: who is live, what each is working on, open questions between agents, overlapping work and recent completions. The Dashboard's Agents card shows the same picture.
+
+An External agent that needs a shared change it may not make itself can ask Main; Main decides it like any Request, records the decision and replies. A question between agents never grants permission: file locks and roles still decide who may write, and anything that needs you still comes to you.
 
 ### Subagents
 

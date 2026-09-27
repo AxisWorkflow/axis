@@ -1,7 +1,7 @@
 # Changelog
 > **Purpose:** Record Axis release identity and the structural migrations needed to update an existing project safely.
 
-current-version: 1.01
+current-version: 1.02
 changelog-format: 1
 self-update-baseline: 26.08.19
 
@@ -39,6 +39,41 @@ update-impact: automatic
 ### Verification
 
 - None.
+
+## 1.02
+
+released: 2026-09-27
+
+- `^update` can add or retire a top-level `_Axis/` document when the target release names its exact path under `Structural Changes` or `Retired Paths`. Only uppercase document names qualify, and preserved working files (`PROJECT.md`, `PLAN.md`, `INITIATIVES.md`, `TASKS.md`, `SNAPSHOTS.md`, `SETTINGS.md`, `MINDSET.md`, `DIRECTIVES.md`, `ENVIRONMENT.md`, `INSTRUCTIONS.md`) never do. `update.md` step 8 now also lists `USERMANUAL.md` and `SPECIFICATION.md`, matching the engine. The rule takes effect for updates that start from this release, because every update runs the engine already installed in the project.
+- Startup's pre-banner overlay revalidation is now a named read-only `confirm` phase of `_Axis/Resources/Load-Project-Overlay.md` (and `overlay-identity.py --phase confirm`). Previously Start-Session asked for a revalidation that neither `prepare` (refuses once startup commits) nor `activate` (requires the banner) could perform. No project-state migration.
+- Final answers name the project folder and agent role so side-by-side terminal panes are distinguishable: the header line holds `DONE`, the folder and `{role} Agent` separated by three spaces (for example for `~/Axis` and `Main Agent`) between two 40-`━` lines, and the answer closes with a 40-`━` line, a blank line and `READY FOR INPUT...`. This replaces the `DONE - SUMMARY OF WORK` / `DONE - ANSWER` titles and the `READY FOR YOUR INPUT...` line. Every message after which User can type ends a turn and gets the frame, including one sent while Agent-started background work keeps running; such a message closes with `WORK IS RUNNING IN THE BACKGROUND....` and `BUT AGENT CAN TAKE INPUT AS WE WAIT...` instead of `READY FOR INPUT...`. The startup banner's session rows are reordered to Agent, Status, Version, Project, Folder, Session. No project-state migration.
+- Agent coordination: Tracking lines may carry a type and scope - `INTENT` before work, `STATUS`, `ASK` and `REPLY` between Agents, and `DONE` before returning - in the existing `{time} - {Session ID} - {statement}` line, so older lines stay valid. Agents run an awareness pass at checkpoints; External Agents may `ASK` Main for a shared write, which Main adjudicates as a Request. New `^board` Command and optional read-only `_Axis/Resources/agent-board.py`; the Dashboard Agents card shows open work and open questions; Subagent prompts carry INTENT/DONE. No project-state migration.
+- Optional one-call startup survey `_Axis/Resources/startup-survey.py` performs Start-Session's mechanical checks (capability probes and Flags, unchanged environment binding, Manifest, Mindset stamp, queue/Trash/lock inventories, index check, empty-Reminder checkpoint); `startup-state.py` is unchanged and the numbered steps remain the fallback. No project-state migration.
+- Folder display: the startup banner's Folder row and the answer header always show a folder inside the User's home directory as `~/...`. Tracking INTENT/DONE lines are required only for Commands and work that change something; read-only Commands such as `^board` write none. No project-state migration.
+- New Rule: move files to the trash only when it is safe to delete them. The Trash Practice adds that only dead material that is safe to lose is trashed. No project-state migration.
+
+update-impact: automatic
+
+### Structural Changes
+
+- `_Axis/Resources/update-transaction.py` (declared top-level documents join the managed set), `_Axis/Commands/update.md` step 8 and `_Axis/SPECIFICATION.md`.
+- `_Axis/Resources/Start-Session.md` Step 4, `_Axis/Resources/Load-Project-Overlay.md`, `_Axis/Resources/overlay-identity.py` (`confirm` phase).
+- `_Axis/Rules/Speaking.md` (final-response frame), `_Axis/Resources/Lifecycle-Presentation.md` (frame reference and banner row order), `_Axis/USERMANUAL.md` (Tips).
+- `_Axis/RULES.md`, `_Axis/Practices/Trash.md`, regenerated `_Axis/Resources/Starting-Context.md`.
+- New `_Axis/Commands/board.md`, `_Axis/Resources/agent-board.py`, `_Axis/Resources/startup-survey.py`; `_Axis/Practices/Tracking.md`, `_Axis/Practices/Agents.md`, `_Axis/Rules/ExternalAgents.md`, `_Axis/Resources/Start-Subagent.md`, `_Axis/Resources/Detect-Capabilities.md`, `_Axis/SETTINGS.md` (Tracking description), `_Axis/GLOSSARY.md`, `_Axis/MANIFEST.md`, `_Axis/Dashboard/index.html`, `_Axis/USERMANUAL.md`.
+
+### Project-State Migrations
+
+- None. The shipped `_Axis/SETTINGS.md` template's Tracking description changed; existing projects keep their Settings text and values.
+
+### Retired Paths
+
+- None.
+
+### Verification
+
+- `_Axis/Commands/board.md`, `_Axis/Resources/agent-board.py` and `_Axis/Resources/startup-survey.py` exist.
+- `_Axis/USERMANUAL.md` and `_Axis/SPECIFICATION.md` carry `Version:` lines equal to `current-version`.
 
 ## 1.01
 

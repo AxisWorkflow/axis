@@ -72,7 +72,7 @@ def validate(root,sid,phase,expected):
     return {'state':'valid','schema':schema,'id':oid,'path':name,'project_sha256':hashlib.sha256(project).hexdigest(),'sha256':digest,'presentation':'rsi' if rsi else 'standard'}
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('--root',required=True);p.add_argument('--session',required=True);p.add_argument('--phase',choices=('prepare','activate'),required=True);p.add_argument('--expected-sha256');a=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('--root',required=True);p.add_argument('--session',required=True);p.add_argument('--phase',choices=('prepare','confirm','activate'),required=True);p.add_argument('--expected-sha256');a=p.parse_args()
     try:
         root=Path(a.root).absolute();require(root==root.resolve() and root.is_dir(),'canonical project root required')
         print(json.dumps(validate(root,a.session,a.phase,a.expected_sha256),sort_keys=True));return 0

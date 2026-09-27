@@ -145,6 +145,7 @@
 - `_Axis/Commands/archive.md`
 - `_Axis/Commands/audit.md`
 - `_Axis/Commands/backup.md`
+- `_Axis/Commands/board.md`
 - `_Axis/Commands/cx.md`
 - `_Axis/Commands/dashboard.md`
 - `_Axis/Commands/demote.md`
@@ -184,6 +185,8 @@
 - `_Axis/Resources/Load-Starting-Context.md`
 - `_Axis/Resources/Startup-Records-Manual.md` - complete manual startup record fallback, loaded only when selected.
 - `_Axis/Resources/startup-state.py` - optional local startup record accelerator; manual startup remains available.
+- `_Axis/Resources/startup-survey.py` - optional one-call startup survey; the numbered Start-Session steps remain available.
+- `_Axis/Resources/agent-board.py` - optional read-only Tracking board for `^board` and the awareness pass; reading the files directly remains available.
 - `_Axis/Resources/Claim-Session.md`
 - `_Axis/Resources/Detect-Capabilities.md`
 - `_Axis/Resources/Draft-Mindset.md`

@@ -854,8 +854,15 @@ async function renderPlan(partial){
   } catch(e){ markPartial(partial, "Plan"); el("plan").innerHTML = "<h2>Plan</h2><div class='muted'>Could not read PLAN.md</div>"; }
 }
 
+function parseTrackingLine(line){                 // "{UTC} - {Session ID} - {TYPE} [{scope}] {text}"; untyped lines are notes
+  const m = line.trim().match(/^(\d{4}(?:\.\d{2}){5}\.\d{3}Z) - (\d{4}(?:\.\d{2}){5}\.\d{3}Z) - (.*)$/);
+  if (!m) return null;
+  const t = m[3].match(/^(INTENT|STATUS|ASK|REPLY|DONE) \[([^\]]*)\] ?(.*)$/);
+  return {id: m[1] + " " + m[2], session: m[2], type: t ? t[1] : "NOTE", scope: t ? t[2].trim() : "", text: t ? t[3] : m[3]};
+}
 async function renderAgents(partial){             // Markers in _Axis/Agents/: role, start time, run time; .kill sibling = stopped
   try {
+    const trackAsks = new Map(), trackReplies = new Set();
     const names = await listAgentEntries();
     const kills = new Set(names.filter(n => n.endsWith(".kill")));
     const files = names.filter(n => n.endsWith(".md")).sort().reverse().slice(0, 15);
@@ -877,14 +884,27 @@ async function renderAgents(partial){             // Markers in _Axis/Agents/: r
                (stopped ? ' <span class="agechip">stopped</span>' : stale ? ' <span class="agechip">stale</span>' : "");
       }
       let doing = "";
-      try {                                          // Tracking tail: the live "doing now" line, per [Practices > Tracking]
-        const tl = (await read("../Tracking/" + f)).trim().split("\n").filter(Boolean).pop() || "";
-        const seg = tl.split(" - ");
-        if (seg.length >= 3) doing = `<br><span class="muted" style="font-size:12.5px">${stopped ? "last" : "doing"}: ${esc(seg.slice(2).join(" - "))}</span>`;
+      try {                                          // Tracking channel, per [Practices > Tracking]: open INTENTs, latest STATUS, open ASKs
+        const rows = (await read("../Tracking/" + f)).split("\n").map(parseTrackingLine).filter(Boolean);
+        const open = new Map(); let status = null;
+        for (const r of rows) {
+          if (r.type === "INTENT") open.set(r.scope, r);
+          else if (r.type === "DONE") open.delete(r.scope);
+          else if (r.type === "STATUS") { status = r; if (/^stopped/i.test(r.text)) open.delete(r.scope); }
+          else if (r.type === "ASK") trackAsks.set(r.id, {...r, live: !stopped});
+          else if (r.type === "REPLY" && r.scope.startsWith("re:")) trackReplies.add(r.scope.slice(3).trim());
+        }
+        const label = stopped ? "last" : "doing";
+        if (open.size) doing = [...open.values()].map(r => `<br><span class="muted" style="font-size:12.5px">${label}: ${esc(r.text)}${r.scope ? " <span class=\"chip\" style=\"font-size:11px\">" + esc(r.scope) + "</span>" : ""}</span>`).join("") +
+          (status ? `<br><span class="muted" style="font-size:12.5px">status: ${esc(status.text)}</span>` : "");
+        else if (rows.length) { const last = rows[rows.length - 1]; doing = `<br><span class="muted" style="font-size:12.5px">${label}: ${esc(last.type === "NOTE" ? last.text : last.type + " " + last.text)}</span>`; }
       } catch(e){ markUnlessMissing(partial, "Agents", e); }
       items.push(`<li><b>${esc(subject)}</b>${meta}${doing}</li>`);
     }
-    el("agents").innerHTML = "<h2>Agents</h2>" + (items.length ? "<div class=\"scrollbody\"><ul>"+items.join("")+"</ul></div>" : "<div class='muted'>No live Agents.</div>");
+    const asks = [...trackAsks.values()].filter(r => !trackReplies.has(r.id));
+    const askHtml = asks.length ? "<h3 style=\"font-size:13px;margin:10px 0 4px\">Open questions between Agents</h3><ul>" + asks.map(r =>
+      `<li>${esc(r.text)} <span class="muted" style="font-size:12px">${esc(r.scope.replace(/^to:/, "to "))}${r.live ? "" : " · asker stopped"}</span></li>`).join("") + "</ul>" : "";
+    el("agents").innerHTML = "<h2>Agents</h2>" + (items.length ? "<div class=\"scrollbody\"><ul>"+items.join("")+"</ul>"+askHtml+"</div>" : "<div class='muted'>No live Agents.</div>");
   } catch(e){ markPartial(partial, "Agents"); el("agents").innerHTML = "<h2>Agents</h2><div class='muted'>" + NEEDS_SERVER + "</div>"; }
 }
 

@@ -31,16 +31,32 @@ State the concrete action and required answer or exact token concisely, for exam
 
 ## Final response boundary
 
-Frame each actual final application response with a summary header and a closing line. The header is three lines: 40 `━` characters, the title in capitals with one leading space, and 40 `━` characters again. Then leave a blank line, give the answer, leave a blank line, and end with exactly `READY FOR YOUR INPUT...` as the last line. The title is `DONE - SUMMARY OF WORK` when the turn did work, or `DONE - ANSWER` when it only answered a question. For example:
+Frame each actual final application response with a header that names the project folder and agent role, so User can tell side-by-side terminal panes apart, and a closing block. The header is three lines: 40 `━` characters, `DONE`, `{folder}` and `{role} Agent` on one line, separated by three spaces with no leading space, and 40 `━` characters again. Then leave a blank line and give the answer, leading with the outcome. Close with a blank line, 40 `━` characters, a blank line, and exactly `READY FOR INPUT...` as the last line. `{folder}` is the verified project folder exactly as the startup banner's `Folder:` row shows it (always `~/` plus the path for a folder inside the User's home directory); `{role}` is your booted role, `Main` or `External`. For example, for a Main Agent in `~/Axis`:
 
-	━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-	 DONE - SUMMARY OF WORK
-	━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```text
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DONE   ~/Axis   Main Agent
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-	{the answer, leading with the outcome}
+{the answer, leading with the outcome}
 
-	READY FOR YOUR INPUT...
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-If Unicode is unavailable, use `=` for `━`. Apply this even to a short answer or final clarification; a correct answer without its frame is incomplete presentation. Before sending, check that the header appears once at the top and the closing line once at the end, unless an exception below applies. Use the frame only when ending the turn and yielding for User input; never for progress, commentary, tool output or Subagent returns. Consecutive User turns each receive their own frame. The header means this turn is complete, not that every project Task is complete.
+READY FOR INPUT...
+```
+
+A turn ends whenever you stop and User can type, including a message you send while a background process you started keeps running and may wake you again. Every such message gets the frame; only messages in the middle of a turn, after which you keep working without yielding, are progress. When background work you started is still running as the turn ends, replace the `READY FOR INPUT...` line with this closing block, so User knows the work continues and that you can still take input:
+
+```text
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+WORK IS RUNNING IN THE BACKGROUND....
+
+  BUT AGENT CAN TAKE INPUT AS WE WAIT...
+```
+
+When that work later wakes you and you finish the turn with nothing left running, use the ordinary `READY FOR INPUT...` closing.
+
+If Unicode is unavailable, use `=` for `━`. Apply this even to a short answer or final clarification; a correct answer without its frame is incomplete presentation. Never guess or abbreviate the folder beyond the `~/` home shortening; when it is unverified use `Unavailable`. Before sending, check that the header appears once at the top and the closing block once at the end, unless an exception below applies. Use the frame only when ending the turn and yielding for User input; never for progress, commentary, tool output or Subagent returns. Consecutive User turns each receive their own frame. The header means this turn is complete, not that every project Task is complete.
 
 Mandatory startup loading notice, completion banner and greeting keep their order and precede the application response. A terminal shutdown/update block already marks the final boundary; do not add the frame around it. A higher-priority host format, User exact-output request, structured schema, JSON/code-only response or other machine-readable contract takes precedence over this application decoration. Omit the frame in those cases rather than corrupting the output. When the host supplies its own guaranteed visible final-turn separator and prohibits additional formatting, use that native boundary; do not claim to configure or control host chrome.
