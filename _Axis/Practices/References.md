@@ -8,7 +8,8 @@ An Axis Reference is an internal pointer to another file (and optionally a secti
 | Reference | Resolves to |
 | --- | --- |
 | [Project] | `_Axis/PROJECT.md` |
-| [Axis README] | `_Axis/README.md` |
+| [User Manual] | `_Axis/USERMANUAL.md` |
+| [Specification] | `_Axis/SPECIFICATION.md` |
 | [Project README] | `README.md` |
 | [Axis License] | `_Axis/LICENSE` |
 | [Glossary] | `_Axis/GLOSSARY.md` |
@@ -59,6 +60,6 @@ Rules of use:
 - Any reference whose base form is not in this table is invalid: fix the reference, or extend the table AND the matching integrity check in the same change.
 - Reference names are logical, not literal paths: [Project] resolves to `_Axis/PROJECT.md`, and the [Wiki > ...] rows resolve into `Wiki/` - the table, not the bracket text, carries the path. Never rename a reference just because a folder moved; update its row instead.
 
-## Axis User Manual Boundary
+## Documentation Boundary
 
-The Axis User Manual at [Axis README] is explanatory, never operational authority. Session Start and ordinary work do not load it. Load one relevant section only when User requests it through `^help` or when the shipped Command, Practice, and Rule set leaves a genuine ambiguity and the host establishes a high-capability frontier Main Agent. External Agents and Subagents do not use the manual as a fallback. A validated project overlay may add bounded project guidance, but it does not change this manual boundary.
+The [User Manual] and [Specification] explain Axis; they are never operational authority. Session Start and ordinary work do not load them. Load one relevant section only on User's `^help` request, or when the shipped Commands, Practices and Rules leave a genuine ambiguity and the host establishes a high-capability frontier Main Agent. External Agents and Subagents never use them as a fallback. A validated project overlay does not change this boundary.

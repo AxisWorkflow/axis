@@ -1,11 +1,32 @@
 # Archiving
 > **Purpose:** Move inactive history out of routine context without deleting it or weakening record integrity.
 
-The Archive is reversible, low-context storage under `_Axis/Archive/`. It preserves history while keeping active record directories focused. Archiving moves a record unchanged; it never rewrites a WORM body, erases evidence, or makes an inactive record look current.
+The Archive is reversible, low-context storage under `_Axis/Archive/` or the folder named by [Settings > Archive Location] (see Archive Location below). It preserves history while keeping active record directories focused. Archiving moves a record unchanged; it never rewrites a WORM body, erases evidence, or makes an inactive record look current.
+
+## Archive Location
+
+Every path written `_Axis/Archive/...` in Axis means the same path under the Archive root, and an index link `Archive/{Family}/...` resolves there too:
+
+- Read [Settings > Archive Location]. A missing Setting means the default `_Axis/Archive/`. A project-relative value resolves from the project root; an absolute value names a folder outside the project. Never store a credential, account or host identifier in the value.
+- Resolve the root before every Archive read or write. The default root and its family folders are created on first use. A non-default root is **available** only when it already exists as an ordinary directory; never create a missing non-default root, because an absent mount point would silently become local storage.
+- When the root is unavailable (unmounted drive, offline share, another machine, malformed value), say so plainly and let only the Archive work wait. Never fall back to `_Axis/Archive/` or split the Archive across two folders. Everything else in Axis continues.
+- A self-archiving record (terminal Follow-Up, terminal Reminder, triaged Request) that cannot move stays in its live folder with its terminal fields already written. It counts as closed, pending archive: readers, the queue checks and Session Start treat it as resolved, never as open work to redo. Report the count once per session, and finish the unchanged move the next time the root is available (`^refresh` or the next such closing step).
+- Timestamp uniqueness and index-link checks that need an unavailable root cover the live half only and report the archived half unverified.
+- The in-project `_Axis/Archive/` folder always remains with its `.gitkeep`; Session Start may leave an empty `Requests/` folder there. While another root is set, no archived record is written there.
+
+**Changing the location** is a User-confirmed move, never a silent redirect. Show the old and new roots, the family counts and any collisions; require User to confirm with `ARCHIVE`. Copy every record to the new root, verify identical bytes and names, update the Setting, then remove the old copies (leaving `_Axis/Archive/.gitkeep`). Stop without removing anything if a copy, verification or the Setting write fails. Log the move.
+
+**Archive in Git** controls whether an in-project Archive is committed. When [Settings > Archive in Git] is `false` and the root is inside the project, `.gitignore` carries exactly this block, and already tracked archived records are untracked with `git rm -r --cached` (the files stay on disk):
+
+	# Archive in Git = false (see _Axis/SETTINGS.md)
+	_Axis/Archive/*
+	!_Axis/Archive/.gitkeep
+
+Keep `_Axis/Archive/.gitkeep` tracked so the Manifest folder exists in every clone. When the value returns to `true`, remove that block; the next checkpoint commits the Archive again. A root outside the project is never committed, whatever the value. Apply either change with User's Setting change under [Practices > GIT], and Log it.
 
 ## Layout
 
-Create a family folder on first use and retain the record's original filename:
+Create a family folder on first use under the Archive root and retain the record's original filename:
 
 	_Axis/Archive/Notes/{yyyy.mm.dd.hh.mm.ss.xxxZ}.md
 	_Axis/Archive/Ideas/{yyyy.mm.dd.hh.mm.ss.xxxZ}.md

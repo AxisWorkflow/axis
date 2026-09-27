@@ -1,9 +1,9 @@
 # Refresh Project README
-> **Purpose:** Create or refresh the User-owned root Project README without loading the Axis User Manual or overwriting User content.
+> **Purpose:** Create or refresh the User-owned root Project README without loading the User Manual or Specification or overwriting User content.
 
 ## Ownership Boundary
 
-`README.md` has two lifecycle states. Before Project Setup it is a byte-identical display copy of `_Axis/README.md`. After Project Setup it belongs to the User's project. Axis may update only the single bounded block below; content outside it is User-owned and must remain byte-identical.
+`README.md` has two lifecycle states. Before Project Setup it is either absent (the release ZIP ships no README) or the Axis Workflow introduction from a cloned repository, which carries the exact line `<!-- axis:workflow-readme -->`. After Project Setup it belongs to the User's project. Axis may update only the single bounded block below; content outside it is User-owned and must remain byte-identical.
 
 ```markdown
 <!-- axis:project-summary:begin -->
@@ -11,7 +11,7 @@
 <!-- axis:project-summary:end -->
 ```
 
-The Axis User Manual remains at `_Axis/README.md`. The Axis license remains at `_Axis/LICENSE`. This procedure never reads either file for project context; compare hashes or bytes only where the lifecycle check requires it.
+The User Manual remains at `_Axis/USERMANUAL.md`, the Specification at `_Axis/SPECIFICATION.md`, and the Axis license at `_Axis/LICENSE`. This procedure never reads them for project context; compare bytes only where the license check requires it.
 
 ## Procedure
 
@@ -33,7 +33,7 @@ The Axis User Manual remains at `_Axis/README.md`. The Axis license remains at `
 
 5. Apply the lifecycle safely:
 	- If root `README.md` is missing, create it with the Project H1 and one managed block.
-	- During Project Setup, if root `README.md` is byte-identical to `_Axis/README.md`, replace that display copy with the Project H1 and managed block.
+	- During Project Setup, if root `README.md` contains the exact line `<!-- axis:workflow-readme -->`, move it to `_Trash/` under [Practices > Trash] (no confirmation: it is the Axis introduction, not User content) and create the Project README with the Project H1 and one managed block. Outside Project Setup, never edit a README carrying that marker; tell User it is still the Axis introduction.
 	- If exactly one well-ordered managed block exists, replace only its contents and retain every byte outside the marker lines.
 	- If a customized root README has no managed block, append one after a blank line; preserve all existing content.
 	- If markers are malformed, nested, repeated, reversed, or only one exists, do not edit the file. Tell User the exact structural problem and continue setup or the owning Command without claiming the Project README was refreshed.

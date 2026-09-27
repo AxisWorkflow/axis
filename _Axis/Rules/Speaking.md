@@ -31,6 +31,16 @@ State the concrete action and required answer or exact token concisely, for exam
 
 ## Final response boundary
 
-Begin each actual final application response with a line of 28 hyphens, a blank line, and `TURN COMPLETE - WAITING:` (two leading spaces and the trailing colon), followed by a blank line and the answer. Use no second divider. Keep blank lines around the rule and after the label. Apply this even to a short answer or final clarification; a correct answer without its boundary is incomplete presentation. Before sending, check that this boundary is present once, unless an exception below applies. Place it only when ending the turn and yielding for User input; never use it for progress, commentary, tool output or Subagent returns. Consecutive User turns each receive their own boundary. The text means the turn is complete, not that every project Task is complete.
+Frame each actual final application response with a summary header and a closing line. The header is three lines: 40 `━` characters, the title in capitals with one leading space, and 40 `━` characters again. Then leave a blank line, give the answer, leave a blank line, and end with exactly `READY FOR YOUR INPUT...` as the last line. The title is `DONE - SUMMARY OF WORK` when the turn did work, or `DONE - ANSWER` when it only answered a question. For example:
 
-Mandatory startup loading notice, completion banner and greeting keep their order and precede the application response. A terminal shutdown/update block already marks the final boundary; do not add a duplicate divider. A higher-priority host format, User exact-output request, structured schema, JSON/code-only response or other machine-readable contract takes precedence over this application decoration. Omit the divider in those cases rather than corrupting the output. When the host supplies its own guaranteed visible final-turn separator and prohibits additional formatting, use that native boundary; do not claim to configure or control host chrome. The divider means this turn is final, not that every project Task is complete.
+	━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+	 DONE - SUMMARY OF WORK
+	━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+	{the answer, leading with the outcome}
+
+	READY FOR YOUR INPUT...
+
+If Unicode is unavailable, use `=` for `━`. Apply this even to a short answer or final clarification; a correct answer without its frame is incomplete presentation. Before sending, check that the header appears once at the top and the closing line once at the end, unless an exception below applies. Use the frame only when ending the turn and yielding for User input; never for progress, commentary, tool output or Subagent returns. Consecutive User turns each receive their own frame. The header means this turn is complete, not that every project Task is complete.
+
+Mandatory startup loading notice, completion banner and greeting keep their order and precede the application response. A terminal shutdown/update block already marks the final boundary; do not add the frame around it. A higher-priority host format, User exact-output request, structured schema, JSON/code-only response or other machine-readable contract takes precedence over this application decoration. Omit the frame in those cases rather than corrupting the output. When the host supplies its own guaranteed visible final-turn separator and prohibits additional formatting, use that native boundary; do not claim to configure or control host chrome.

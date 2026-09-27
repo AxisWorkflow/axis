@@ -1,7 +1,7 @@
 # Changelog
 > **Purpose:** Record Axis release identity and the structural migrations needed to update an existing project safely.
 
-current-version: 1.00
+current-version: 1.01
 changelog-format: 1
 self-update-baseline: 26.08.19
 
@@ -39,6 +39,40 @@ update-impact: automatic
 ### Verification
 
 - None.
+
+## 1.01
+
+released: 2026-09-27
+
+- Add the **Archive Location** and **Archive in Git** Application Settings. `_Axis/Archive/` in every Practice, Command and Rule now means the folder named by Archive Location (default `_Axis/Archive/`; any absolute or project-relative folder). A non-default folder is never created automatically; while it is unavailable, only Archive work waits, terminal Follow-Ups, Reminders and triaged Requests stay live as closed, pending archive, and nothing falls back to or splits into `_Axis/Archive/`. Changing the location is a User-confirmed verified move. Archive in Git `false` ignores in-project Archive contents while keeping `_Axis/Archive/.gitkeep` tracked; an outside folder is never committed.
+- `_Axis/Resources/startup-state.py` resolves Archive Location for its read-only Task/Snapshot index check and reports `unavailable` when the folder is missing, which the existing manual comparison and unverified notice already cover. Its admission, record and timestamp operations are unchanged and still scan only the in-project Archive. Update reconciliation that must archive a terminal Follow-Up supports only the default location and otherwise stops before `prepare`.
+- Final application answers use a summary frame under `_Axis/Rules/Speaking.md`: a header of 40 `━`, the title (`DONE - SUMMARY OF WORK` or `DONE - ANSWER`) and 40 `━`, then the answer, ending with `READY FOR YOUR INPUT...`. This replaces the single-divider `TURN COMPLETE - WAITING:` boundary; exact-output, host-format, progress and terminal-lifecycle exceptions are unchanged. `_Axis/Resources/Lifecycle-Presentation.md` refers to the new frame. No project-state migration.
+- Lifecycle blocks add a `Version:` row showing the installed `current-version` from `_Axis/CHANGELOG.md` (`Unavailable` when it cannot be read), in `_Axis/Resources/Lifecycle-Presentation.md`. No project-state migration.
+- The shipped `.gitignore` template no longer carries development-only `_Dev/` rules. Existing projects may delete the three `_Dev/Releases/*`, `!_Dev/Releases/.gitkeep` and `_Dev/Scripts/tmp-*` lines; keeping them is harmless.
+- Split the long `_Axis/README.md` manual into a short root `README.md` (the GitHub introduction: install, overview, rationale, with a folder-tree illustration and Dashboard picture), a new `_Axis/USERMANUAL.md` (how to use Axis, including supervising child projects and OpenClaw integration) and a new `_Axis/SPECIFICATION.md` (technical and compliance reference). Both carry a `Version:` line set at each release. `_Axis/README.md` is retired; references, `^help` (`^help manual`), the Resolver Table (`[User Manual]`, `[Specification]`), Manifest, Style and Supervision now point to the new documents.
+- The release ZIP no longer contains `README.md`. The root README carries the marker `<!-- axis:workflow-readme -->`; Project Setup creates the Project README and moves a marked Axis README (from a cloned repository) to `_Trash/`.
+
+update-impact: automatic
+
+### Structural Changes
+
+- New `_Axis/USERMANUAL.md`, `_Axis/SPECIFICATION.md` and `_Axis/Resources/axis-folders.svg`; `_Axis/Practices/References.md`, `_Axis/Commands/help.md`, `update.md`, `_Axis/Resources/Refresh-Project-README.md`, `Start-Project.md`, `update-transaction.py`, `_Axis/Rules/Style.md`, `_Axis/Practices/Supervision.md`, `_Axis/MANIFEST.md`, regenerated `_Axis/Resources/Starting-Context.md`.
+- `_Axis/Rules/Speaking.md` and `_Axis/Resources/Lifecycle-Presentation.md` (final-response frame).
+- Managed `_Axis/SETTINGS.md` template, `_Axis/Practices/Archiving.md` (new Archive Location section), Followups, Reminders, Requests, Timestamps and IndexDetail Practices, `_Axis/Rules/RecordsAndWORM.md`, `_Axis/Commands/audit.md` and `refresh.md`, `_Axis/Resources/Check-Update-Handoff.md`, `_Axis/Resources/startup-state.py`, `_Axis/GLOSSARY.md` and `_Axis/MANIFEST.md`.
+
+### Project-State Migrations
+
+- In `.gitignore`, remove the exact lines `_Dev/Releases/*`, `!_Dev/Releases/.gitkeep` and `_Dev/Scripts/tmp-*` when present and unmodified; preserve every other rule.
+- In `_Axis/SETTINGS.md`, add `### Archive Location` (value `_Axis/Archive/`) and `### Archive in Git` (value `true`) after `### Max Notes` when absent. Preserve an existing value of either Setting exactly. No record moves, `.gitignore` change or Archive rewrite.
+
+### Retired Paths
+
+- `_Axis/README.md` - replaced by `_Axis/USERMANUAL.md` and `_Axis/SPECIFICATION.md`. Remove it when it still equals the installed release's copy; a locally edited copy is surfaced for review, never deleted silently.
+
+### Verification
+
+- `_Axis/USERMANUAL.md` and `_Axis/SPECIFICATION.md` exist with `Version:` lines equal to `current-version`, `_Axis/README.md` is absent or surfaced, and a set-up project's User-owned `README.md` is unchanged.
+- `_Axis/SETTINGS.md` carries exactly one Archive Location and one Archive in Git Setting, existing values are unchanged, and `_Axis/Archive/.gitkeep` remains present.
 
 ## 1.00
 

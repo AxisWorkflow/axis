@@ -98,7 +98,7 @@ Ask User if they want to work with you to draft a Plan to govern the Project.
 ## Step 8: Transfer Root Ownership
 
 1. Quietly verify `_Axis/PROJECT.md` contains no `{{`. If any remain: on the Interactive path, return to Step 5. On the Quick Setup path, do not send User into the Interactive interview - remove or fill the leftover placeholder sections yourself, asking a single question only where content is genuinely required, then continue.
-2. Follow `_Axis/Resources/Refresh-Project-README.md` in Project Setup mode. This replaces only a pristine Axis root README, preserves customized content, retains the Axis User Manual at `_Axis/README.md`, and resolves the root `LICENSE` lifecycle without choosing a license for the User.
+2. Follow `_Axis/Resources/Refresh-Project-README.md` in Project Setup mode. This creates the Project README (replacing only the marked Axis introduction from a cloned repository), preserves customized content, and resolves the root `LICENSE` lifecycle without choosing a license for the User.
 3. Quietly write a current UTC timestamp into the Flag `_Axis/Flags/project-ready` (overwrite if present). Project Setup is not complete until the README and license ownership decision has been resolved, including a safely preserved malformed or customized root file reported to User.
 4. On the Quick Setup path, GOTO Step 10. On the Interactive path, continue to Step 9.
 
@@ -120,7 +120,7 @@ Version control gives the project an undo history; a private remote can also car
 1. Quietly verify the `project-ready` Flag is valid and the root README lifecycle from Step 8 was resolved. If either check fails, return to Step 8 and do not claim setup completed.
 2. Close with a short hint card:
 	- Type `^help` to list all commands.
-	- The Project README is `README.md`; the Axis User Manual remains at `_Axis/README.md` and `^help readme` browses it by section.
+	- The Project README is `README.md`; the User Manual is `_Axis/USERMANUAL.md` (`^help manual` browses it by section) and the technical reference is `_Axis/SPECIFICATION.md`.
 	- Drop ordinary files anywhere in the project folder - Agents organize them into Project Subfolders; suffix a folder `_U` for Agent-read-only or `_X` to exclude it; a complete nested Axis Project anywhere in the workspace is a Subproject; Wiki sources go to immutable `Wiki/Inbox/`; keep originals outside the project when they need operating-system-enforced protection.
 	- Ask for a Plan (`^plan`) or the Wiki (`^wiki`) whenever you are ready.
 	- New to Axis? `^onboard` gives you a five-minute tour.

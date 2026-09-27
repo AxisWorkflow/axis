@@ -40,7 +40,7 @@ Due state is the lexical comparison of valid UTC Axis timestamps after obtaining
 
 ## Lifecycle
 
-The archive destination is intentionally created on demand. Before the first terminal move, create `_Axis/Archive/Reminders/` if it is absent, then verify it is an ordinary directory inside `_Axis/Archive/`. A symlink, non-directory collision, or destination collision is an unsafe-path failure: preserve the live Reminder and stop rather than guessing.
+The archive destination is intentionally created on demand. Before the first terminal move, create `_Axis/Archive/Reminders/` if it is absent, then verify it is an ordinary directory inside `_Axis/Archive/`. A symlink, non-directory collision, or destination collision is an unsafe-path failure: preserve the live Reminder and stop rather than guessing. `_Axis/Archive/` means the folder in [Settings > Archive Location]; when it is unavailable, follow [Practices > Archiving > Archive Location]: the terminal record stays live as closed, pending archive.
 
 - **Add:** deduplicate by target, meaning, and materially equal due time; mint the ID per [Practices > Timestamps]; write, read back, and Log.
 - **Reschedule/snooze:** keep identity; change `due-at`, advance `updated`, verify, and Log.

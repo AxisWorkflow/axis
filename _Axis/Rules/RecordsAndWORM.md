@@ -26,7 +26,7 @@
 - Directive entries in `DIRECTIVES.md`: a `## {name}` heading with `#### Keywords` / `#### Description` / `#### Triggers` / `#### Behavior` subsections.
 - Archive the oldest excess Notes when count exceeds **Max Notes** in Settings.
 - Automatic Note archiving is purely count-based - there is no time-based expiry of Notes.
-- Archive storage is reversible and lives under `_Axis/Archive/{record-family}/`; WORM records retain their bytes and timestamp identities.
+- Archive storage is reversible and lives under `_Axis/Archive/{record-family}/`, resolved through [Settings > Archive Location]; WORM records retain their bytes and timestamp identities.
 - Only Completed or Cancelled Tasks may be archived. Their canonical index entries remain and link to `Archive/Tasks/{timestamp}.md`.
 - Open Follow-Ups live only in `_Axis/Followups/`; terminal Follow-Ups self-archive unchanged under `_Axis/Archive/Followups/` and are never restored.
 - Open Reminders live only in `_Axis/Reminders/`; terminal Reminders self-archive unchanged under `_Axis/Archive/Reminders/` and reopening creates a new identity.

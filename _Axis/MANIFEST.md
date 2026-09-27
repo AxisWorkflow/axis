@@ -18,7 +18,7 @@
 - **`AGENTS.md`** - Entry-point file (AGENTS convention: Codex, etc.); master copy.
 - **`CLAUDE.md`** - Entry-point file (Claude Code / Cowork); synced from `AGENTS.md`.
 - **`GEMINI.md`** - Entry-point file (Gemini CLI); synced from `AGENTS.md`.
-- **`README.md`** - Before setup, generated display copy of the Axis User Manual; after setup, User-owned Project README with one bounded Axis summary block.
+- **`README.md`** - Created by Project Setup as the User-owned Project README with one bounded Axis summary block. It is not in the release download, so before setup its absence is normal and is never reported as missing; a cloned repository carries the Axis GitHub introduction instead.
 - **`LICENSE`** - Before setup, generated display copy of the Axis FSL-1.1-MIT License; after setup, User-owned or absent. Project Setup removes only the pristine Axis copy.
 
 ## Axis
@@ -27,7 +27,7 @@
 
 - `_Axis/Agents/`
 - `_Axis/Tracking/`
-- `_Axis/Archive/`
+- `_Axis/Archive/` - the default Archive root; keeps its `.gitkeep` even when [Settings > Archive Location] names another folder.
 - `_Axis/Audit/`
 - `_Axis/Commands/`
 - `_Axis/CX/`
@@ -53,7 +53,8 @@
 - `_Axis/CLA.md` - Canonical Contributor License Agreement and Copyright Assignment.
 - `_Axis/CONTRIBUTING.md` - Contribution intake policy and CLA gate.
 - `_Axis/LICENSE` - Canonical FSL-1.1-MIT License and trademark notice for Axis-authored Workflow files.
-- `_Axis/README.md` - Canonical Axis User Manual; explanatory and lazy-loaded during ordinary operation.
+- `_Axis/USERMANUAL.md` - The User Manual: how to use Axis; explanatory and lazy-loaded during ordinary operation.
+- `_Axis/SPECIFICATION.md` - The technical and compliance reference; explanatory and lazy-loaded during ordinary operation.
 - `_Axis/DIRECTIVES.md`
 - `_Axis/ENVIRONMENT.md`
 - `_Axis/GLOSSARY.md`
@@ -203,7 +204,8 @@
 - `_Axis/Resources/Template-LocalPrompt.md`
 - `_Axis/Resources/Template-Mindset.md`
 - `_Axis/Resources/Template-Profiles.md`
-- `_Axis/Resources/axis-dashboard-meridian.png` - Versioned User Manual illustration of the default Dashboard.
+- `_Axis/Resources/axis-dashboard-meridian.png` - README illustration of the default Dashboard.
+- `_Axis/Resources/axis-folders.svg` - README illustration of an Axis project folder.
 
 ## Wiki
 

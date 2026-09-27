@@ -4,7 +4,7 @@
 
 - Prefer hyphen-minus (`-`) over en-dash (`–`) and em-dash (`—`) for punctuation.
 - Use en-dash only for numeric ranges (e.g., `2026–2027`).
-- Bolding splits by audience. Human-facing files (`_Axis/README.md`, the pre-setup root `README.md` display copy, `_Axis/PROJECT.md`, `_Axis/GLOSSARY.md`) may bold Glossary terms freely for human readability.
+- Bolding splits by audience. Human-facing files (`_Axis/USERMANUAL.md`, `_Axis/SPECIFICATION.md`, the root Axis introduction `README.md`, `_Axis/PROJECT.md`, `_Axis/GLOSSARY.md`) may bold Glossary terms freely for human readability.
 - Machine-facing files (all other `_Axis/` files, the entry-point files, and the Wiki stubs) do NOT bold terms of art - capitalization, Axis References, and backticked literals carry the meaning.
 - In machine-facing files, reserve bold for imperative emphasis (e.g., do **not** skip), structural labels (`**Purpose:**`), definition-list leads (`- **X** - ...`), Setting names, and enumerated literals (e.g., Task Status values).
 - Never bold headings or Axis References.

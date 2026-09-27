@@ -71,6 +71,22 @@
 
 **Value:** 250
 
+### Archive Location
+
+**Description:** Where archived history is stored. The default `_Axis/Archive/` keeps the Archive inside the project. Any other value redirects archiving to that folder - for example an external drive, a mounted NAS share, or a cloud-synced folder - keeping the same family layout beneath it. A folder outside the project is available only on machines where it is mounted; when it is unavailable, work that needs the Archive waits and says so, and nothing else in Axis is blocked. Change it only through [Practices > Archiving > Archive Location], which moves existing archived records with you.
+
+**Range:** `_Axis/Archive/` or any absolute or project-relative folder path.
+
+**Value:** _Axis/Archive/
+
+### Archive in Git
+
+**Description:** Whether Archive contents are included in the project's Git commits. `true` keeps an in-project Archive tracked like other records; `false` keeps the Archive out of Git (it is ignored when inside the project, and a location outside the project is never committed).
+
+**Range:** `true` or `false`
+
+**Value:** true
+
 ### Tracking
 
 **Description:** Activity tracking writes one append-only line per checkpoint to `_Axis/Tracking/{Session ID}.md` - the live "who is doing what" record that Agents, `^audit`, and External Agents read (see [Practices > Tracking]). Levels: `off` = never write; `commands` = session start, each Command start and finish, each Subagent spawn and return; `writes` = `commands` plus one line naming each mutating write to a shared file; `verbose` = `writes` plus step-level statements inside long protocols. Standard-capability Subagents track at `writes` and above; Local delegations never track (Main writes their lifecycle lines instead).

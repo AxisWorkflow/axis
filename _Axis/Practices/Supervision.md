@@ -96,7 +96,7 @@ Feature-detect the exact adapter at the point of use. Require one unambiguous Ho
 
 ## `^^help`
 
-1. Explain that supervision is inferred from direct child Axis Projects, name the nine `^^` commands with one-line purposes, state the role boundaries and Request-first rule, point to the Supervision section in [Axis README], and STOP. Do not discover children or write a record.
+1. Explain that supervision is inferred from direct child Axis Projects, name the nine `^^` commands with one-line purposes, state the role boundaries and Request-first rule, point to "Supervising Child Projects" in [User Manual], and STOP. Do not discover children or write a record.
 
 ## `^^list`
 

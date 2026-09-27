@@ -95,7 +95,7 @@
 - **Timestamp Claim** - Atomic `mkdir` reservation (`_Temp/{timestamp}.tsclaim/`) of an identifier timestamp while minting - see [Practices > Timestamps].
 - **Index-Detail Pattern** - Convention to store summary info separately from detail info.
 - **Lazy-Loading** - Practice of loading detail using **Index-Detail Pattern** only as needed.
-- **Archive** - Reversible low-context storage for inactive history under `_Axis/Archive/` - see [Practices > Archiving].
+- **Archive** - Reversible low-context storage for inactive history under `_Axis/Archive/` or the folder in [Settings > Archive Location] - see [Practices > Archiving].
 - **Trash** - Deletion staging under `_Trash/`: contents await the next sweep (Session Start, `^resume`, `^refresh`) - see [Practices > Trash].
 - **Placeholder** - A snippet of text needing completion, surrounded by `{{` and then `}}`.
 - **Template Form** - A shipped file still containing `{{...}}` placeholders (not yet filled in).

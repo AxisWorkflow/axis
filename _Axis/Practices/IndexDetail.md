@@ -70,7 +70,7 @@ Implementation notes:
 - On a filename collision - anywhere in the Project, not just the target directory - increment `xxx` (milliseconds) to prevent merge/overwrite (see [Practices > Timestamps]).
 - `xxx` (milliseconds) is always the real millisecond time - mint it with the command in [Practices > Timestamps] step 1, which falls back past BSD/macOS `date` (no `%N`) to an interpreter that has them. Never fill `xxx` with `000` because `date` would not produce it.
 - Reserve manual increment of milliseconds for when two mints collide.
-- Archived records retain this same identity under a family directory in `_Axis/Archive/`; Archive itself is not an additional active Index-Detail directory.
+- Archived records retain this same identity under a family directory in `_Axis/Archive/` (the folder in [Settings > Archive Location]); Archive itself is not an additional active Index-Detail directory.
 
 Implementation recipes for working with Follow-Ups, Reminders, Ideas, Logs, Notes, Snapshots, Supervision, and Tasks:
 

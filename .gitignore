@@ -34,9 +34,6 @@ __pycache__/
 # Axis
 _Temp/*
 !_Temp/.gitkeep
-_Dev/Releases/*
-!_Dev/Releases/.gitkeep
-_Dev/Scripts/tmp-*
 
 # Subprojects are parent-tracked by default. For an independent nested repository,
 # add that child's exact path, for example: /Clients/Acme/

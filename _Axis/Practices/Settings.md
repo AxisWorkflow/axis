@@ -32,4 +32,6 @@ Some settings accept a value as a "Relative Adjustment". Refer to the descriptio
 
 `Project Time Zone` is an Application Setting owned by [Practices > Reminders]. It is `Unknown`, `UTC`, or a valid IANA timezone. Never replace `Unknown` merely with the current host timezone; User confirmation or existing canonical project evidence is required.
 
+`Archive Location` and `Archive in Git` are Application Settings owned by [Practices > Archiving > Archive Location]. A missing Archive Location means `_Axis/Archive/`; a missing Archive in Git means `true`. Change the location only through that section's confirmed, verified move, and apply an Archive in Git change to `.gitignore` in the same pass; never edit either value alone.
+
 `Storage Policy` is an Application Setting owned by [Practices > Portability]. Its only valid values are `auto` and `single-writer`. Only `auto` can permit a separately verified `host-storage=atomic`; `single-writer`, a missing value, or a malformed value forces serialized behavior. It is deliberately one-way: no Setting can force an unverified filesystem to be atomic. When User changes it to `single-writer`, immediately rewrite `host-storage` to `serialized` and Log the correction. Changing it back to `auto` removes the ceiling but does not grant `atomic`; rerun the storage detection before raising the Flag.

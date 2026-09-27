@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="542" viewBox="0 0 760 542" role="img" aria-labelledby="t d">
+<title id="t">An Axis project folder</title>
+<desc id="d">Your own folders sit beside the _Axis folder, which keeps the Plan, Tasks, Follow-Ups, Reminders, Notes, Logs, Snapshots, Dashboard and User Manual as plain Markdown files.</desc>
+<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0f172a"/><stop offset="1" stop-color="#1e293b"/></linearGradient></defs>
+<rect x="0" y="0" width="760" height="542" rx="14" fill="url(#bg)"/>
+<circle cx="26" cy="24" r="6" fill="#f87171"/><circle cx="46" cy="24" r="6" fill="#fbbf24"/><circle cx="66" cy="24" r="6" fill="#34d399"/>
+<text x="92" y="29" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="13" fill="#94a3b8">axis-project</text>
+<path d="M28 52 h7 l3 3 h10 a2 2 0 0 1 2 2 v10 a2 2 0 0 1 -2 2 h-18 a2 2 0 0 1 -2 -2 v-13 a2 2 0 0 1 2 -2 z" fill="#f8fafc"/>
+<text x="58" y="65" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15" font-weight="700" fill="#f8fafc">My-Project/</text>
+<text x="430" y="65" font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="13.5" fill="#cbd5e1"><tspan fill="#475569">· </tspan>your project folder</text>
+<path d="M37 76 V88 H56" stroke="#475569" stroke-width="1.5" fill="none"/>
+<path d="M64 81 h11 l5 5 v13 a1.5 1.5 0 0 1 -1.5 1.5 h-14.5 a1.5 1.5 0 0 1 -1.5 -1.5 v-16.5 a1.5 1.5 0 0 1 1.5 -1.5 z" fill="none" stroke="#94a3b8" stroke-width="1.6"/>
+<text x="92" y="95" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15" fill="#94a3b8">AGENTS.md  CLAUDE.md  GEMINI.md</text>
+<text x="430" y="95" font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="13.5" fill="#cbd5e1"><tspan fill="#475569">· </tspan>how any AI finds the Workflow</text>
+<path d="M37 106 V118 H56" stroke="#475569" stroke-width="1.5" fill="none"/>
+<path d="M62 112 h7 l3 3 h10 a2 2 0 0 1 2 2 v10 a2 2 0 0 1 -2 2 h-18 a2 2 0 0 1 -2 -2 v-13 a2 2 0 0 1 2 -2 z" fill="#fbbf24"/>
+<text x="92" y="125" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15" font-weight="700" fill="#fbbf24">Research/</text>
+<text x="430" y="125" font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="13.5" fill="#cbd5e1"><tspan fill="#475569">· </tspan>your own work, organized</text>
+<path d="M37 136 V148 H56" stroke="#475569" stroke-width="1.5" fill="none"/>
+<path d="M62 142 h7 l3 3 h10 a2 2 0 0 1 2 2 v10 a2 2 0 0 1 -2 2 h-18 a2 2 0 0 1 -2 -2 v-13 a2 2 0 0 1 2 -2 z" fill="#fbbf24"/>
+<text x="92" y="155" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15" font-weight="700" fill="#fbbf24">Drafts/</text>
+<path d="M37 166 V178 H56" stroke="#475569" stroke-width="1.5" fill="none"/>
+<path d="M62 172 h7 l3 3 h10 a2 2 0 0 1 2 2 v10 a2 2 0 0 1 -2 2 h-18 a2 2 0 0 1 -2 -2 v-13 a2 2 0 0 1 2 -2 z" fill="#34d399"/>
+<text x="92" y="185" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15" font-weight="700" fill="#34d399">Wiki/</text>
+<text x="430" y="185" font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="13.5" fill="#cbd5e1"><tspan fill="#475569">· </tspan>knowledge base the Agent builds</text>
+<path d="M37 196 V208 H56" stroke="#475569" stroke-width="1.5" fill="none"/>
+<path d="M62 202 h7 l3 3 h10 a2 2 0 0 1 2 2 v10 a2 2 0 0 1 -2 2 h-18 a2 2 0 0 1 -2 -2 v-13 a2 2 0 0 1 2 -2 z" fill="#60a5fa"/>
+<text x="92" y="215" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15" font-weight="700" fill="#60a5fa">_Axis/</text>
+<text x="430" y="215" font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="13.5" fill="#cbd5e1"><tspan fill="#475569">· </tspan>the Workflow, in plain Markdown</text>
+<path d="M71 226 V238 H90" stroke="#475569" stroke-width="1.5" fill="none"/>
+<path d="M98 231 h11 l5 5 v13 a1.5 1.5 0 0 1 -1.5 1.5 h-14.5 a1.5 1.5 0 0 1 -1.5 -1.5 v-16.5 a1.5 1.5 0 0 1 1.5 -1.5 z" fill="none" stroke="#c4b5fd" stroke-width="1.6"/>
+<text x="126" y="245" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15" fill="#c4b5fd">PLAN.md</text>
+<text x="430" y="245" font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="13.5" fill="#cbd5e1"><tspan fill="#475569">· </tspan>where the project is going</text>
+<path d="M71 256 V268 H90" stroke="#475569" stroke-width="1.5" fill="none"/>
+<path d="M98 261 h11 l5 5 v13 a1.5 1.5 0 0 1 -1.5 1.5 h-14.5 a1.5 1.5 0 0 1 -1.5 -1.5 v-16.5 a1.5 1.5 0 0 1 1.5 -1.5 z" fill="none" stroke="#c4b5fd" stroke-width="1.6"/>
+<text x="126" y="275" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15" fill="#c4b5fd">TASKS.md</text>
+<text x="430" y="275" font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="13.5" fill="#cbd5e1"><tspan fill="#475569">· </tspan>what is being done, and its status</text>
+<path d="M71 286 V298 H90" stroke="#475569" stroke-width="1.5" fill="none"/>
+<path d="M96 292 h7 l3 3 h10 a2 2 0 0 1 2 2 v10 a2 2 0 0 1 -2 2 h-18 a2 2 0 0 1 -2 -2 v-13 a2 2 0 0 1 2 -2 z" fill="#f472b6"/>
+<text x="126" y="305" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15" font-weight="700" fill="#f472b6">Followups/</text>
+<text x="430" y="305" font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="13.5" fill="#cbd5e1"><tspan fill="#475569">· </tspan>things only you can do</text>
+<path d="M71 316 V328 H90" stroke="#475569" stroke-width="1.5" fill="none"/>
+<path d="M96 322 h7 l3 3 h10 a2 2 0 0 1 2 2 v10 a2 2 0 0 1 -2 2 h-18 a2 2 0 0 1 -2 -2 v-13 a2 2 0 0 1 2 -2 z" fill="#f472b6"/>
+<text x="126" y="335" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15" font-weight="700" fill="#f472b6">Reminders/</text>
+<text x="430" y="335" font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="13.5" fill="#cbd5e1"><tspan fill="#475569">· </tspan>time-based nudges</text>
+<path d="M71 346 V358 H90" stroke="#475569" stroke-width="1.5" fill="none"/>
+<path d="M96 352 h7 l3 3 h10 a2 2 0 0 1 2 2 v10 a2 2 0 0 1 -2 2 h-18 a2 2 0 0 1 -2 -2 v-13 a2 2 0 0 1 2 -2 z" fill="#fb923c"/>
+<text x="126" y="365" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15" font-weight="700" fill="#fb923c">Notes/</text>
+<text x="430" y="365" font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="13.5" fill="#cbd5e1"><tspan fill="#475569">· </tspan>facts to remember</text>
+<path d="M71 376 V388 H90" stroke="#475569" stroke-width="1.5" fill="none"/>
+<path d="M96 382 h7 l3 3 h10 a2 2 0 0 1 2 2 v10 a2 2 0 0 1 -2 2 h-18 a2 2 0 0 1 -2 -2 v-13 a2 2 0 0 1 2 -2 z" fill="#fb923c"/>
+<text x="126" y="395" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15" font-weight="700" fill="#fb923c">Logs/</text>
+<text x="430" y="395" font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="13.5" fill="#cbd5e1"><tspan fill="#475569">· </tspan>permanent record of decisions</text>
+<path d="M71 406 V418 H90" stroke="#475569" stroke-width="1.5" fill="none"/>
+<path d="M96 412 h7 l3 3 h10 a2 2 0 0 1 2 2 v10 a2 2 0 0 1 -2 2 h-18 a2 2 0 0 1 -2 -2 v-13 a2 2 0 0 1 2 -2 z" fill="#fb923c"/>
+<text x="126" y="425" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15" font-weight="700" fill="#fb923c">Snapshots/</text>
+<text x="430" y="425" font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="13.5" fill="#cbd5e1"><tspan fill="#475569">· </tspan>memory between sessions</text>
+<path d="M71 436 V448 H90" stroke="#475569" stroke-width="1.5" fill="none"/>
+<path d="M96 442 h7 l3 3 h10 a2 2 0 0 1 2 2 v10 a2 2 0 0 1 -2 2 h-18 a2 2 0 0 1 -2 -2 v-13 a2 2 0 0 1 2 -2 z" fill="#22d3ee"/>
+<text x="126" y="455" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15" font-weight="700" fill="#22d3ee">Dashboard/</text>
+<text x="430" y="455" font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="13.5" fill="#cbd5e1"><tspan fill="#475569">· </tspan>live view: ^dashboard</text>
+<path d="M71 466 V478 H90" stroke="#475569" stroke-width="1.5" fill="none"/>
+<path d="M98 471 h11 l5 5 v13 a1.5 1.5 0 0 1 -1.5 1.5 h-14.5 a1.5 1.5 0 0 1 -1.5 -1.5 v-16.5 a1.5 1.5 0 0 1 1.5 -1.5 z" fill="none" stroke="#e2e8f0" stroke-width="1.6"/>
+<text x="126" y="485" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15" fill="#e2e8f0">USERMANUAL.md</text>
+<text x="430" y="485" font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="13.5" fill="#cbd5e1"><tspan fill="#475569">· </tspan>how to use Axis</text>
+</svg>

@@ -76,6 +76,21 @@ def write_fd(fd, data):
         offset+=count
     os.fsync(fd)
 
+def archive_root(startup):
+    """Resolve [Settings > Archive Location] read-only: (project-relative root, None), (None, absolute root), or (None, None) when unavailable."""
+    value=(startup.setting('Archive Location') or '_Axis/Archive/').strip()
+    if value.rstrip('/')=='_Axis/Archive':return '_Axis/Archive',None
+    if '\\' in value or '..' in value.split('/'):return None,None
+    if value.startswith('/'):
+        folder=Path(value.rstrip('/') or '/')
+        try:info=os.stat(folder)
+        except OSError:return None,None
+        return (None,folder) if stat.S_ISDIR(info.st_mode) else (None,None)
+    relative=value.rstrip('/')
+    try:folder=startup.path(relative,missing=True,kind='directory')
+    except Fault:return None,None
+    return (relative if folder.exists() else None),None
+
 class Startup:
     def __init__(self, root):
         need('..' not in Path(root).parts,'unsafe_path','root')
@@ -308,6 +323,8 @@ class Startup:
         need(self.state['phase']=='initialized','phase',self.owner_name)
         self.guard()
         deadline=time.monotonic()+5
+        inside,outside=archive_root(self)
+        if inside is None and outside is None:return {'status':'unavailable','reason':'archive_location_unavailable'}
         def metadata(path):
             value=path.lstat()
             return (value.st_dev,value.st_ino,value.st_mode,value.st_nlink,value.st_size,value.st_mtime_ns,value.st_ctime_ns)
@@ -325,10 +342,15 @@ class Startup:
                 files={};directories={}
                 for relative in (family,'Archive/'+family):
                     directory='_Axis/'+relative
-                    if relative.startswith('Archive/'):
-                        archive=self.path('_Axis/Archive',missing=True,kind='directory')
+                    if relative.startswith('Archive/') and outside is not None:
+                        directory=str(outside/family);folder=outside/family
+                        if folder.is_symlink() or not folder.is_dir():continue
+                    elif relative.startswith('Archive/'):
+                        archive=self.path(inside,missing=True,kind='directory')
                         if not archive.exists():continue
-                    folder=self.path(directory,missing=relative.startswith('Archive/'),kind='directory')
+                        directory=inside+'/'+family
+                        folder=self.path(directory,missing=True,kind='directory')
+                    else:folder=self.path(directory,kind='directory')
                     if not folder.exists():continue
                     directories[relative]=metadata(folder)
                     with os.scandir(folder) as listing:
@@ -336,11 +358,11 @@ class Startup:
                             need(time.monotonic()<deadline,'inspection_limit')
                             need(len(files)<10000,'inspection_limit',directory)
                             item=relative+'/'+entry.name;info=entry.stat(follow_symlinks=False)
-                            regular(info,'_Axis/'+item)
+                            regular(info,directory+'/'+entry.name)
                             if entry.name=='.gitkeep':continue
-                            need(entry.name.endswith('.md') and ID.fullmatch(entry.name[:-3]),'unexpected_entry','_Axis/'+item)
+                            need(entry.name.endswith('.md') and ID.fullmatch(entry.name[:-3]),'unexpected_entry',directory+'/'+entry.name)
                             parse_stamp(entry.name[:-3])
-                            files[item]=metadata(self.path('_Axis/'+item))
+                            files[item]=metadata(Path(entry.path))
                     need(directories[relative]==metadata(folder),'index_changed',directory)
                 result[family]=(text,before,files,directories)
             return result
