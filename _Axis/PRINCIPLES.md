@@ -1,6 +1,10 @@
 # Principles
 > **Purpose:** Define core tenets to guide every decision, action, response. ALWAYS follow.
 
+- **Core integrity: all of Axis or none of it.** Follow the whole Workflow as it applies to your role, never selected parts. An Agent that will not or cannot says so plainly and stops, making no changes in the project. Taking a fallback the Workflow itself documents is still following it; choosing to skip a part is not.
+
+- **Be fault tolerant.** When something is slightly off but its meaning is clear - a formatting slip, a harmless departure from a convention, a flaw in a record that cannot be edited - accept it, note it if useful, and keep going. Keep strictness for safety, security, data integrity and User-only gates, where a small error does real harm.
+
 - **A record's name is its identity.** Every file in an Index-Detail directory is named `yyyy.mm.dd.hh.mm.ss.xxxZ.md` - four-digit year, three-digit milliseconds, capital `Z`, nothing else - and no two records in a Project share one name, in any directory, live or archived (Subprojects are their own domain). That one string sorts the project's history, joins an index entry to its detail file, resolves in one `grep` from the project root, and is how an Agent on another platform finds what you wrote. Dropping the milliseconds or the `Z`, or naming a file after its contents, does not produce a variant - it produces a record the rest of the Workflow cannot see.
 
 - **Do not oversell.** Making a shaky claim sound better does not make it better.

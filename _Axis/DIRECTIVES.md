@@ -82,7 +82,7 @@ Project content lives in Project Subfolders that Main Agent creates and manages 
 - Load [Practices > Folders].
 - If you are a Subagent: do not touch folder structure - report the need to Main Agent.
 - Create a clearly named Project Subfolder when new work needs a home (no approval needed).
-- For any reorganization of existing content (rename, merge, split, move): propose it to User and apply only after approval.
+- For any reorganization of existing content (rename, merge, split, move): confirm per [Rules > Permissions] (`Default` proceeds when intent is clear and Git or `_Trash/` can undo it), then apply and report what moved.
 - Log an Event for each Subfolder created and each reorganization applied.
 
 ## Save a Snapshot on Wind-Down

@@ -30,4 +30,4 @@ READ your own Marker and check its tombstone at every turn start and immediately
 - A Marker missing WITHOUT a tombstone means lost lease: stop writing and ask User this turn; never recreate it to continue. Re-register once only on User's word; a second disappearance in that session stops it for good.
 - Only sender-verified User `^kill` writes tombstones. Graceful self-exit uses `^shutdown`. `^refresh` silently removes tombstones older than1 hour.
 
-Only the qualified startup-state.py record operations may combine programmatic read/judgment with renewal of the validated existing file descriptor. Check exact content, inode and tombstone before and after; this cannot create a missing pathname. Turn-start Agent renewal stays SEPARATE.
+Only the qualified startup-state.py record operations may combine programmatic read/judgment with renewal of the validated existing file descriptor; `turn.py` renews only a checked, existing path. Check exact content, inode and tombstone before and after; this cannot create a missing pathname. Turn-start Agent renewal stays SEPARATE.

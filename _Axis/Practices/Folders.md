@@ -9,7 +9,7 @@ The project root is an open workspace. The Workflow reserves three underscore-pr
 
 - Main Agent owns creation and all restructuring of Project Subfolders. The sole External exception is create-only acquisition of the User-named content folder or root `Drafts/` needed for an allowed contribution under [Practices > Agents > External Agent]; reuse a safe existing ordinary folder, never overwrite a collision, and never rename, move, or reorganize it. All destination, Subproject, `_U`, `_X`, and dotfolder exclusions still apply. Subagents never touch folder structure - they route any folder need through Main Agent.
 
-- REORGANIZING existing content (rename, consolidate, divide, or move files between Subfolders) requires User approval first: propose the change, apply it only on a Yes.
+- REORGANIZING existing content (rename, consolidate, divide, or move files between Subfolders) follows [Rules > Permissions]: with clear intent and a Git or `_Trash/` rollback, `Default` and `Autonomous` apply it and report what moved; otherwise propose it and apply only on a Yes.
 
 - Creating or installing a Subproject (a complete anchor-carrying Axis Project nested in the workspace) also requires User approval. Before doing it, load [Practices > Subprojects] and [Practices > GIT > Decision Point and Record], ask User which repository arrangement to use, and record the applied choice.
 

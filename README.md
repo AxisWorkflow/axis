@@ -1,10 +1,10 @@
 # Axis Workflow
 
-[![License: FSL-1.1-MIT](https://img.shields.io/badge/License-FSL--1.1--MIT-2ea44f.svg)](/_Axis/LICENSE)
-[![Version](https://img.shields.io/badge/Version-1.02-blue.svg)](https://github.com/AxisWorkflow/axis)
+[![License: MIT](https://img.shields.io/badge/License-MIT-2ea44f.svg)](/_Axis/LICENSE)
+[![Version](https://img.shields.io/badge/Version-2.00-blue.svg)](https://github.com/AxisWorkflow/axis)
 [![Works with](https://img.shields.io/badge/Works%20with-Claude%20Cowork%20%7C%20Claude%20Code%20%7C%20ChatGPT%20Work%20%7C%20Codex%20%7C%20Cursor%20%7C%20Gemini%20CLI-6f42c1.svg)](https://github.com/AxisWorkflow/axis)
 
-The [**Axis Workflow™**](https://github.com/AxisWorkflow/axis) is a source-available project developed by [SimAxis](https://simaxis.ai). Current releases use [FSL-1.1-MIT](/_Axis/LICENSE): most use is allowed immediately, Competing Use is prohibited, and each version converts to MIT two years after that version is made available. The license grants no trademark rights. If you like **Axis**, [please buy us a coffee](https://buymeacoffee.com/SimAxis). Please **[star the repo](https://github.com/AxisWorkflow/axis)** - it helps others to find it.
+The [**Axis Workflow™**](https://github.com/AxisWorkflow/axis) is an open-source project developed by [SimAxis](https://simaxis.ai), released under the [MIT License](/_Axis/LICENSE). The license grants no trademark rights. If you like **Axis**, [please buy us a coffee](https://buymeacoffee.com/SimAxis). Please **[star the repo](https://github.com/AxisWorkflow/axis)** - it helps others to find it.
 
 > **How to use Axis:** read the **[User Manual](/_Axis/USERMANUAL.md)**. Technical, security and compliance details are in the **[Specification](/_Axis/SPECIFICATION.md)**.
 
@@ -14,7 +14,7 @@ The [**Axis Workflow™**](https://github.com/AxisWorkflow/axis) is a source-ava
 
 1. [Download Axis](https://github.com/AxisWorkflow/axis/releases/latest/download/axis-project.zip) and unzip - now you have a project folder.
 2. Open the folder with Cowork, Claude Code, Codex, Cursor, Gemini, etc...
-3. Say hello. Your Agent finds the Workflow and helps you get started.
+3. Say hello. Your Agent finds the Workflow and helps you get started. If it answers without starting Axis, say **Start Axis**.
 
 	That's it. **60 seconds** to go time!
 
@@ -125,7 +125,7 @@ Open the live Dashboard with `^dashboard` to see the whole project at a glance, 
 
 ## Trademarks
 
-"Axis Workflow", "Axis" when used as the name of this project, and their associated logos and lockups are trademarks of Kenneth A. Younge. The "Axis Workflow" trademark was originally registered in Switzerland. "SimAxis" and its associated marks are trademarks of [SimAxis](https://simaxis.ai). Together, these are the "Marks" used in this notice. The [Axis FSL-1.1-MIT License](/_Axis/LICENSE) covers Axis-authored text, templates, and code in current releases. It does not grant rights to the Marks or automatically license the User's project. Copyright and trademark are separate: the future MIT grant changes copyright permissions after two years, but it never grants trademark rights.
+"Axis Workflow", "Axis" when used as the name of this project, and their associated logos and lockups are trademarks of Kenneth A. Younge. The "Axis Workflow" trademark was originally registered in Switzerland. "SimAxis" and its associated marks are trademarks of [SimAxis](https://simaxis.ai). Together, these are the "Marks" used in this notice. The [Axis MIT License](/_Axis/LICENSE) covers Axis-authored text, templates, and code. It does not grant rights to the Marks or automatically license the User's project. Copyright and trademark are separate: the MIT License covers copyright only and grants no trademark rights.
 
 #### You may, without asking
 
@@ -142,7 +142,7 @@ Open the live Dashboard with `^dashboard` to see the whole project at a glance, 
 #### Symbols and attribution
 
 - On first prominent use in a document, write "Axis Workflow™"; after that, plain "Axis Workflow" or "Axis" is fine.
-- When an attribution line is appropriate, use: "Axis Workflow™ - source available under FSL-1.1-MIT, from SimAxis."
+- When an attribution line is appropriate, use: "Axis Workflow™ - open source under the MIT License, from SimAxis."
 
 Questions or permission requests can be sent to [AxisWorkflow](https://axisworkflow.ai).
 
@@ -150,7 +150,7 @@ Questions or permission requests can be sent to [AxisWorkflow](https://axisworkf
 
 ## License
 
-This release is licensed under the **Functional Source License, Version 1.1, MIT Future License (`FSL-1.1-MIT`)**. The license permits use, study, modification, and redistribution for any Permitted Purpose, but prohibits making Axis available as a competing commercial product or service. An MIT license is then issued two years after this version was first made available. Third-party components retain their own copyright and licenses, including the bundled Mermaid renderer. See the complete [Axis License](/_Axis/LICENSE), [Contributor License Agreement and Copyright Assignment](/_Axis/CLA.md), and [Trademarks](#trademarks).
+This release is licensed under the **MIT License**. Anyone may use, copy, modify, merge, publish, distribute, sublicense, and sell it, provided the copyright and permission notice stay with every copy. Releases before Version 2.00 remain under the Functional Source License (`FSL-1.1-MIT`), and each of them converts to MIT two years after it was first made available. Third-party components retain their own copyright and licenses, including the bundled Mermaid renderer. See the complete [Axis License](/_Axis/LICENSE), [Contributor License Agreement and Copyright Assignment](/_Axis/CLA.md), and [Trademarks](#trademarks).
 
 
 

@@ -1,7 +1,7 @@
 # Changelog
 > **Purpose:** Record Axis release identity and the structural migrations needed to update an existing project safely.
 
-current-version: 1.02
+current-version: 2.00
 changelog-format: 1
 self-update-baseline: 26.08.19
 
@@ -39,6 +39,42 @@ update-impact: automatic
 ### Verification
 
 - None.
+
+## 2.00
+
+released: 2026-09-28
+
+- License: Axis Workflow is open source under the MIT License from Version 2.00. `_Axis/LICENSE` and the pristine pre-setup root `LICENSE` carry the standard MIT text; the README and User Manual carry the trademark terms, which the MIT License does not grant. Releases before 2.00 remain under FSL-1.1-MIT, each converting to MIT two years after it was made available.
+- New Permissions Setting (`Restricted`, `Default`, `Autonomous`) decides when Agents confirm a change before acting, defined in the new `_Axis/Rules/Permissions.md`. Confirmation points in the Rules checklist, Trash, Folders, the Organize Project Folders Directive, `^refresh`, `^tasks` and `^archive` now defer to it; at `Default` and `Autonomous` an Agent may supply a Command's confirmation word itself and records that it did. `^pub`, `^update`, pushing, paid spending, Secrets, WORM and role gates are unchanged at every level.
+- Fast Boot: the entry files (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`) are now a short plain-language page (under 3 KB). The first message, even "hi", runs `_Axis/Resources/boot.py`, which performs the mechanical Main startup in one call and prints the Ready banner in seconds; reading the plan and core rules moves to just before the first answer that needs it. Later turns run `_Axis/Resources/turn.py` for the lease. `_Axis/Resources/Boot-Manual.md` is the shell-only fallback and `_Axis/Resources/Entry-Protocol.md` keeps the complete protocol (used for a pending update). Sub-agents and declared External agents are routed first. If a host answers a first hello without starting Axis (observed in the Claude Cowork desktop app), saying **Start Axis** starts it; the README and User Manual now say so. Measured in development on Claude Sonnet 5 and GPT-6 Sol: Ready banner in about 15-60 seconds instead of 2.5-4 minutes, and Claude Sonnet 5 refused the new entry file far less often in development tests (headless runs, 2-4 samples per case, plus User-run checks in Claude Code, Claude Cowork and ChatGPT desktop).
+- New Max Concurrent Sessions Setting (default 10) limits how many Agent sessions are live at once; a new External Agent or Subagent does not start at the limit, and Main is never refused. Defined in `_Axis/Rules/MarkersFlagsAndLocks.md` > Concurrent Sessions and applied in `Start-External.md` and `Start-Subagent.md`.
+- New Principle, be fault tolerant: accept minor, clearly meant slips instead of blocking on them; keep strictness for safety, security, data integrity and User-only gates.
+- New Principle, core integrity: an Agent follows the whole Workflow for its role or says so and changes nothing; it never runs selected parts. The entry files state it in one sentence, and their opening now explains in plain words what Axis is and what startup does.
+
+update-impact: automatic
+
+### Structural Changes
+
+- `_Axis/LICENSE` (MIT); root `LICENSE` pre-setup display copy; `README.md`, `_Axis/USERMANUAL.md`, `_Axis/SPECIFICATION.md`, `_Axis/MANIFEST.md` (license and trademark text).
+- Entry trio replaced (Fast Boot); new `_Axis/Resources/boot.py`, `_Axis/Resources/turn.py`, `_Axis/Resources/Boot-Manual.md`, `_Axis/Resources/Entry-Protocol.md`; `_Axis/Practices/Markers.md` (turn.py renewal), `_Axis/Resources/Lifecycle-Presentation.md`, `_Axis/MANIFEST.md`, `_Axis/USERMANUAL.md`.
+- `_Axis/Rules/MarkersFlagsAndLocks.md` (Concurrent Sessions), `_Axis/Resources/Start-External.md`, `_Axis/Resources/Start-Subagent.md` (Max Concurrent Sessions).
+- `_Axis/PRINCIPLES.md` (core integrity; be fault tolerant).
+- New `_Axis/Rules/Permissions.md`; `_Axis/RULES.md`, `_Axis/SETTINGS.md` (template), `_Axis/DIRECTIVES.md` (template), `_Axis/Practices/Folders.md`, `_Axis/Practices/Trash.md`, `_Axis/Commands/refresh.md`, `_Axis/Commands/tasks.md`, `_Axis/Commands/archive.md`, `_Axis/MANIFEST.md`, `_Axis/GLOSSARY.md`, `_Axis/USERMANUAL.md`, `_Axis/SPECIFICATION.md`, regenerated `_Axis/Resources/Starting-Context.md`.
+
+### Project-State Migrations
+
+- When the project is not yet set up (`_Axis/Flags/project-ready` holds no timestamp) and its root `LICENSE` is byte-identical to the 1.02 Axis FSL-1.1-MIT text, replace that pristine display copy with the MIT text. In a set-up project the root `LICENSE` is User-owned and is never changed.
+- In `_Axis/SETTINGS.md`, add `### Permissions` (value `Default`) after `### Tracking`, then `### Max Concurrent Sessions` (value `10`) after it, each only when absent; preserve existing values exactly. A missing Setting reads as `Default`. `Default` asks less often than 1.02 did (1.02 behaved like `Restricted`); set `Restricted` after updating to keep the old confirmation behaviour.
+- In `_Axis/DIRECTIVES.md`, replace the exact line `- For any reorganization of existing content (rename, merge, split, move): propose it to User and apply only after approval.` with the new template line when present and unmodified; preserve a customized line.
+
+### Retired Paths
+
+- None.
+
+### Verification
+
+- The three entry files are identical, under 4,000 bytes and end with `<!-- axis:end -->`; `_Axis/Resources/boot.py`, `turn.py`, `Boot-Manual.md` and `Entry-Protocol.md` are present.
+- `_Axis/SETTINGS.md` carries `### Permissions` and `### Max Concurrent Sessions` with the preserved or default values.
 
 ## 1.02
 

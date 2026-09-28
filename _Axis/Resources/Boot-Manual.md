@@ -1,0 +1,20 @@
+# Boot Manual
+> **Purpose:** Start an Axis Main session with shell commands only, when `boot.py` cannot run. Same records as `boot.py`; run each step from the project root.
+
+Stop at any failed check, tell the user which step failed, and leave everything else unchanged.
+
+1. **Session ID.** Run this command and keep what it prints as `{ID}`:
+
+		TS=$(date -u +"%Y.%m.%d.%H.%M.%S.%3NZ"); case "$TS" in *3N*) TS=$(python3 -c 'import datetime as d;n=d.datetime.now(d.timezone.utc);print(n.strftime("%Y.%m.%d.%H.%M.%S.")+"%03dZ"%(n.microsecond//1000))' 2>/dev/null || node -e 'console.log(new Date().toISOString().replace(/[-T:]/g,"."))');; esac; echo "$TS"
+
+	`ls _Axis/*/{ID}.md _Axis/Archive/*/{ID}.md 2>/dev/null` must print nothing; otherwise run it again. Name the two Logs in steps 6 and 8 the same way. The no-overwrite create in step 5 is the collision guard, so no other claim is needed here.
+2. **No pending update.** `ls -A _Axis/Updates/` may list only `.gitkeep` and `operation.lck`. Anything else: stop and follow `_Axis/Resources/Entry-Protocol.md`.
+3. **Claim.** `mkdir _Axis/Flags/starting.lock` (in `_Axis/Flags/`, not `_Temp/`; failure means another startup is running or was interrupted: stop and tell the user), then write `_Axis/Flags/starting.lock/OWNER` with a random token. `_Axis/Flags/starting` must be missing, blank or `cleared`; otherwise remove only your `OWNER` and lock and stop.
+4. **One Main, checked under the claim.** If any `_Axis/Agents/*.md` starts with `Main: session`, is under 1 hour old and has no `.kill` sibling, another Main is live: remove your `OWNER` and lock, then follow `_Axis/Resources/Start-External.md` instead.
+5. **Marker.** Create `_Axis/Agents/{ID}.md` without overwriting (`set -C`), exactly: `Main: session`, a blank line, `session: {ID}`, `host: {your host}`. Then write `_Axis/Flags/starting` as `{ID}` and the current UTC time on two lines.
+6. **Opening records.** Append `{now} - {ID} - Session start` to `_Axis/Tracking/{ID}.md`. Write a new Log `_Axis/Logs/{new ID}.md`: `Session Starting`, blank line, `by: Main Agent`, `session: {ID}`.
+7. **Capabilities.** Write each Flag in `_Axis/Flags/` as the value then the current UTC time: `model` (your model id), `host-spawn` and `host-parallel` (`yes` if you can start sub-agents), `host-shell` (`yes`), `host-local-llm` (`yes` plus the URL `http://localhost:11434/v1` on a third line only if `curl -s --max-time 2 http://localhost:11434/v1/models` answers, else `no`), `host-cloud-sync` (`yes` if the path contains `CloudStorage`, `Dropbox`, `OneDrive` or `Google Drive`, else `no`), `host-storage` (`atomic` on an ordinary local disk, else `serialized`).
+8. **Commit.** Write a second new Log: `Session Started`, blank line, `by: Main Agent`, `session: {ID}`. Write `_Axis/Flags/session-id` as `{ID}` and the current UTC time. Write `cleared` into `_Axis/Flags/starting`, delete the `OWNER` file you wrote, then `rmdir _Axis/Flags/starting.lock`.
+9. **Banner.** Show the Ready banner from `_Axis/Resources/Lifecycle-Presentation.md` > Main startup (Version from `_Axis/CHANGELOG.md`, Project from `_Axis/PROJECT.md` line 1, this folder, `{ID}`) and greet the user in one line.
+10. **Pending before any answer.** Adjudicate every file in `_Axis/Requests/` under `_Axis/Practices/Requests.md`. If `_Axis/PROJECT.md` declares a project overlay, validate and activate it with `_Axis/Resources/Load-Project-Overlay.md` before applying it. If `_Axis/Flags/project-ready` does not hold a timestamp, say "Your project needs to be set up." and follow `_Axis/Resources/Start-Project.md`.
+11. **Reading before any answer other than the greeting or a requested exact reply.** Read `_Axis/Resources/Load-Starting-Context.md` (core rules), `_Axis/INSTRUCTIONS.md`, `_Axis/MINDSET.md`, `_Axis/DIRECTIVES.md`, `_Axis/PLAN.md`, `_Axis/TASKS.md`, the newest Snapshots and the Notes index; then complete `_Axis/Resources/Start-Session.md` Step 2 items 5-6, 10 and 14-20 (environment binding, Mindset stamp, queues, index check, Notes overflow, Trash, Requests, remote freshness) and Step 5 (parent Project).

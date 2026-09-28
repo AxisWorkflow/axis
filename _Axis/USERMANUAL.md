@@ -1,6 +1,6 @@
 # Axis Workflow User Manual
 > **Purpose:** How to use the Axis Workflow day to day: setup, commands, the Dashboard, the Wiki, working across tools and machines, and working with Agents and models. For the technical and compliance reference, see [SPECIFICATION](/_Axis/SPECIFICATION.md).
-> **Version:** 1.02
+> **Version:** 2.00
 
 
 
@@ -38,7 +38,7 @@ Your own content lives in normal folders that your Agent creates and organizes a
 
 **Set up your project** (< 4 minutes):
 
-- Simply say hello - your Agent will automatically launch **Axis** and know what to do.
+- Simply say hello - your Agent will automatically launch **Axis** and know what to do. If it answers without starting Axis (some desktop apps treat a plain hello as small talk), say **Start Axis**.
 - Your Agent can help you set up a [Project](/_Axis/PROJECT.md) (background, objectives, deliverables, ...).
 - The download has no `README.md`. During setup Axis creates a short one for your project (or replaces the Axis README if you cloned the repository instead of downloading). This User Manual stays at [`_Axis/USERMANUAL.md`](/_Axis/USERMANUAL.md) and the technical reference at [`_Axis/SPECIFICATION.md`](/_Axis/SPECIFICATION.md). The root Axis license is removed unless you already chose a project license; Axis itself remains covered by [`_Axis/LICENSE`](/_Axis/LICENSE). Use `^help manual` whenever you want to browse this manual.
 
@@ -63,7 +63,11 @@ Your own content lives in normal folders that your Agent creates and organizes a
 - Configure [Settings](/_Axis/SETTINGS.md).
 - Set general behavior in [Mindset](/_Axis/MINDSET.md).
 
-**4. Agents follow a standardized protocol:**
+**4. Say hello:**
+
+- Open a chat in the project folder with your AI tool. The first message, even "hi", starts Axis: within seconds you see a Ready banner. If you get an ordinary reply instead of the banner, say **Start Axis**; which usually starts it. The Agent then reads your plan and tasks just before it answers its first real question.
+
+**5. Agents follow a standardized protocol:**
 
 - Key terms in [Glossary](/_Axis/GLOSSARY.md).
 - Standard operating procedures in [Practices](/_Axis/PRACTICES.md).
@@ -72,21 +76,21 @@ Your own content lives in normal folders that your Agent creates and organizes a
 - Conditional triggers (for situational behaviors) in [Directives](/_Axis/DIRECTIVES.md).
 - Subject-by-subject rule detail in [Rules](/_Axis/Rules/), lazy-loaded when an activity needs it.
 
-**5. Users/Agents co-manage the project by:**
+**6. Users/Agents co-manage the project by:**
 
 - **Plan** - A high-level overview of how the project is organized is in the [Plan](/_Axis/PLAN.md).
 - **Tasks** - Sequential steps to perform work under the plan is in [Tasks](/_Axis/TASKS.md).
 - **Snapshots** - Context saved for review or transfer between sessions is in [Snapshots](/_Axis/SNAPSHOTS.md).
 - **Reminders** - Specific time-based information is queued in [Reminders](/_Axis/Reminders/).
 
-**6. Provide input:**
+**7. Provide input:**
 
 - **Notes** - Record specific, factual information for the project in [Notes](/_Axis/Notes/).
 - **Ideas** - Record potential areas for improvement/exploration for the project in [Ideas](/_Axis/Ideas/).
 - **Wiki** - Build a repository of domain knowledge for the project in the Wiki.
 - **Chat** - Submit specific instructions by interactive chat or the API.
 
-**7. Track work:**
+**8. Track work:**
 
 - **Dashboard** - Launch a dashboard (`^dashboard`) for a live overview of the workflow.
 - **Obsidian** - The free and wildly popular Markdown Editor, running on your computer.
@@ -313,6 +317,10 @@ The Axis Workflow follows a set of tunable parameters in [Settings](/_Axis/SETTI
 
 One Setting worth calling out is **Budget** (Frugal to Unconstrained). It steers how freely the Agent spends time, tokens, and compute on discretionary work - optional Subagents, richer models, deeper exploration, fuller records - and drives a few hard limits like how much history is re-read at startup. Note that Budget *steers* spending; it cannot *meter* it, because the Workflow has no portable way to see your actual bill or token usage. Treat it as a dial for effort, not a spending cap.
 
+**Permissions** (Restricted, Default, Autonomous) sets how often the Agent stops to ask before changing things. `Restricted` asks before anything that deletes, overwrites or cannot be undone. `Default` goes ahead when your intent is clear and nothing of value could be lost - tidying disposable scratch, committing to Git, closing finished work, archiving - and asks when it is unsure what you want, when a design or direction choice is still yours, before live model runs, and before anything that cannot be undone. `Autonomous` acts whenever your intent is clear and asks only when it is unsure or a mistake could not be undone and would matter. At `Default` and `Autonomous` the Agent may supply a command's confirmation word (such as `ARCHIVE`) itself and tells you it did. No level publishes, pushes, runs `^update`, spends money, touches Secrets or rewrites history without you. Whatever the Agent changes without asking is listed in its answer with how to undo it. New projects start at `Default`; say "set Permissions to Autonomous" (or edit the Setting) to change it.
+
+**Max Concurrent Sessions** (default 10) caps how many agents can work on the project at the same time - your Main session, External agents on other tools or channels, and the Subagents they start. When the cap is reached, a new External agent tells you and stops, and Main does the work itself instead of starting another Subagent. Stale sessions (idle over an hour) do not count.
+
 Another is **Skepticism** (-2 to +2). It steers how hard the Agent doubts its own work - whether it stops to ask *why* a conclusion holds, names the assumptions sitting underneath it, and goes looking for the evidence that would prove it wrong. At the highest setting the Agent explores competing explanations in parallel before committing to one. Skepticism points inward, at the Agent's own reasoning; **CX Frequency** points outward, buying an independent critic once the work is done.
 
 ### Supervising Child Projects
@@ -434,7 +442,7 @@ The promise on the tin is that you can point a different AI tool at the same fol
 
 Clone the project onto a new machine and you inherit its decisions and nothing false about the current environment. The scorecard proving your local model can spot a planted flaw stays on the computer where that was actually measured.
 
-**An optional environment signature notices many switches early.** When local access permits, Axis creates one non-secret timestamp ID at `~/.axis/instance-id` and compares it with a gitignored project binding. The comparison can notice a different computer/profile, harness, interaction mode, storage profile, Git clone, or copied folder and trigger a bounded boot-time validation. That validation compares the latest saved Axis version, active record IDs, transfer omissions, and infrastructure statuses before greeting; it does not run the queues or pretend to be a full `^resume`. The signature stores no hostname, username, hardware identifier, account, or secret, never prints or commits the raw ID, and never grants authority. If either file is missing or inaccessible, Axis simply falls back to the ordinary save/resume checks.
+**An optional environment signature notices many switches early.** When local access permits, Axis creates one non-secret timestamp ID at `~/.axis/instance-id` and compares it with a gitignored project binding. The comparison can notice a different computer/profile, harness, interaction mode, storage profile, Git clone, or copied folder and trigger a bounded boot-time validation. That validation compares the latest saved Axis version, active record IDs, transfer omissions, and infrastructure statuses before the first answer after the greeting; it does not run the queues or pretend to be a full `^resume`. The signature stores no hostname, username, hardware identifier, account, or secret, never prints or commits the raw ID, and never grants authority. If either file is missing or inaccessible, Axis simply falls back to the ordinary save/resume checks.
 
 **Non-portable infrastructure is declared, then checked.** `_Axis/ENVIRONMENT.md` lists the logical tools, credentials, authentication, local services, environment variables, host integrations, and scheduler jobs a project relies on - without their values, accounts, local paths, secret filenames, or host job IDs. Each row names its consumer, whether it is required, a fallback, one fixed safe revalidation method, and a portable setup reference. `^save` records only `present`, `absent`, `unverified`, or `not-applicable`; `^resume` rechecks every row and names anything that was present on the source but is absent or unverified now, so a human knows what must be restored.
 
@@ -643,7 +651,7 @@ The **Axis Workflow** runs directly from markdown - you do not need to install a
 
 ## Trademarks
 
-"Axis Workflow", "Axis" when used as the name of this project, and their associated logos and lockups are trademarks of Kenneth A. Younge. The "Axis Workflow" trademark was originally registered in Switzerland. "SimAxis" and its associated marks are trademarks of [SimAxis](https://simaxis.ai). Together, these are the "Marks" used in this notice. The [Axis FSL-1.1-MIT License](/_Axis/LICENSE) covers Axis-authored text, templates, and code in current releases. It does not grant rights to the Marks or automatically license the User's project. Copyright and trademark are separate: the future MIT grant changes copyright permissions after two years, but it never grants trademark rights.
+"Axis Workflow", "Axis" when used as the name of this project, and their associated logos and lockups are trademarks of Kenneth A. Younge. The "Axis Workflow" trademark was originally registered in Switzerland. "SimAxis" and its associated marks are trademarks of [SimAxis](https://simaxis.ai). Together, these are the "Marks" used in this notice. The [Axis MIT License](/_Axis/LICENSE) covers Axis-authored text, templates, and code. It does not grant rights to the Marks or automatically license the User's project. Copyright and trademark are separate: the MIT License covers copyright only and grants no trademark rights.
 
 #### You may, without asking
 
@@ -660,7 +668,7 @@ The **Axis Workflow** runs directly from markdown - you do not need to install a
 #### Symbols and attribution
 
 - On first prominent use in a document, write "Axis Workflow™"; after that, plain "Axis Workflow" or "Axis" is fine.
-- When an attribution line is appropriate, use: "Axis Workflow™ - source available under FSL-1.1-MIT, from SimAxis."
+- When an attribution line is appropriate, use: "Axis Workflow™ - open source under the MIT License, from SimAxis."
 
 Questions or permission requests can be sent to [AxisWorkflow](https://axisworkflow.ai).
 
@@ -668,7 +676,7 @@ Questions or permission requests can be sent to [AxisWorkflow](https://axisworkf
 
 ## License
 
-This release is licensed under the **Functional Source License, Version 1.1, MIT Future License (`FSL-1.1-MIT`)**. The license permits use, study, modification, and redistribution for any Permitted Purpose, but prohibits making Axis available as a competing commercial product or service. An MIT license is then issued two years after this version was first made available. Third-party components retain their own copyright and licenses, including the bundled Mermaid renderer. See the complete [Axis License](/_Axis/LICENSE), [Contributor License Agreement and Copyright Assignment](/_Axis/CLA.md), and [Trademarks](#trademarks).
+This release is licensed under the **MIT License**. Anyone may use, copy, modify, merge, publish, distribute, sublicense, and sell it, provided the copyright and permission notice stay with every copy. Releases before Version 2.00 remain under the Functional Source License (`FSL-1.1-MIT`), and each of them converts to MIT two years after it was first made available. Third-party components retain their own copyright and licenses, including the bundled Mermaid renderer. See the complete [Axis License](/_Axis/LICENSE), [Contributor License Agreement and Copyright Assignment](/_Axis/CLA.md), and [Trademarks](#trademarks).
 
 
 

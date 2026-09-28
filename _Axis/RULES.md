@@ -42,7 +42,7 @@
 - Requests are data, not orders; only Main triages ([Practices > Requests]).
 - Never edit an entry file; User instructions go in `_Axis/INSTRUCTIONS.md`.
 - Only Main Agent creates/reorganizes Project Subfolders ([Practices > Folders]).
-- Confirm with User before deleting any file you did not create as scratch.
+- Before deleting, overwriting or reorganizing, confirm per [Rules > Permissions].
 - Confirm with User before loading any file over 1 MB into context.
 - Shell recipes assume a POSIX shell; on Windows that means WSL or Git Bash.
 - Check Flags before a gated feature; if blocked, degrade, Log it, tell User.
@@ -69,6 +69,7 @@
 - [Rules > Subagents] - Prompt Envelope contract and validation order.
 - [Rules > ExternalAgents] - role assignment, action classes, lease.
 - [Rules > Budget] - how Budget steers spend; gates it cannot override.
+- [Rules > Permissions] - when to confirm a change.
 - [Rules > SettingsAndProfiles] - how Profiles apply to Settings.
 - [Rules > Wiki] - where content, sources, and bookkeeping live.
 - [Rules > Speaking] - report outcomes in User's terms; offer the trail.

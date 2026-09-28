@@ -9,7 +9,7 @@ The session rows appear in this order: Agent, Status, Version, Project, Folder, 
 
 ## Main startup
 
-Only after every startup completion gate passes, emit exactly one block and immediately follow it with the normal greeting. `Ready` means the required startup preparation completed, never merely that loading began.
+Only after every startup completion gate passes, emit exactly one block and immediately follow it with the normal greeting. `Ready` means the session is admitted and its startup records are committed, never merely that loading began. Under Fast Boot, the items `boot.py` lists as pending (Requests, overlay, project setup) and the core reading still follow the banner, and they are complete before any answer other than the greeting or a requested exact reply.
 
 ```text
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -28,7 +28,7 @@ Only after every startup completion gate passes, emit exactly one block and imme
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-Only an independently validated RSI Main identity replaces the title with the spaced uppercase title for Axis RSI. Axis Workflow and Axis RSI share the same metadata and gates. A stale cache, folder or Project name alone never selects RSI. Failed startup has no Ready block or Session ID banner. Do not print a second block after overlay activation.
+Only an independently validated RSI Main identity replaces the title with the spaced uppercase title for Axis RSI. Axis Workflow and Axis RSI share the same metadata and gates. A stale cache, folder or Project name alone never selects RSI. Failed startup has no Ready block or Session ID banner. Do not print a second block after overlay activation. Under Fast Boot the banner prints before the overlay is validated, so it always uses the Workflow title; an RSI identity is announced by the overlay activation notice and applies to later presentation.
 
 ## Shutdown and update
 

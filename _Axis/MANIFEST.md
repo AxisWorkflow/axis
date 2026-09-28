@@ -19,7 +19,7 @@
 - **`CLAUDE.md`** - Entry-point file (Claude Code / Cowork); synced from `AGENTS.md`.
 - **`GEMINI.md`** - Entry-point file (Gemini CLI); synced from `AGENTS.md`.
 - **`README.md`** - Created by Project Setup as the User-owned Project README with one bounded Axis summary block. It is not in the release download, so before setup its absence is normal and is never reported as missing; a cloned repository carries the Axis GitHub introduction instead.
-- **`LICENSE`** - Before setup, generated display copy of the Axis FSL-1.1-MIT License; after setup, User-owned or absent. Project Setup removes only the pristine Axis copy.
+- **`LICENSE`** - Before setup, generated display copy of the Axis MIT License; after setup, User-owned or absent. Project Setup removes only the pristine Axis copy.
 
 ## Axis
 
@@ -52,7 +52,7 @@
 - `_Axis/CHANGELOG.md`
 - `_Axis/CLA.md` - Canonical Contributor License Agreement and Copyright Assignment.
 - `_Axis/CONTRIBUTING.md` - Contribution intake policy and CLA gate.
-- `_Axis/LICENSE` - Canonical FSL-1.1-MIT License and trademark notice for Axis-authored Workflow files.
+- `_Axis/LICENSE` - Canonical MIT License for Axis-authored Workflow files.
 - `_Axis/USERMANUAL.md` - The User Manual: how to use Axis; explanatory and lazy-loaded during ordinary operation.
 - `_Axis/SPECIFICATION.md` - The technical and compliance reference; explanatory and lazy-loaded during ordinary operation.
 - `_Axis/DIRECTIVES.md`
@@ -127,6 +127,7 @@
 - `_Axis/Rules/HostAndMeta.md`
 - `_Axis/Rules/Indices.md`
 - `_Axis/Rules/MarkersFlagsAndLocks.md`
+- `_Axis/Rules/Permissions.md`
 - `_Axis/Rules/ProjectLayout.md`
 - `_Axis/Rules/ProtectedContent.md`
 - `_Axis/Rules/RecordsAndWORM.md`
@@ -186,6 +187,10 @@
 - `_Axis/Resources/Startup-Records-Manual.md` - complete manual startup record fallback, loaded only when selected.
 - `_Axis/Resources/startup-state.py` - optional local startup record accelerator; manual startup remains available.
 - `_Axis/Resources/startup-survey.py` - optional one-call startup survey; the numbered Start-Session steps remain available.
+- `_Axis/Resources/boot.py` - one-command Main startup used by the entry files.
+- `_Axis/Resources/turn.py` - per-turn lease check and renewal used by the entry files.
+- `_Axis/Resources/Boot-Manual.md` - shell-only startup when `boot.py` cannot run.
+- `_Axis/Resources/Entry-Protocol.md` - the complete startup and per-turn protocol; the path for a pending update.
 - `_Axis/Resources/agent-board.py` - optional read-only Tracking board for `^board` and the awareness pass; reading the files directly remains available.
 - `_Axis/Resources/Claim-Session.md`
 - `_Axis/Resources/Detect-Capabilities.md`

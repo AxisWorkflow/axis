@@ -5,7 +5,7 @@
 
 ## Trashing a File
 
-1. Trash only dead material that is safe to lose; anything worth keeping is archived or left in place, never trashed. Confirm the deletion exactly as if deleting outright ([Rules]: confirm with User before deleting any file you did not create as scratch).
+1. Trash only dead material that is safe to lose; anything worth keeping is archived or left in place, never trashed. Confirm the deletion exactly as if deleting outright, under [Rules > Permissions].
 2. Ensure `_Trash/` exists and contains `.gitkeep`; quietly recreate either if missing (User may have deleted the whole folder - that is fine and expected).
 3. Move (rename) the file or directory into `_Trash/`. On a name collision, append `-2`, `-3`, ... to the moved name until it is free. Renaming works on hosts where deleting does not, which is why this is also the standard route under [Rules > HostAndMeta > Deletion Fallback].
 4. A trashed item stays recoverable until a sweep runs: if User asks for it back, move it back out.

@@ -1,6 +1,6 @@
 # Axis Workflow Specification
 > **Purpose:** Technical reference for IT, security and compliance reviewers, and for Agents that need a complete description: system classification, entry and host integration, security model, limitations, supervision, benchmarks and the file reference. For everyday use, see the [User Manual](/_Axis/USERMANUAL.md).
-> **Version:** 1.02
+> **Version:** 2.00
 
 ## Contents
 
@@ -197,11 +197,11 @@ Most AI workflows treat security as something the host handles. Axis does not ha
 
 **Records are write-once when they become history.** Logs, Snapshots, Cross-Examinations, Audits, Status Reports, terminal Follow-Ups and Reminders, and completed or cancelled Tasks are never edited after the fact. Open Follow-Ups and Reminders stay mutable while their current ask/time remains live; terminal records move unchanged to Archive. If historical state changes, a new record supersedes the old one and both remain.
 
-**Old history leaves working context without being destroyed.** `^archive` moves eligible inactive records unchanged into `_Axis/Archive/`, where they stay versioned, reversible, and outside routine Session Start loading. The command shows the exact boundary and requires `ARCHIVE` confirmation; automatic Note overflow moves only the oldest excess records and reports what moved. Markers are deliberately excluded because they are ephemeral live-state signals: they are deleted, cleared, or moved to `_Trash/`, never preserved as history.
+**Old history leaves working context without being destroyed.** `^archive` moves eligible inactive records unchanged into `_Axis/Archive/`, where they stay versioned, reversible, and outside routine Session Start loading. The command shows the exact boundary and requires `ARCHIVE` confirmation (at the `Default` and `Autonomous` Permissions levels the Agent may supply it for a proposal within User's clear intent, and says so); automatic Note overflow moves only the oldest excess records and reports what moved. Markers are deliberately excluded because they are ephemeral live-state signals: they are deleted, cleared, or moved to `_Trash/`, never preserved as history.
 
 **The Archive can live elsewhere.** Set **Archive Location** in `_Axis/SETTINGS.md` to keep archived history on an external drive, a NAS share, or a cloud-synced folder; the same family folders are used there. If that folder is not mounted, Axis says so and only archiving waits - it never quietly writes to `_Axis/Archive/` instead, and records that were ready to archive stay in place, marked closed, until the folder returns. Moving the Archive to a new location is a confirmed, verified copy. Set **Archive in Git** to `false` to keep an in-project Archive out of your commits; a folder outside the project is never committed.
 
-**Nothing destructive happens quietly.** An Agent confirms with you before deleting any file it did not create as scratch, before loading anything over a megabyte, and before reorganizing your folders. Concurrent sessions coordinate through file locks so two Agents cannot silently overwrite each other's work.
+**Nothing destructive happens quietly.** The **Permissions** Setting decides when an Agent confirms a change first: `Restricted` confirms every irreversible change; `Default` acts on clear intent when nothing of value could be lost and confirms unclear intent, open design choices, live model work and irreversible loss; `Autonomous` acts on clear intent unless a mistake could not be rolled back and would be major. At `Default` and `Autonomous` an Agent may supply a Command's confirmation word itself and records that it did. Every level still stops for `^pub`, `^update`, pushing, paid spending, Secrets, WORM history and role rules, and reports what it changed without asking together with how to undo it. An Agent always confirms before loading anything over a megabyte. Concurrent sessions coordinate through file locks so two Agents cannot silently overwrite each other's work, and **Max Concurrent Sessions** (default 10) limits how many are live at once; the count is taken when an External Agent or Subagent starts and is advisory, not a lock.
 
 **The Dashboard has a narrow serving boundary.** Its bundled server is read-only, binds only to the local machine, filters directory listings, rejects traversal and symlink aliases, and serves only the Dashboard and its declared workflow records. It performs no Subproject discovery and serves no child content; `_Axis/Secrets/`, `_Temp/`, `_Trash/`, `.git/`, host configuration, and write methods are all denied.
 
@@ -443,7 +443,7 @@ The root `README.md` is the short GitHub introduction to the Axis Workflow. It i
 
 ##### `LICENSE` and `_Axis/LICENSE`
 
-`_Axis/LICENSE` contains the canonical FSL-1.1-MIT terms for current Axis Workflow releases, including the Competing Use restriction, version-by-version two-year conversion to MIT, and separate trademark notice. A fresh download carries the same license at root so GitHub identifies the distribution correctly. Project Setup removes only that pristine root copy and never selects a license for your work; a missing or customized project `LICENSE` is preserved.
+`_Axis/LICENSE` contains the standard MIT License. Trademark terms live in the README and User Manual, because the MIT License grants no trademark rights. A fresh download carries the same license at root so GitHub identifies the distribution correctly. Project Setup removes only that pristine root copy and never selects a license for your work; a missing or customized project `LICENSE` is preserved.
 
 ##### `CLA.md` and `CONTRIBUTING.md`
 

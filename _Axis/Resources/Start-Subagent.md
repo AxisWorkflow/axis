@@ -87,6 +87,7 @@ Standard-capability Subagents also write activity telemetry when [Settings > Tra
 The `^save` command relies on Markers to detect pending Subagents (matching Subjects with the `Subagent:` prefix - `Main: session` Markers do not block), so set a Marker using the following protocol, even if Main does NOT block for a true parallel spawn (e.g., on hosts where an asynchronous call is not possible - such as with Ollama):
 
 - **On spawning**
+	- Count live sessions under [Rules > MarkersFlagsAndLocks > Concurrent Sessions]. At or over [Settings > Max Concurrent Sessions], do not spawn: do the work yourself or wait for a running Subagent to return.
 	- Mint a project-unique identifier timestamp per [Practices > Timestamps], claim step included - a spawn is the case that claim exists for, and it is taken on every mint precisely so it does not depend on your noticing.
 	- Save a Marker as `_Axis/Agents/{yyyy.mm.dd.hh.mm.ss.xxxZ}.md`.
 	- Follow the Index-Detail Pattern wherein:
