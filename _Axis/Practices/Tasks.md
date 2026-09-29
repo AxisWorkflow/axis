@@ -27,7 +27,7 @@ Field keys in `_Axis/TASKS.md` are exactly `label:`, `status:`, `created:`, `upd
 - When a task carrying a `delivers:` value reaches **Completed**, record the paths of the work products it produced under a `## Produced` heading in that task's detail file in `_Axis/Tasks/` - one path per line as a `- ` bullet. That is the only place a Deliverable is tied to a file, so it has to be written before the task is closed.
 - A Deliverable no task names is unclaimed work. Surface it rather than assuming it is covered.
 - Producing the file is not the same as meeting the bar. A Deliverable is done when its paths exist AND the relevant **Criteria** in `_Axis/PROJECT.md` have been evaluated against them.
-- The `^status` command reports this coverage on every run.
+- The `^review` command reports this coverage on every run.
 
 Keep description of each Task in `_Axis/TASKS.md` very focused: only describe what needs to be done and why. Sort tasks in `_Axis/TASKS.md` by approximate order of execution. No section headers. Put all details for Tasks into respective detail files in `_Axis/Tasks/` - that saves on context and helps User to more easily track the project.
 
@@ -38,14 +38,14 @@ Agent and User can look up details for each Task from supporting files. Details 
 - how success will be evaluated
 - references to items in Logs, Notes, Snapshots, other Tasks, and the Wiki.
 
-Each task in `_Axis/TASKS.md` carries one of four **Status** values:
+Each task in `_Axis/TASKS.md` carries one of four Status values:
 
 - **Active** - Task is being worked on.
 - **Blocked** - Task is on hold (i.e., waiting on an external input or dependency).
 - **Completed** - Task is done and verified.
 - **Cancelled** - Task was dropped before completion (e.g., obsolete after a Plan revision, scope change, or supersession by another task). Requires a one-line cancellation reason in the detail file.
 
-Logic for **Status** values:
+Logic for Status values:
 
 - Never mark a task complete without proving that it meets its requirements.
 - When a task transitions to **Completed**, timestamp it with the *Completed* time; leave *Cancelled* as `N/A`.

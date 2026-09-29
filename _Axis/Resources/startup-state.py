@@ -21,7 +21,9 @@ except ImportError:
     fcntl = None
 
 ID = re.compile(r'\d{4}(?:\.\d{2}){5}\.\d{3}Z')
-FAMILIES = ('Agents','Audit','CX','Followups','Ideas','Logs','Notes','Reminders','Snapshots','Status','Supervision','Tasks')
+FAMILIES = ('Agents','Audit','CX','Followups','Ideas','Logs','Notes','Reminders','Reviews','Snapshots','Status','Supervision','Tasks')
+# Reviews/ arrives with the first ^review on projects updated from 2.00; Status/ is the pre-2.01 name it replaces.
+OPTIONAL_FAMILIES = ('Reviews','Status')
 CAPS = ('model','host-spawn','host-parallel','host-shell','host-local-llm','host-cloud-sync','host-storage')
 OWNER_KEYS = {'schema','kind','token','session','host','phase','starting_log','started_log'}
 
@@ -228,6 +230,7 @@ class Startup:
     def collision(self, candidate):
         occupied=False
         for relative in ['_Axis/'+family for family in FAMILIES]+['_Axis/Archive']:
+            if relative[6:] in OPTIONAL_FAMILIES and not os.path.lexists(self.root/relative):continue
             stack=[self.path(relative,kind='directory')]
             while stack:
                 parent=stack.pop()

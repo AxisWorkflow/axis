@@ -38,6 +38,7 @@ AXIS_RECORD_FAMILIES = {
     "Ideas",
     "Notes",
     "Logs",
+    "Reviews",
     "Status",
     "Snapshots",
     "CX",
@@ -60,6 +61,19 @@ FLAG_FILES = {
     "host-cloud-sync",
     "host-storage",
     "local-aptitude",
+}
+# The brand package's web assets, served read-only so the Dashboard uses the Axis look (2.01).
+BRANDING_FILES = {
+    ("css", "axis-brand.css"),
+    ("fonts", "inter.woff2"),
+    ("fonts", "ibmplexmono.woff2"),
+    ("fonts", "ibmplexmono-bold.woff2"),
+    ("svg", "logo", "logo.svg"),
+    ("svg", "logo", "logo-reversed.svg"),
+    ("svg", "mark", "mark.svg"),
+    ("svg", "mark", "mark-reversed.svg"),
+    ("svg", "illustrations", "pattern.svg"),
+    ("favicon", "favicon.svg"),
 }
 WIKI_ADMIN_FILES = {
     "Library-Index.md",
@@ -116,6 +130,8 @@ def is_allowed_file(parts: tuple[str, ...]) -> bool:
     if len(parts) == 3 and parts[:2] == ("_Axis", "Agents") and parts[2].endswith(".kill"):
         return True
     if len(parts) == 3 and parts[:2] == ("_Axis", "Wiki") and parts[2] in WIKI_ADMIN_FILES:
+        return True
+    if len(parts) >= 4 and parts[:2] == ("_Axis", "Branding") and parts[2:] in BRANDING_FILES:
         return True
     return False
 
@@ -300,7 +316,7 @@ class AxisDashboardHandler(BaseHTTPRequestHandler):
         if suffix in {".md", ".mermaid", ".kill", ""}:
             content_type = "text/plain; charset=utf-8"
         else:
-            content_type = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
+            content_type = {".woff2": "font/woff2", ".svg": "image/svg+xml", ".css": "text/css; charset=utf-8"}.get(path.suffix) or mimetypes.guess_type(path.name)[0] or "application/octet-stream"
 
         self.send_response(200)
         self.send_header("Content-Type", content_type)

@@ -35,7 +35,7 @@ Twelve directories conform to the **Index-Detail Pattern:**
 - `_Axis/Notes/`
 - `_Axis/Reminders/`
 - `_Axis/Snapshots/`
-- `_Axis/Status/`
+- `_Axis/Reviews/`
 - `_Axis/Supervision/`
 - `_Axis/Tasks/`
 
@@ -43,9 +43,9 @@ The Index-Detail Pattern is implemented in three ways:
 
 - **Directory** (as the index) + **File** (with the detail)
 
-  The directory is the index - compile a live index by scanning the first line of each file. No sidecar index file exists. To filter by type, scan Subject lines (e.g., `CX:` for CX Reports, `Audit:` for Audit Reports, `Status:` for Status Reports, `Subagent:` for Subagent Markers).
+  The directory is the index - compile a live index by scanning the first line of each file. No sidecar index file exists. To filter by type, scan Subject lines (e.g., `CX:` for CX Reports, `Audit:` for Audit Reports, `Review:` for Reviews, `Subagent:` for Subagent Markers).
 
-  Ideas, Follow-Ups, Reminders, Logs, Notes, CX Reports, Audit Reports, Status Reports, and Supervision records follow this method. (Ideas, Follow-Ups, Reminders, and Supervision records add bare `key: value` fields after their Subjects - see their Practices.)
+  Ideas, Follow-Ups, Reminders, Logs, Notes, CX Reports, Audit Reports, Reviews, and Supervision records follow this method. (Ideas, Follow-Ups, Reminders, and Supervision records add bare `key: value` fields after their Subjects - see their Practices.)
 
 - **Summary File** (as the index) + **File** (with the detail)
 

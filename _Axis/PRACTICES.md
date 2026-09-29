@@ -93,8 +93,11 @@
 - [Practices > Directives] - Conditional Directives and trigger design.
   *Load when adding or revising a Directive.*
 
-- [Practices > Status] - Composing and saving Status Reports.
+- [Practices > Status] - The quick-look `^status` summary, in the terminal or as a web page.
   *Load for `^status`.*
+
+- [Practices > Reviews] - Composing and saving Reviews (dated reports on project state).
+  *Load for `^review`.*
 
 - [Practices > CX] - The CX Subagent process.
   *Load when spawning or performing a CX.*

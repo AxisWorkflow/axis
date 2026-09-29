@@ -1,0 +1,137 @@
+{
+ "package": "Axis Workflow Branding (product)",
+ "version": "2.0.0",
+ "released": "29 September 2026",
+ "built": "2026-09-29T08:33:41Z",
+ "installs-at": "_Axis/Branding/ (or Branding/)",
+ "subset-of": "Axis Workflow Branding 2.0.0",
+ "generator": "SimAxis project: Marketing/Assets/Branding-src/build.py",
+ "files": [
+  {
+   "path": "CHANGELOG.md",
+   "bytes": 2231,
+   "sha256": "4a6c44110e47372ba6c385d205ea753277228bc270f5260a11549bae5edd4983",
+   "origin": "identical to the full package"
+  },
+  {
+   "path": "LICENSE-ASSETS.md",
+   "bytes": 1306,
+   "sha256": "c468531b4897fa90802e97c5b7607418f73da11463a57adc5d75fc20760b4d0e",
+   "origin": "identical to the full package"
+  },
+  {
+   "path": "README.md",
+   "bytes": 2118,
+   "sha256": "d1d60247c8c449fd73b60d4e4966aeed6d0813a812970b71c3c611a311cdcafb",
+   "origin": "product package document"
+  },
+  {
+   "path": "css/axis-brand.css",
+   "bytes": 11470,
+   "sha256": "e21c33053d21353339d23b49a80653e7305f4bf73df7140b54c9c1ec31544369",
+   "origin": "identical to the full package"
+  },
+  {
+   "path": "favicon/apple-touch-icon.png",
+   "bytes": 2876,
+   "sha256": "ac070c6d6b46784bfd4fa8965fca0833954b8827d146804ce46e628e22953df7",
+   "origin": "identical to the full package"
+  },
+  {
+   "path": "favicon/favicon.ico",
+   "bytes": 2221,
+   "sha256": "ec15bed45a49574ff0ca0699483a348c31fd2dd85c5e1c881471d8dbb140fad1",
+   "origin": "identical to the full package"
+  },
+  {
+   "path": "favicon/favicon.svg",
+   "bytes": 332,
+   "sha256": "84490694abafa3383271dddc3939d06bb7f2b24e9932d120ad8a6240c98c23af",
+   "origin": "identical to the full package"
+  },
+  {
+   "path": "favicon/icon-192.png",
+   "bytes": 3131,
+   "sha256": "dc2c93330044454046d9d3901e08fb2319182743b52334bc84de75cdad9aef9a",
+   "origin": "identical to the full package"
+  },
+  {
+   "path": "favicon/icon-512.png",
+   "bytes": 8895,
+   "sha256": "2881c6aba3b26bb1ba5985bbf09f3404165bf4b050bd1471795fe8eee4ea13d9",
+   "origin": "identical to the full package"
+  },
+  {
+   "path": "fonts/ibmplexmono-OFL.txt",
+   "bytes": 4456,
+   "sha256": "7e6b2818edbd8f6a01ae80641cc8f16a51080d08fb4e532be3a0b6f74adb07da",
+   "origin": "identical to the full package"
+  },
+  {
+   "path": "fonts/ibmplexmono-bold.woff2",
+   "bytes": 40308,
+   "sha256": "242010e7a3438b4a4de1c2cf1400d805883118e780a127f297eb8bc95ee4c235",
+   "origin": "identical to the full package"
+  },
+  {
+   "path": "fonts/ibmplexmono.woff2",
+   "bytes": 39272,
+   "sha256": "6b5813f85a604d9620486d393139dcf359ad5c45fd956a406fdb718953ebcfd3",
+   "origin": "identical to the full package"
+  },
+  {
+   "path": "fonts/inter-OFL.txt",
+   "bytes": 4377,
+   "sha256": "5b9321a4298cfeb6b34354164a1c3afc3db114569984c502b9b35d988fd58c57",
+   "origin": "identical to the full package"
+  },
+  {
+   "path": "fonts/inter.woff2",
+   "bytes": 187520,
+   "sha256": "8ae0267c78ed19c74b4a6fb61db70f9f929b6fb1a61420354d70d892577c2849",
+   "origin": "identical to the full package"
+  },
+  {
+   "path": "svg/illustrations/pattern.svg",
+   "bytes": 16227,
+   "sha256": "f6738b74e552fc9e91dce0565dd82adafe7dd4985f77811fa875b61006ffef89",
+   "origin": "identical to the full package"
+  },
+  {
+   "path": "svg/logo/logo-reversed.svg",
+   "bytes": 13920,
+   "sha256": "1c564a42bc0567beab4d091afd3baef51001e533352f4103dff2571e7f3750a7",
+   "origin": "identical to the full package"
+  },
+  {
+   "path": "svg/logo/logo.svg",
+   "bytes": 13910,
+   "sha256": "af25e7d3a470fb1df2764b153365fcc6ae364281ef4438e5a3cce025d1d6d9de",
+   "origin": "identical to the full package"
+  },
+  {
+   "path": "svg/mark/mark-reversed.svg",
+   "bytes": 416,
+   "sha256": "a1f6bb00bc545a894b26b9969f22f2a059fec4d20e11c38161f0b09dfffa94b8",
+   "origin": "identical to the full package"
+  },
+  {
+   "path": "svg/mark/mark.svg",
+   "bytes": 361,
+   "sha256": "24869eff4a1e989b77f65dc6165fd744799b4961c8e740b8d62b1810170b1f89",
+   "origin": "identical to the full package"
+  },
+  {
+   "path": "tokens/tokens.css",
+   "bytes": 4828,
+   "sha256": "6388f6cb7973cf2c3f8dd56b190df1642adf506631edac5c958371676673cc7f",
+   "origin": "identical to the full package"
+  },
+  {
+   "path": "tokens/tokens.json",
+   "bytes": 5232,
+   "sha256": "cf8615aae5602bb34eafe32fd344dea7f56fe519446cbc8570f3984966122312",
+   "origin": "identical to the full package"
+  }
+ ]
+}

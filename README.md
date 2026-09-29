@@ -1,7 +1,7 @@
 # Axis Workflow
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-2ea44f.svg)](/_Axis/LICENSE)
-[![Version](https://img.shields.io/badge/Version-2.00-blue.svg)](https://github.com/AxisWorkflow/axis)
+[![Version](https://img.shields.io/badge/Version-2.01-blue.svg)](https://github.com/AxisWorkflow/axis)
 [![Works with](https://img.shields.io/badge/Works%20with-Claude%20Cowork%20%7C%20Claude%20Code%20%7C%20ChatGPT%20Work%20%7C%20Codex%20%7C%20Cursor%20%7C%20Gemini%20CLI-6f42c1.svg)](https://github.com/AxisWorkflow/axis)
 
 The [**Axis Workflow™**](https://github.com/AxisWorkflow/axis) is an open-source project developed by [SimAxis](https://simaxis.ai), released under the [MIT License](/_Axis/LICENSE). The license grants no trademark rights. If you like **Axis**, [please buy us a coffee](https://buymeacoffee.com/SimAxis). Please **[star the repo](https://github.com/AxisWorkflow/axis)** - it helps others to find it.
@@ -14,7 +14,7 @@ The [**Axis Workflow™**](https://github.com/AxisWorkflow/axis) is an open-sour
 
 1. [Download Axis](https://github.com/AxisWorkflow/axis/releases/latest/download/axis-project.zip) and unzip - now you have a project folder.
 2. Open the folder with Cowork, Claude Code, Codex, Cursor, Gemini, etc...
-3. Say hello. Your Agent finds the Workflow and helps you get started. If it answers without starting Axis, say **Start Axis**.
+3. Type `Start Axis`. Your Agent finds the Workflow and helps you get started.
 
 	That's it. **60 seconds** to go time!
 
@@ -30,13 +30,13 @@ You do not need to open an account, install an app, or set up a server. Axis is 
 
 Open the live Dashboard with `^dashboard` to see the whole project at a glance, read directly from those files:
 
-![The Axis Dashboard on the Meridian example project - Configuration, Mindset, Agents, Project, activity queues, Plan, Tasks, and the newest Status Report](/_Axis/Resources/axis-dashboard-meridian.png)
+![The Axis Dashboard on the Meridian example project - Configuration, Mindset, Agents, Project, activity queues, Plan, Tasks, and the newest Review](/_Axis/Resources/axis-dashboard-meridian.png)
 
 ### Features at a Glance
 
 - **Memory between sessions.** The Agent reads your Plan, Tasks, Follow-Ups, Snapshots and Notes at startup, so it knows where you left off without being prompted.
 - **Planning and tracking.** A Plan, Tasks with status and history, Follow-Ups for the things only you can do, time-based Reminders, and optional Initiatives that group related Tasks.
-- **A permanent record.** Logs, Snapshots, Status Reports and Cross-Examinations are written once and never edited, so the history of your project can be audited.
+- **A permanent record.** Logs, Snapshots, Reviews and Cross-Examinations are written once and never edited, so the history of your project can be audited.
 - **Cross-examination.** A separate Agent can challenge key decisions and deliverables before you rely on them.
 - **A knowledge wiki.** The Agent builds and cross-links a Wiki from your sources, readable in Obsidian or any Markdown editor.
 - **A live Dashboard.** `^dashboard` shows the Plan, Tasks, queues, activity and reports, read directly from your files.
@@ -125,7 +125,7 @@ Open the live Dashboard with `^dashboard` to see the whole project at a glance, 
 
 ## Trademarks
 
-"Axis Workflow", "Axis" when used as the name of this project, and their associated logos and lockups are trademarks of Kenneth A. Younge. The "Axis Workflow" trademark was originally registered in Switzerland. "SimAxis" and its associated marks are trademarks of [SimAxis](https://simaxis.ai). Together, these are the "Marks" used in this notice. The [Axis MIT License](/_Axis/LICENSE) covers Axis-authored text, templates, and code. It does not grant rights to the Marks or automatically license the User's project. Copyright and trademark are separate: the MIT License covers copyright only and grants no trademark rights.
+"Axis Workflow", "Axis" when used as the name of this project, and their associated logos and lockups are trademarks of Kenneth A. Younge. The "Axis Workflow" trademark application was filed in Switzerland. "SimAxis" and its associated marks are trademarks of [SimAxis](https://simaxis.ai). Together, these are the "Marks" used in this notice. The [Axis MIT License](/_Axis/LICENSE) covers Axis-authored text, templates, and code. It does not grant rights to the Marks or automatically license the User's project. Copyright and trademark are separate: the MIT License covers copyright only and grants no trademark rights.
 
 #### You may, without asking
 
@@ -142,15 +142,15 @@ Open the live Dashboard with `^dashboard` to see the whole project at a glance, 
 #### Symbols and attribution
 
 - On first prominent use in a document, write "Axis Workflow™"; after that, plain "Axis Workflow" or "Axis" is fine.
-- When an attribution line is appropriate, use: "Axis Workflow™ - open source under the MIT License, from SimAxis."
+- When an attribution line is appropriate, use: "Axis Workflow™ is free and open source (MIT License), from SimAxis - training and consulting at simaxis.ai."
 
-Questions or permission requests can be sent to [AxisWorkflow](https://axisworkflow.ai).
+Questions or permission requests can be sent to [support@simaxis.ai](mailto:support@simaxis.ai).
 
 
 
 ## License
 
-This release is licensed under the **MIT License**. Anyone may use, copy, modify, merge, publish, distribute, sublicense, and sell it, provided the copyright and permission notice stay with every copy. Releases before Version 2.00 remain under the Functional Source License (`FSL-1.1-MIT`), and each of them converts to MIT two years after it was first made available. Third-party components retain their own copyright and licenses, including the bundled Mermaid renderer. See the complete [Axis License](/_Axis/LICENSE), [Contributor License Agreement and Copyright Assignment](/_Axis/CLA.md), and [Trademarks](#trademarks).
+This release is licensed under the **MIT License**. Anyone may use, copy, modify, merge, publish, distribute, sublicense, and sell it, provided the copyright and permission notice stay with every copy. Releases before Version 2.00 remain under the Functional Source License (`FSL-1.1-MIT`), and each of them converts to MIT two years after it was first made available. Third-party components retain their own copyright and licenses, including the bundled Mermaid renderer. The software is MIT licensed. The Axis Workflow name and the brand assets in `_Axis/Branding/` are not; see [`_Axis/Branding/LICENSE-ASSETS.md`](/_Axis/Branding/LICENSE-ASSETS.md). The bundled Inter and IBM Plex Mono fonts are under the SIL Open Font License 1.1. See the complete [Axis License](/_Axis/LICENSE), [Contributor License Agreement and Copyright Assignment](/_Axis/CLA.md), and [Trademarks](#trademarks).
 
 
 

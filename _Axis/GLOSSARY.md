@@ -6,6 +6,7 @@
 - **Axis Workflow** - The definitions, configuration, and practices in this repository.
 - **Axis** - Synonym for **Axis Workflow**.
 - **Workflow** - Synonym for **Axis Workflow**.
+- **Axel** - The Axis mascot and the persona name of the **Main Agent**; External Agents and Subagents are unnamed. Records are signed with the Session ID, never the name.
 - **Axis Reference** - A pointer to another **Axis** file > section > subsection.
 - **Project** - The folder (and all its contents) governed by one **Axis Workflow**.
 - **Subproject** - A complete Axis **Project** nested anywhere in another Project's workspace, recognized by its Standard Setup Anchors, with its own entry files, reserved folders, and Axis control files.
@@ -89,7 +90,8 @@
 - **Log** - A WORM file that records an event - lives in `_Axis/Logs/`.
 - **Snapshot** - A WORM file that summarizes state at a meaningful point in time.
 - **Event** - Anything worth logging: decisions, milestones, mistakes, scope changes.
-- **Status Report** - User-facing report with a fast, one-glance read of project status.
+- **Review** - A dated report on the project's state (`^review`), kept in `_Axis/Reviews/`: what changed since the last one, health-checks, Deliverable coverage. It summarizes and challenges nothing - unlike a Cross-Examination - and is lighter than an Audit. Called a Status Report before Version 2.01.
+- **Status** - The quick look (`^status`): a one-screen summary of the project in the terminal, or a branded static web page. Built fresh each time; writes no record.
 - **Supervision Record** - A WORM parent-project report or action record under `_Axis/Supervision/`, with older active-window overflow under `_Axis/Archive/Supervision/`.
 - **Executive Summary** - A one-glance overview at the top of a **Plan** or report.
 - **WORM** - An abbreviation for the idea of "write-once, read-many".
@@ -98,7 +100,7 @@
 - **Index-Detail Pattern** - Convention to store summary info separately from detail info.
 - **Lazy-Loading** - Practice of loading detail using **Index-Detail Pattern** only as needed.
 - **Archive** - Reversible low-context storage for inactive history under `_Axis/Archive/` or the folder in [Settings > Archive Location] - see [Practices > Archiving].
-- **Trash** - Deletion staging under `_Trash/`: contents await the next sweep (Session Start, `^resume`, `^refresh`) - see [Practices > Trash].
+- **Trash** - Deletion staging under `_Trash/`: each item is dated on arrival and kept at least 2 days before a sweep (Session Start, `^resume`, `^refresh`) deletes it - see [Practices > Trash].
 - **Placeholder** - A snippet of text needing completion, surrounded by `{{` and then `}}`.
 - **Template Form** - A shipped file still containing `{{...}}` placeholders (not yet filled in).
 

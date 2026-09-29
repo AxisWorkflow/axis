@@ -62,7 +62,7 @@ Agents cannot be interrupted, so awareness happens at checkpoints: turn start, b
 Agents do not experience time passing, so [Settings > Tracking] defines which events should emit a line:
 
 - `off` - never write.
-- `commands` - session start, INTENT and DONE for each Command that changes something and each Subagent spawn and return, and every ASK and REPLY. Read-only Commands such as `^board`, `^tasks` without an update, `^help` or `^status` viewing need no lines.
+- `commands` - session start, INTENT and DONE for each Command that changes something and each Subagent spawn and return, and every ASK and REPLY. Read-only Commands such as `^board`, `^tasks` without an update, `^help` or `^review` viewing need no lines.
 - `writes` - `commands`, plus INTENT and DONE for each unit of work that writes a shared file (core files, mutable indices, Wiki), with STATUS at milestones.
 - `verbose` - `writes`, plus step-level STATUS inside long protocols.
 

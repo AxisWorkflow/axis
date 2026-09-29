@@ -52,7 +52,7 @@ Order the open queue for User by:
 2. other dated items, earliest due date first;
 3. undated items, oldest `raised:` first.
 
-Session Start is silent when the queue is empty. Otherwise it surfaces one compact line with the count and no more than the first three Subjects; when more remain, the line says `^followups` lists all. `^resume` presents no more than ten self-contained asks and gives the same direction when more remain. `^status` reports the queue and its health. The Dashboard shows the live queue as a card. Snapshots record the open count and exact IDs rather than copying the asks.
+Session Start is silent when the queue is empty. Otherwise it surfaces one compact line with the count and no more than the first three Subjects; when more remain, the line says `^followups` lists all. `^resume` presents no more than ten self-contained asks and gives the same direction when more remain. `^review` reports the queue and its health. The Dashboard shows the live queue as a card. Snapshots record the open count and exact IDs rather than copying the asks.
 
 ## Create, Edit, and Resolve
 

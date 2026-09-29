@@ -14,6 +14,6 @@
 - Routing: source documents meant for the knowledge base go to `Wiki/Inbox/`; ordinary project content lives in Project Subfolders; a complete nested Axis Project (a Subproject) may live anywhere in the workspace.
 - The placement rule: `_Temp/` holds only what the Agent could regenerate without loss - anything whose deletion would require an apology belongs in a Project Subfolder.
 - Project Subfolders hold living content: updated, revised, and redistributed as the project moves.
-- The Workflow's own records (Notes, Logs, Snapshots, Tasks, Follow-Ups, Reminders, Status Reports) are neither scratch nor deliverables: they stay in `_Axis/`, always.
+- The Workflow's own records (Notes, Logs, Snapshots, Tasks, Follow-Ups, Reminders, Reviews) are neither scratch nor deliverables: they stay in `_Axis/`, always.
 - Project Subfolders ARE version-controlled - User can ask Agent to roll back any file. Subprojects follow an explicit version-control arrangement in [Practices > GIT]. `_Temp/`, `_Trash/`, plaintext `_Axis/Secrets/` content, Wiki content, and ephemeral session state stay out of Git by default; only the optional public recipient and encrypted Secrets capsule are tracked from that directory.
 - When reading documents or images, always attempt to extract embedded text.

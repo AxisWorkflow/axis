@@ -1,16 +1,24 @@
-# Status Reports
-> **Purpose:** Define how to compose, save, and present Status Reports.
+# Status
+> **Purpose:** Define `^status`, the quick look at where a project stands, and how it differs from a Review and the Dashboard.
 
-Status Reports follow the Index-Detail Pattern with a timestamped file in `_Axis/Status/`. Each report is a new, fresh, dated report; status reports are never overwritten.
+`^status` answers "where are we?" in one screen. It is built fresh from the project's canonical records every time, writes no record, and is safe to run as often as User likes, by Main or External. The procedure is `_Axis/Commands/status.md`.
 
-The authoritative procedure for composing, formatting, saving, and presenting a Status Report is the `^status` command (`_Axis/Commands/status.md`). Follow it whenever a Status Report is needed - whether triggered by the `^status` command or by Agent's own judgment.
+## What it shows
 
-A Status Report is the static view of a project: a dated, self-contained file that reads anywhere, needs no tooling, survives being emailed, and never changes after it is written. The Dashboard is the live view and requires a running web server (see [Practices > Dashboard]). The two are a pair, and neither substitutes for the other - when User cannot run a server, the answer is a Status Report, not a degraded Dashboard.
+- **Short (default):** Project name and installed version; one counts line (Tasks by state, open Follow-Ups, Reminders, live Agents, Git branch and whether the tree is clean); the Plan's current direction; Active and Blocked Tasks; open Initiatives; what is waiting on User (Follow-Ups); upcoming Reminders; the newest few Logs; and how long ago the last Snapshot and Review were made. It must fit on one ordinary terminal screen.
+- **Full (`^status deep dive`, or any request for more):** the same, plus more Tasks and Logs, finished Initiatives, recently completed Tasks and record counts - and, for a deep dive, the Agent's own summary of the detail records User asked about.
 
-Every report carries a `## Recent Developments` section covering the span since the previous report. That is where User goes to answer "what changed while I was away", so Axis has no separate command for it - the question is answered in the two places User already looks. The report's version is the richer one: an Agent has a shell, so it can read the commit history as well as the records written and the Wiki activity. The Dashboard's version covers records only - it has no shell and cannot reach git - and windows on the last Snapshot rather than the last report.
+## Formats
 
-A Status Report is an internal Axis record: it lives in `_Axis/Status/`, it is written for User and Agent, and it may carry paths, health-checks, and Axis terminology. A report User asks for on someone else's behalf - a client, a board, a funder - is not a Status Report. It is an ordinary work product: write it in plain language and file it in a Project Subfolder (see [Practices > Folders]). Do not derive one automatically, and do not put it in `_Axis/`.
+- **Text** is the default, for the chat or terminal. It follows the brand's terminal rule (`_Axis/Branding/tokens/tokens.json` > `terminal`): plain text; headings bold, in brand blue only in a real terminal (standard output is a terminal, `TERM` is set and not `dumb`, `NO_COLOR` is unset), with the blue chosen for a light or dark background (`AXIS_THEME=light|dark|plain`, else `COLORFGBG`) and bold only when the background is unknown. Output shown in a chat reply carries no escape codes.
+- **Web page** writes `_Temp/status/index.html`: a static, branded page using `_Axis/Branding/` (or a root `Branding/`): logo, fonts, colour tokens and stylesheet, following the operating system's light or dark theme. It lives in `_Temp/` because it is regenerable scratch, not a record; it does not refresh itself. The page ends with the brand's credit line. It never contains Secrets, local account names or anything outside the project's records.
 
-- Use a direct, neutral tone; do NOT try to be eager, familiar, optimistic, confident, or sycophantic.
-- To find the latest Status Report, list files in `_Axis/Status/` sorted desc by filename.
-- Status Reports are WORM after Agent has presented them to User - do not edit a prior report; if something changes, generate a new one.
+## Relationship to Reviews and the Dashboard
+
+- A Review (`^review`, [Practices > Reviews]) is the dated record kept in `_Axis/Reviews/`: what changed since the last Review, health-checks, Deliverable coverage. Run it at milestones or on a schedule.
+- The Dashboard (`^dashboard`) is the live view and needs a local web server.
+- `^status` is neither: it is the quick look between them. When User wants to keep or share what they see, suggest `^review`.
+
+## Implementation
+
+`_Axis/Resources/status.py` is an optional, read-only accelerator (Python 3 standard library only). It reads `_Axis/PROJECT.md`, `CHANGELOG.md`, `PLAN.md`, `TASKS.md`, `INITIATIVES.md`, and the `Followups/`, `Reminders/`, `Logs/`, `Snapshots/`, `Reviews/` (and pre-2.01 `Status/`), `Notes/`, `Ideas/`, `Requests/` and `Agents/` folders, plus `git branch` and `git status` when Git is present. Its only write is the web page under `_Temp/status/`. Without Python the Agent composes the same summary by hand; nothing else changes.

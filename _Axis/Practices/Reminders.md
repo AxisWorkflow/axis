@@ -63,7 +63,7 @@ New Reminders commit through [Practices > Timestamps] with exclusive creation; t
 
 - Session Start is silent when no Reminder is due. With due items, show a compact count and at most three Subjects; with untrusted time, show one compact unverified notice.
 - Every Main Agent Command dispatch checks metadata for newly due Reminders before its own procedure and speaks only when an item crossed due or was created/rescheduled already due since the last trustworthy check.
-- `^resume` shows due items and the nearest upcoming items; `^reminders` manages the queue; Dashboard deterministically shows current due ordering; `^status`, `^audit`, `^refresh`, and Snapshots carry their bounded views.
+- `^resume` shows due items and the nearest upcoming items; `^reminders` manages the queue; Dashboard deterministically shows current due ordering; `^review`, `^audit`, `^refresh`, and Snapshots carry their bounded views.
 
 Main Agent alone writes `_Axis/Flags/reminder-check`, which makes per-session deduplication durable: Line 1 is the current Session ID; Line 2 is the last trustworthy UTC check. Session Start writes it after its check. A later Command surfaces an open item when `due-at` is at or before now and either `due-at` or `updated` is after Line 2, then advances Line 2. This catches a newly crossed due time plus an already-due item created or rescheduled since the check. Creation/reschedule to an already-due time speaks in that mutation response before advancing the checkpoint. Missing, malformed, foreign-session, untrusted-time, or a Line 2 later than current trustworthy UTC causes a full check; after that full check, rewrite Line 2 with current UTC. Never preserve a future checkpoint or make a false advance.
 

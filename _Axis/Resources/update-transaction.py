@@ -20,8 +20,15 @@ PROJECT=('_Axis/PROJECT.md','_Axis/SETTINGS.md','_Axis/MINDSET.md','_Axis/DIRECT
 MUTABLE=('_Axis/PLAN.md','_Axis/INITIATIVES.md','_Axis/TASKS.md','_Axis/SNAPSHOTS.md',*PROJECT)
 TOP=('.gitattributes','.gitignore','README.md','LICENSE',*ENTRIES)
 MANAGED=('_Axis/CHANGELOG.md','_Axis/CLA.md','_Axis/CONTRIBUTING.md','_Axis/LICENSE','_Axis/README.md','_Axis/USERMANUAL.md','_Axis/SPECIFICATION.md','_Axis/GLOSSARY.md','_Axis/MANIFEST.md','_Axis/PRACTICES.md','_Axis/PRINCIPLES.md','_Axis/RULES.md')
-PREFIX=('_Axis/Commands/','_Axis/Practices/','_Axis/Rules/','_Axis/Resources/','_Axis/Dashboard/')
+PREFIX=('_Axis/Commands/','_Axis/Practices/','_Axis/Rules/','_Axis/Resources/','_Axis/Dashboard/','_Axis/Branding/')
 DECLARABLE=r'_Axis/[A-Z][A-Z0-9_-]*(?:\.md)?'
+# 2.01: a release may also declare a new Workflow machinery folder (for example `_Axis/Branding/`), so updaters
+# install it the same day instead of one release later. Project-state folders can never be declared.
+DECLARABLE_DIR=r'_Axis/[A-Z][A-Za-z0-9_-]*/'
+# 2.01 two-step update: step one installs only these updater files (installed engine), so step two can be planned and
+# applied by the new release's updater in the same ^update. Step one changes no project state and no boot doctrine.
+UPDATER_FILES=('_Axis/Resources/update-transaction.py','_Axis/Commands/update.md','_Axis/Resources/Check-Update-Handoff.md')
+STATE_DIRS=('Agents','Archive','Audit','CX','Flags','Followups','Ideas','Logs','Notes','Reminders','Requests','Reviews','Secrets','Snapshots','Status','Supervision','Tasks','Tracking','Updates','Wiki')
 
 def require(v,m):
     if not v:raise ValueError(m)
@@ -86,7 +93,7 @@ def declared(changelog,origin,target):
             sub=None
         elif line.startswith('### '):sub=line[4:].strip()
         elif keep and sub in ('Structural Changes','Retired Paths'):
-            out.update(n for n in re.findall(r'`([^`]+)`',line) if re.fullmatch(DECLARABLE,n))
+            out.update(n for n in re.findall(r'`([^`]+)`',line) if re.fullmatch(DECLARABLE,n) or (re.fullmatch(DECLARABLE_DIR,n) and n[6:-1] not in STATE_DIRS))
     return out-set(MUTABLE)-{'_Axis/INSTRUCTIONS.md'}
 
 def classification(p):
@@ -137,11 +144,13 @@ def authorization(root,p,frozen=None,engine=None):
 def validate_plan(root,p):
     require(classification(p)['classification'] in ('routine','approved-exception'),'update requires resolved authority and preconditions')
     authorization(root,p)
-    require(isinstance(p['changes'],list) and p['changes'],'empty plan');seen=set();migrations=p.get('migration_paths',[]);require(isinstance(migrations,list) and all(n in PROJECT for n in migrations),'invalid semantic migration scope')
+    require(isinstance(p['changes'],list) and p['changes'],'empty plan');seen=set();migrations=p.get('migration_paths',[]);
+    if p.get('updater_only'):require(p['updater_only'] is True and all(isinstance(v,dict) and v.get('path') in UPDATER_FILES and v.get('after') is not None for v in p['changes']) and not migrations and p.get('reconciliation')=={},'updater-only step may change only the updater files')
+    require(isinstance(migrations,list) and all(n in PROJECT for n in migrations),'invalid semantic migration scope')
     log=[v for v in p['changes'] if isinstance(v,dict) and v.get('path')=='_Axis/CHANGELOG.md' and isinstance(v.get('staged'),str) and v['staged'].startswith('_Temp/')]
     extra=declared(read(safe(root,log[0]['staged'])).decode(),p['from_version'],p['to_version']) if len(log)==1 else set()
     for v in p['changes']:
-        require(set(v)=={'path','before','after','staged'},'invalid change fields');n=v['path'];safe(root,n);require(n in TOP or n in MANAGED or n.startswith(PREFIX) or n in extra or n in migrations or n=='.github/README.md' and v['after'] is None,'unmanaged or protected mutation target');require(n.casefold() not in seen,'duplicate target');seen.add(n.casefold());valid_identity(v['before']);valid_identity(v['after']);require(v['before']!=v['after'],'no-op change')
+        require(set(v)=={'path','before','after','staged'},'invalid change fields');n=v['path'];safe(root,n);require(n in TOP or n in MANAGED or n.startswith(PREFIX) or n in extra or any(x.endswith('/') and n.startswith(x) for x in extra) or n in migrations or n=='.github/README.md' and v['after'] is None,'unmanaged or protected mutation target');require(n.casefold() not in seen,'duplicate target');seen.add(n.casefold());valid_identity(v['before']);valid_identity(v['after']);require(v['before']!=v['after'],'no-op change')
         if v['after'] is None:require(v['staged'] is None,'deletion has payload')
         else:require(v['staged'].startswith('_Temp/'),'payload must be reviewed local staging');require(identity(safe(root,v['staged']))==v['after'],'staged bytes changed')
     for field in ('preserved','source_checks'):
@@ -155,7 +164,7 @@ def validate_plan(root,p):
         if v is None:return read(safe(root,name))
         require(v['after'] is not None,'required core file cannot retire');return read(safe(root,v['staged']))
     require(len({proposed(n) for n in ENTRIES})==1,'planned entry mismatch')
-    require(re.search(r'^current-version: '+re.escape(p['to_version'])+r'$',proposed('_Axis/CHANGELOG.md').decode(),re.M),'planned target version mismatch')
+    if not p.get('updater_only'):require(re.search(r'^current-version: '+re.escape(p['to_version'])+r'$',proposed('_Axis/CHANGELOG.md').decode(),re.M),'planned target version mismatch')
     if '_Axis/SETTINGS.md' in replacements:
         require(re.search(r'### Storage Policy\n(?:(?!\n### ).)*?\*\*Value:\*\* auto(?:\n|$)',proposed('_Axis/SETTINGS.md').decode(),re.S),'storage-policy transition requires reviewed manual migration')
     require(bool(p['source_checks']),'source identity checks required')
@@ -170,10 +179,22 @@ def validate_plan(root,p):
 def ordered(p):return sorted(p['changes'],key=lambda v:(2 if v['path']=='_Axis/CHANGELOG.md' else 1 if v['path'] in ENTRIES else 0,v['path']))
 def live(root,p,which):return all(identity(safe(root,v['path']))==v[which] for v in p['changes'])
 def preserved(root,p,reconciling=False):return all(identity(safe(root,n))==v for n,v in p['preserved'].items() if not (reconciling and n in p['reconciliation']))
+def strict_path(n):
+    # Axis-owned files and the project records an update can reformat or reconcile: any change blocks adoption.
+    return n in TOP or n in MANAGED or n.startswith(PREFIX) or n in MUTABLE or n=='_Axis/INSTRUCTIONS.md' or n.startswith(('_Axis/Tasks/','_Axis/Followups/','_Axis/Wiki/')) or bool(re.fullmatch(DECLARABLE,n))
+def adopted(root,p,reconciling=False):
+    # After release (2.01): strict for Axis-owned state; other preserved project files are reported, not blocking.
+    require(live(root,p,'after'),'applied state drift: a file this update wrote changed after apply; restore the update result to continue adoption')
+    drift=[n for n,v in p['preserved'].items() if not (reconciling and n in p['reconciliation']) and identity(safe(root,n))!=v]
+    strict=sorted(n for n in drift if strict_path(n))
+    require(not strict,'preserved Axis state changed after apply: '+', '.join(strict[:5])+(' and more' if len(strict)>5 else '')+'; restore the recorded content to continue adoption')
+    require(len({read(safe(root,n)) for n in ENTRIES})==1,'entry parity failed')
+    require(p.get('updater_only') or re.search(r'^current-version: '+re.escape(p['to_version'])+r'$',read(safe(root,'_Axis/CHANGELOG.md')).decode(),re.M),'installed version mismatch')
+    return sorted(n for n in drift if not strict_path(n))
 def after(root,p,reconciling=False):
     require(live(root,p,'after') and preserved(root,p,reconciling),'applied or preserved state drift')
     require(len({read(safe(root,n)) for n in ENTRIES})==1,'entry parity failed')
-    require(re.search(r'^current-version: '+re.escape(p['to_version'])+r'$',read(safe(root,'_Axis/CHANGELOG.md')).decode(),re.M),'installed version mismatch')
+    require(p.get('updater_only') or re.search(r'^current-version: '+re.escape(p['to_version'])+r'$',read(safe(root,'_Axis/CHANGELOG.md')).decode(),re.M),'installed version mismatch')
 
 def load(root,tx):
     require(re.fullmatch(ID,tx),'invalid transaction ID');E=safe(root,'_Axis/Updates/'+tx);s=parse(read(safe(E,'start.json')));p=s['plan'];require(s['schema']==1 and s['transaction']==tx and digest(encode(p))==s['plan_sha256'],'invalid transaction start');evidence(root,E,s,p);return E,s,p
@@ -248,7 +269,7 @@ def journal(E,s,p):
     receipt('rollback-intent',{'plan_sha256':pin})
     rolled=receipt('rollback',{'schema':1,'plan_sha256':pin,'outcome':'restored'})
     if rolled:require((E/'rollback-intent.json').exists(),'rollback lacks intent')
-    ready=receipt('ready',{'plan_sha256':pin,'target_commit':p['source']['commit'],'shutdown_required':True})
+    ready=receipt('ready',{'plan_sha256':pin,'target_commit':p['source']['commit'],'shutdown_required':not p.get('updater_only')})
     if ready:require(complete and not rolled,'ready lacks successful completion')
     releasing=receipt('release-intent',{'plan_sha256':pin,'owner_sha256':digest(owner),'inode':held['inode'] if held else None})
     released=receipt('released',{'plan_sha256':pin,'outcome':'admission released'})
@@ -259,7 +280,7 @@ def journal(E,s,p):
             valid_identity(value);require(value is not None,'missing pre-reconciliation identity')
             if n in p['preserved']:require(value==p['preserved'][n],'preservation phase binding changed')
     if (E/'consumed.json').exists():
-        r=parse(read(E/'consumed.json'));require(set(r)=={'schema','transaction','session','plan_sha256','target_commit','reconciliation','consumed'} and r['schema']==1 and r['transaction']==s['transaction'] and r['plan_sha256']==pin and r['target_commit']==p['source']['commit'] and re.fullmatch(ID,r['session']) and r['session']!=s['session'] and ready and released and not rolled,'invalid consumption chain')
+        r=parse(read(E/'consumed.json'));require(set(r)-{'unrelated_changes','updater_only'}=={'schema','transaction','session','plan_sha256','target_commit','reconciliation','consumed'} and r.get('updater_only',False)==bool(p.get('updater_only')) and isinstance(r.get('unrelated_changes',[]),list) and r['schema']==1 and r['transaction']==s['transaction'] and r['plan_sha256']==pin and r['target_commit']==p['source']['commit'] and re.fullmatch(ID,r['session']) and (r['session']!=s['session'] or p.get('updater_only') is True) and ready and released and not rolled,'invalid consumption chain')
         datetime.datetime.fromisoformat(r['consumed']);rec=r['reconciliation'];require(set(rec)=={'schema','transaction','target_commit','records'} and rec['schema']==1 and rec['transaction']==s['transaction'] and rec['target_commit']==p['source']['commit'] and set(rec['records'])==set(p['reconciliation']),'invalid consumed reconciliation')
         for n,value in rec['records'].items():
             if 'archive_to' in p['reconciliation'][n]:
@@ -277,7 +298,9 @@ def state(root,E,s,p):
         require(live(root,p,'before') and preserved(root,p),'rolled-back state drift');return 'rolled-back'
     if (E/'complete.json').exists():
         require(parse(read(E/'complete.json'))=={'schema':1,'plan_sha256':s['plan_sha256'],'target_commit':p['source']['commit'],'writes':len(p['changes'])},'invalid completion')
-        require(all((E/f'{i:04d}-result.json').is_file() for i in range(1,len(p['changes'])+1)),'incomplete journal');after(root,p,(E/'reconciliation-start.json').exists())
+        require(all((E/f'{i:04d}-result.json').is_file() for i in range(1,len(p['changes'])+1)),'incomplete journal')
+        if (E/'released.json').exists():adopted(root,p,(E/'reconciliation-start.json').exists())
+        else:after(root,p,(E/'reconciliation-start.json').exists())
         return 'ready' if (E/'ready.json').exists() and (E/'released.json').exists() else 'complete'
     if (E/'barrier-intent.json').exists() or list(E.glob('*-intent.json')):return 'interrupted'
     return 'prepared' if (E/'prepared.json').exists() else 'preparing'
@@ -304,7 +327,7 @@ def operation(root):
     finally:os.close(fd)
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('action',choices=('classify','prepare','apply','inspect','rollback','release','begin-reconcile','consume'));p.add_argument('--root',required=True);p.add_argument('--plan');p.add_argument('--session');p.add_argument('--transaction');p.add_argument('--token');p.add_argument('--fault');p.add_argument('--reconciliation');a=p.parse_args();root=Path(a.root).absolute();require(root==root.resolve() and root.is_dir(),'canonical root required')
+    p=argparse.ArgumentParser();p.add_argument('action',choices=('classify','prepare','apply','inspect','rollback','release','finish-updater','begin-reconcile','consume'));p.add_argument('--root',required=True);p.add_argument('--plan');p.add_argument('--session');p.add_argument('--transaction');p.add_argument('--token');p.add_argument('--fault');p.add_argument('--reconciliation');a=p.parse_args();root=Path(a.root).absolute();require(root==root.resolve() and root.is_dir(),'canonical root required')
     def localarg(name):
         q=Path(name).absolute();require(q.is_relative_to(root),'input outside project');return safe(root,q.relative_to(root).as_posix())
     if a.action in ('classify','prepare'):plan=parse(read(localarg(a.plan)))
@@ -353,17 +376,24 @@ def main():
             if (E/'rollback.json').exists():require(live(root,plan,'before'),'rollback changed before release')
             else:
                 after(root,plan)
-                if not (E/'ready.json').exists():once(E/'ready.json',{'plan_sha256':s['plan_sha256'],'target_commit':plan['source']['commit'],'shutdown_required':True})
+                if not (E/'ready.json').exists():once(E/'ready.json',{'plan_sha256':s['plan_sha256'],'target_commit':plan['source']['commit'],'shutdown_required':not plan.get('updater_only')})
             release_barrier(root,E,s,fault)
             if not (E/'released.json').exists():once(E/'released.json',{'plan_sha256':s['plan_sha256'],'outcome':'admission released'})
             print(json.dumps({'state':'rolled-back' if (E/'rollback.json').exists() else 'ready','shutdown_required':not (E/'rollback.json').exists()}));return
         if a.action=='begin-reconcile':
             require(a.session!=s['session'],'fresh Main required for reconciliation');value=state(root,E,s,plan);require(value=='ready','ready handoff required')
             if (E/'reconciliation-start.json').exists():print(json.dumps({'state':'reconciling','already_started':True}));return
-            after(root,plan);records={n:identity(safe(root,n)) for n in plan['reconciliation']};require(all(v is not None for v in records.values()),'missing pre-reconciliation record')
+            adopted(root,plan);records={n:identity(safe(root,n)) for n in plan['reconciliation']};require(all(v is not None for v in records.values()),'missing pre-reconciliation record')
             for rules in plan['reconciliation'].values():
                 if 'archive_to' in rules:require(not safe(root,rules['archive_to']).exists(),'archive destination occupied')
             once(E/'reconciliation-start.json',{'schema':1,'transaction':s['transaction'],'session':a.session,'plan_sha256':s['plan_sha256'],'records':records});print(json.dumps({'state':'reconciling','already_started':False}));return
+        if a.action=='finish-updater':
+            # The owner closes its own updater-only step: nothing was reconciled because no project record changed.
+            require(plan.get('updater_only') is True,'finish-updater applies only to an updater-only step');value=state(root,E,s,plan)
+            if (E/'consumed.json').exists():print(json.dumps({'state':'consumed','already_consumed':True}));return
+            require(value=='ready','released updater step required')
+            once(E/'consumed.json',{'schema':1,'transaction':a.transaction,'session':a.session,'plan_sha256':s['plan_sha256'],'target_commit':plan['source']['commit'],'reconciliation':{'schema':1,'transaction':a.transaction,'target_commit':plan['source']['commit'],'records':{}},'updater_only':True,'consumed':datetime.datetime.now(datetime.timezone.utc).isoformat()})
+            print(json.dumps({'state':'consumed','already_consumed':False,'updater_only':True,'next':'plan the rest of the update with the updater now installed'}));return
         require(a.action=='consume','unknown action');value=state(root,E,s,plan)
         if (E/'consumed.json').exists():print(json.dumps({'state':'consumed','already_consumed':True}));return
         require(value=='ready' and a.session!=s['session'],'fresh ready transaction required');rec=parse(read(localarg(a.reconciliation)));require(set(rec)=={'schema','transaction','target_commit','records'} and rec['schema']==1 and rec['transaction']==a.transaction and rec['target_commit']==plan['source']['commit'] and set(rec['records'])==set(plan['reconciliation']),'inexact reconciliation')
@@ -373,7 +403,7 @@ def main():
                 require((E/'reconciliation-start.json').exists() and not q.exists(),'archived Follow-Up must be absent from live records');require(isinstance(expected,dict) and set(expected)=={'path','identity'} and expected['path']==rules['archive_to'],'wrong archive destination');q=safe(root,expected['path']);expected=expected['identity']
             require(identity(q)==expected,'reconciliation record changed');text=read(q).decode();require(all(v in text for v in rules['contains']) and not any(v in text for v in rules['absent']),'project reconciliation incomplete')
         if set(plan['preserved'])&set(plan['reconciliation']):require((E/'reconciliation-start.json').exists(),'begin reconciliation before changing preserved records')
-        after(root,plan,(E/'reconciliation-start.json').exists());fault('before-consumed');once(E/'consumed.json',{'schema':1,'transaction':a.transaction,'session':a.session,'plan_sha256':s['plan_sha256'],'target_commit':plan['source']['commit'],'reconciliation':rec,'consumed':datetime.datetime.now(datetime.timezone.utc).isoformat()});fault('after-consumed');print(json.dumps({'state':'consumed','already_consumed':False}))
+        unrelated=adopted(root,plan,(E/'reconciliation-start.json').exists());fault('before-consumed');once(E/'consumed.json',{'schema':1,'transaction':a.transaction,'session':a.session,'plan_sha256':s['plan_sha256'],'target_commit':plan['source']['commit'],'reconciliation':rec,'unrelated_changes':unrelated,'consumed':datetime.datetime.now(datetime.timezone.utc).isoformat()});fault('after-consumed');print(json.dumps({'state':'consumed','already_consumed':False,'unrelated_changes':unrelated}))
 
 if __name__=='__main__':
     try:main()

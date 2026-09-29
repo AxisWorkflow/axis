@@ -18,7 +18,7 @@ Before submitting:
    authorization or have that entity execute the agreement.
 3. Identify every third-party component and its license in the submission.
 4. Do not submit secrets, confidential information, or material You cannot assign.
-5. Contact https://simaxis.ai/ for the current signature process.
+5. Contact support@simaxis.ai for the current signature process.
 
 The project may decline or close a contribution for which a valid agreement is
 not on file. Acceptance of an agreement does not guarantee that a contribution

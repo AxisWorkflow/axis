@@ -1,12 +1,10 @@
 # Axis Workflow Contributor License Agreement and Copyright Assignment
 > **Purpose:** Assign contribution copyright to the Axis owner before a contribution is accepted.
 
-> Draft for legal review before accepting a contribution.
-
 This Contributor License Agreement and Copyright Assignment (the "Agreement")
 is between the individual or legal entity identified in the signature record
 ("You") and Kenneth A. Younge ("Owner"). Owner's contact email is
-kyounge@axisworkflow.ai. It applies to every Contribution
+support@simaxis.ai. It applies to every Contribution
 You submit to the Axis Workflow project after You accept this Agreement and, if
 the signature record says so, to Your listed prior Contributions.
 

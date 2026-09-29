@@ -1,6 +1,6 @@
 # Axis Workflow User Manual
 > **Purpose:** How to use the Axis Workflow day to day: setup, commands, the Dashboard, the Wiki, working across tools and machines, and working with Agents and models. For the technical and compliance reference, see [SPECIFICATION](/_Axis/SPECIFICATION.md).
-> **Version:** 2.00
+> **Version:** 2.01
 
 
 
@@ -38,9 +38,9 @@ Your own content lives in normal folders that your Agent creates and organizes a
 
 **Set up your project** (< 4 minutes):
 
-- Simply say hello - your Agent will automatically launch **Axis** and know what to do. If it answers without starting Axis (some desktop apps treat a plain hello as small talk), say **Start Axis**.
+- Type `Start Axis` - your Agent launches **Axis** and knows what to do. (Most hosts also start Axis on any first message, but `Start Axis` is the one that works everywhere; some desktop apps treat a plain greeting as small talk.)
 - Your Agent can help you set up a [Project](/_Axis/PROJECT.md) (background, objectives, deliverables, ...).
-- The download has no `README.md`. During setup Axis creates a short one for your project (or replaces the Axis README if you cloned the repository instead of downloading). This User Manual stays at [`_Axis/USERMANUAL.md`](/_Axis/USERMANUAL.md) and the technical reference at [`_Axis/SPECIFICATION.md`](/_Axis/SPECIFICATION.md). The root Axis license is removed unless you already chose a project license; Axis itself remains covered by [`_Axis/LICENSE`](/_Axis/LICENSE). Use `^help manual` whenever you want to browse this manual.
+- The download has no `README.md`. During setup Axis creates a short one for your project (or replaces the Axis README if you cloned the repository instead of downloading). This User Manual stays at [`_Axis/USERMANUAL.md`](/_Axis/USERMANUAL.md) and the technical reference at [`_Axis/SPECIFICATION.md`](/_Axis/SPECIFICATION.md). Start with this manual for any question or problem; the Specification is rarely needed - it is for deep diagnostics, extending Axis, technical or compliance reviews, and contributors. The root Axis license is removed unless you already chose a project license; Axis itself remains covered by [`_Axis/LICENSE`](/_Axis/LICENSE). Use `^help manual` whenever you want to browse this manual.
 
 
 
@@ -63,9 +63,9 @@ Your own content lives in normal folders that your Agent creates and organizes a
 - Configure [Settings](/_Axis/SETTINGS.md).
 - Set general behavior in [Mindset](/_Axis/MINDSET.md).
 
-**4. Say hello:**
+**4. Start Axis:**
 
-- Open a chat in the project folder with your AI tool. The first message, even "hi", starts Axis: within seconds you see a Ready banner. If you get an ordinary reply instead of the banner, say **Start Axis**; which usually starts it. The Agent then reads your plan and tasks just before it answers its first real question.
+- Open a chat in the project folder with your AI tool and type `Start Axis`. Within seconds you see a Ready banner. (Most hosts treat any first message as the request to start, but `Start Axis` is the reliable one.) If you step away for hours, the same chat picks up where it left off; only if another chat has taken over as Main does the old one stop and tell you. The Agent then reads your plan and tasks just before it answers its first real question.
 
 **5. Agents follow a standardized protocol:**
 
@@ -94,7 +94,7 @@ Your own content lives in normal folders that your Agent creates and organizes a
 
 - **Dashboard** - Launch a dashboard (`^dashboard`) for a live overview of the workflow.
 - **Obsidian** - The free and wildly popular Markdown Editor, running on your computer.
-- **Status Reports** - Periodic assessments made at key junctures.
+- **Reviews** - Periodic assessments made at key junctures.
 - **Follow-ups** - Specific actions assigned to the User are tracked in Follow-Ups.
 - **Cross-Examination** - Periodic review and critique of work by a devil's advocate.
 - **Logs** - Direct Agents to audit the record and double-check work.
@@ -119,7 +119,7 @@ Your own content lives in normal folders that your Agent creates and organizes a
 
 - **Cross-Examine your work.** Before you rely on an important deliverable, type `^cx` - an independent Cross-Examiner will stress-test the assumptions and write a critique you can read. When Cross-Examination runs on a local model, there is no per-token provider charge, so make `^cx` a habit rather than a splurge and cross-examine early drafts, not just final deliverables.
 
-- **Monitor everything from a browser.** `^dashboard` opens a live, self-refreshing overview - project, plan, tasks, ideas, notes, logs, and health warnings at a glance. Separate **Reminders**, **User Follow Up**, and **Agent Activity** cards distinguish what is coming due, what waits on you, and what the Agent should advance next. The always-visible Status Report carries the deeper Recent Developments analysis, so coming back after a week away does not mean reading the whole project. The Dashboard is the live view; `^status` is the static one you can file, print, or email.
+- **Monitor everything from a browser.** `^dashboard` opens a live, self-refreshing overview - project, plan, tasks, ideas, notes, logs, and health warnings at a glance. Separate **Reminders**, **User Follow Up**, and **Agent Activity** cards distinguish what is coming due, what waits on you, and what the Agent should advance next. The always-visible Review carries the deeper Recent Developments analysis, so coming back after a week away does not mean reading the whole project. The Dashboard is the live view; `^status` is the quick look (one screen, or a web page), and `^review` is the dated report you can file, print, or email.
 
 - **Run cheap.** `^install ollama` tests a small local model before using it for qualified routine delegation - and only when it catches the planted flaw in the aptitude screen does critique route to it. This is one of the biggest budget levers in Axis: local cross-examination has no per-token provider charge, so your frontier-model budget goes to the work that deserves it and you can afford to cross-examine far more often than you otherwise would.
 
@@ -129,14 +129,18 @@ Your own content lives in normal folders that your Agent creates and organizes a
 
 - **Audit hidden problems.** Run the `^audit` command to perform a read-only health check. It will check hygiene, delegation failures, cross-examination coverage, secrets in the wrong place, records in sync, etc. - and then report findings with recommendations.
 
-- **Ask for a Status Report.** `^status` writes an internal record for you and your Agent, opening with what has changed since the last one - commits, records written, Wiki activity. Schedule that as a regular event on systems with a scheduler.
+- **See where things stand.** `^status` prints a one-screen summary: direction, active and blocked work, what is waiting on you, upcoming Reminders and recent activity. It writes nothing, so run it whenever you like. Add `web` for a branded page in your browser, or `deep dive` (or just ask for more) for the full picture.
 
-- **Ask for a custom report.** You can always ask your Agent to draft plain-language version of a Status Report to send to a client, a boss, or another stakeholder - just ask your Agent.
+- **Ask for a Review.** `^review` writes a dated report for you and your Agent, opening with what has changed since the last one - commits, records written, Wiki activity - followed by health-checks and Deliverable coverage. A Review summarizes the project; it does not challenge the work (that is `^cx`) and it is lighter than `^audit`. Reviews were called Status Reports before Version 2.01. Schedule one as a regular event on systems with a scheduler.
+
+- **Ask for a custom report.** You can always ask your Agent to draft plain-language version of a Review to send to a client, a boss, or another stakeholder - just ask your Agent.
 
 ### FAQ
 
 **Who coordinates my project?**
-The Main Agent coordinates your project using its normal identity. Axis assigns no mascot or persona name. The startup block shows the project, folder, Agent role and Session ID.
+**Who is Axel?**
+
+Axel is the Axis mascot and the name your Main Agent introduces itself with - the persona of the Agent that coordinates your project. External Agents and the Subagents it spawns (for cross-examination or Wiki work) are unnamed. Records are always signed with the Session ID, never the name. The startup block shows the project, folder, Agent role and Session ID.
 
 **Is my data local?**
 By default. Axis is just files in your project folder - no remote Axis backend, account, or telemetry. The optional Dashboard uses a loopback-only server on your own computer. If you choose a Git remote for portability, tracked project state is also stored by that provider; plaintext Secrets remain excluded unless you deliberately enable the encrypted capsule. Whatever your AI tool sends to its model is governed by that tool, not by Axis.
@@ -163,7 +167,7 @@ Yes. WSL or Git Bash unlocks the complete shell-backed feature set. Without a PO
 No - the implementation files for Axis reference `_Axis/`, `_Temp/`, `_Trash/`, and `Wiki/` literally. You can rename the parent folder holding the entire project, but do not rename those specific folders within it.
 
 **Can I use my own README for my project?**
-Yes. The Axis README you see on GitHub is not part of the download, and a cloned copy is replaced during setup. Project Setup creates a README for your project; Axis refreshes only its bounded project-summary block during `^status`, `^save`, and outgoing `^git` checkpoints, and anything you write outside that block remains yours. Use `^help manual` or `^help <topic>` to browse this manual without loading all of it.
+Yes. The Axis README you see on GitHub is not part of the download, and a cloned copy is replaced during setup. Project Setup creates a README for your project; Axis refreshes only its bounded project-summary block during `^review`, `^save`, and outgoing `^git` checkpoints, and anything you write outside that block remains yours. Use `^help manual` or `^help <topic>` to browse this manual without loading all of it.
 
 **Can I use a different entry file?**
 No - use the `AGENTS.md`, `CLAUDE.md`, and/or `GEMINI.md` files provided by Axis. They are reserved Workflow machinery and kept byte-identical. Put standing project or host guidance in `_Axis/INSTRUCTIONS.md`; `^update` can then replace entry machinery without erasing your instructions.
@@ -214,17 +218,18 @@ For example, the text...
 | `^log`       | Manually Log an entry into `_Axis/Logs/`.                                                                      |
 | `^note`      | Manually save a Note into `_Axis/Notes/`.                                                                      |
 | `^notes`     | Review active Notes - surface salient guidance, renew aging facts, and archive obsolete history.               |
-| `^onboard`   | Guide a new User through a five-minute tour - one Note, one Idea, one Status Report.                           |
+| `^onboard`   | Guide a new User through a five-minute tour - one Note, one Idea, one Review.                           |
 | `^plan`      | Draft (or redraft) a Project Plan and harmonize it with Tasks.                                                 |
 | `^profile`   | Select a Profile, change Settings, and draft a Mindset.                                                        |
 | `^promote`   | Promote this External Agent to Main Agent through the gated protocol.                                          |
 | `^refresh`   | Refresh the project - sweep stale state, resync records, and realign Plan with Tasks.                          |
 | `^reminders` | Review and manage the portable Reminder queue.                                                                 |
+| `^review`    | Write a Review - a dated report on the project's state, kept in `_Axis/Reviews/`. |
 | `^resume`    | Pick up where project left off - load latest Snapshot, Tasks, recent Logs.                                     |
 | `^save`      | Sync workflow and save a Snapshot.                                                                             |
 | `^settings`  | Step through and potentially adjust each setting.                                                              |
 | `^shutdown`  | Gracefully stop this Agent - log, delete own Marker, and end the session.                                      |
-| `^status`    | Generate a Status Report.                                                                                      |
+| `^status`    | Show where the project stands on one screen; `^status web` for a branded page, `^status deep dive` for more. |
 | `^tasks`     | List Tasks at a glance, and optionally apply a quick update.                                                   |
 | `^trash`     | Empty `_Trash/` on demand - everything, or item by item.                                                       |
 | `^undo`      | Roll back recent changes to a checkpoint - confirm the target, checkpoint the current state, then restore.     |
@@ -243,11 +248,12 @@ Supervision uses a separate double-caret namespace. These commands apply to reco
 | `^^start <child>` | Start a genuine child Main session when the Host supports project boot. |
 | `^^stop <child>` | Stop the exact child Main gracefully or fence its lease. |
 | `^^restart <child>` | Stop and start a child without overlapping Main sessions. |
+| `^^update [child\|all] [to vX.YY] [stop-agents]` | Update every Axis project nested below this one, each through its own `^update` and fresh-session adoption. |
 | `^^schedule ...` | Record and optionally provision recurring read-only supervision. |
 
 ### Reading the Dashboard
 
-The Dashboard is a live interpretation of Axis records, not a second database. It refreshes every 30 seconds, and the timestamp at the lower left tells you when the most recent read finished. Reload forces the same complete read immediately. The header's count line puts each count before its label and summarizes Agents, Tasks, Ideas, Notes, Logs, Status Reports, Snapshots, Cross-Examinations (CX), and Audits; an amber Status Report or Snapshot count means its documented cadence is overdue. `Status Reports` in that count line means saved reports, not the conditional untitled findings box.
+The Dashboard is a live interpretation of Axis records, not a second database. It refreshes every 30 seconds, and the timestamp at the lower left tells you when the most recent read finished. Reload forces the same complete read immediately. The header's count line puts each count before its label and summarizes Agents, Tasks, Ideas, Notes, Logs, Reviews, Snapshots, Cross-Examinations (CX), and Audits; an amber Review or Snapshot count means its documented cadence is overdue. `Reviews` in that count line means saved reports, not the conditional untitled findings box.
 
 The **Configuration** card reports installed identity, selected models, and Host facts:
 
@@ -273,11 +279,11 @@ For capability rows, `✓` means the fact is confirmed available, `Unavailable` 
 
 **Mindset** shows how each behavior differs from its default: `Much Less -2`, `Less -1`, `-` for no adjustment, `More +1`, and `Much More +2`. The word is the practical interpretation; the signed number is the stored Settings value.
 
-The conditional full-width findings box is a deterministic browser check, not an Agent response. It has no label because each bullet is written to stand alone. When findings exist, it appears above Configuration and lists independently understandable results from project setup, stale sessions or locks, queued requests, Notes pressure, Host limitations, recent capability downgrades, and the newest Snapshot's safe infrastructure summary without repeating them in an aggregate count; with no findings, the box is absent. Infrastructure appears only when a declared logical item was `absent` or `unverified`; healthy `present` and `not-applicable` declarations remain invisible, and the browser never reads Environment or Secrets content to produce these notices. Refresh failures stay out of the findings box: affected cards retain their local fallback, while the footer reads `Partial Refresh on: {timestamp}` until the next complete refresh. Faded-red medium-weight notices require particular attention. By contrast, **Status Report** can contain Agent judgment: its full-width card always appears at the very bottom, showing the newest report's opening synopsis or `No Status Report yet - use ^status.` until one exists.
+The conditional full-width findings box is a deterministic browser check, not an Agent response. It has no label because each bullet is written to stand alone. When findings exist, it appears above Configuration and lists independently understandable results from project setup, stale sessions or locks, queued requests, Notes pressure, Host limitations, recent capability downgrades, and the newest Snapshot's safe infrastructure summary without repeating them in an aggregate count; with no findings, the box is absent. Infrastructure appears only when a declared logical item was `absent` or `unverified`; healthy `present` and `not-applicable` declarations remain invisible, and the browser never reads Environment or Secrets content to produce these notices. Refresh failures stay out of the findings box: affected cards retain their local fallback, while the footer reads `Partial Refresh on: {timestamp}` until the next complete refresh. Faded-red medium-weight notices require particular attention. By contrast, **Review** can contain Agent judgment: its full-width card always appears at the very bottom, showing the newest report's opening synopsis or `No Review yet - use ^review.` until one exists.
 
 Reload does not contact an Agent or model. It immediately re-fetches the same approved Markdown files, Flags, and record listings used by the 30-second automatic refresh, then reruns the Dashboard's client-side parsing and mechanical checks. Reasoned changes appear only after an Agent has written a new source record; Reload makes that state visible sooner.
 
-The remaining cards are direct views of project records. **Project** runs tall in the left column. **Ideas**, **Notes**, **Logs**, **Reminders**, **User Follow Up**, and **Agent Activity** stack in the right column. Reminders is the portable queue ordered by exact UTC due time; User Follow Up holds questions, decisions, and actions only you can complete; Agent Activity covers overdue work or maintenance the Agent can advance, rather than completed-event history. A Reminder remains a checkpoint view, not proof that a background alarm is running. Snapshot and Status Report cadence comes from each record's UTC filename, so a clone or copy does not reset it. Ideas, Notes, and Logs show their newest entries; Logs also includes a 14-day activity sparkline. **Wiki** appears only when the Library is in use. **Plan** renders the current execution summary and diagram with a bundled, version-pinned Mermaid renderer, never a remotely executed script. **Tasks** is the full-width operational work queue below Plan. It shows an explicit range and total, with a status filter and Previous/Next controls for pages of 25; the selection stays in place across refreshes. Its age labels come from each Task's durable `updated:` field rather than filesystem `mtime`. The always-visible **Status Report** follows it without another divider and reads `No Status Report yet - use ^status.` until the first report exists. Its `Recent Developments` section is the deeper synthesized view, including commit history that the browser-only Dashboard cannot inspect.
+The remaining cards are direct views of project records. **Project** runs tall in the left column. **Ideas**, **Notes**, **Logs**, **Reminders**, **User Follow Up**, and **Agent Activity** stack in the right column. Reminders is the portable queue ordered by exact UTC due time; User Follow Up holds questions, decisions, and actions only you can complete; Agent Activity covers overdue work or maintenance the Agent can advance, rather than completed-event history. A Reminder remains a checkpoint view, not proof that a background alarm is running. Snapshot and Review cadence comes from each record's UTC filename, so a clone or copy does not reset it. Ideas, Notes, and Logs show their newest entries; Logs also includes a 14-day activity sparkline. **Wiki** appears only when the Library is in use. **Plan** renders the current execution summary and diagram with a bundled, version-pinned Mermaid renderer, never a remotely executed script. **Tasks** is the full-width operational work queue below Plan. It shows an explicit range and total, with a status filter and Previous/Next controls for pages of 25; the selection stays in place across refreshes. Its age labels come from each Task's durable `updated:` field rather than filesystem `mtime`. The always-visible **Review** follows it without another divider and reads `No Review yet - use ^review.` until the first report exists. Its `Recent Developments` section is the deeper synthesized view, including commit history that the browser-only Dashboard cannot inspect.
 
 ### Initiatives
 
@@ -317,7 +323,7 @@ The Axis Workflow follows a set of tunable parameters in [Settings](/_Axis/SETTI
 
 One Setting worth calling out is **Budget** (Frugal to Unconstrained). It steers how freely the Agent spends time, tokens, and compute on discretionary work - optional Subagents, richer models, deeper exploration, fuller records - and drives a few hard limits like how much history is re-read at startup. Note that Budget *steers* spending; it cannot *meter* it, because the Workflow has no portable way to see your actual bill or token usage. Treat it as a dial for effort, not a spending cap.
 
-**Permissions** (Restricted, Default, Autonomous) sets how often the Agent stops to ask before changing things. `Restricted` asks before anything that deletes, overwrites or cannot be undone. `Default` goes ahead when your intent is clear and nothing of value could be lost - tidying disposable scratch, committing to Git, closing finished work, archiving - and asks when it is unsure what you want, when a design or direction choice is still yours, before live model runs, and before anything that cannot be undone. `Autonomous` acts whenever your intent is clear and asks only when it is unsure or a mistake could not be undone and would matter. At `Default` and `Autonomous` the Agent may supply a command's confirmation word (such as `ARCHIVE`) itself and tells you it did. No level publishes, pushes, runs `^update`, spends money, touches Secrets or rewrites history without you. Whatever the Agent changes without asking is listed in its answer with how to undo it. New projects start at `Default`; say "set Permissions to Autonomous" (or edit the Setting) to change it.
+**Permissions** (Restricted, Default, Autonomous) sets how often the Agent stops to ask before changing things. `Restricted` asks before anything that deletes, overwrites or cannot be undone. `Default` goes ahead when your intent is clear and nothing of value could be lost - tidying disposable scratch, committing to Git, closing finished work, archiving - and asks when it is unsure what you want, when a design or direction choice is still yours, before live model runs, and before anything that cannot be undone. `Autonomous` acts whenever your intent is clear and asks only when it is unsure or a mistake could not be undone and would matter. At `Default` and `Autonomous` the Agent may supply a command's confirmation word (such as `ARCHIVE`) itself and tells you it did. No level publishes, pushes, runs `^update`, spends money, touches Secrets or rewrites history without you. `Default` acts on what you actually said (or what your Plan and Tasks say); `Autonomous` may also act on what plainly follows from your goal. Every level asks before loosening a test or safety check to make work pass, and before touching anything outside the project folder that the Agent did not create itself. Typing `^update` or `^pub` is itself your go-ahead: the Agent never starts them on its own, but does not ask again when you type them. Whatever the Agent changes without asking is listed in its answer with how to undo it; at `Autonomous` it also lists any design or direction choices it made for you. Things moved to `_Trash/` stay there at least 2 days before an automatic sweep deletes them (`^trash` empties it sooner). New projects start at `Default`; say "set Permissions to Autonomous" (or edit the Setting) to change it.
 
 **Max Concurrent Sessions** (default 10) caps how many agents can work on the project at the same time - your Main session, External agents on other tools or channels, and the Subagents they start. When the cap is reached, a new External agent tells you and stops, and Main does the work itself instead of starting another Subagent. Stale sessions (idle over an hour) do not count.
 
@@ -337,6 +343,7 @@ Type these in the parent project:
 | `^^inspect <child>` | Takes a deeper read-only look at one child. |
 | `^^message <child> <text>` | Leaves a written request in the child's queue; its own Agent decides what to do with it. |
 | `^^start`, `^^stop`, `^^restart <child>` | Starts or stops the child's Agent, when your AI host supports it. |
+| `^^update [child\|all]` | Updates every Axis project nested anywhere below this one to this project's Axis version (or a named release). It shows a preview first, asks before stopping any Agent that is working in a project, updates projects one at a time through their own `^update`, and reports each result; a project that fails or needs a decision is reported and the others continue. |
 | `^^schedule ...` | Sets up a recurring supervision check, when your host supports schedules. |
 
 Good to know:
@@ -450,7 +457,7 @@ Declaration is supplemented by a deliberately narrow discovery pass: Axis can no
 
 **Delegation ports too.** Every Subagent prompt is self-contained and bookended by a fresh nonce-bound envelope. The opening and closing records both carry `<<AXIS:SUBAGENT>>`, the same role, and the same random nonce. A Subagent's role is fixed by those validated boundaries rather than inferred, so the same prompt behaves the same way on any platform. A prompt cut at either end by a smaller context window is designed to fail loudly rather than quietly work from a fragment - the carried rules refuse in most measured trials, and the Main-side gates catch what slips.
 
-**What ports, and what does not.** Canonical files can port: plan, tasks, follow-ups, reminders, notes, ideas, logs, snapshots, status reports, audits, cross-examinations, archived history, Wiki, settings, infrastructure declarations, and generated mindset. A same-folder switch sees them all. A full copy carries files but not installed tools, environment variables, authentication, keychains, local services, browser sessions, or host jobs. A Git clone also omits plaintext Secrets unless their optional encrypted capsule is configured, plus Wiki content, session/machine Flags, Markers, Tracking, scratch, Trash, and ignored Subprojects. The external private capsule identity never travels through Git. The conversation and unsaved work cannot travel; Snapshots are the continuity layer. In a repository-backed `^save`, the Snapshot and its Save Event enter the same selected commit. The later `^shutdown` Event and Tracking tail are operational evidence rather than canonical project state; because shutdown does not commit, a Git clone may omit that tail without making the saved checkpoint incomplete.
+**What ports, and what does not.** Canonical files can port: plan, tasks, follow-ups, reminders, notes, ideas, logs, snapshots, reviews, audits, cross-examinations, archived history, Wiki, settings, infrastructure declarations, and generated mindset. A same-folder switch sees them all. A full copy carries files but not installed tools, environment variables, authentication, keychains, local services, browser sessions, or host jobs. A Git clone also omits plaintext Secrets unless their optional encrypted capsule is configured, plus Wiki content, session/machine Flags, Markers, Tracking, scratch, Trash, and ignored Subprojects. The external private capsule identity never travels through Git. The conversation and unsaved work cannot travel; Snapshots are the continuity layer. In a repository-backed `^save`, the Snapshot and its Save Event enter the same selected commit. The later `^shutdown` Event and Tracking tail are operational evidence rather than canonical project state; because shutdown does not commit, a Git clone may omit that tail without making the saved checkpoint incomplete.
 
 Every successful `^save` creates a portability-assessed checkpoint and sends it when a configured upstream remains linear; every `^resume` receives a safe fast-forward first and then revalidates that checkpoint against the current environment. That is stronger and more honest than claiming universal automatic portability: Axis cannot install tools without permission, reconcile simultaneous replicas automatically, or stop an unreachable old host.
 
@@ -651,7 +658,7 @@ The **Axis Workflow** runs directly from markdown - you do not need to install a
 
 ## Trademarks
 
-"Axis Workflow", "Axis" when used as the name of this project, and their associated logos and lockups are trademarks of Kenneth A. Younge. The "Axis Workflow" trademark was originally registered in Switzerland. "SimAxis" and its associated marks are trademarks of [SimAxis](https://simaxis.ai). Together, these are the "Marks" used in this notice. The [Axis MIT License](/_Axis/LICENSE) covers Axis-authored text, templates, and code. It does not grant rights to the Marks or automatically license the User's project. Copyright and trademark are separate: the MIT License covers copyright only and grants no trademark rights.
+"Axis Workflow", "Axis" when used as the name of this project, and their associated logos and lockups are trademarks of Kenneth A. Younge. The "Axis Workflow" trademark application was filed in Switzerland. "SimAxis" and its associated marks are trademarks of [SimAxis](https://simaxis.ai). Together, these are the "Marks" used in this notice. The [Axis MIT License](/_Axis/LICENSE) covers Axis-authored text, templates, and code. It does not grant rights to the Marks or automatically license the User's project. Copyright and trademark are separate: the MIT License covers copyright only and grants no trademark rights.
 
 #### You may, without asking
 
@@ -668,15 +675,15 @@ The **Axis Workflow** runs directly from markdown - you do not need to install a
 #### Symbols and attribution
 
 - On first prominent use in a document, write "Axis Workflow™"; after that, plain "Axis Workflow" or "Axis" is fine.
-- When an attribution line is appropriate, use: "Axis Workflow™ - open source under the MIT License, from SimAxis."
+- When an attribution line is appropriate, use: "Axis Workflow™ is free and open source (MIT License), from SimAxis - training and consulting at simaxis.ai."
 
-Questions or permission requests can be sent to [AxisWorkflow](https://axisworkflow.ai).
+Questions or permission requests can be sent to [support@simaxis.ai](mailto:support@simaxis.ai).
 
 
 
 ## License
 
-This release is licensed under the **MIT License**. Anyone may use, copy, modify, merge, publish, distribute, sublicense, and sell it, provided the copyright and permission notice stay with every copy. Releases before Version 2.00 remain under the Functional Source License (`FSL-1.1-MIT`), and each of them converts to MIT two years after it was first made available. Third-party components retain their own copyright and licenses, including the bundled Mermaid renderer. See the complete [Axis License](/_Axis/LICENSE), [Contributor License Agreement and Copyright Assignment](/_Axis/CLA.md), and [Trademarks](#trademarks).
+This release is licensed under the **MIT License**. Anyone may use, copy, modify, merge, publish, distribute, sublicense, and sell it, provided the copyright and permission notice stay with every copy. Releases before Version 2.00 remain under the Functional Source License (`FSL-1.1-MIT`), and each of them converts to MIT two years after it was first made available. Third-party components retain their own copyright and licenses, including the bundled Mermaid renderer. The software is MIT licensed. The Axis Workflow name and the brand assets in `_Axis/Branding/` are not; see [`_Axis/Branding/LICENSE-ASSETS.md`](/_Axis/Branding/LICENSE-ASSETS.md). The bundled Inter and IBM Plex Mono fonts are under the SIL Open Font License 1.1. See the complete [Axis License](/_Axis/LICENSE), [Contributor License Agreement and Copyright Assignment](/_Axis/CLA.md), and [Trademarks](#trademarks).
 
 
 

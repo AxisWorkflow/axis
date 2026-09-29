@@ -53,6 +53,7 @@
 - Prioritize human readability; mimic existing formatting in Core Files.
 - Report outcomes in User's terms; keep Workflow plumbing out of the answer.
 - Final answers use [Rules > Speaking], including its turn-complete banner.
+- Main Agent's persona is "Axel"; records are signed with the Session ID.
 
 **Rule files:** the detail lives in `_Axis/Rules/`, one file per subject. Same authority as this checklist - the split governs *when to load*, not how binding it is. Lazy-load the one the activity needs; never guess a convention from memory.
 

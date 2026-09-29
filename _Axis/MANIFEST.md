@@ -8,7 +8,7 @@
 - **`_Axis/`** - Control folder for Axis Workflow.
 - **`_Axis/Secrets/`** - Secrets (keys, tokens, credentials).
 - **`_Temp/`** - Scratch space for regenerable files.
-- **`_Trash/`** - Deletion staging - files waiting for the next sweep.
+- **`_Trash/`** - Deletion staging - each item is kept at least 2 days, then an automatic sweep deletes it.
 - **`Wiki/`** - Knowledge base for project.
 
 ### Files
@@ -43,9 +43,9 @@
 - `_Axis/Requests/`
 - `_Axis/Resources/`
 - `_Axis/Snapshots/`
-- `_Axis/Status/`
 - `_Axis/Supervision/`
 - `_Axis/Tasks/`
+- `_Axis/Updates/` - the update journal: one folder per `^update` transaction (plan, preimages, receipts), kept as history, plus the stable `operation.lck` (ignored by Git).
 
 ### Files
 
@@ -79,6 +79,8 @@
 ### Optional project files
 
 - `_Axis/INITIATIVES.md` - optional shared outcomes and Task groups; absent is valid, and no startup detail load is required.
+- `_Axis/Reviews/` - dated Reviews (`^review`). A project updated from Version 2.00 or earlier gets it from its first `^review`, which also moves any older reports from `_Axis/Status/` into it; absent until then is valid.
+- `_Axis/Branding/` - the product brand package (stylesheet with light and dark themes, WOFF2 fonts, tokens, mark, logo, favicons), shipped read-only and replaced whole by each update; `manifest.json` lists every file with its SHA-256. Its assets are not under the MIT License (see `LICENSE-ASSETS.md`). A project updated from Version 2.00 receives it with its next update after 2.01 (the 2.00 updater cannot install a new folder); absent until then is valid, and the Dashboard and `^status` pages fall back to plain brand colours.
 
 ### Practices
 
@@ -108,6 +110,7 @@
 - `_Axis/Practices/Reminders.md`
 - `_Axis/Practices/Settings.md`
 - `_Axis/Practices/Snapshots.md`
+- `_Axis/Practices/Reviews.md`
 - `_Axis/Practices/Status.md`
 - `_Axis/Practices/Subprojects.md`
 - `_Axis/Practices/Supervision.md`
@@ -170,6 +173,7 @@
 - `_Axis/Commands/save.md`
 - `_Axis/Commands/settings.md`
 - `_Axis/Commands/shutdown.md`
+- `_Axis/Commands/review.md`
 - `_Axis/Commands/status.md`
 - `_Axis/Commands/tasks.md`
 - `_Axis/Commands/trash.md`
@@ -186,6 +190,7 @@
 - `_Axis/Resources/Load-Starting-Context.md`
 - `_Axis/Resources/Startup-Records-Manual.md` - complete manual startup record fallback, loaded only when selected.
 - `_Axis/Resources/startup-state.py` - optional local startup record accelerator; manual startup remains available.
+- `_Axis/Resources/status.py` - optional read-only `^status` helper; the Agent can compose the same summary by hand.
 - `_Axis/Resources/startup-survey.py` - optional one-call startup survey; the numbered Start-Session steps remain available.
 - `_Axis/Resources/boot.py` - one-command Main startup used by the entry files.
 - `_Axis/Resources/turn.py` - per-turn lease check and renewal used by the entry files.

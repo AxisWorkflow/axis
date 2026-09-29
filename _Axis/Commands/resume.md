@@ -5,7 +5,7 @@
 
 2. **Receive configured Secrets.** After any fast-forward, and whenever encrypted Secrets transport is configured, follow [Practices > GIT > Encrypted Secrets Transport > Receive automatically]. A verified `current`, `received`, or `local-changes` state continues. Missing tool/identity, malformed/unsafe input, or conflict leaves plaintext untouched and becomes a named infrastructure/portability finding; never expose an entry name. GitHub authentication is restored separately because it is needed before the capsule can be fetched.
 
-3. **Sweep Trash.** Quietly sweep `_Trash/` per [Practices > Trash]: delete everything except `.gitkeep`, recreate it if absent, and note the count removed below. If the host blocks deletion, remind User to empty `_Trash/` instead.
+3. **Sweep Trash.** Quietly sweep `_Trash/` per [Practices > Trash]: delete items 2 or more days old by their trash-date prefix, date any undated item, recreate `.gitkeep` if absent, and note the count removed below. If the host blocks deletion, remind User to empty `_Trash/` instead.
 
 4. **Revalidate portability.** Read [Practices > Portability] and the latest Snapshot's `## Continuity` block, then run Always-On Resume Revalidation completely whether or not a move is suspected. Reuse only Capability Flags freshly validated by this Session Start. Revalidate every infrastructure declaration and run bounded discovery; compare source/current status, then list each source-present item now absent/unverified and each currently required absent item with fallback and `Re-establish` reference. Preserve your lease and never clear a possibly live foreign Marker. Classify `Ready`, `Degraded`, or `Unverified`; remain read-mostly and write no routine receipt Log.
 

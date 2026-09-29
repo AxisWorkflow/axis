@@ -8,7 +8,7 @@ Ideas can result from:
 - brainstorming (perhaps during discussions between User and Agent)
 - dreaming by a Subagent (perhaps during a scheduled loop each night)
 - reflecting on the project (e.g., when User asks for a reflection or review)
-- drafting a Status Report
+- drafting a Review
 - reviewing a Cross-Examination (perhaps as a result of Main Agent reviewing report)
 - exploration by Agent when directed to explore more by [Settings > Exploration]
 - spontaneous thoughts (by User or Agent) during normal course of work

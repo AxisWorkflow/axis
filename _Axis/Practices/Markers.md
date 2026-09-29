@@ -18,7 +18,7 @@ Claim-Session exclusively creates and reads back this shape before Start-Session
 
 ## Liveness
 
-A Marker is fresh only while `mtime` is under1 hour old. A sibling `{ID}.kill` is DEAD at any age. Every liveness scan checks that sibling, in startup, continuation, `^kill`, `^refresh` and Dashboard. At or over1 hour is dead; cleanup may delete stale Markers with a warning, without hard-blocking. Session Start only reports them. An orphan is a fresh `Subagent:` Marker with no fresh Main behind it: report the crashed-spawn evidence; `^refresh` clears it once stale.
+A Marker is fresh only while `mtime` is under 1 hour old. A sibling `{ID}.kill` is DEAD at any age. Every liveness scan checks that sibling, in startup, continuation, `^kill`, `^refresh` and Dashboard. At or over 1 hour a Marker is stale: other sessions treat it as dead (a new boot may become Main), but its own session may resume it (The Lease). `^refresh` deletes Markers stale over 24 hours, with a warning, without hard-blocking. Session Start only reports them. An orphan is a fresh `Subagent:` Marker with no fresh Main behind it: report the crashed-spawn evidence; `^refresh` clears it once stale.
 
 An ordinary host close leaves a Marker to age out. Successful `^shutdown` or verified User-invoked `^update` with its required restart deletes the actor's own Marker. Main renews on each served turn, `^save`, resume and every Log write. A fresh foreign Main requires [Lock-File] coordination; ordinary startup refuses contested admission. Tracking is advisory activity, never authority.
 
@@ -27,7 +27,9 @@ An ordinary host close leaves a Marker to age out. Successful `^shutdown` or ver
 READ your own Marker and check its tombstone at every turn start and immediately before every shared write or lock/identifier claim. Judge the read, THEN renew its `mtime` as a SEPARATE action. Never chain renewal to the read or use a bare `touch`: renewal never creates a Marker. The entry executes this for both Main's banner and External's minted boot record. Lock-File and Timestamps own their pre-write checks, including append-only records that take no file lock.
 
 - A tombstone means KILLED: Log one final Event, append final Tracking, tell User on your surface and stop permanently. Later messages receive one line, no further writes.
-- A Marker missing WITHOUT a tombstone means lost lease: stop writing and ask User this turn; never recreate it to continue. Re-register once only on User's word; a second disappearance in that session stops it for good.
-- Only sender-verified User `^kill` writes tombstones. Graceful self-exit uses `^shutdown`. `^refresh` silently removes tombstones older than1 hour.
+- Idle is not lost: an own Marker that is stale but present, with no tombstone, no live foreign Main and (for Main) `session-id` still naming this session, is renewed on the next turn with a one-line notice. If another Main started meanwhile, the session is taken over: no shared writes; tell User.
+- A Marker missing WITHOUT a tombstone means lost lease: stop writing and ask User this turn; never recreate it on your own. On User's word re-register it, each time it happens; say so if it keeps disappearing.
+- Inside a long turn, renew about every 30 minutes.
+- Only sender-verified User `^kill` writes tombstones. Graceful self-exit uses `^shutdown`. `^refresh` silently removes tombstones older than 1 hour.
 
 Only the qualified startup-state.py record operations may combine programmatic read/judgment with renewal of the validated existing file descriptor; `turn.py` renews only a checked, existing path. Check exact content, inode and tombstone before and after; this cannot create a missing pathname. Turn-start Agent renewal stays SEPARATE.

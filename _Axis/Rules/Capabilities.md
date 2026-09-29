@@ -2,7 +2,7 @@
 > **Purpose:** Main Agent eligibility, the Host Capability Flags, and how features degrade when one is missing.
 
 
-**Main Agent eligibility is a prerequisite, not a Capability.** Axis supports only a standard-capability model as Main Agent. The entry-point protocol checks this from system context or explicit host configuration before printing either startup output or touching project state; when standard capability is not established, it stops and tells User to select an eligible model. Small models remain supported as bounded Subagents. Organizations needing a hard technical guarantee enforce an approved-model policy in the host or launcher.
+**Main Agent eligibility is a prerequisite, not a Capability.** Axis supports only a standard-capability model as Main Agent. The entry-point protocol checks this before printing either startup output or touching project state: the model judges from its system context and host configuration whether it is standard-capability, and a small or lightweight model stops and tells User to select an eligible model. This is the model's own assessment; `boot.py` records the model name it is given and enforces nothing. Small models remain supported as bounded Subagents. Organizations needing a hard technical guarantee enforce an approved-model policy in the host or launcher.
 
 At Session Start, [Start-Session] follows [Detect-Capabilities] to record the running model and detect each Host Capability below in its own Flag (value on Line 1, UTC timestamp on Line 2). Features degrade gracefully when a Host Capability is missing; log every skip so User can audit what dropped.
 

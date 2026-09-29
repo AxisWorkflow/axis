@@ -13,6 +13,6 @@ Some hosts (e.g., Cowork) block file deletion until User grants permission. If a
 
 - First, request delete permission from host once (if the host supports such a request).
 - If still blocked, clear a Flag by overwriting its body with `cleared` on Line 1 plus a current UTC timestamp on Line 2; treat any Flag whose Line 1 is `cleared` as absent.
-- If still blocked, move the file or lock directory into `_Trash/` per [Practices > Trash] - renaming works on hosts where deleting does not, and the next sweep that CAN delete will empty it.
+- If still blocked, move the file or lock directory into `_Trash/` per [Practices > Trash] - renaming works on hosts where deleting does not, and a later sweep that CAN delete will remove it once it is 2 days old (or `^trash` sooner).
 - If even `_Trash/` cannot be emptied when swept, report the count and remind User to empty it; do not keep retrying.
 - Log the substitution so the audit trail explains the leftover state.

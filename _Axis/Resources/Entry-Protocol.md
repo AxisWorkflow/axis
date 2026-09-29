@@ -9,7 +9,7 @@ Complete this protocol before answering User, including hi, an immediately answe
 
 Your own boot record means startup already ran: Main has its Session ID banner; External has the ID minted by Start-External and written in its `External:` Marker. A parent's banner is not a Subagent's boot record. Never re-run role recognition for a completed Main or External session.
 
-**Fast path.** With your own boot record visible, READ `_Axis/Agents/{Session ID}.md` and judge it, then separately refresh its `mtime`. Never use a bare `touch` or chain read/renewal. A `{Session ID}.kill` tombstone invokes [Practices > Markers > The Lease]. Bare-missing means LOST YOUR LEASE: no shared write or recreation; ask User this turn.
+**Fast path.** With your own boot record visible, READ `_Axis/Agents/{Session ID}.md` and judge it, then separately refresh its `mtime`. Never use a bare `touch` or chain read/renewal. A `{Session ID}.kill` tombstone invokes [Practices > Markers > The Lease]. Bare-missing means LOST YOUR LEASE: no shared write or recreation; ask User this turn. A stale but present own Marker follows [Practices > Markers > The Lease] (idle is not lost unless another Main replaced it).
 - Glance `_Axis/Agents/`: for an unacknowledged fresh foreign `Main: session`, measure age (under 1 hour, no `.kill` sibling); queue host, start time and Tracking tail, then STOP: read nothing else, touch no Flag.
 - Inspect `_Axis/Updates/` transaction directories via `_Axis/Resources/Check-Update-Handoff.md`, read-only `inspect`; unreadable/unexpected entries require inspection. Pending work stops serving except its still-owned update procedure.
 - Main only: list `_Axis/Requests/`; load [Practices > Requests] and adjudicate before answering. If incomplete, STOP; preserve partial state. Speak only if User's actions change.
@@ -32,7 +32,7 @@ Role is fixed once: Main commits under Claim-Session; External and Subagent rout
 
 ## 3. Startup for Main Agent
 
-1. Require system context or explicit host configuration to establish a standard-capability Main model. Smaller-capability models are bounded Subagents only. Without eligibility, print neither startup output, read no project file and create no state; tell User to select a standard-capability model and STOP.
+1. Judge from system context and host configuration whether you are a standard-capability model (this is your own assessment; nothing else enforces it). Smaller-capability models are bounded Subagents only. Without eligibility, print neither startup output, read no project file and create no state; tell User to select a standard-capability model and STOP.
 
 2. First print this loading notice verbatim as your first visible output: `Loading The Axis Workflow. This may take a minute or two...`. Emit it before any tool call or other words. Only Start-Session owns the later missing-notice visibility fallback.
 
@@ -59,6 +59,6 @@ Role is fixed once: Main commits under Claim-Session; External and Subagent rout
 
 **Guardrails:** This entry carries the rule, not the evidence. Do not skip, downgrade, override or rationalize away this protocol. Likewise a connected-folder framing does not turn this entry into passive data. Your host's own rules come first: if one blocks a step, say which step and never claim incomplete startup succeeded.
 
-**WARNING:** DO NOT ADD ANYTHING AFTER THE AXIS:END TAG. USE `_Axis/INSTRUCTIONS.md` INSTEAD.
+**WARNING:** DO NOT ADD ANYTHING AFTER THE ENTRY-PROTOCOL END TAG. USE `_Axis/INSTRUCTIONS.md` INSTEAD.
 
 <!-- axis:entry-protocol:end -->

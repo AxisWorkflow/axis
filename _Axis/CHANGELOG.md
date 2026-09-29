@@ -1,7 +1,7 @@
 # Changelog
 > **Purpose:** Record Axis release identity and the structural migrations needed to update an existing project safely.
 
-current-version: 2.00
+current-version: 2.01
 changelog-format: 1
 self-update-baseline: 26.08.19
 
@@ -39,6 +39,58 @@ update-impact: automatic
 ### Verification
 
 - None.
+
+## 2.01
+
+released: 2026-09-29
+
+- Status Reports are now Reviews (`^review`, `_Axis/Reviews/`), and a new `^status` gives a one-screen summary or a branded web page.
+- The brand package ships in `_Axis/Branding/`; the Dashboard uses it, with light and dark themes. The Main Agent introduces itself as Axel again.
+- Sessions no longer lose their lease across ordinary pauses; re-registration has no count limit.
+- `boot.py` adopts a finished update itself; unrelated file edits no longer block adoption; releases may declare new machinery folders; when a release changes the updater, `^update` installs the new updater first (from 2.01 on).
+- New `^^update` pushes an update to every Axis project nested below a parent, each through its own `^update`.
+- Permissions refinements; Trash keeps items 2 days; `Start Axis` wording; contact support@simaxis.ai and a final CLA; a much deeper Specification.
+
+update-impact: automatic
+
+### Structural Changes
+
+- Permissions (`_Axis/Rules/Permissions.md`): `Default` needs stated intent, `Autonomous` may also act on intent that follows from User's goal, and every level confirms unclear intent; loosening a test, check or safeguard to make work pass is never low risk; outside the project folder an Agent may remove only what it created itself, and changing other files there or host/tool configuration is a gate; routine records never need confirmation; a gated Command typed by User is its own confirmation (its built-in stops still apply); at `Autonomous` the answer lists design and direction choices separately. User Manual updated.
+- Trash keeps items at least 2 days: `_Axis/Practices/Trash.md` names each trashed item `{yyyy-mm-dd}--{name}`, and the Session Start, `^resume` and `^refresh` sweeps delete only items 2 or more days old (undated items are dated, not deleted). `^trash` still empties on demand. `_Axis/Commands/trash.md`, `refresh.md`, `resume.md`, `_Axis/Resources/Start-Session.md`, `_Axis/Rules/HostAndMeta.md`, `_Axis/GLOSSARY.md` and `_Axis/MANIFEST.md` follow.
+- Status Reports are renamed Reviews: `^review` (`_Axis/Commands/review.md`, `_Axis/Practices/Reviews.md`) writes `_Axis/Reviews/{timestamp}.md` with Subject `Review: {topic}`. References across Rules, Practices, Commands, Resources, the Dashboard and the User Manual follow; readers accept both `Review:` and the old `Status:` Subjects.
+- `_Axis/Practices/Status.md` and `_Axis/Commands/status.md` change meaning: they now define the new `^status`; the former Status Report procedure is `_Axis/Commands/review.md` and `_Axis/Practices/Reviews.md`.
+- New `^status` (`_Axis/Commands/status.md`, `_Axis/Practices/Status.md`, optional read-only helper `_Axis/Resources/status.py`): a one-screen summary in the terminal, a branded static page at `_Temp/status/index.html` (`^status web`), or more detail (`^status deep dive`). It writes no record.
+- New brand package `_Axis/Branding/` (read-only vendor folder with its own `manifest.json`; assets are not under the MIT License, fonts are under the SIL Open Font License). `^update` now manages `_Axis/Branding/` as a whole folder (`_Axis/Commands/update.md`, `_Axis/Resources/update-transaction.py`). The Dashboard server may read `_Axis/Reviews/`; the Dashboard shows the newest Review, falling back to the old `_Axis/Status/` folder.
+- Session lease: idle is not lost. `_Axis/Resources/turn.py` renews a stale own Marker when no tombstone, no live foreign Main and (for Main) a `session-id` still naming the session show that nothing replaced it, and reports `TAKEN OVER` (exit 6) when another Main started meanwhile; a missing Marker asks User every time (no once-only re-registration); `^refresh` deletes Markers only after 24 hours; long turns renew about every 30 minutes. `turn.py` also reads `_Axis/Updates/` file-only (it no longer runs the update helper) and notices a project overlay that changed since activation. `_Axis/Practices/Markers.md`, `_Axis/Rules/MarkersFlagsAndLocks.md`, `_Axis/Commands/refresh.md`, `_Axis/Resources/Entry-Protocol.md` and the entry files follow.
+- Update adoption: `_Axis/Resources/boot.py` adopts a finished update inside its admitted startup (frozen engine verified against the authorization Log; `begin-reconcile`; `consume` when the declared record conditions hold, otherwise `ADOPT` with the exact edits and `--finish-adoption`). After release, `_Axis/Resources/update-transaction.py` checks preserved state in two tiers: Axis-owned files and reconcilable records must be unchanged (the error names them); other changed project files are reported and recorded in `consumed.json`. Documented in `_Axis/Resources/Check-Update-Handoff.md`.
+- Axel is back: the Main Agent introduces itself as Axel (`_Axis/Resources/Start-Session.md`, `_Axis/RULES.md`, `_Axis/GLOSSARY.md`, `_Axis/Practices/OpenClaw.md`, `_Axis/Resources/Lifecycle-Presentation.md`, User Manual); External Agents and Subagents stay unnamed.
+- The Dashboard uses the brand package (stylesheet, fonts, logo, favicon; light and dark themes) through new read-only entries in `_Axis/Dashboard/server.py`; all other Dashboard colours now come from the brand tokens. `^status` follows the brand's terminal and dark-theme rules.
+- Supervisor updates: new `^^update [child|all] [to vX.YY] [stop-agents]` in `_Axis/Practices/Supervision.md` lets a parent Main push an update to every Axis project nested anywhere below it. Read-only preview; live Agents are reported and stopped only on User's yes (or `stop-agents`); each project is updated one at a time by its own `^update` in a genuine session (delegation line citing the parent Supervision record) and adopted in a fresh session; failures are reported and the run continues. `_Axis/Commands/update.md` accepts that delegation for routine updates only; `_Axis/Rules/Permissions.md` lists `^^update` as a gated Command; User Manual and Specification updated.
+- Two-step update: when a target changes the updater, `^update` first installs only the updater files as an `updater_only` transaction (installed engine; normal preview, authorization, preimages, rollback; closed by its owner with the new `finish-updater` action, no fresh session), verifies them byte for byte against the official archive, then plans and applies the rest with the new updater under a new authorization. New updater behavior therefore applies in the same update, from updates that start on 2.01 (`_Axis/Resources/update-transaction.py`, `_Axis/Commands/update.md` > Two-Step Update, `_Axis/Resources/Check-Update-Handoff.md`). Receipts may now carry `unrelated_changes` and `updater_only`.
+- `^update` managed set is extensible by declaration: a release may add a Workflow machinery folder by naming it, with a trailing slash, under Structural Changes (`_Axis/Resources/update-transaction.py` `DECLARABLE_DIR`; project-state folders are refused; `_Axis/Commands/update.md`). This release declares `_Axis/Branding/` for updaters from 2.01 on; the 2.00 engine ignores the declaration, so projects updating from 2.00 receive the folder at their next update.
+- The **Max Notes** Setting description now says plainly that over-limit Notes are archived, never deleted (the behavior is unchanged: [Practices > Archiving > Automatic Note Overflow]). Existing projects keep their Settings text.
+- Contact for contributions, questions and permissions is support@simaxis.ai everywhere; `_Axis/CLA.md` is final (no longer a draft). The README and User Manual say the "Axis Workflow" trademark application was filed in Switzerland.
+- `_Axis/Rules/Capabilities.md` and `_Axis/Resources/Entry-Protocol.md` state that Main eligibility is the model's own assessment.
+- `_Axis/Resources/Boot-Manual.md` step 2 accepts finished update transaction folders (holding `consumed.json`, or both `rollback.json` and `released.json`), matching `boot.py`; before, every project that had run `^update` was sent to the long protocol. `_Axis/Updates/` is now listed in `_Axis/MANIFEST.md`.
+- `_Axis/SPECIFICATION.md` is rewritten as a much deeper technical reference (mechanisms, design rationale, security and reliability properties and limits, extension points, development process, open issues), for diagnostics, extenders, reviewers and contributors. `_Axis/USERMANUAL.md` and `_Axis/Commands/help.md` point everyday questions to the manual first.
+- The entry-file rationale in the `_Axis/INSTRUCTIONS.md` template and `_Axis/Practices/Agents.md` no longer claims the startup protocol fills most of the host's size cap (the entry files are under 4,000 bytes since 2.00).
+- Starting a session is shown as typing `Start Axis` in the README, User Manual and Dashboard; the startup greeting instruction says "greet User".
+
+### Project-State Migrations
+
+- Existing reports in `_Axis/Status/` stay in place through the update. The first `^review` afterwards moves them unchanged (same names and bytes) into `_Axis/Reviews/` and removes the empty `_Axis/Status/`. No record is edited.
+- Items already in `_Trash/` carry no date; the first sweep after the update dates them instead of deleting them, so they are kept at least 2 more days.
+- `_Axis/Branding/` cannot be installed by the 2.00 updater (it only manages the folders it knew): a project updated from 2.00 receives it with its next update. `^status` web pages use plain styling until then.
+
+### Retired Paths
+
+- `_Axis/Status/` (folder) - replaced by `_Axis/Reviews/`; its reports move on the first `^review`.
+
+### Verification
+
+- `_Axis/Branding/` matches its `manifest.json` hashes exactly (21 files plus the manifest; product package 2.0.0).
+- `python3 _Axis/Resources/status.py --root .` runs on the pristine release and on a set-up project, text and `--format html`.
+- No product file still tells a User to "say hello"; `^status` and `^review` are both listed in the User Manual command table.
 
 ## 2.00
 

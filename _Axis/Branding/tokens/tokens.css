@@ -1,0 +1,85 @@
+/* Axis Workflow brand tokens 2.0.0 - generated from css/axis-brand.css */
+:root{
+  /* colour - the complete palette; no third hue, no gradients */
+  --axis-ink:#0B1220;          /* text, strokes, navy surfaces */
+  --axis-paper:#FFFFFF;        /* page background */
+  --axis-surface:#EEF2F9;      /* bands, tiles, table highlights */
+  --axis-line:#D5DCE8;         /* hairlines, borders */
+  --axis-muted:#5B6472;        /* secondary text (5.98:1 on paper) */
+  --axis-accent:#2F56C9;       /* "Workflow", actions, the origin ring, numerals */
+  --axis-accent-ink:#FFFFFF;   /* text on accent */
+  --axis-accent-dark:#8FA8F5;  /* accent on navy */
+
+  /* derived tints - shades of the palette above for component states; not new hues */
+  --axis-accent-hover:#2649B0; /* button hover */
+  --axis-accent-wash:#F0F4FC;  /* inline code background */
+  --axis-accent-tint:#F3F6FD;  /* highlighted table column */
+  --axis-navy-2:#141D2E;       /* raised surface on navy */
+  --axis-navy-line:#27324A;    /* hairline on navy */
+  --axis-navy-text:#DCE4F5;    /* body text on navy */
+  --axis-navy-muted:#B7C1D3;   /* secondary text on navy */
+
+  /* roles - components use these, so a theme only has to reassign roles (section 7) */
+  --axis-bg:var(--axis-paper);            /* page */
+  --axis-fg:var(--axis-ink);              /* body text */
+  --axis-fg-muted:var(--axis-muted);      /* secondary text */
+  --axis-heading:var(--axis-ink);         /* headings */
+  --axis-band:var(--axis-surface);        /* bands and tiles */
+  --axis-raised:var(--axis-paper);        /* cards and panels */
+  --axis-border:var(--axis-line);         /* hairlines */
+  --axis-link:var(--axis-accent);         /* links and text actions */
+  --axis-eyebrow:var(--axis-accent);      /* mono labels */
+  --axis-stat-numeral:var(--axis-accent-dark); /* numerals on the navy stat tile */
+  --axis-code-fg:var(--axis-accent);
+  --axis-code-bg:var(--axis-accent-wash);
+  --axis-highlight:var(--axis-accent-tint);
+  --axis-head-bg:var(--axis-ink);         /* table heads, stat tiles */
+  --axis-head-fg:var(--axis-paper);
+  --axis-wordmark-axis:var(--axis-ink);
+  --axis-wordmark-workflow:var(--axis-accent);
+  --axis-marker:url("../svg/mark/mark.svg");
+
+  /* type */
+  --axis-font-display:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --axis-font-body:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --axis-font-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  --axis-text:17px;
+  --axis-leading:1.6;
+  --axis-h1:clamp(40px,5.2vw,64px);
+  --axis-h2:clamp(30px,3.3vw,48px);
+  --axis-h3:clamp(19px,1.7vw,24px);
+  --axis-lede:clamp(19px,1.7vw,25px);
+
+  /* shape */
+  --axis-radius-sm:10px;       /* buttons, inputs */
+  --axis-radius:14px;          /* cards, tables */
+  --axis-radius-lg:22px;       /* panels, sections */
+  --axis-hairline:1px solid var(--axis-border);
+  --axis-maxw:1320px;
+}
+
+/* ---------- 7. Dark theme and reversed sections ----------
+ * Dark is plain text: light text on navy, headings in plain white, no coloured labels, code or
+ * numerals. Colour stays only where it carries meaning: links, buttons, focus, and the logo.
+ * The theme follows the operating system; set data-axis-theme="light" or "dark" on <html> to fix
+ * it. .axis-reversed makes one section navy in either theme. */
+.axis-reversed,:root[data-axis-theme="dark"]{
+  --axis-bg:var(--axis-ink); --axis-fg:var(--axis-navy-text); --axis-fg-muted:var(--axis-navy-muted);
+  --axis-heading:var(--axis-paper); --axis-band:var(--axis-navy-2); --axis-raised:var(--axis-navy-2);
+  --axis-border:var(--axis-navy-line); --axis-link:var(--axis-accent-dark); --axis-eyebrow:var(--axis-navy-muted);
+  --axis-stat-numeral:var(--axis-paper); --axis-code-fg:var(--axis-navy-text); --axis-code-bg:var(--axis-navy-2);
+  --axis-highlight:var(--axis-navy-2); --axis-head-bg:var(--axis-navy-2); --axis-head-fg:var(--axis-paper);
+  --axis-wordmark-axis:var(--axis-paper); --axis-wordmark-workflow:var(--axis-accent-dark);
+  --axis-marker:url("../svg/mark/mark-reversed.svg");
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-axis-theme="light"]){
+    --axis-bg:var(--axis-ink); --axis-fg:var(--axis-navy-text); --axis-fg-muted:var(--axis-navy-muted);
+    --axis-heading:var(--axis-paper); --axis-band:var(--axis-navy-2); --axis-raised:var(--axis-navy-2);
+    --axis-border:var(--axis-navy-line); --axis-link:var(--axis-accent-dark); --axis-eyebrow:var(--axis-navy-muted);
+    --axis-stat-numeral:var(--axis-paper); --axis-code-fg:var(--axis-navy-text); --axis-code-bg:var(--axis-navy-2);
+    --axis-highlight:var(--axis-navy-2); --axis-head-bg:var(--axis-navy-2); --axis-head-fg:var(--axis-paper);
+    --axis-wordmark-axis:var(--axis-paper); --axis-wordmark-workflow:var(--axis-accent-dark);
+    --axis-marker:url("../svg/mark/mark-reversed.svg");
+  }
+}

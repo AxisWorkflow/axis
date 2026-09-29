@@ -65,7 +65,7 @@
 
 ### Max Notes
 
-**Description:** The number of Notes to retain (set a lower threshold for greater efficiency).
+**Description:** The number of active Notes kept in `_Axis/Notes/` (set a lower threshold for greater efficiency). When there are more, the oldest move unchanged to the Archive; Notes are never deleted.
 
 **Range:** 0 to 100,000
 

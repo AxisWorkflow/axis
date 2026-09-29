@@ -112,12 +112,12 @@ Axis ships no scheduler and does not want one - a schedule that lived inside Axi
 
 - **A scheduled task in a hosted app (e.g., Cowork).** Create the task in the host's own scheduling UI. Write its prompt to stand alone - a scheduled run starts a fresh session with no memory of the conversation that set it up - and point it at the entry-point file and a Command, not at a description of the work:
 
-	Read AGENTS.md and follow it. Then run ^refresh, and run ^status if the
-	newest report in _Axis/Status/ is more than 7 days old.
+	Read AGENTS.md and follow it. Then run ^refresh, and run ^review if the
+	newest report in _Axis/Reviews/ is more than 7 days old.
 
 - **cron plus a headless CLI host.** When the host runs from a shell, `cron` (or `launchd`, or Task Scheduler) fires it. Always change into the project root first - every path in Axis is relative to it - and send output somewhere User will actually look:
 
-	0 7 * * 1 cd /path/to/project && your-cli-host -p "Read AGENTS.md and follow it. Then run ^status." >> _Temp/cron.log 2>&1
+	0 7 * * 1 cd /path/to/project && your-cli-host -p "Read AGENTS.md and follow it. Then run ^review." >> _Temp/cron.log 2>&1
 
 	A scheduled run is an ordinary Session Start: it detects Capabilities, rewrites its per-session Flags, and takes the lock like any other session. Two runs must never overlap - stagger the schedule past the longest expected run, or let the lock turn the second one away.
 
@@ -133,5 +133,5 @@ Record any non-trivial schedule in an Axis Note: its logical name, cadence and p
 
 - Hosts may strip HTML comments when injecting entry-point content into context. Before sync-checking or editing the marker blocks, always Read the entry-point file from disk - do not trust the in-context copy.
 
-- The entry-point files are RESERVED for the Axis Workflow end to end. Neither User nor Agent adds to them - not host notes, not a banner, not organization policy, not a single line after the closing marker. Hosts inject the whole file into every Agent's context on every turn under a size cap (20,000 characters on one measured host), the protocol already uses most of it, and content past the cap is silently TRUNCATED rather than rejected - so an addition here does not fail loudly, it boots the next Agent on a partial protocol.
+- The entry-point files are RESERVED for the Axis Workflow end to end. Neither User nor Agent adds to them - not host notes, not a banner, not organization policy, not a single line after the closing marker. Hosts inject the whole file into every Agent's context on every turn under a size cap (20,000 characters on one measured host), content past the cap is silently TRUNCATED rather than rejected, the three files must stay byte-identical, and `^update` replaces them - so an addition here does not fail loudly; it is cut off or overwritten.
 - User instructions belong in `_Axis/INSTRUCTIONS.md`, which is read at Session Start and has no size consequence. When User asks for standing guidance to be added "to CLAUDE.md", write it there instead and say where it went - the request is legitimate, only the destination is wrong.

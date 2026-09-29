@@ -1,0 +1,55 @@
+# ^review
+> **Purpose:** Write a Review - a dated report on the project's state, kept in `_Axis/Reviews/`.
+
+A Review summarizes the project's current state - what changed, what is open, how healthy it is. It challenges nothing (that is a Cross-Examination, `^cx`) and is lighter than an `^audit`. For a quick look without writing a record, use `^status`.
+
+1. Confirm the role allows a new Review. An External uses only already recorded, non-secret portability/infrastructure summaries and marks current unverified health accordingly; it never probes Secrets, authentication, environment bindings, or other Main-owned state. Prepare the report before claiming its identifier; do not hold a timestamp claim while doing the analysis below.
+
+2. Read the most recent Reviews, if any, to see what has changed (`ls -t _Axis/Reviews/ | head -3`). Reports written before Version 2.01 live in `_Axis/Status/` with Subject `Status: {topic}`; they are Reviews under their old name. On the first Review in a project that still has that folder, move its reports unchanged (same filenames, same bytes) into `_Axis/Reviews/`, create `_Axis/Reviews/` with its `.gitkeep` if absent, remove the then-empty `_Axis/Status/`, and say so in the Event; moving a WORM record never edits it.
+
+3. Build the Recent Developments list - what has actually changed since the previous Review. The window is that report's timestamp (from item 2); if there is no previous report, use the last 14 days:
+	- a. Commits since then, if the project uses git and you have a shell: `git log --since={timestamp} --oneline --stat` (see [Practices > GIT]). Summarize what changed, not every file touched.
+	- b. Records written since then: new Notes, Ideas, Follow-Ups, Reminders, Logs, Snapshots, Cross-Examinations, and Audit reports, whether still live or archived. Filenames are timestamps, so no body needs reading to place a record in time; deduplicate identical live/archive identities.
+	- c. Wiki activity since then: the `## [date]` entries in `_Axis/Wiki/Library-Activity.md`, plus any new report sections in `_Axis/Wiki/Library-Status.md`.
+	- d. Report developments, not inventory. Group what you find into events a reader would recognise ("Issue 01 accepted after Cross-Examination", "outreach moved from 24 to 31"), and say plainly when nothing of consequence happened.
+	- e. Separately collect live or archived Log Subjects beginning `Capability downgrade:` from the same window, without duplicating identical live/archive identities. For the five most recent, extract `feature`, `missing-capability`, `behavior-used`, `work-skipped`, and `user-impact`; mark any missing field as an incomplete downgrade record. An absent local endpoint without requested Local Subagent work is neutral, not a downgrade.
+
+4. Build the Deliverable coverage table (see [Practices > Tasks > Deliverable Coverage]):
+	- a. Read the **Deliverables** and **Criteria** sections of `_Axis/PROJECT.md`. If either still holds `{{` placeholders, skip to item 5 and say in the report that the project is not set up yet.
+	- b. For each Deliverable, list the tasks in `_Axis/TASKS.md` whose `delivers:` field names it, with their Status.
+	- c. For each of those tasks, follow its `[Details...]` link, which may resolve to live or archived Task storage, and read `## Produced` to get the paths of the work products it produced.
+	- d. Mark each Deliverable **Delivered** (every task naming it is Completed and at least one path is recorded), **In progress** (some task naming it is Active or Blocked), or **Unclaimed** (no task names it).
+	- e. For each Delivered item, say whether the Criteria have actually been evaluated against it. An unevaluated Deliverable is not done - do not report it as done.
+
+5. Compose a new Review:
+	- Begin the body with a brief synopsis: 2-3 plain sentences (roughly 50 words) that stand alone as the report's opening paragraph. The Dashboard's Status card displays exactly this paragraph, so keep it self-contained and card-sized.
+	- Tailor it to the needs of the project (shape and format at your discretion).
+	- Quick, scannable, one page when printed; lead with what User needs to know first.
+	- Prefer prose or tight bullets; do not pad.
+	- Cite specific Tasks, Snapshots, or Logs by path.
+	- Put a `## Recent Developments` section built from item 3 directly after the synopsis - it is the first thing a returning reader looks for.
+	- Put a `## Follow-Ups` section immediately after Recent Developments. Read [Practices > Followups], list every open item in queue order with its due state and owning path, and report queue health: malformed state, duplicate asks, or missing `blocks:` targets. Say `None open.` when healthy and empty.
+	- Put a `## Reminders` section immediately after Follow-Ups. Read [Practices > Reminders], obtain trustworthy UTC, and report overdue/due counts, the nearest upcoming items, and malformed/time/target health without duplicating their bodies. Say `None open.` when healthy and empty; say due state is unverified when time is not trustworthy.
+	- Put a `## Portability` section after Reminders. Read [Practices > Portability], `_Axis/ENVIRONMENT.md`, and the latest Continuity block; report `Ready`, `Degraded`, or `Unverified`, Storage Policy/profile, infrastructure health, bounded undeclared-signal categories, and only material findings. Under a compact `Infrastructure to re-establish` subheading, list each declared required absent item and each source-present item now absent/unverified with its logical name, status, fallback, and safe setup reference; say `None identified.` when healthy. Never expose secret names/values, accounts, paths, or scheduler job IDs.
+	- Put a `## Capability Downgrades` section immediately after Portability. Summarize the recent Events collected in item 3e, including their User impact and Log paths; say `None recorded in this reporting window.` when there are none.
+	- Include the Deliverable coverage table, and call out anything Unclaimed.
+	- When the Plan or Tasks link Initiatives, read their relevant sections under [Practices > Initiatives] and include a compact Initiatives summary: outcome, phase, status, material blocker and next decision. Check membership links; do not infer outcome completion from Task counts. An absent/empty Initiative document with no references is normal.
+	- Consider covering: brief project description; current objectives; work in progress; challenges, risks, open questions; on-track assessment; recommendations; health-checks.
+
+6. Run the health-checks that apply:
+	- a. **Tasks current?** Every Active task has a valid exact `updated:` within the last 7 days; every Blocked task has a valid reason. `Unknown` is review-needed, never treated as fresh or stale.
+	- b. **Stale locks?** No stale `*.lock/` directories.
+	- c. **Wiki healthy?** `_Axis/Wiki/Library-Index.md` current; no orphaned pages; all contradictions flagged (not dropped or auto-resolved).
+	- d. **Setup complete?** `_Axis/PROJECT.md` contains no `{{` placeholders.
+	- e. **Deliverables claimed?** Every Deliverable in `_Axis/PROJECT.md` is named by at least one task's `delivers:` field; every Completed task with a `delivers:` value has a `## Produced` section in its detail file.
+	- f. **Follow-Ups healthy?** Every live Follow-Up is open and well-shaped, every `blocks:` target exists, every terminal Follow-Up is archived, and every User-blocked Task that needs a specific User action has exactly one matching open Follow-Up.
+	- g. **Reminders healthy?** Every live Reminder is open and well-shaped, due/update times are coherent, every target/reopen reference resolves, and every terminal Reminder is archived.
+	- h. **Portability current?** The latest Snapshot contains one valid Continuity block, every infrastructure declaration has a current exact status, bounded discovery ran, and no unresolved storage-policy/replica, path, case/NFC, conflict-copy, link, or text-normalization finding is hidden.
+
+7. Mint and claim the project-unique identifier per [Practices > Timestamps], then exclusively save and read back the prepared report to `_Axis/Reviews/{timestamp}.md` per the **Index-Detail Pattern:** Line 1 `Review: {short topic}` (≤ 80 chars); Line 2 blank; Lines 3+ body.
+
+8. External Agents skip README mutation and write a Request for Main to refresh it when needed. Main alone, when `project-ready` is valid, follows `_Axis/Resources/Refresh-Project-README.md` so its bounded summary can cite the new report. Preserve User-authored README content; a refresh failure does not alter the WORM Review.
+
+9. Log an Event that includes the path to the new report and the Project README refresh result (or `deferred to Main` for an External).
+
+10. Present to User: a clickable link to the report plus a short summary. STOP.

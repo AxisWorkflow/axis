@@ -10,13 +10,13 @@
   and Agent Activity. A conditional Wiki card follows when data exists.
   Another thin divider leads to the full-width Plan card (with the ^plan
   diagram rendered inline when possible), followed directly by full-width
-  Tasks and an always-visible full-width Status Report card. Metrics sit in the header;
+  Tasks and an always-visible full-width Review card. Metrics sit in the header;
   the fixed footer carries the refresh timestamp and Reload control.
 
   The Dashboard is the LIVE view of the project and it always refreshes on its
   own; there is no static or snapshot mode and no way to turn refreshing off.
-  The static, portable, shareable view of a project is a Status Report - run
-  `^status` for one. That split is deliberate: see [Practices > Dashboard].
+  The static views are `^status web` (a quick-look page) and a Review
+  (`^review`, a dated report). That split is deliberate: see [Practices > Dashboard].
 
   How to launch:
   - Best: ask your Agent to run the `^dashboard` command.
@@ -25,7 +25,7 @@
     then open  http://127.0.0.1:8000/_Axis/Dashboard/
   - A web server is REQUIRED - live file reads and directory listings do not
     work from a `file://` page. Without one there is no Dashboard; use
-    `^status` instead.
+    `^status web` or `^review` instead.
   - Never substitute a general-purpose project-root server. The bundled server
     is loopback-only, read-only, and exposes only the Dashboard read contract.
   - Mermaid diagrams use the pinned same-origin bundle shipped beside this
@@ -39,32 +39,33 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Axis Dashboard</title>
+<link rel="stylesheet" href="../Branding/css/axis-brand.css">
+<link rel="icon" href="../Branding/favicon/favicon.svg" type="image/svg+xml">
 <style>
-  :root { --bg:#f6f5f2; --card:#ffffff; --ink:#1f1e1c; --muted:#6d6a63; --line:#e3e0d8; --rule:#cbc6bc; --accent:#7a5c3e; --chip:#efece5; --warn:#a04d10; --danger:#a65f5f; --ok:#1d6b35;
-          --band:#26231f; --band-ink:#f2efe9; --band-muted:#b3ac9f; --band-line:#4a453d; --band-warn:#f0a45c; --foot:#403d39; --foot-shadow:rgba(0,0,0,.18); --alert-code-bg:rgba(255,255,255,.14);
-          --findings-bg:#f7ebe6; --findings-line:#ead2c8;
-          --config-bg:#f3f0e8; --config-line:#e2dbc9; --mindset-bg:#edf1ee; --mindset-line:#d7e0d9; --agents-bg:#eef0f4; --agents-line:#d9dde6;
-          --plan-bg:#edf2f5; --plan-line:#d6e0e6; --status-bg:#f7ebe3; --status-line:#ecd5c3; --tasks-bg:#eff4eb; --tasks-line:#d9e4d0;
-          --ideas-bg:#f7f0de; --ideas-line:#e9dcba; --notes-bg:#eaf1f6; --notes-line:#d4e2ec; --logs-bg:#f1ecf6; --logs-line:#ddd1e8;
-          --reminders-bg:#eaf3ed; --reminders-line:#d1e4d7; --followups-bg:#f5edf3; --followups-line:#e5d5df; --agent-activity-bg:#f3eee7; --agent-activity-line:#e2d8c9; }
+  /* Brand: every colour comes from the Axis brand package (../Branding/css/axis-brand.css, loaded above).
+     Role tokens follow the operating system's light or dark theme. The hex values after each comma are
+     the same brand values, used only when the package is absent (a project updated from 2.00). */
+  :root { --bg:var(--axis-bg,#FFFFFF); --card:var(--axis-raised,#FFFFFF); --ink:var(--axis-fg,#0B1220); --muted:var(--axis-fg-muted,#5B6472);
+          --line:var(--axis-border,#D5DCE8); --rule:var(--axis-border,#D5DCE8); --accent:var(--axis-link,#2F56C9); --chip:var(--axis-band,#EEF2F9);
+          --warn:var(--axis-fg,#0B1220); --danger:var(--axis-fg,#0B1220); --ok:var(--axis-link,#2F56C9);
+          --band:var(--axis-ink,#0B1220); --band-ink:var(--axis-navy-text,#DCE4F5); --band-muted:var(--axis-navy-muted,#B7C1D3); --band-line:var(--axis-navy-line,#27324A);
+          --band-warn:var(--axis-accent-dark,#8FA8F5); --foot:var(--axis-ink,#0B1220); --foot-shadow:rgba(11,18,32,.18); --alert-code-bg:rgba(255,255,255,.14);
+          --tint:var(--axis-band,#EEF2F9); --tint-line:var(--axis-border,#D5DCE8); }
   @media (prefers-color-scheme: dark) {
-    :root { --bg:#191817; --card:#22211f; --ink:#eceae5; --muted:#a09c93; --line:#37342f; --rule:#4a4640; --accent:#c8a87e; --chip:#2c2a26; --warn:#e0904a; --danger:#d08383; --ok:#6fb98a;
-            --band:#100f0e; --band-ink:#eceae5; --band-muted:#8f8b82; --band-line:#3a362f; --band-warn:#e0904a; --foot:#2e2c29; --foot-shadow:rgba(0,0,0,.4); --alert-code-bg:rgba(255,255,255,.12);
-            --findings-bg:#2a201d; --findings-line:#47332d;
-            --config-bg:#27241d; --config-line:#413b2e; --mindset-bg:#202621; --mindset-line:#334036; --agents-bg:#202329; --agents-line:#343a45;
-            --plan-bg:#1e2529; --plan-line:#303e46; --status-bg:#2a1e17; --status-line:#463122; --tasks-bg:#1e241d; --tasks-line:#31402f;
-            --ideas-bg:#282213; --ideas-line:#43371d; --notes-bg:#1b2329; --notes-line:#2c3d49; --logs-bg:#231e28; --logs-line:#3a3044;
-            --reminders-bg:#1c2620; --reminders-line:#2d4435; --followups-bg:#271f25; --followups-line:#423442; --agent-activity-bg:#262220; --agent-activity-line:#413a31; }
+    :root:not([data-axis-theme="light"]) { --bg:var(--axis-bg,#0B1220); --card:var(--axis-raised,#141D2E); --ink:var(--axis-fg,#DCE4F5); --muted:var(--axis-fg-muted,#B7C1D3);
+            --line:var(--axis-border,#27324A); --rule:var(--axis-border,#27324A); --accent:var(--axis-link,#8FA8F5); --chip:var(--axis-band,#141D2E);
+            --warn:var(--axis-fg,#DCE4F5); --danger:var(--axis-fg,#DCE4F5); --ok:var(--axis-link,#8FA8F5); --band:#060A12; --foot:#060A12; --foot-shadow:rgba(0,0,0,.4);
+            --tint:var(--axis-band,#141D2E); --tint-line:var(--axis-border,#27324A); }
   }
   * { box-sizing:border-box; }
   body { margin:0; padding:24px 24px 76px; background:var(--bg); color:var(--ink);
-         font:15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+         font:15px/1.5 var(--axis-font-body, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif); }
   header { display:flex; align-items:center; gap:10px 16px; flex-wrap:wrap;
            background:var(--band); color:var(--band-ink);
            margin:-24px -24px 18px; padding:16px 24px; }
   h1 { font-size:22px; font-weight:600; margin:0; color:var(--band-ink); }
   #projname { font-size:26px; font-weight:600; margin-left:10px; }
-  h2 { font-size:13px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin:0 0 10px; }
+  h2 { font-family:var(--axis-font-mono, ui-monospace, Menlo, monospace); font-size:12px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin:0 0 10px; }
   .card > h2 { font-weight:650; }
   h3 { font-weight:600; }
   b, strong { font-weight:500; }
@@ -118,27 +119,17 @@
   #comments .comments-list li { margin:2px 0; }
   #comments .status-important { color:var(--danger); font-weight:550; }
   #wiki .cols { align-items:start; }
+  #comments, #config, #mindset, #agents { background:var(--tint); border-color:var(--tint-line); }
+  .Blocked, .warnchip, .agechip, #comments .status-important { font-weight:600; }
+  #brandlogo { height:28px; margin-right:6px; }
   .spark { display:flex; align-items:flex-end; gap:2px; height:26px; margin:2px 0 4px; }
   .sparkbar { flex:1 1 0; min-width:3px; background:var(--accent); opacity:.6; border-radius:2px 2px 0 0; }
   .sparkbar.empty { opacity:.18; }
-  #comments { background:var(--findings-bg); border-color:var(--findings-line); }
-  #config { background:var(--config-bg); border-color:var(--config-line); }
-  #mindset { background:var(--mindset-bg); border-color:var(--mindset-line); }
-  #agents { background:var(--agents-bg); border-color:var(--agents-line); }
-  #plan { background:var(--plan-bg); border-color:var(--plan-line); }
   .task-controls { display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; margin-bottom:10px; }
   .task-controls select, .task-controls button { font:inherit; font-size:13px; color:var(--ink); background:var(--card); border:1px solid var(--line); border-radius:6px; padding:6px 10px; }
   .task-controls button:disabled { opacity:.5; }
   .task-controls select:focus-visible, .task-controls button:focus-visible { outline:3px solid var(--band-warn); outline-offset:2px; }
   #taskExtent { font-size:12.5px; }
-  #tasks { background:var(--tasks-bg); border-color:var(--tasks-line); }
-  #ideas { background:var(--ideas-bg); border-color:var(--ideas-line); }
-  #notes { background:var(--notes-bg); border-color:var(--notes-line); }
-  #logs { background:var(--logs-bg); border-color:var(--logs-line); }
-  #reminders { background:var(--reminders-bg); border-color:var(--reminders-line); }
-  #followups { background:var(--followups-bg); border-color:var(--followups-line); }
-  #agent-activity { background:var(--agent-activity-bg); border-color:var(--agent-activity-line); }
-  #status { background:var(--status-bg); border-color:var(--status-line); }
   @media (max-width:1050px){
     #config { grid-column:span 7; }
     #mindset { grid-column:span 5; }
@@ -176,6 +167,7 @@
 </head>
 <body>
 <header>
+  <img id="brandlogo" src="../Branding/svg/logo/logo-reversed.svg" alt="" onerror="this.remove()">
   <h1>Axis Dashboard<span id="projname"></span></h1>
   <div id="metrics">loading…</div>
 </header>
@@ -211,7 +203,7 @@
     </div>
     <div class="muted" id="taskCounts"></div><div class="scrollbody" id="taskRows">loading…</div>
   </section>
-  <section class="card wide listcard" id="status"><h2>Status Report</h2><div class="muted">loading…</div></section>
+  <section class="card wide listcard" id="status"><h2>Review</h2><div class="muted">loading…</div></section>
 </div>
 
 <footer>
@@ -227,7 +219,7 @@
 const F = { changelog:"../CHANGELOG.md", project:"../PROJECT.md", settings:"../SETTINGS.md", plan:"../PLAN.md", tasks:"../TASKS.md" };
 const FOLLOWUPS_DIR = "../Followups/";
 const REMINDERS_DIR = "../Reminders/";
-const DIRS = { Agents:"../Agents/", Tasks:"../Tasks/", Ideas:"../Ideas/", Notes:"../Notes/", Logs:"../Logs/", Status:"../Status/",
+const DIRS = { Agents:"../Agents/", Tasks:"../Tasks/", Ideas:"../Ideas/", Notes:"../Notes/", Logs:"../Logs/", Reviews:"../Reviews/",
                Snapshots:"../Snapshots/", CX:"../CX/", Audit:"../Audit/" };   // metrics render in this order - keep the card order first
 /* BEGIN GENERATED: flag-domains */
 const FLAG_DOMAINS = {
@@ -249,7 +241,7 @@ const PROFILES = {
 };
 
 const NEEDS_SERVER = "The Dashboard is live and needs a running web server - ask your Agent for <code>^dashboard</code>. " +
-                      "For a view that works without one, run <code>^status</code>.";
+                      "For a view that works without one, run <code>^status</code> (add <code>web</code> for a page).";
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const el = id => document.getElementById(id);
 async function read(url){
@@ -263,6 +255,15 @@ async function listDir(url){                       // parse the filtered Axis se
   const html = await read(url); const out = [];
   for (const m of html.matchAll(/href="([^"?]+\.md)"/g)) out.push(decodeURIComponent(m[1]).split("/").pop());
   return [...new Set(out)];
+}
+async function listReviews(){                     // Reviews, plus reports kept in the pre-2.01 Status/ folder; newest first, as paths
+  const out = []; let ok = false, err = null;
+  for (const d of [DIRS.Reviews, "../Status/"]) {
+    try { for (const f of await listDir(d)) out.push(d + f); ok = true; }
+    catch(e){ if (!e || e.status !== 404) err = e; }
+  }
+  if (!ok && err) throw err;                       // both folders missing is simply "no Review yet"
+  return out.sort((a,b) => b.split("/").pop().localeCompare(a.split("/").pop()));
 }
 async function listAgentEntries(){                 // one listing carries Markers and their kill tombstones
   const html = await read(DIRS.Agents); const out = [];
@@ -627,42 +628,42 @@ async function renderMindset(partial){             // every Mindset Setting in a
     (items.length ? `<dl class="detail-list">` + items.join("") + `</dl>` : `<div class="muted">None</div>`);
 }
 
-async function renderStatus(partial){              // newest Status Report distilled to its opening synopsis
+async function renderStatus(partial){              // newest Review distilled to its opening synopsis
   let files = [];
-  try { files = (await listDir(DIRS.Status)).sort().reverse(); }
-  catch(e){ markPartial(partial, "Status Report"); el("status").innerHTML = "<h2>Status Report</h2><div class='muted'>Could not read Status Reports.</div>"; return; }
+  try { files = await listReviews(); }
+  catch(e){ markPartial(partial, "Review"); el("status").innerHTML = "<h2>Review</h2><div class='muted'>Could not read Reviews.</div>"; return; }
   if (!files.length) {
-    el("status").innerHTML = "<h2>Status Report</h2><div class='muted'>No Status Report yet - use <code>^status</code>.</div>";
+    el("status").innerHTML = "<h2>Review</h2><div class='muted'>No Review yet - use <code>^review</code>.</div>";
     return;
   }
   let html = "";
   try {
-    const md = await read(DIRS.Status + files[0]);
+    const md = await read(files[0]);
     const lines = md.split("\n");
-    const topic = lines[0].replace(/^#*\s*Status:\s*/i, "").trim() || "Status Report";
+    const topic = lines[0].replace(/^#*\s*(?:Review|Status):\s*/i, "").trim() || "Review";
     const paras = lines.slice(2).join("\n").split(/\n\s*\n/).map(s => s.trim()).filter(s => s && !/^#/.test(s));
     let syn = (paras[0] || "").replace(/\*\*/g, "");
     if (syn.length > 420) syn = syn.slice(0, 420) + "…";
-    const age = await recordAgeHours(files[0], DIRS.Status + files[0], partial, "Status Report");
+    const age = await recordAgeHours(files[0].split("/").pop(), files[0], partial, "Review");
     const when = age === null ? "" : age < 1 ? "under an hour ago" : age < 48 ? Math.round(age) + "h ago" : Math.round(age/24) + "d ago";
     html = `<div class="kv"><b>${esc(topic)}</b>${when ? ` <span class="muted">· ${esc(when)}</span>` : ""}</div>` +
            (syn ? `<div>${esc(syn)}</div>` : `<div class="muted">No synopsis in the latest report.</div>`);
-  } catch(e){ markPartial(partial, "Status Report"); el("status").innerHTML = "<h2>Status Report</h2><div class='muted'>Could not read the newest Status Report.</div>"; return; }
-  el("status").innerHTML = `<h2>Status Report</h2><div class="scrollbody">` + html + `</div>`;
+  } catch(e){ markPartial(partial, "Review"); el("status").innerHTML = "<h2>Review</h2><div class='muted'>Could not read the newest Review.</div>"; return; }
+  el("status").innerHTML = `<h2>Review</h2><div class="scrollbody">` + html + `</div>`;
 }
 
 async function collectOperationalNotices(partial){ // actionable notices for the Status assessment
   const notices = [];
   let vals = {};
   try { vals = parseSettings(await read(F.settings)); } catch(e){ markPartial(partial, "Status"); }
-  try {                                            // stale Markers (> 1 hour)
+  try {                                            // stale Markers (> 24 hours; 1-24 h may be an idle session)
     const names = await listAgentEntries();
     const kills = new Set(names.filter(n => n.endsWith(".kill")));
     const files = names.filter(n => n.endsWith(".md") && !kills.has(n.replace(/\.md$/, ".kill")));
     let stale = 0;
     for (const f of files.slice(0, 20)) {
       const age = await fileAgeHours(DIRS.Agents + f, partial, "Status");
-      if (age !== null && age > 1) stale++;
+      if (age !== null && age > 24) stale++;              // 1-24 h may be an idle session that will resume (2.01 lease)
     }
     if (stale) notices.push({html:`${stale} stale Marker${stale>1?"s":""} in _Axis/Agents/ - <code>^refresh</code> sweeps them`, important:false});
   } catch(e){ markPartial(partial, "Status"); }
@@ -675,14 +676,14 @@ async function collectOperationalNotices(partial){ // actionable notices for the
               const age = await fileAgeHours(base + href + "/", partial, "Status");
               if (age !== null && age > LOCK_TIMEOUT_HOURS)
                 locks.push(decodeURIComponent(href).split("/").pop() + ".lock/");
-            } } catch(e){ markPartial(partial, "Status"); }
+            } } catch(e){ markUnlessMissing(partial, "Status", e); }   // Reviews/ is absent until the first ^review
     }
     const u = [...new Set(locks)];
     if (u.length) notices.push({html:`A stale write lock may be blocking work: ${esc(u.slice(0,3).join(", "))}${u.length>3?" …":""}.`, important:false});
   } catch(e){ markPartial(partial, "Status"); }
   try {                                            // requests waiting in the queue - normally empty; a boot or served turn drains it
     const nreq = (await listDir("../Requests/")).length;
-    if (nreq) notices.push({html:`${nreq} request${nreq>1?"s are":" is"} awaiting a Main Agent - say hello in a session to triage.`, important:false});
+    if (nreq) notices.push({html:`${nreq} request${nreq>1?"s are":" is"} awaiting a Main Agent - type <code>Start Axis</code> in a session to triage.`, important:false});
   } catch(e){ markPartial(partial, "Status"); }
   try {                                            // Notes over the Max Notes limit
     const max = parseInt(vals["Max Notes"], 10);
@@ -777,12 +778,12 @@ async function renderAgentActivity(partial){       // Agent-owned due work, rank
       else if (age !== null && age > 48) rows.push({ rank: age, warn: true,
         html: `Last Snapshot ${Math.round(age/24)}d ago - <code>^save</code>` });
     } catch(e){ markPartial(partial, "Agent Activity"); }
-    try {                                           // Status Report cadence (7-day window)
-      const sf = (await listDir(DIRS.Status)).sort().reverse()[0];
-      const age = sf ? await recordAgeHours(sf, DIRS.Status + sf, partial, "Agent Activity") : null;
-      if (!sf) rows.push({ rank: 800, warn: true, html: `No Status Report yet - <code>^status</code>` });
+    try {                                           // Review cadence (7-day window)
+      const sf = (await listReviews())[0];
+      const age = sf ? await recordAgeHours(sf.split("/").pop(), sf, partial, "Agent Activity") : null;
+      if (!sf) rows.push({ rank: 800, warn: true, html: `No Review yet - <code>^review</code>` });
       else if (age !== null && age > 168) rows.push({ rank: age, warn: true,
-        html: `Last Status Report ${Math.round(age/24)}d ago - <code>^status</code>` });
+        html: `Last Review ${Math.round(age/24)}d ago - <code>^review</code>` });
     } catch(e){ markPartial(partial, "Agent Activity"); }
   }
   try {                                             // Ideas that have never been reviewed
@@ -1084,15 +1085,16 @@ async function renderMetrics(partial){             // count line in the header, 
   let anyFail = false;
   let anyLogs = false;                             // same activity gate as Next Actions: a brand-new project is not overdue
   try { anyLogs = (await listDir(DIRS.Logs)).length > 0; } catch(e){ markPartial(partial, "Header Metrics"); }
-  const CADENCE = { Snapshots: 48, Status: 168 };  // hours - the documented 48-hour Snapshot and 7-day Status cadences
+  const CADENCE = { Snapshots: 48, Reviews: 168 }; // hours - the documented 48-hour Snapshot and 7-day Review cadences
   for (const [label,dir] of Object.entries(DIRS)) {
-    const displayLabel = label === "Status" ? "Status Reports" : label;
+    const displayLabel = label;
     try {
-      const files = await listDir(dir); const n = files.length;
+      const paths = label === "Reviews" ? await listReviews() : null;
+      const files = paths ? paths.map(x => x.split("/").pop()) : await listDir(dir); const n = files.length;
       let overdue = false;
       if (anyLogs && CADENCE[label]) {
         const newest = files.slice().sort().reverse()[0];
-        const age = newest ? await recordAgeHours(newest, dir + newest, partial, "Header Metrics") : null;
+        const age = newest ? await recordAgeHours(newest, paths ? paths.find(x => x.endsWith("/" + newest)) : dir + newest, partial, "Header Metrics") : null;
         overdue = !newest || (age !== null && age > CADENCE[label]);
       }
       parts.push(overdue ? `<span style="color:var(--band-warn)">${n} ${esc(displayLabel)}</span>` : `${n} ${esc(displayLabel)}`);
@@ -1106,8 +1108,8 @@ async function renderMetrics(partial){             // count line in the header, 
       b.style.display = "block";
       b.innerHTML = "This page could not read the project. The Dashboard is the live view and needs the bundled server: " +
                     "ask your Agent to run <code>^dashboard</code>, or run <code>python3 _Axis/Dashboard/server.py --port 8000</code> from the project root " +
-                    "and open <code>http://127.0.0.1:8000/_Axis/Dashboard/</code>. If you cannot run the server, run <code>^status</code> " +
-                    "instead - a Status Report is the static view and needs nothing to read it.";
+                    "and open <code>http://127.0.0.1:8000/_Axis/Dashboard/</code>. If you cannot run the server, run <code>^status</code> web " +
+                    "instead - it writes a static page that needs nothing to read it.";
     }
   }
 }
@@ -1118,7 +1120,7 @@ function banner(){
     b.innerHTML = "Opened as a local file, so this page can read nothing - browsers block file reads from <code>file://</code>. " +
                   "The Dashboard is always live and needs the bundled server: ask your Agent to run <code>^dashboard</code>, or run " +
                   "<code>python3 _Axis/Dashboard/server.py --port 8000</code> from the project root and open <code>http://127.0.0.1:8000/_Axis/Dashboard/</code>. " +
-                  "If you cannot run the server, run <code>^status</code> instead - a Status Report is the static view.";
+                  "If you cannot run the server, run <code>^status</code> web instead - it writes a static page.";
   }
 }
 
@@ -1158,7 +1160,7 @@ async function loadAll(manual=false){
     }
   }
 }
-window._axisTimer = setInterval(loadAll, 30000);   // always live - a Dashboard that is not refreshing is a Status Report
+window._axisTimer = setInterval(loadAll, 30000);   // always live - a Dashboard that is not refreshing is a Review
 loadAll();
 </script>
 </body>
