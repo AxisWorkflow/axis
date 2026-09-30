@@ -40,6 +40,9 @@ def parse(b):
         for k,v in items:require(k not in out,'duplicate JSON field');out[k]=v
         return out
     return json.loads(b,object_pairs_hook=unique)
+def finder(p):
+    # macOS Finder writes .DS_Store into any folder it shows; it is never update evidence (2.03).
+    return p.name=='.DS_Store' and not p.is_symlink() and p.is_file()
 def safe(root,name):
     require(isinstance(name,str) and name and not name.startswith('/') and '\\' not in name and all(x not in ('','.','..') for x in name.split('/')),'unsafe path')
     p=root
@@ -216,7 +219,7 @@ def evidence(root,E,s,p):
                 if ready or q.exists():
                     data=read(q);require(digest(data)==expected['sha256'] and len(data)==expected['bytes'],'durable '+side+' evidence changed')
         allowed.update((f'{i:04d}-intent.json',f'{i:04d}-result.json'))
-    for q in E.iterdir():require(q.name in allowed and safe(E,q.name).is_file(),'unknown transaction evidence')
+    for q in E.iterdir():require(finder(q) or q.name in allowed and safe(E,q.name).is_file(),'unknown transaction evidence')
 
 def barrier(root,E,s,create=False):
     d=safe(root,'_Axis/Flags/starting.lock');flag=safe(root,'_Axis/Flags/starting');owner=encode({'kind':'update','transaction':s['transaction'],'session':s['session'],'token':s['token']})
@@ -305,13 +308,71 @@ def state(root,E,s,p):
     if (E/'barrier-intent.json').exists() or list(E.glob('*-intent.json')):return 'interrupted'
     return 'prepared' if (E/'prepared.json').exists() else 'preparing'
 
+# 2.03: compaction. Once a newer release is adopted, an older consumed transaction keeps only its small receipts and
+# authorization copy; compacted.json lists every removed file with its SHA-256 and bytes and pins that list's digest.
+# Every transaction of the newest adopted release (both steps of a two-step update) stays whole for a manual revert.
+KEPT=('authorization.md','complete.json','ready.json','released.json','consumed.json','reconciliation-start.json')
+def compacted(E):
+    c=parse(read(safe(E,'compacted.json')))
+    require(set(c)=={'schema','transaction','session','compacted','plan_sha256','from_version','to_version','target_commit','authorization_sha256','kept','removed','removed_sha256'} and c['schema']==1 and c['transaction']==E.name and re.fullmatch(ID,c['session']),'invalid compaction receipt')
+    datetime.datetime.fromisoformat(c['compacted']);version(c['from_version']);version(c['to_version'])
+    require(isinstance(c['removed'],list) and digest(encode(c['removed']))==c['removed_sha256'],'compaction manifest changed')
+    removed={}
+    for v in c['removed']:
+        require(isinstance(v,dict) and set(v)=={'name','sha256','bytes'} and isinstance(v['name'],str) and '/' not in v['name'] and v['name'] not in KEPT+('compacted.json',) and re.fullmatch('[0-9a-f]{64}',str(v['sha256'])) and type(v['bytes']) is int,'invalid compaction manifest');removed[v['name']]=v
+    require(isinstance(c['kept'],list) and set(c['kept'])<=set(KEPT) and {'authorization.md','ready.json','released.json','consumed.json'}<=set(c['kept']),'invalid kept receipts')
+    for q in E.iterdir():
+        if finder(q) or q.name=='compacted.json' or q.name in c['kept']:continue
+        # A leftover of an interrupted compaction is allowed only with its recorded exact bytes; compact finishes it.
+        v=removed.get(q.name);require(v is not None,'unknown transaction evidence');data=read(safe(E,q.name));require(digest(data)==v['sha256'] and len(data)==v['bytes'],'compacted evidence changed')
+    for n in c['kept']:read(safe(E,n))
+    r=parse(read(safe(E,'consumed.json')));require(r['transaction']==E.name and r['plan_sha256']==c['plan_sha256'] and r['target_commit']==c['target_commit'],'compacted consumption receipt differs')
+    require(parse(read(safe(E,'ready.json')))['plan_sha256']==c['plan_sha256'] and parse(read(safe(E,'released.json')))=={'plan_sha256':c['plan_sha256'],'outcome':'admission released'},'compacted release receipts differ')
+    require(digest(read(safe(E,'authorization.md')))==c['authorization_sha256'],'compacted authorization changed')
+    return c
+
+def history(root):
+    """Consumed transactions as (ID, to_version, compacted), oldest first; other entries are left to inspect()."""
+    out=[];U=safe(root,'_Axis/Updates')
+    for E in sorted(U.iterdir()) if U.exists() else []:
+        if not E.is_dir() or E.is_symlink() or not re.fullmatch(ID,E.name) or not (E/'consumed.json').exists():continue
+        if (E/'compacted.json').exists():out.append((E.name,compacted(E)['to_version'],True))
+        else:
+            _,s,p=load(root,E.name);out.append((E.name,p['to_version'],False))
+    return out
+
+def compact(root,sid,tx):
+    require(re.fullmatch(ID,tx),'invalid transaction ID');E=safe(root,'_Axis/Updates/'+tx);require(E.is_dir(),'unknown transaction')
+    require(inspect(root)['state']=='none','an unconsumed update exists; compact only when every update is closed')
+    done=history(root);require(done,'no consumed transaction');newest=done[-1][1]
+    mine=[h for h in done if h[0]==tx];require(mine,'only a consumed transaction can be compacted')
+    require(mine[0][1]!=newest,'the newest adopted release stays whole')
+    if (E/'compacted.json').exists():
+        c=compacted(E);left=[v['name'] for v in c['removed'] if (E/v['name']).exists()]
+        if not left:return None
+    else:
+        E,s,p=load(root,tx);require(state(root,E,s,p)=='closed' and (E/'consumed.json').exists(),'only a consumed transaction can be compacted')
+        kept=sorted(n for n in KEPT if (E/n).exists())
+        removed=[{'name':q.name,'sha256':digest(read(safe(E,q.name))),'bytes':len(read(safe(E,q.name)))} for q in sorted(E.iterdir()) if q.name not in kept and not finder(q)]
+        c={'schema':1,'transaction':tx,'session':sid,'compacted':datetime.datetime.now(datetime.timezone.utc).isoformat(),'plan_sha256':s['plan_sha256'],'from_version':p['from_version'],'to_version':p['to_version'],'target_commit':p['source']['commit'],'authorization_sha256':digest(read(safe(E,'authorization.md'))),'kept':kept,'removed':removed,'removed_sha256':digest(encode(removed))}
+        once(E/'compacted.json',c);left=[v['name'] for v in removed]
+    for n in left:safe(E,n).unlink()
+    syncdir(E);compacted(E);require(not any((E/v['name']).exists() for v in c['removed']),'compaction incomplete')
+    return {'transaction':tx,'removed':len(c['removed']),'bytes':sum(v['bytes'] for v in c['removed'])}
+
+def compact_older(root,sid):
+    done=history(root);newest=done[-1][1] if done else None
+    # Also finishes an interrupted compaction (receipt written, some recorded files still present).
+    return [r for r in (compact(root,sid,tx) for tx,to,packed in done if to!=newest) if r]
+
 def inspect(root):
     U=safe(root,'_Axis/Updates')
     if not U.exists():return {'state':'none','next_action':'ordinary startup'}
     pending=[]
     for E in sorted(U.iterdir()):
-        if E.name in ('.gitkeep','operation.lck'):continue
+        if E.name in ('.gitkeep','operation.lck') or finder(E):continue
         require(E.is_dir() and re.fullmatch(ID,E.name),'unknown update evidence')
+        if (E/'compacted.json').exists():compacted(E);continue
         E,s,p=load(root,E.name);value=state(root,E,s,p)
         if value!='closed':pending.append((E.name,value))
     require(len(pending)<=1,'multiple unconsumed updates')
@@ -327,7 +388,7 @@ def operation(root):
     finally:os.close(fd)
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('action',choices=('classify','prepare','apply','inspect','rollback','release','finish-updater','begin-reconcile','consume'));p.add_argument('--root',required=True);p.add_argument('--plan');p.add_argument('--session');p.add_argument('--transaction');p.add_argument('--token');p.add_argument('--fault');p.add_argument('--reconciliation');a=p.parse_args();root=Path(a.root).absolute();require(root==root.resolve() and root.is_dir(),'canonical root required')
+    p=argparse.ArgumentParser();p.add_argument('action',choices=('classify','prepare','apply','inspect','rollback','release','finish-updater','begin-reconcile','consume','compact'));p.add_argument('--root',required=True);p.add_argument('--plan');p.add_argument('--session');p.add_argument('--transaction');p.add_argument('--token');p.add_argument('--fault');p.add_argument('--reconciliation');a=p.parse_args();root=Path(a.root).absolute();require(root==root.resolve() and root.is_dir(),'canonical root required')
     def localarg(name):
         q=Path(name).absolute();require(q.is_relative_to(root),'input outside project');return safe(root,q.relative_to(root).as_posix())
     if a.action in ('classify','prepare'):plan=parse(read(localarg(a.plan)))
@@ -342,6 +403,7 @@ def main():
                 if v['before'] is not None:once(E/f'before-{i:04d}.bin',read(safe(root,v['path'])))
                 if v['after'] is not None:once(E/f'after-{i:04d}.bin',read(safe(root,v['staged'])))
             require(live(root,plan,'before') and preserved(root,plan),'state changed while preparing');once(E/'prepared.json',{'plan_sha256':s['plan_sha256']});print(json.dumps({'transaction':a.transaction,'token':token,'state':'prepared','engine':str(E/'engine.py')}));return
+        if a.action=='compact':r=compact(root,a.session,a.transaction);print(json.dumps({'state':'compacted',**(r or {'already_compacted':True})}));return
         E,s,plan=load(root,a.transaction);journal(E,s,plan)
         if a.action not in ('begin-reconcile','consume'):
             require(s['session']==a.session and s['token']==a.token,'not the transaction owner');require(digest(Path(__file__).read_bytes())==s['engine_sha256'],'use the verified frozen transaction engine')
@@ -403,7 +465,10 @@ def main():
                 require((E/'reconciliation-start.json').exists() and not q.exists(),'archived Follow-Up must be absent from live records');require(isinstance(expected,dict) and set(expected)=={'path','identity'} and expected['path']==rules['archive_to'],'wrong archive destination');q=safe(root,expected['path']);expected=expected['identity']
             require(identity(q)==expected,'reconciliation record changed');text=read(q).decode();require(all(v in text for v in rules['contains']) and not any(v in text for v in rules['absent']),'project reconciliation incomplete')
         if set(plan['preserved'])&set(plan['reconciliation']):require((E/'reconciliation-start.json').exists(),'begin reconciliation before changing preserved records')
-        unrelated=adopted(root,plan,(E/'reconciliation-start.json').exists());fault('before-consumed');once(E/'consumed.json',{'schema':1,'transaction':a.transaction,'session':a.session,'plan_sha256':s['plan_sha256'],'target_commit':plan['source']['commit'],'reconciliation':rec,'unrelated_changes':unrelated,'consumed':datetime.datetime.now(datetime.timezone.utc).isoformat()});fault('after-consumed');print(json.dumps({'state':'consumed','already_consumed':False,'unrelated_changes':unrelated}))
+        unrelated=adopted(root,plan,(E/'reconciliation-start.json').exists());fault('before-consumed');once(E/'consumed.json',{'schema':1,'transaction':a.transaction,'session':a.session,'plan_sha256':s['plan_sha256'],'target_commit':plan['source']['commit'],'reconciliation':rec,'unrelated_changes':unrelated,'consumed':datetime.datetime.now(datetime.timezone.utc).isoformat()});fault('after-consumed')
+        try:packed={'compacted':compact_older(root,a.session)}
+        except (ValueError,OSError,KeyError,TypeError) as e:packed={'compaction_error':str(e)}
+        print(json.dumps({'state':'consumed','already_consumed':False,'unrelated_changes':unrelated,**packed}))
 
 if __name__=='__main__':
     try:main()

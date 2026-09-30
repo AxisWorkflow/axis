@@ -1,6 +1,6 @@
 # Axis Workflow Specification
 > **Purpose:** The technical reference behind the Axis Workflow: how every mechanism works, why it was built that way, what it guarantees, where it stops, and what an extender must not break. Written for deep diagnostics, downstream developers extending Axis, IT and compliance reviewers assessing it before adoption, and contributors. For everyday use, see the [User Manual](/_Axis/USERMANUAL.md).
-> **Version:** 2.02
+> **Version:** 2.03
 
 ## How to Read This Document
 
@@ -1127,7 +1127,7 @@ Live state: one Marker per active Agent (never archived), one activity file per 
 
 ##### `Updates/`
 
-One folder per `^update` transaction (plan, frozen engine, authorization copy, preimages and payloads, intents and results, and receipts such as `complete.json`, `released.json`, `ready.json` and `consumed.json`), kept as history and never rewritten, plus the stable `operation.lck`.
+One folder per `^update` transaction (plan, frozen engine, authorization copy, preimages and payloads, intents and results, and receipts such as `complete.json`, `released.json`, `ready.json` and `consumed.json`), kept as history and never rewritten, plus the stable `operation.lck`. From 2.03, once a newer release is adopted, `consume` compacts each older consumed transaction to its receipts, `authorization.md` and a `compacted.json` manifest of every removed file (SHA-256 and bytes, with a digest of that list); every transaction of the newest adopted release stays whole for a manual revert. This keeps a project from growing by several megabytes and 100 to 250 files with each update.
 
 ##### `Archive/`
 

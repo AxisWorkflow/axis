@@ -5,8 +5,8 @@
 
 ## What it shows
 
-- **Short (default):** Project name and installed version; under a spaced Axis Project Status title between dividers, one block of labelled rows in aligned columns (Project, Path, Version, As of; Tasks active, planned, blocked and done; open Follow-Ups; Reminders; live Agents), with no Git details; the Plan's current direction; Active and Blocked Tasks; open Initiatives; what is waiting on User (Follow-Ups); upcoming Reminders; the newest few Logs; and how long ago the last Snapshot and Review were made. It must fit on one ordinary terminal screen.
-- **Full (`^status deep dive`, or any request for more):** the same, plus more Tasks and Logs, finished Initiatives, recently completed Tasks and record counts - and, for a deep dive, the Agent's own summary of the detail records User asked about.
+- **Short (default):** a spaced `S T A T U S` title with the time between dividers; one block of labelled rows (Project, Path, Model; Tasks active and blocked, Follow-Up, Reminders, Agents, Version), with no Git details; then the sections Summary (the Plan's current direction), Current (Active and Blocked Tasks), Waiting on you (Follow-Ups), Reminders, Recent activity (the newest few Logs and how long ago the last Snapshot and Review were made) and Next decisions (each open Initiative's next decision). It must fit on one ordinary terminal screen.
+- **Full (`^status deep dive`, or any request for more):** the same, plus more Tasks and Logs, the open Initiatives with their phase, recently completed Tasks and record counts - and, for a deep dive, the Agent's own summary of the detail records User asked about.
 
 ## Formats
 

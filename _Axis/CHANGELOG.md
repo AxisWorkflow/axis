@@ -1,7 +1,7 @@
 # Changelog
 > **Purpose:** Record Axis release identity and the structural migrations needed to update an existing project safely.
 
-current-version: 2.02
+current-version: 2.03
 changelog-format: 1
 self-update-baseline: 26.08.19
 
@@ -39,6 +39,36 @@ update-impact: automatic
 ### Verification
 
 - None.
+
+## 2.03
+
+released: 2026-09-30
+
+- A new `^status` layout: a `S T A T U S` title with the time, one block of rows (Project, Path, Model, Tasks, Follow-Up, Reminders, Agents, Version), then Summary, Current, Waiting on you, Reminders, Recent activity and Next decisions.
+- Old update records are compacted after a newer release is adopted, so a project no longer grows by several megabytes with every update; the newest release's records stay whole.
+- A `.DS_Store` file that macOS Finder leaves in the update folder no longer stops work.
+- Brand package 2.0.1 and a User Manual tip on keeping Obsidian fast in a large project.
+
+update-impact: automatic
+
+### Structural Changes
+
+- `_Axis/Branding/` is the SimAxis product package 2.0.1 (export names only; fonts re-exported; `manifest.json` lists every file with its SHA-256). `^update` replaces the package whole.
+- A `.DS_Store` file that macOS Finder writes into `_Axis/Updates/` or a transaction folder no longer stops work as an unexpected update entry: `turn.py`, `boot.py`, `update-transaction.py` (`inspect` and transaction evidence), `Check-Update-Handoff.md` and `Boot-Manual.md` ignore a regular `.DS_Store` file and never count it as evidence.
+- Old update journals are compacted (`_Axis/Resources/update-transaction.py` new `compact` action; `_Axis/Resources/Check-Update-Handoff.md` > Compaction; `_Axis/Commands/update.md`; `_Axis/Resources/Boot-Manual.md`; `_Axis/MANIFEST.md`). After a newer release is adopted, `consume` shrinks each older consumed transaction in `_Axis/Updates/` to its receipts, `authorization.md` and a `compacted.json` manifest (SHA-256 and bytes of every removed file). The newest adopted release stays whole. The first adoption of 2.03 compacts the existing backlog automatically.
+- `^status` has a new layout (User design, 2026-09-30): a `S T A T U S` title with the time, one block of rows (Project, Path, Model, Tasks active / blocked, Follow-Up, Reminders, Agents, Version), then the sections Summary, Current, Waiting on you, Reminders, Recent activity and Next decisions (`_Axis/Resources/status.py`, `_Axis/Commands/status.md`, `_Axis/Practices/Status.md`).
+
+### Project-State Migrations
+
+- None.
+
+### Retired Paths
+
+- None.
+
+### Verification
+
+- An older `_Axis/Updates/` transaction that holds only its receipts, `authorization.md` and `compacted.json` is valid history once its manifest digest and receipts agree; the newest adopted release's transactions stay whole.
 
 ## 2.02
 

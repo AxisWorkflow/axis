@@ -46,7 +46,7 @@ except OSError:print(lost);sys.exit(4)
 d=root/'_Axis/Updates'
 try:
     for e in (d.iterdir() if d.is_dir() else []):
-        if e.name in ('.gitkeep','operation.lck') and e.is_file():continue
+        if e.name in ('.gitkeep','operation.lck','.DS_Store') and e.is_file() and not e.is_symlink():continue
         if not e.is_dir() or e.is_symlink():items.append('unexpected entry in _Axis/Updates/: follow _Axis/Resources/Check-Update-Handoff.md before ordinary work');break
         names={x.name for x in e.iterdir()}
         if 'consumed.json' in names or {'rollback.json','released.json'}<=names:continue

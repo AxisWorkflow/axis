@@ -1,6 +1,6 @@
 # Axis Workflow User Manual
 > **Purpose:** How to use the Axis Workflow day to day: setup, commands, the Dashboard, the Wiki, working across tools and machines, and working with Agents and models. For the technical and compliance reference, see [SPECIFICATION](/_Axis/SPECIFICATION.md).
-> **Version:** 2.02
+> **Version:** 2.03
 
 
 
@@ -125,11 +125,13 @@ Your own content lives in normal folders that your Agent creates and organizes a
 
 - **Refresh your project.** Run the `^refresh` command now and then to identify stale file locks for quiescent recovery, remove dead Markers, archive over-limit Notes, delete leftover scratch files, and realign your Plan with your Tasks.
 
+- **Keep Obsidian fast on a big project.** Obsidian indexes every file in the folder you open as a vault, and it slows down or stalls at "Loading cache..." once that runs to tens of thousands of files. Move bulky history you rarely read out of the project (the Archive Location in `^settings` is made for that), keep large generated or downloaded folders outside it, and if Obsidian hangs after a big cleanup, quit Obsidian and clear its cache as Obsidian's own help describes for your system. Heavy plugins such as obsidian-git are slow on large repositories.
+
 - **Link your Wiki.** Run the `^wiki lint` command now and then to health-check your knowledge base - always a good idea.
 
 - **Audit hidden problems.** Run the `^audit` command to perform a read-only health check. It will check hygiene, delegation failures, cross-examination coverage, secrets in the wrong place, records in sync, etc. - and then report findings with recommendations.
 
-- **See where things stand.** `^status` prints a one-screen summary: direction, active and blocked work, what is waiting on you, upcoming Reminders and recent activity. It writes nothing, so run it whenever you like. Add `web` for a branded page in your browser, or `deep dive` (or just ask for more) for the full picture.
+- **See where things stand.** `^status` prints a one-screen summary: the project, path, model and counts, then direction, current work, what is waiting on you, upcoming Reminders, recent activity and the next decisions. It writes nothing, so run it whenever you like. Add `web` for a branded page in your browser, or `deep dive` (or just ask for more) for the full picture.
 
 - **Ask for a Review.** `^review` writes a dated report for you and your Agent, opening with what has changed since the last one - commits, records written, Wiki activity - followed by health-checks and Deliverable coverage. A Review summarizes the project; it does not challenge the work (that is `^cx`) and it is lighter than `^audit`. Reviews were called Status Reports before Version 2.01. Schedule one as a regular event on systems with a scheduler.
 

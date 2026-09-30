@@ -75,7 +75,7 @@ def update_state():
     if not d.exists():return 'none'
     state='none'
     for e in d.iterdir():
-        if e.name in ('.gitkeep','operation.lck') and e.is_file():continue
+        if e.name in ('.gitkeep','operation.lck','.DS_Store') and e.is_file() and not e.is_symlink():continue
         if not e.is_dir() or e.is_symlink():return 'unexpected'
         names={x.name for x in e.iterdir()}
         if 'consumed.json' in names or {'rollback.json','released.json'}<=names:continue

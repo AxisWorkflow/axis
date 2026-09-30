@@ -1,5 +1,13 @@
 # Changelog - Axis Workflow Branding package
 
+## 2.0.1 - 29 September 2026
+
+Names only; no asset or rule changed.
+
+- The exports are now named `SimAxis Branding/` (full package) and `_Axis Branding/` (product
+  package). Where they go in the development project is unchanged: the full package at the
+  repository root as `Branding/`, the product package at `_Axis/Branding/`.
+
 ## 2.0.0 - 29 September 2026
 
 New rules the development project must act on, so a major version.

@@ -1,6 +1,6 @@
 # Axis Workflow - Branding (product package)
 
-Version **2.0.0** · 29 September 2026 · Owner: SimAxis
+Version **2.0.1** · 29 September 2026 · Owner: SimAxis
 
 The small brand package that ships with every copy of the Axis Workflow, at `_Axis/Branding/`. It
 gives the Dashboard and any local page the Axis look: the stylesheet, fonts, colour tokens, the mark,

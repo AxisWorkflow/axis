@@ -45,7 +45,7 @@
 - `_Axis/Snapshots/`
 - `_Axis/Supervision/`
 - `_Axis/Tasks/`
-- `_Axis/Updates/` - the update journal: one folder per `^update` transaction (plan, preimages, receipts), kept as history, plus the stable `operation.lck` (ignored by Git).
+- `_Axis/Updates/` - the update journal: one folder per `^update` transaction (plan, preimages, receipts), kept as history; once a newer release is adopted an older one is compacted to its receipts and `compacted.json`, plus the stable `operation.lck` (ignored by Git). A `.DS_Store` file that macOS Finder leaves there is ignored.
 
 ### Files
 

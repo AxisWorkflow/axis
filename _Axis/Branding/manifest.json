@@ -1,16 +1,16 @@
 {
  "package": "Axis Workflow Branding (product)",
- "version": "2.0.0",
+ "version": "2.0.1",
  "released": "29 September 2026",
- "built": "2026-09-29T08:33:41Z",
+ "built": "2026-09-29T09:15:10Z",
  "installs-at": "_Axis/Branding/ (or Branding/)",
- "subset-of": "Axis Workflow Branding 2.0.0",
+ "subset-of": "Axis Workflow Branding 2.0.1",
  "generator": "SimAxis project: Marketing/Assets/Branding-src/build.py",
  "files": [
   {
    "path": "CHANGELOG.md",
-   "bytes": 2231,
-   "sha256": "4a6c44110e47372ba6c385d205ea753277228bc270f5260a11549bae5edd4983",
+   "bytes": 2562,
+   "sha256": "da2bc803cbaf842287e2accfdbb244f563057565789e044517b94eb3653d1512",
    "origin": "identical to the full package"
   },
   {
@@ -22,7 +22,7 @@
   {
    "path": "README.md",
    "bytes": 2118,
-   "sha256": "d1d60247c8c449fd73b60d4e4966aeed6d0813a812970b71c3c611a311cdcafb",
+   "sha256": "f71138af0be521b5a0bbf7593d88060baad452da56aacf757dd082c6b2921452",
    "origin": "product package document"
   },
   {
@@ -69,14 +69,14 @@
   },
   {
    "path": "fonts/ibmplexmono-bold.woff2",
-   "bytes": 40308,
-   "sha256": "242010e7a3438b4a4de1c2cf1400d805883118e780a127f297eb8bc95ee4c235",
+   "bytes": 40404,
+   "sha256": "3f88887aea6776474c9f7fb8319c876d20ac460e3e254a4c8fd130d8a09edec1",
    "origin": "identical to the full package"
   },
   {
    "path": "fonts/ibmplexmono.woff2",
-   "bytes": 39272,
-   "sha256": "6b5813f85a604d9620486d393139dcf359ad5c45fd956a406fdb718953ebcfd3",
+   "bytes": 39184,
+   "sha256": "202f5b69ee67cd16290d263422f390f5a07bd85583b2adf1c0eeb5078ece469a",
    "origin": "identical to the full package"
   },
   {
@@ -124,13 +124,13 @@
   {
    "path": "tokens/tokens.css",
    "bytes": 4828,
-   "sha256": "6388f6cb7973cf2c3f8dd56b190df1642adf506631edac5c958371676673cc7f",
+   "sha256": "d8519af91530fa285b6a04282a9348c3f9c19d19cafe18af13f0ba3b649fdc78",
    "origin": "identical to the full package"
   },
   {
    "path": "tokens/tokens.json",
    "bytes": 5232,
-   "sha256": "cf8615aae5602bb34eafe32fd344dea7f56fe519446cbc8570f3984966122312",
+   "sha256": "a1af1cda05d846e0c1167ad56f066a16216c76c1ce035ef04d5aa7b4abfd4362",
    "origin": "identical to the full package"
   }
  ]

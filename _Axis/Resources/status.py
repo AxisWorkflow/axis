@@ -109,7 +109,12 @@ def collect(root, detail):
     for head, body in blocks(read(ax / 'INITIATIVES.md')):
         f = fields(body)
         if 'status' in f and '{{' not in head + body:
-            inits.append({'key': head, 'name': f.get('name', head), 'status': f['status'], 'phase': f.get('phase', '')})
+            nxt = ''
+            for sh, sb in blocks(body, '### '):
+                if sh.lower() in ('next decision', 'next'):
+                    nxt = first_paragraph(sb) or next((l.strip('-* ').strip() for l in sb.splitlines() if l.strip()), '')
+            inits.append({'key': head, 'name': f.get('name', head), 'status': f['status'], 'phase': f.get('phase', ''),
+                          'next': '' if nxt.lower().rstrip('.') == 'none' else re.sub(r'^next decision:\s*', '', nxt, flags=re.I)})
     fus = []
     for f in records(root, '_Axis/Followups'):
         fl = fields(read(f))
@@ -142,11 +147,14 @@ def collect(root, detail):
         p = root / d
         return len([f for f in p.iterdir() if TS.match(f.name)]) if p.is_dir() else 0
     active = [t for t in tasks if t['status'] == 'Active']
+    model = (read(ax / 'Flags/model').splitlines() or [''])[0].strip()
     blocked = [t for t in tasks if t['status'] == 'Blocked']
     data = {
         'generated': now.strftime('%Y-%m-%d %H:%M UTC'), 'project': name, 'version': version, 'folder': str(root),
+        'model': model_name(model),
+        'decisions': [{'initiative': i['name'], 'next': i['next']} for i in inits if i['status'] in ('Active', 'Blocked') and i['next']],
         'direction': direction, 'tasks': count, 'active': active, 'blocked': blocked,
-        'initiatives': [i for i in inits if detail == 'full' or i['status'] not in ('Completed', 'Cancelled')],
+        'initiatives': [i for i in inits if i['status'] not in ('Completed', 'Cancelled')],
         'followups': fus, 'reminders': rem[:10], 'logs': logs,
         'snapshot': {'subject': subject(snaps[0]), 'age': age(when(snaps[0].name), now)} if snaps else None,
         'review': {'subject': subject(reviews[0]), 'age': age(when(reviews[0].name), now), 'path': str(reviews[0].relative_to(root))} if reviews else None,
@@ -158,6 +166,17 @@ def collect(root, detail):
         data['recent_completed'] = [t for t in tasks if t['status'] == 'Completed'][-8:]
         data['plan_sections'] = [h for h, _ in blocks(plan)]
     return data
+
+
+def model_name(m):
+    """The session's model from the `model` Flag, in words: claude-opus-5-5[1m] -> Claude Opus 5.5."""
+    m = re.sub(r'\[.*?\]$', '', m).strip()
+    if not m or m == 'cleared':
+        return 'Unknown'
+    x = re.fullmatch(r'claude-([a-z]+)-(\d+)(?:-(\d{1,2}))?(?:-\d{8})?', m)
+    if x:
+        return f"Claude {x.group(1).title()} {x.group(2)}{'.' + x.group(3) if x.group(3) else ''}"
+    return m
 
 
 def clip(s, w):
@@ -181,62 +200,44 @@ def text(d, width, color):
     A = (lambda s: f'\033[{sgr}m{s}\033[0m') if sgr else (lambda s: s)
     B = A
     M = lambda s: s
-    # Header and summary block (User design, 2026-09-30): spaced title between dividers, then one block of
-    # "Label:" rows in aligned columns. Git stays in the background, so it is not shown.
+    # Layout (User design, 2026-09-30, second revision): a spaced STATUS title with the time between dividers, one
+    # block of "Label:" rows indented four spaces, a divider, then labelled sections and a closing divider.
+    # Git stays in the background, so it is not shown.
     rule = '━' * 40
-    out = [rule, '  ' + B('A X I S   P R O J E C T  S T A T U S'), rule, '']
+    out = [rule, '  ' + B('S T A T U S') + '    ' + d['generated'] + '  ', rule, '']
     t = d['tasks']
     home = os.path.expanduser('~'); path = d['root']
     path = '~' + path[len(home):] if path == home or path.startswith(home + '/') else path
-    left = [('Project', d['project']), ('Path', path), ('Version', d['version']), ('As of', d['generated']),
-            ('Tasks active', t['Active']), ('Tasks planned', t['Planned']), ('Tasks blocked', t['Blocked']), ('Tasks done', t['Completed'])]
-    right = {4: ('Follow-Ups', len(d['followups'])), 5: ('Reminders', len(d['reminders'])), 6: ('Agents live', len(d['agents']))}
-    lw = max(len(k) for k, _ in left) + 1; rw = max(len(k) for k, _ in right.values()) + 1
-    cw = max(lw + 2 + len(str(left[i][1])) for i in right)
-    for i, (k, v) in enumerate(left):
-        cell = f"{(k + ':').ljust(lw)}  {v}"
-        if i in right:
-            rk, rv = right[i]
-            cell = cell.ljust(cw) + f"    {(rk + ':').ljust(rw)}  {rv}"
-        out.append('  ' + cell)
-    out += ['', B('  Direction'), *wrap(d['direction'], width - 4, 4 if d['detail'] == 'full' else 3)]
-    if d['active'] or d['blocked']:
-        out += ['', B('  Now')]
-        for x in d['active'][:8 if d['detail'] == 'full' else 4]:
-            out.append(f"    {A('>')} {clip(x['name'] + ' - ' + x['label'], width - 8)}")
-        for x in d['blocked'][:6 if d['detail'] == 'full' else 3]:
-            out.append(f"    {A('!')} {clip('Blocked: ' + x['name'] + ' - ' + x['label'], width - 8)}")
-    if d['initiatives']:
-        out += ['', B('  Initiatives')]
-        for i in d['initiatives'][:8]:
-            out.append(f"    {clip(i['name'] + ' (' + i['status'] + (', ' + i['phase'] if i['phase'] and i['phase'] != i['status'] else '') + ')', width - 6)}")
-    if d['followups']:
-        out += ['', B('  Waiting on you')]
-        for f in d['followups'][:5]:
-            out.append(f"    - {clip(f['subject'] + (' (due ' + f['due'] + ')' if f['due'] and f['due'] != 'N/A' else ''), width - 8)}")
-    if d['reminders']:
-        out += ['', B('  Reminders')]
-        for r in d['reminders'][:3]:
-            out.append(f"    - {clip(r['subject'] + (' - ' + r['due'] if r['due'] else ''), width - 8)}")
-    out += ['', B('  Recent')]
-    if not d['logs']:
-        out.append(M('    No Logs yet.'))
-    for l in d['logs']:
-        out.append(f"    {M(l['age'].rjust(8))}  {clip(l['subject'], width - 16)}")
-    tail = []
-    if d['snapshot']:
-        tail.append(f"last Snapshot {d['snapshot']['age']}")
-    if d['review']:
-        tail.append(f"last Review {d['review']['age']}")
+    row = lambda k, v: f"    {(k + ':').ljust(13)}{v}"
+    out += [row('Project', d['project']), row('Path', path), row('Model', d['model']), '',
+            row('Tasks', f"{t['Active']} active / {t['Blocked']} blocked"), row('Follow-Up', len(d['followups'])),
+            row('Reminders', len(d['reminders'])), row('Agents', len(d['agents'])), row('Version', d['version']), '', rule, '']
+    full = d['detail'] == 'full'
+    def section(title, lines, empty):
+        out.extend([B('  ' + title + ':'), '', *(lines or ['    ' + empty]), ''])
+    section('Summary', wrap(d['direction'], width - 4, 4 if full else 3), 'No Plan written yet.')
+    cur = [f"    {A('>')} {clip(x['name'] + ' - ' + x['label'], width - 6)}" for x in d['active'][:8 if full else 4]]
+    cur += [f"    {A('!')} {clip('Blocked: ' + x['name'] + ' - ' + x['label'], width - 6)}" for x in d['blocked'][:6 if full else 3]]
+    section('Current', cur, 'No active or blocked Tasks.')
+    section('Waiting on you', [f"    - {clip(f['subject'] + (' (due ' + f['due'] + ')' if f['due'] and f['due'] != 'N/A' else ''), width - 6)}"
+                               for f in d['followups'][:5]], 'Nothing.')
+    section('Reminders', [f"    - {clip(r['subject'] + (' - ' + r['due'] if r['due'] else ''), width - 6)}" for r in d['reminders'][:3]], 'None.')
+    recent = [f"    {M(l['age'].rjust(7))}  {clip(l['subject'], width - 13)}" for l in d['logs']]
+    tail = ([f"last Snapshot {d['snapshot']['age']}"] if d['snapshot'] else []) + ([f"last Review {d['review']['age']}"] if d['review'] else [])
     if tail:
-        out += ['', M('  ' + '; '.join(tail))]
-    if d['detail'] == 'full':
+        recent.append(M('    ' + '; '.join(tail)))
+    section('Recent activity', recent, 'No Logs yet.')
+    section('Next decisions', [f"    - {clip(x['initiative'] + ': ' + x['next'], width - 6)}" for x in d['decisions'][:6 if full else 3]], 'None recorded.')
+    if full:
+        if d['initiatives']:
+            section('Initiatives', [f"    {clip(i['name'] + ' (' + i['status'] + (', ' + phase if phase else '') + ')', width - 6)}"
+                                    for i in d['initiatives'][:8]
+                                    for phase in [re.sub(r'^' + re.escape(i['status']) + r'\b[:,.]?\s*', '', i['phase'], flags=re.I)]], '')
         if d.get('recent_completed'):
-            out += ['', B('  Recently completed')]
-            out += [f"    - {clip(x['name'], width - 8)}" for x in d['recent_completed']]
+            section('Recently completed', [f"    - {clip(x['name'], width - 6)}" for x in d['recent_completed']], '')
         c = d['counts']
-        out += ['', M(f"  Records: {c['Logs']} Logs, {c['Notes']} Notes, {c['Ideas']} Ideas, {c['Requests']} Requests waiting")]
-    out += ['', rule]
+        section('Records', [f"    {c['Logs']} Logs, {c['Notes']} Notes, {c['Ideas']} Ideas, {c['Requests']} Requests waiting"], '')
+    out.append(rule)
     return '\n'.join(out)
 
 
