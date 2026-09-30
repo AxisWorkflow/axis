@@ -15,6 +15,7 @@ Before sending, take each sentence and ask: **would User's next action change if
 - **Name the outcome, not the mechanism.** "The other session has been retired, so there's just one of me again" - not the Marker that was deleted, the tombstone that was written, or the Flag that was cleared.
 - **Do not paste the audit trail; offer it.** One sentence ("everything I did is recorded if you want to audit it") replaces a list of record paths and loses nothing - the records are still there.
 - **Spell out internal terms or drop them.** Marker, Flag, WORM, tombstone, lease, envelope, post-condition, Index-Detail and the rest are Workflow vocabulary. User did not agree to learn it. Say "the record of what I did", not "the WORM Event".
+- **Keep Git in the background.** Committing and other routine version control happen quietly. Do not report commit identifiers, branch names or "committed locally, not pushed" unless User asks (User decision, 2026-09-30). Still say plainly when something needs User: a push or publication to approve, a conflict, or a Git failure.
 - **Paths only when User will act on one.** A file User should open, edit, or put something into is worth naming. A file you wrote so the Workflow can find it later is not.
 - **Timestamps are identity, not conversation.** Say "the session that started at 12:35", not the full identifier - unless User needs the exact string to act.
 - **One glance, not a report.** Lead with what happened. Detail earns its way in by mattering to what User does next.
@@ -31,32 +32,21 @@ State the concrete action and required answer or exact token concisely, for exam
 
 ## Final response boundary
 
-Frame each actual final application response with a header that names the project folder and agent role, so User can tell side-by-side terminal panes apart, and a closing block. The header is three lines: 40 `━` characters, `DONE`, `{folder}` and `{role} Agent` on one line, separated by three spaces with no leading space, and 40 `━` characters again. Then leave a blank line and give the answer, leading with the outcome. Close with a blank line, 40 `━` characters, a blank line, and exactly `READY FOR INPUT...` as the last line. `{folder}` is the verified project folder exactly as the startup banner's `Folder:` row shows it (always `~/` plus the path for a folder inside the User's home directory); `{role}` is your booted role, `Main` or `External`. For example, for a Main Agent in `~/Axis`:
+Frame each actual final application response with a header and a closing that names the project, so User can tell side-by-side terminal panes apart (User design, 2026-09-30). The header is three lines: 40 `━` characters, the title line exactly as in the example below (the spaced word DONE, then Summary of work), and 40 `━` characters again. Then leave a blank line and give the answer, leading with the outcome. Close with a blank line, 40 `━` characters, and exactly `{Project} - Ready for input...` as the last line. `{Project}` is the Project name the startup banner's `Project:` row shows; when that row says `Not set`, use the verified project folder instead, as its `Folder:` row shows it. For example, for the project `Oversight`:
 
 ```text
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-DONE   ~/Axis   Main Agent
+  D O N E  -  Summary of work
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 {the answer, leading with the outcome}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-READY FOR INPUT...
+Oversight - Ready for input...
 ```
 
-A turn ends whenever you stop and User can type, including a message you send while a background process you started keeps running and may wake you again. Every such message gets the frame; only messages in the middle of a turn, after which you keep working without yielding, are progress. When background work you started is still running as the turn ends, replace the `READY FOR INPUT...` line with this closing block, so User knows the work continues and that you can still take input:
+A turn ends whenever you stop and User can type, including a message you send while a background process you started keeps running and may wake you again. Every such message gets the frame; only messages in the middle of a turn, after which you keep working without yielding, are progress. When background work you started is still running as the turn ends, the last line is instead exactly `{Project} - Background work in progress, but ready for input...`, so User knows the work continues and that you can still take input. When that work later wakes you and you finish the turn with nothing left running, use the ordinary `Ready for input...` closing. Background work means a job that will finish and report back, such as a test run, build, copy or Subagent. A long-running service you started for User, such as the Dashboard server, is not background work: use the ordinary closing and mention the service in the answer only when User needs to know it is running.
 
-```text
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-WORK IS RUNNING IN THE BACKGROUND....
-
-  BUT AGENT CAN TAKE INPUT AS WE WAIT...
-```
-
-When that work later wakes you and you finish the turn with nothing left running, use the ordinary `READY FOR INPUT...` closing.
-
-If Unicode is unavailable, use `=` for `━`. Apply this even to a short answer or final clarification; a correct answer without its frame is incomplete presentation. Never guess or abbreviate the folder beyond the `~/` home shortening; when it is unverified use `Unavailable`. Before sending, check that the header appears once at the top and the closing block once at the end, unless an exception below applies. Use the frame only when ending the turn and yielding for User input; never for progress, commentary, tool output or Subagent returns. Consecutive User turns each receive their own frame. The header means this turn is complete, not that every project Task is complete.
+If Unicode is unavailable, use `=` for `━`. Apply this even to a short answer or final clarification; a correct answer without its frame is incomplete presentation. Never guess the Project name or abbreviate the folder beyond the `~/` home shortening; when neither is verified use `Unavailable`. Before sending, check that the header appears once at the top and the closing line once at the end, unless an exception below applies. Use the frame only when ending the turn and yielding for User input; never for progress, commentary, tool output or Subagent returns. Consecutive User turns each receive their own frame. The header means this turn is complete, not that every project Task is complete.
 
 Mandatory startup loading notice, completion banner and greeting keep their order and precede the application response. A terminal shutdown/update block already marks the final boundary; do not add the frame around it. A higher-priority host format, User exact-output request, structured schema, JSON/code-only response or other machine-readable contract takes precedence over this application decoration. Omit the frame in those cases rather than corrupting the output. When the host supplies its own guaranteed visible final-turn separator and prohibits additional formatting, use that native boundary; do not claim to configure or control host chrome.

@@ -41,8 +41,12 @@ def survey(self, model, harness, interaction, spawn, parallel):
         try:
             with urllib.request.urlopen('http://localhost:11434/v1/models',timeout=2) as response:local='yes' if response.status==200 else 'no'
         except Exception:local='no'
-    path=str(self.root).lower();cloud='yes' if any(k.lower() in path for k in ('Library/CloudStorage','Mobile Documents','com~apple~CloudDocs','Dropbox','OneDrive','Google Drive')) else 'no'
-    if cloud=='no' and any((parent/marker).exists() for parent in self.root.parents for marker in ('.dropbox','.dropbox.cache')):cloud='yes'
+    # Cloud-sync classification keeps a nonsecret reason (2.02) so a wrong verdict can be diagnosed and corrected.
+    path=str(self.root).lower();term=next((k for k in ('Library/CloudStorage','Mobile Documents','com~apple~CloudDocs','Dropbox','OneDrive','Google Drive') if k.lower() in path),'')
+    cloud,reason=('yes',f"the folder path contains '{term}'") if term else ('no','no cloud-storage term in the folder path and no sync marker above it')
+    if cloud=='no':
+        mark=next((f"{m} beside an enclosing folder" for parent in self.root.parents for m in ('.dropbox','.dropbox.cache') if (parent/m).exists()),'')
+        if mark:cloud,reason='yes',f'a Dropbox marker ({mark})'
     policy=self.setting('Storage Policy')
     if policy!='auto':
         storage='serialized'
@@ -61,6 +65,7 @@ def survey(self, model, harness, interaction, spawn, parallel):
     caps={'model':model,'host-spawn':spawn,'host-parallel':parallel,'host-shell':shell,'host-local-llm':local,'host-cloud-sync':cloud,'host-storage':storage}
     self.record_capabilities(json.dumps(caps));report['capabilities']=caps
     if shell=='no':report['notices'].append('non-posix-shell')
+    report['cloud_reason']=reason
     if cloud=='yes':report['notices'].append('cloud-synced-folder')
     # Environment signature (Portability > Optional Environment Signature): write only when unchanged; a change is returned for the Agent's validation.
     osclass={'Darwin':'macos','Linux':'linux','Windows':'windows'}.get(platform.system(),'unknown')

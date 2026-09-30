@@ -104,7 +104,7 @@ def collect(root, detail):
             continue
         tasks.append({'name': head, 'label': f.get('label', ''), 'status': f.get('status', ''),
                       'updated': f.get('updated', ''), 'initiative': f.get('initiative', '')})
-    count = {s: sum(t['status'] == s for t in tasks) for s in ('Active', 'Blocked', 'Completed', 'Cancelled')}
+    count = {s: sum(t['status'] == s for t in tasks) for s in ('Active', 'Planned', 'Blocked', 'Completed', 'Cancelled')}
     inits = []
     for head, body in blocks(read(ax / 'INITIATIVES.md')):
         f = fields(body)
@@ -150,7 +150,7 @@ def collect(root, detail):
         'followups': fus, 'reminders': rem[:10], 'logs': logs,
         'snapshot': {'subject': subject(snaps[0]), 'age': age(when(snaps[0].name), now)} if snaps else None,
         'review': {'subject': subject(reviews[0]), 'age': age(when(reviews[0].name), now), 'path': str(reviews[0].relative_to(root))} if reviews else None,
-        'agents': agents, 'git': git,
+        'agents': agents, 'git': git, 'root': str(root),
         'counts': {'Notes': n('_Axis/Notes'), 'Ideas': n('_Axis/Ideas'), 'Requests': n('_Axis/Requests'), 'Logs': n('_Axis/Logs')},
         'detail': detail,
     }
@@ -181,13 +181,24 @@ def text(d, width, color):
     A = (lambda s: f'\033[{sgr}m{s}\033[0m') if sgr else (lambda s: s)
     B = A
     M = lambda s: s
-    rule = '━' * min(width, 72)
-    out = [rule, f"  {A('+')}  {B('AXIS WORKFLOW')}  {M('status')}   {B(d['project'])}", rule]
+    # Header and summary block (User design, 2026-09-30): spaced title between dividers, then one block of
+    # "Label:" rows in aligned columns. Git stays in the background, so it is not shown.
+    rule = '━' * 40
+    out = [rule, '  ' + B('A X I S   P R O J E C T  S T A T U S'), rule, '']
     t = d['tasks']
-    out.append(f"  Version {d['version']}   Tasks: {t['Active']} active, {t['Blocked']} blocked, {t['Completed']} done   "
-               f"Follow-Ups: {len(d['followups'])}   Reminders: {len(d['reminders'])}")
-    if d['git']:
-        out.append(M(f"  Git: {d['git']}   Agents live: {len(d['agents'])}   Generated {d['generated']}"))
+    home = os.path.expanduser('~'); path = d['root']
+    path = '~' + path[len(home):] if path == home or path.startswith(home + '/') else path
+    left = [('Project', d['project']), ('Path', path), ('Version', d['version']), ('As of', d['generated']),
+            ('Tasks active', t['Active']), ('Tasks planned', t['Planned']), ('Tasks blocked', t['Blocked']), ('Tasks done', t['Completed'])]
+    right = {4: ('Follow-Ups', len(d['followups'])), 5: ('Reminders', len(d['reminders'])), 6: ('Agents live', len(d['agents']))}
+    lw = max(len(k) for k, _ in left) + 1; rw = max(len(k) for k, _ in right.values()) + 1
+    cw = max(lw + 2 + len(str(left[i][1])) for i in right)
+    for i, (k, v) in enumerate(left):
+        cell = f"{(k + ':').ljust(lw)}  {v}"
+        if i in right:
+            rk, rv = right[i]
+            cell = cell.ljust(cw) + f"    {(rk + ':').ljust(rw)}  {rv}"
+        out.append('  ' + cell)
     out += ['', B('  Direction'), *wrap(d['direction'], width - 4, 4 if d['detail'] == 'full' else 3)]
     if d['active'] or d['blocked']:
         out += ['', B('  Now')]
@@ -225,7 +236,7 @@ def text(d, width, color):
             out += [f"    - {clip(x['name'], width - 8)}" for x in d['recent_completed']]
         c = d['counts']
         out += ['', M(f"  Records: {c['Logs']} Logs, {c['Notes']} Notes, {c['Ideas']} Ideas, {c['Requests']} Requests waiting")]
-    out.append(rule)
+    out += ['', rule]
     return '\n'.join(out)
 
 
@@ -277,7 +288,7 @@ def page(d, root, out):
     def li(items):
         return ''.join(f'<li>{e(x)}</li>' for x in items) or '<li class="muted">None</li>'
     t = d['tasks']
-    stats = [(t['Active'], 'active tasks'), (t['Blocked'], 'blocked'), (t['Completed'], 'completed'),
+    stats = [(t['Active'], 'active tasks'), (t['Planned'], 'planned'), (t['Blocked'], 'blocked'), (t['Completed'], 'completed'),
              (len(d['followups']), 'waiting on you'), (len(d['reminders']), 'reminders'), (len(d['agents']), 'agents live')]
     cards = [
         ('Now', li([f"{x['name']} - {clip(x['label'], 140)}" for x in d['active']] + [f"Blocked: {x['name']} - {clip(x['label'], 120)}" for x in d['blocked']])),
@@ -289,8 +300,7 @@ def page(d, root, out):
     if d['detail'] == 'full' and d.get('recent_completed'):
         cards.append(('Recently completed', li([x['name'] for x in d['recent_completed']])))
     last = '; '.join(filter(None, [f"last Snapshot {d['snapshot']['age']}" if d['snapshot'] else '',
-                                   f"last Review {d['review']['age']}" if d['review'] else '',
-                                   f"Git {d['git']}" if d['git'] else '']))
+                                   f"last Review {d['review']['age']}" if d['review'] else '']))
     body = (f'<header class="band"><div class="wrap">{logo}<h1>{e(d["project"])}</h1>'
             f'<div class="meta">Version {e(d["version"])} · {e(d["generated"])}</div></div></header>'
             f'<main class="wrap"><p class="axis-eyebrow">Project status</p><p class="lede">{e(clip(d["direction"], 600))}</p>'

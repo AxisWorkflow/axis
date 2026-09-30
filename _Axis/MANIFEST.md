@@ -80,7 +80,7 @@
 
 - `_Axis/INITIATIVES.md` - optional shared outcomes and Task groups; absent is valid, and no startup detail load is required.
 - `_Axis/Reviews/` - dated Reviews (`^review`). A project updated from Version 2.00 or earlier gets it from its first `^review`, which also moves any older reports from `_Axis/Status/` into it; absent until then is valid.
-- `_Axis/Branding/` - the product brand package (stylesheet with light and dark themes, WOFF2 fonts, tokens, mark, logo, favicons), shipped read-only and replaced whole by each update; `manifest.json` lists every file with its SHA-256. Its assets are not under the MIT License (see `LICENSE-ASSETS.md`). A project updated from Version 2.00 receives it with its next update after 2.01 (the 2.00 updater cannot install a new folder); absent until then is valid, and the Dashboard and `^status` pages fall back to plain brand colours.
+- `_Axis/Branding/` - the product brand package (stylesheet with light and dark themes, WOFF2 fonts, tokens, mark, logo, favicons), shipped read-only and replaced whole by each update; `manifest.json` lists every file with its SHA-256. Its assets are not under the MIT License (see `LICENSE-ASSETS.md`). A project updated by an updater older than 2.01 (from any earlier version) receives it with its next update after 2.01 (updaters before 2.01 cannot install a new folder); absent until then is valid, and the Dashboard and `^status` pages fall back to plain brand colours.
 
 ### Practices
 

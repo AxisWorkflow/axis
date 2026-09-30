@@ -1,7 +1,7 @@
 # Changelog
 > **Purpose:** Record Axis release identity and the structural migrations needed to update an existing project safely.
 
-current-version: 2.01
+current-version: 2.02
 changelog-format: 1
 self-update-baseline: 26.08.19
 
@@ -39,6 +39,36 @@ update-impact: automatic
 ### Verification
 
 - None.
+
+## 2.02
+
+released: 2026-09-30
+
+- A cleaner startup banner and end-of-turn frame: each finished answer opens with a spaced DONE title and closes with `{Project} - Ready for input...`; `^status` has a matching header and one aligned summary block.
+- The Dashboard becomes a read-only way into the project: click any count, `More…` link or record title to read it in a pop-up; a ☰ menu opens the User Manual, Plan and record lists in new tabs; stronger contrast, a Snapshots card and a tidier layout.
+- `^^update` checks each project's storage itself instead of trusting old records, and startup explains a cloud-synced verdict so a wrong one can be corrected.
+- Agents keep routine Git in the background and no longer report commit details unless asked.
+
+update-impact: automatic
+
+### Structural Changes
+
+- New look for the startup banner and the end-of-turn frame (User design, 2026-09-29). The banner drops the `│` and `+` marks: the spaced title sits between blank lines and two dividers, and the rows now read Project, Folder, Session, Version, Status, Agent (`_Axis/Resources/Lifecycle-Presentation.md`, `_Axis/Resources/boot.py`). A finished answer starts with a divider, the spaced title DONE with Summary of work, and a divider, and ends with a divider and `{Project} - Ready for input...`, or `{Project} - Background work in progress, but ready for input...` while a job that will report back is still running; a long-running service such as the Dashboard server does not count (`_Axis/Rules/Speaking.md`). `^status` text opens with a divider, the spaced title Axis Project Status and a divider, then one block of labelled rows in aligned columns (Project, Path, Version, As of, Task counts including planned, Follow-Ups, Reminders, Agents live); Git details are no longer shown (`_Axis/Resources/status.py`). Agents keep routine Git in the background and do not report commit identifiers or local-only commits unless User asks (`_Axis/Rules/Speaking.md`).
+- `^^update` checks each project's storage itself instead of trusting its recorded storage Flags, which describe the last session's host and can be days old; a mismatch is shown as not current (`_Axis/Practices/Supervision.md`). Startup keeps a nonsecret reason for a cloud-synced verdict, shows it to User with a way to correct it, and logs it (`_Axis/Resources/startup-survey.py`, `boot.py`, `Detect-Capabilities.md`).
+- `_Axis/Branding/` wording now says that any project last updated by an updater older than 2.01, from any version, lacks the package until its next update, and that this never blocks an update (`_Axis/Commands/update.md`, `_Axis/MANIFEST.md`).
+- Dashboard (User design, 2026-09-30): stronger contrast, burnt orange findings card and burnt red callout chips; `Subagents` replaces `Spawn`; one `Local Platform` statement replaces Local Endpoint, Local Subagents and Local Platform; Tasks moves to the top of the right column with a legend for its `→` chip and counts Planned Tasks; a Snapshots card closes the page; header metrics, `More…` links and record titles open a read-only pop-up viewer; the Plan diagram shows as a miniature with a full-size pop-up; a ☰ menu opens documents and record lists in new tabs and sets the theme; the header band drops the page title, and `Project: {name}` with the project folder opens the page; the findings card sits on top of Agents in the third column; the Plan card falls back to the Plan's first section and shows its diagram as a page-shaped miniature; Project sections scroll in equal fixed-height boxes; links underline only on hover. The server offers `_Axis/Dashboard/project-path` (the project folder, shortened to `~/` inside the home folder) for the title (`_Axis/Dashboard/index.html`, `_Axis/Practices/Dashboard.md`, `_Axis/USERMANUAL.md`). The Dashboard server also serves `USERMANUAL.md`, `GLOSSARY.md`, `SPECIFICATION.md`, `MANIFEST.md` and `SNAPSHOTS.md`, and allows its own fonts (`_Axis/Dashboard/server.py`).
+
+### Project-State Migrations
+
+- None.
+
+### Retired Paths
+
+- None.
+
+### Verification
+
+- `_Axis/Branding/` matches its `manifest.json` when present. Its absence after an update by an updater older than 2.01 is valid and is not a verification failure; this release's updater installs it.
 
 ## 2.01
 

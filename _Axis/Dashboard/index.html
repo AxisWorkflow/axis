@@ -42,21 +42,35 @@
 <link rel="stylesheet" href="../Branding/css/axis-brand.css">
 <link rel="icon" href="../Branding/favicon/favicon.svg" type="image/svg+xml">
 <style>
-  /* Brand: every colour comes from the Axis brand package (../Branding/css/axis-brand.css, loaded above).
-     Role tokens follow the operating system's light or dark theme. The hex values after each comma are
-     the same brand values, used only when the package is absent (a project updated from 2.00). */
-  :root { --bg:var(--axis-bg,#FFFFFF); --card:var(--axis-raised,#FFFFFF); --ink:var(--axis-fg,#0B1220); --muted:var(--axis-fg-muted,#5B6472);
-          --line:var(--axis-border,#D5DCE8); --rule:var(--axis-border,#D5DCE8); --accent:var(--axis-link,#2F56C9); --chip:var(--axis-band,#EEF2F9);
-          --warn:var(--axis-fg,#0B1220); --danger:var(--axis-fg,#0B1220); --ok:var(--axis-link,#2F56C9);
-          --band:var(--axis-ink,#0B1220); --band-ink:var(--axis-navy-text,#DCE4F5); --band-muted:var(--axis-navy-muted,#B7C1D3); --band-line:var(--axis-navy-line,#27324A);
-          --band-warn:var(--axis-accent-dark,#8FA8F5); --foot:var(--axis-ink,#0B1220); --foot-shadow:rgba(11,18,32,.18); --alert-code-bg:rgba(255,255,255,.14);
-          --tint:var(--axis-band,#EEF2F9); --tint-line:var(--axis-border,#D5DCE8); }
+  /* Brand: colours start from the Axis brand package (../Branding/css/axis-brand.css, loaded above), with
+     stronger contrast than the pure brand palette (User, 2026-09-30): darker muted text and borders, a tinted
+     page behind white cards, blue card titles, burnt orange for the findings card and burnt red for callouts.
+     The hex values after each comma are used when the package is absent. */
+  :root { --bg:#F2F4F8; --card:#FFFFFF; --ink:#0B1220; --muted:#3E4859;
+          --line:#C3CCDB; --rule:var(--axis-border,#C3CCDB); --accent:#2347B5; --h2:#2F56C9; --chip:#E4EAF6;
+          --warn:#9E3A26; --danger:var(--axis-danger,#B5452F); --ok:#2347B5;
+          --band:var(--axis-ink,#0B1220); --band-ink:var(--axis-navy-text,#E8EEFA); --band-muted:#C9D2E3; --band-line:var(--axis-navy-line,#27324A);
+          --band-warn:#F4B183; --foot:var(--axis-ink,#0B1220); --foot-shadow:rgba(11,18,32,.18); --alert-code-bg:rgba(255,255,255,.14);
+          --tint:var(--axis-band,#E8EDF7); --tint-line:#C3CCDB;
+          --notice-bg:#FBEBDC; --notice-line:#DE9C66; --notice-ink:#4E2809;
+          --alert-bg:#FADFD7; --alert-line:#C4553D; --alert-ink:#962F1B;
+          --menu-bg:#FFFFFF; --menu-shadow:rgba(11,18,32,.22); --scrim:rgba(11,18,32,.55); }
   @media (prefers-color-scheme: dark) {
-    :root:not([data-axis-theme="light"]) { --bg:var(--axis-bg,#0B1220); --card:var(--axis-raised,#141D2E); --ink:var(--axis-fg,#DCE4F5); --muted:var(--axis-fg-muted,#B7C1D3);
-            --line:var(--axis-border,#27324A); --rule:var(--axis-border,#27324A); --accent:var(--axis-link,#8FA8F5); --chip:var(--axis-band,#141D2E);
-            --warn:var(--axis-fg,#DCE4F5); --danger:var(--axis-fg,#DCE4F5); --ok:var(--axis-link,#8FA8F5); --band:#060A12; --foot:#060A12; --foot-shadow:rgba(0,0,0,.4);
-            --tint:var(--axis-band,#141D2E); --tint-line:var(--axis-border,#27324A); }
+    :root:not([data-axis-theme="light"]) { --bg:#0A101C; --card:#141D2E; --ink:#E8EEFA; --muted:#C3CCDD;
+            --line:#34415C; --rule:var(--axis-border,#34415C); --accent:#9FB5F8; --h2:#9FB5F8; --chip:#1D2842;
+            --warn:#F2A48F; --danger:var(--axis-danger,#F0A08C); --ok:#9FB5F8; --band:#060A12; --foot:#060A12; --foot-shadow:rgba(0,0,0,.4);
+            --tint:var(--axis-band,#172238); --tint-line:#34415C;
+            --notice-bg:#35230F; --notice-line:#A8662F; --notice-ink:#F7D6B6;
+            --alert-bg:#3D1E17; --alert-line:#D9735C; --alert-ink:#F7B6A5;
+            --menu-bg:#141D2E; --menu-shadow:rgba(0,0,0,.5); --scrim:rgba(0,0,0,.65); }
   }
+  :root[data-axis-theme="dark"] { --bg:#0A101C; --card:#141D2E; --ink:#E8EEFA; --muted:#C3CCDD;
+            --line:#34415C; --rule:var(--axis-border,#34415C); --accent:#9FB5F8; --h2:#9FB5F8; --chip:#1D2842;
+            --warn:#F2A48F; --danger:var(--axis-danger,#F0A08C); --ok:#9FB5F8; --band:#060A12; --foot:#060A12; --foot-shadow:rgba(0,0,0,.4);
+            --tint:var(--axis-band,#172238); --tint-line:#34415C;
+            --notice-bg:#35230F; --notice-line:#A8662F; --notice-ink:#F7D6B6;
+            --alert-bg:#3D1E17; --alert-line:#D9735C; --alert-ink:#F7B6A5;
+            --menu-bg:#141D2E; --menu-shadow:rgba(0,0,0,.5); --scrim:rgba(0,0,0,.65); }
   * { box-sizing:border-box; }
   body { margin:0; padding:24px 24px 76px; background:var(--bg); color:var(--ink);
          font:15px/1.5 var(--axis-font-body, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif); }
@@ -65,7 +79,7 @@
            margin:-24px -24px 18px; padding:16px 24px; }
   h1 { font-size:22px; font-weight:600; margin:0; color:var(--band-ink); }
   #projname { font-size:26px; font-weight:600; margin-left:10px; }
-  h2 { font-family:var(--axis-font-mono, ui-monospace, Menlo, monospace); font-size:12px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin:0 0 10px; }
+  h2 { font-family:var(--axis-font-mono, ui-monospace, Menlo, monospace); font-size:12px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--h2); margin:0 0 10px; }
   .card > h2 { font-weight:650; }
   h3 { font-weight:600; }
   b, strong { font-weight:500; }
@@ -84,6 +98,13 @@
   .card { min-width:0; height:100%; background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px 18px; }
   .wide { grid-column:1 / -1; }
   #config { grid-column:span 5; }
+  /* Project name above Configuration; the findings card beside it spans Mindset and Agents (User, 2026-09-30). */
+  .projtitle { grid-column:1 / -1; font-size:26px; font-weight:600; line-height:1.25; color:var(--ink); margin:4px 2px; overflow-wrap:anywhere; }
+  #projpath { font-size:.62em; font-weight:400; color:var(--muted); margin-left:.7em; }
+  /* The findings card, when present, sits on top of Agents in the third column, flush with Configuration and Mindset. */
+  .side-stack { grid-column:span 4; min-width:0; display:flex; flex-direction:column; gap:16px; }
+  .side-stack > .card { height:auto; }
+  .side-stack > #agents { flex:1 1 auto; }
   #mindset { grid-column:span 3; }
   #agents { grid-column:span 4; }
   #comments, #wiki, #plan, #tasks, #status { grid-column:1 / -1; }
@@ -103,9 +124,9 @@
   .muted { color:var(--muted); }
   .chip { display:inline-block; background:var(--chip); border:1px solid var(--line);
           border-radius:999px; padding:2px 10px; margin:2px 4px 2px 0; font-size:13px; }
-  .warnchip { display:inline-block; background:var(--chip); border:1px solid var(--warn); color:var(--warn);
+  .warnchip { display:inline-block; background:var(--alert-bg); border:1px solid var(--alert-line); color:var(--alert-ink);
           border-radius:999px; padding:2px 10px; margin:2px 4px 2px 0; font-size:13px; }
-  .agechip { font-size:12px; border-radius:6px; padding:1px 7px; border:1px solid var(--warn); color:var(--warn); }
+  .agechip { font-size:12px; border-radius:999px; padding:1px 8px; border:1px solid var(--alert-line); background:var(--alert-bg); color:var(--alert-ink); }
   .stage { display:inline-flex; align-items:center; }
   .stage + .stage::before { content:"→"; margin:0 8px; color:var(--muted); }
   .status { font-size:12px; border-radius:6px; padding:1px 7px; border:1px solid var(--line); }
@@ -120,6 +141,8 @@
   #comments .status-important { color:var(--danger); font-weight:550; }
   #wiki .cols { align-items:start; }
   #comments, #config, #mindset, #agents { background:var(--tint); border-color:var(--tint-line); }
+  #comments, #banner { background:var(--notice-bg); border-color:var(--notice-line); color:var(--notice-ink); }
+  #comments code, #banner code { background:transparent; border:1px solid var(--notice-line); }
   .Blocked, .warnchip, .agechip, #comments .status-important { font-weight:600; }
   #brandlogo { height:28px; margin-right:6px; }
   .spark { display:flex; align-items:flex-end; gap:2px; height:26px; margin:2px 0 4px; }
@@ -131,6 +154,7 @@
   .task-controls select:focus-visible, .task-controls button:focus-visible { outline:3px solid var(--band-warn); outline-offset:2px; }
   #taskExtent { font-size:12.5px; }
   @media (max-width:1050px){
+    .side-stack { grid-column:1 / -1; }
     #config { grid-column:span 7; }
     #mindset { grid-column:span 5; }
     #agents { grid-column:1 / -1; }
@@ -140,6 +164,7 @@
     body { padding-left:16px; padding-right:16px; }
     header { margin-left:-16px; margin-right:-16px; padding-left:16px; padding-right:16px; }
     #config, #mindset, #agents, #comments, #wiki, #plan, #tasks, #status { grid-column:1 / -1; }
+    .side-stack { grid-column:1 / -1; }
     .grid, .card, .detail-list, .detail-row, .detail-row dt, .detail-row dd { min-width:0; }
     .detail-row, #mindset .detail-row { grid-template-columns:minmax(0, .8fr) minmax(0, 1.2fr); }
     .detail-row dt { overflow-wrap:anywhere; }
@@ -148,16 +173,67 @@
     footer { padding-left:16px; padding-right:16px; }
     #meta { min-width:0; overflow-wrap:anywhere; }
   }
-  #banner { display:none; background:var(--chip); border:1px solid var(--line); border-radius:10px;
+  #banner { display:none; border:1px solid; border-radius:10px;
             padding:10px 14px; margin-bottom:16px; font-size:13.5px; }
   #project h3 { font-size:14px; margin:12px 0 4px; }
   #project .gloss { font-weight:400; font-size:12.5px; color:var(--muted); }
   #project .cols { grid-template-columns:1fr; gap:4px; }
+  #project .projsec { max-height:190px; overflow-y:auto; padding-right:6px; }
   code { background:var(--chip); padding:1px 5px; border-radius:5px; font-size:12.5px; }
-  a { color:var(--accent); }
+  a { color:var(--accent); text-decoration:none; }
+  a:hover { text-decoration:underline; }
   #plan svg { max-width:100%; height:auto; }
+  /* Discovery: menu, pop-up viewer, reader tabs, "More..." links, diagram miniature (User, 2026-09-30). */
+  #metrics a { color:inherit; }
+  #metrics a:hover { color:var(--band-ink); }
+  [hidden] { display:none !important; }
+  #menuwrap { position:relative; }
+  #menuButton { font-size:20px; line-height:1; background:transparent; color:var(--band-ink); border:1px solid var(--band-line); border-radius:8px; padding:4px 10px; cursor:pointer; }
+  #menuButton:hover, #menuButton[aria-expanded="true"] { border-color:var(--band-ink); }
+  #menuButton:focus-visible { outline:3px solid var(--band-warn); outline-offset:2px; }
+  #menu { position:absolute; right:0; top:calc(100% + 6px); z-index:20; min-width:230px; background:var(--menu-bg); color:var(--ink); border:1px solid var(--line);
+          border-radius:10px; box-shadow:0 8px 24px var(--menu-shadow); padding:8px 0; font-size:14px; }
+  #menu[hidden] { display:none; }
+  #menu .menu-head { font-family:var(--axis-font-mono, ui-monospace, Menlo, monospace); font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--h2); padding:6px 16px 2px; }
+  #menu a, #menu button { display:block; width:100%; text-align:left; padding:5px 16px; color:var(--ink); text-decoration:none; background:none; border:0; font:inherit; cursor:pointer; }
+  #menu a:hover, #menu button:hover, #menu a:focus-visible, #menu button:focus-visible { background:var(--chip); outline:none; }
+  #menu hr { border:0; border-top:1px solid var(--line); margin:6px 0; }
+  .more { display:inline-block; margin-top:8px; font-size:13px; font-weight:500; color:var(--accent); cursor:pointer; background:none; border:0; padding:0; font-family:inherit; }
+  .more:hover { text-decoration:underline; }
+  .more + .more { margin-left:14px; }
+  .legend { font-size:12px; color:var(--muted); margin-left:auto; }
+  .mini { float:right; width:180px; height:270px; margin:0 0 12px 20px; padding:8px; border:1px solid var(--line); border-radius:8px; cursor:zoom-in; background:var(--card); overflow:hidden; }
+  .mini:hover { border-color:var(--accent); }
+  .mini svg, .mini img { display:block; width:100%; height:100%; max-width:none !important; object-fit:contain; pointer-events:none; }
+  #plan::after { content:""; display:block; clear:both; }
+  #plan .plan-summary p { margin:0 0 8px; }
+  dialog#modal { width:min(980px, 94vw); max-height:88vh; padding:0; border:1px solid var(--line); border-radius:12px; background:var(--card); color:var(--ink); box-shadow:0 12px 40px var(--menu-shadow); }
+  dialog#modal::backdrop { background:var(--scrim); }
+  .modal-head { position:sticky; top:0; display:flex; align-items:center; gap:12px; padding:12px 18px; background:var(--tint); border-bottom:1px solid var(--line); }
+  .modal-head h2 { margin:0; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .modal-head a, .modal-head button { font:inherit; font-size:13px; }
+  .modal-head button { background:var(--card); color:var(--ink); border:1px solid var(--line); border-radius:6px; padding:4px 10px; cursor:pointer; }
+  #modalBody { padding:16px 22px 22px; overflow:auto; max-height:calc(88vh - 56px); }
+  .doc { line-height:1.55; }
+  .doc h1 { font-size:22px; margin:6px 0 10px; color:var(--ink); } .doc h2 { font-size:13px; margin:18px 0 8px; } .doc h3 { font-size:15px; margin:14px 0 6px; }
+  .doc h4, .doc h5, .doc h6 { font-size:14px; margin:12px 0 4px; }
+  .doc pre { background:var(--chip); border:1px solid var(--line); border-radius:8px; padding:10px 12px; overflow:auto; font-size:12.5px; }
+  .doc pre code { background:none; padding:0; }
+  .doc blockquote { margin:8px 0; padding:4px 12px; border-left:3px solid var(--h2); color:var(--muted); }
+  .doc table { border-collapse:collapse; margin:8px 0; font-size:13px; display:block; overflow:auto; }
+  .doc th, .doc td { border:1px solid var(--line); padding:4px 8px; text-align:left; vertical-align:top; }
+  .doc th { background:var(--tint); }
+  .doc hr { border:0; border-top:1px solid var(--line); margin:14px 0; }
+  .reclist { list-style:none; padding:0; margin:0; }
+  .reclist li { padding:6px 0; border-bottom:1px solid var(--line); }
+  .reclist .when { color:var(--muted); font-size:12.5px; margin-right:8px; font-variant-numeric:tabular-nums; }
+  #reader { max-width:980px; margin:0 auto; }
+  #reader .card { height:auto; }
+  #snapshots .snap { padding:8px 0; border-bottom:1px solid var(--line); }
+  #snapshots .snap:last-of-type { border-bottom:0; }
+  #snapshots .snap .when { font-weight:600; }
   @media print {
-    footer, #banner { display:none }
+    footer, #banner, #menuwrap { display:none }
     body { background:#fff; padding:0 }
     header { background:#fff; color:#000; margin:0 0 12px; padding:0 }
     h1 { color:#000 }
@@ -168,21 +244,64 @@
 <body>
 <header>
   <img id="brandlogo" src="../Branding/svg/logo/logo-reversed.svg" alt="" onerror="this.remove()">
-  <h1>Axis Dashboard<span id="projname"></span></h1>
   <div id="metrics">loading…</div>
+  <div id="menuwrap">
+    <button id="menuButton" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="menu" onclick="toggleMenu()" title="Menu - opens pages in new tabs">☰</button>
+    <nav id="menu" role="menu" hidden>
+      <div class="menu-head">Read</div>
+      <a href="./#doc=../USERMANUAL.md" target="_blank" rel="noopener" role="menuitem">User Manual</a>
+      <a href="./#doc=../GLOSSARY.md" target="_blank" rel="noopener" role="menuitem">Glossary</a>
+      <a href="./#doc=../PROJECT.md" target="_blank" rel="noopener" role="menuitem">Project</a>
+      <a href="./#doc=../PLAN.md" target="_blank" rel="noopener" role="menuitem">Plan</a>
+      <a href="./#doc=../INITIATIVES.md" target="_blank" rel="noopener" role="menuitem">Initiatives</a>
+      <a href="./#doc=../TASKS.md" target="_blank" rel="noopener" role="menuitem">Tasks</a>
+      <a href="./#doc=../SETTINGS.md" target="_blank" rel="noopener" role="menuitem">Settings</a>
+      <a href="./#doc=../CHANGELOG.md" target="_blank" rel="noopener" role="menuitem">Changelog</a>
+      <a href="./#doc=../SPECIFICATION.md" target="_blank" rel="noopener" role="menuitem">Specification</a>
+      <hr>
+      <div class="menu-head">Browse records</div>
+      <a href="./#family=Reviews" target="_blank" rel="noopener" role="menuitem">Reviews</a>
+      <a href="./#family=CX" target="_blank" rel="noopener" role="menuitem">Cross-examinations (CX)</a>
+      <a href="./#family=Audit" target="_blank" rel="noopener" role="menuitem">Audits</a>
+      <a href="./#family=Snapshots" target="_blank" rel="noopener" role="menuitem">Snapshots</a>
+      <a href="./#family=Logs" target="_blank" rel="noopener" role="menuitem">Logs</a>
+      <a href="./#family=Notes" target="_blank" rel="noopener" role="menuitem">Notes</a>
+      <a href="./#family=Ideas" target="_blank" rel="noopener" role="menuitem">Ideas</a>
+      <a href="./#family=Tasks" target="_blank" rel="noopener" role="menuitem">Task details</a>
+      <hr>
+      <div class="menu-head">View</div>
+      <button type="button" role="menuitem" onclick="setTheme('')">Theme: follow system</button>
+      <button type="button" role="menuitem" onclick="setTheme('light')">Theme: light</button>
+      <button type="button" role="menuitem" onclick="setTheme('dark')">Theme: dark</button>
+      <button type="button" role="menuitem" onclick="toggleMenu(false);window.print()">Print or save as PDF</button>
+    </nav>
+  </div>
 </header>
 
 <div id="banner"></div>
 
-<div class="grid">
-  <section class="card wide" id="comments" style="display:none"></section>
+<div class="grid" id="cards">
+  <div class="projtitle">Project: <span id="projname">…</span><span id="projpath"></span></div>
   <section class="card" id="config"><h2>Configuration</h2><div class="muted">loading…</div></section>
   <section class="card" id="mindset"><h2>Mindset</h2><div class="muted">loading…</div></section>
-  <section class="card listcard" id="agents"><h2>Agents</h2><div class="muted">loading…</div></section>
+  <div class="side-stack">
+    <section class="card wide" id="comments" style="display:none"></section>
+    <section class="card listcard" id="agents"><h2>Agents</h2><div class="muted">loading…</div></section>
+  </div>
   <hr class="section-divider" aria-hidden="true">
   <div class="project-activity">
     <section class="card" id="project"><h2>Project</h2><div class="muted">loading…</div></section>
     <div class="activity-stack">
+      <section class="card listcard" id="tasks"><h2>Tasks</h2>
+        <div class="task-controls">
+          <label for="taskFilter">Status <select id="taskFilter" onchange="changeTaskFilter(this.value)"><option value="All">All</option><option>Active</option><option>Planned</option><option>Blocked</option><option>Completed</option><option>Cancelled</option></select></label>
+          <button id="taskPrevious" type="button" onclick="changeTaskPage(-1)" aria-controls="taskRows" disabled>Previous</button>
+          <button id="taskNext" type="button" onclick="changeTaskPage(1)" aria-controls="taskRows" disabled>Next</button>
+          <span class="muted" id="taskExtent" role="status" aria-live="polite"></span>
+          <span class="legend">→ what the Task delivers</span>
+        </div>
+        <div class="muted" id="taskCounts"></div><div class="scrollbody" id="taskRows">loading…</div>
+      </section>
       <section class="card listcard" id="ideas"><h2>Ideas</h2><div class="muted">loading…</div></section>
       <section class="card listcard" id="notes"><h2>Notes</h2><div class="muted">loading…</div></section>
       <section class="card listcard" id="logs"><h2>Logs</h2><div class="muted">loading…</div></section>
@@ -194,17 +313,20 @@
   <section class="card wide" id="wiki" style="display:none"><h2>Wiki</h2><div class="muted">loading…</div></section>
   <hr class="section-divider" aria-hidden="true">
   <section class="card wide" id="plan"><h2>Plan</h2><div class="muted">loading…</div></section>
-  <section class="card wide listcard" id="tasks"><h2>Tasks</h2>
-    <div class="task-controls">
-      <label for="taskFilter">Status <select id="taskFilter" onchange="changeTaskFilter(this.value)"><option value="All">All</option><option>Active</option><option>Blocked</option><option>Completed</option><option>Cancelled</option></select></label>
-      <button id="taskPrevious" type="button" onclick="changeTaskPage(-1)" aria-controls="taskRows" disabled>Previous</button>
-      <button id="taskNext" type="button" onclick="changeTaskPage(1)" aria-controls="taskRows" disabled>Next</button>
-      <span class="muted" id="taskExtent" role="status" aria-live="polite"></span>
-    </div>
-    <div class="muted" id="taskCounts"></div><div class="scrollbody" id="taskRows">loading…</div>
-  </section>
   <section class="card wide listcard" id="status"><h2>Review</h2><div class="muted">loading…</div></section>
+  <section class="card wide" id="snapshots"><h2>Snapshots</h2><div class="muted">loading…</div></section>
 </div>
+<main id="reader" hidden></main>
+
+<dialog id="modal" aria-labelledby="modalTitle" onclick="if (event.target === this) closeModal()">
+  <div class="modal-head">
+    <button id="modalBack" type="button" onclick="modalBack()" hidden>← Back</button>
+    <h2 id="modalTitle"></h2>
+    <a id="modalOpen" href="./" target="_blank" rel="noopener">Open in new tab</a>
+    <button type="button" onclick="closeModal()" aria-label="Close">Close ✕</button>
+  </div>
+  <div id="modalBody" class="doc"></div>
+</dialog>
 
 <footer>
   <span id="meta">loading…</span>
@@ -454,7 +576,7 @@ function followupSort(a, b){
 
 const CX_GLOSS = {"0":"Never","1":"Final deliverables","2":"Key steps","3":"Every step"};
 const MINDSET_GLOSS = {"-2":"Much Less -2","-1":"Less -1","0":"-","1":"More +1","2":"Much More +2"};
-const ROUTINE_VALUES = new Set(["Standard","✓","-"]);
+const ROUTINE_VALUES = new Set(["Standard","✓","-","Ready"]);
 function detailValue(value){
   return `<dd${ROUTINE_VALUES.has(value) ? ` class="routine-value"` : ""}>${esc(value)}</dd>`;
 }
@@ -467,7 +589,9 @@ async function renderConfiguration(partial){       // Settings and validated Hos
   } catch(e){ markPartial(partial, "Configuration"); }
   try { version = parseAxisVersion(await read(F.changelog)); } catch(e){ markPartial(partial, "Configuration"); }
   try { vals = parseSettings(await read(F.settings)); } catch(e){ markPartial(partial, "Configuration"); }
-  el("projname").textContent = name === "Not set" ? "" : ": " + name;
+  el("projname").textContent = name;
+  try { const where = (await read("./project-path")).trim(); el("projpath").textContent = where ? "(" + where + ")" : ""; }
+  catch(e){ el("projpath").textContent = ""; }         // older servers do not offer the folder path
   const profile = Object.keys(vals).length ? detectProfile(vals) : "Unknown";
   const model = (await readFlag("model", partial)) || "Unknown";
   const hs = await readFlag("host-spawn", partial), hp = await readFlag("host-parallel", partial), hsh = await readFlag("host-shell", partial);
@@ -534,6 +658,14 @@ async function renderConfiguration(partial){       // Settings and validated Hos
   } catch(e){ markPartial(partial, "Status"); }
 
   const availability = value => value === null ? "Unknown" : value === "yes" ? "✓" : "Unavailable";
+  // Subagents and Local Platform read as one plain statement each (User, 2026-09-30): state first, then the reason.
+  const subagents = hs === "yes" ? "Ready" : hs === "no" ? "Not available - this host cannot start agents" : "Unknown";
+  const localPlatform = ll === "no" ? "Not available - no local model endpoint"
+    : ll === null ? "Unknown"
+    : platform === "Ready" ? "Ready - endpoint available, subagents ok"
+    : platform === "Retest" ? "Retest - endpoint available, rerun the aptitude check"
+    : platform === "Review" ? "Review - endpoint available, the model failed an aptitude check"
+    : "Endpoint available - local model not yet checked";
   const row = (label, value) => `<div class="detail-row"><dt>${esc(label)}</dt>${detailValue(value)}</div>`;
   const configRows = [
     row("Version", version),
@@ -544,13 +676,11 @@ async function renderConfiguration(partial){       // Settings and validated Hos
     row("CX Frequency", CX_GLOSS[cxf] ?? cxf),
     row("Last Snapshot", snap),
     row("Portability", portability),
-    row("Spawn", availability(hs)),
+    row("Subagents", subagents),
     row("Parallel", availability(hp)),
     row("Shell", availability(hsh)),
     row("Cloud-Safe", availability(cloudSafe)),
-    row("Local Endpoint", availability(ll)),
-    row("Local Subagents", availability(ll)),
-    row("Local Platform", platform)
+    row("Local Platform", localPlatform)
   ].join("");
 
   const capabilityFacts = [
@@ -649,7 +779,9 @@ async function renderStatus(partial){              // newest Review distilled to
     html = `<div class="kv"><b>${esc(topic)}</b>${when ? ` <span class="muted">· ${esc(when)}</span>` : ""}</div>` +
            (syn ? `<div>${esc(syn)}</div>` : `<div class="muted">No synopsis in the latest report.</div>`);
   } catch(e){ markPartial(partial, "Review"); el("status").innerHTML = "<h2>Review</h2><div class='muted'>Could not read the newest Review.</div>"; return; }
-  el("status").innerHTML = `<h2>Review</h2><div class="scrollbody">` + html + `</div>`;
+  el("status").innerHTML = `<h2>Review</h2><div class="scrollbody">` + html + `</div>` +
+    `<a class="more" href="${esc(files[0])}" data-doc="${esc(files[0])}">Read the full Review…</a>` +
+    `<button type="button" class="more" onclick="showFamily('Reviews')">All Reviews…</button>`;
 }
 
 async function collectOperationalNotices(partial){ // actionable notices for the Status assessment
@@ -826,9 +958,12 @@ async function renderPlan(partial){
     const section = h => { const m = md.match(new RegExp("## "+h+"\\n([\\s\\S]*?)(?=\\n## |$)")); return m ? m[1].trim() : ""; };
     const summary = section("Executive Summary");
     const path = section("Execution Path");
-    const sumHtml = (!summary || summary.includes("{{"))
-      ? "<span class='muted'>No Plan drafted yet - use <code>^plan</code></span>"
-      : esc(summary).replace(/\n\n/g,"<br><br>");
+    // Plans written without an Executive Summary show their first section instead (2.02).
+    const firstSection = (md.match(/\n## ([^\n]+)\n([\s\S]*?)(?=\n## |$)/) || [,"",""]);
+    const opening = firstSection[2].trim().split(/\n\s*\n/).slice(0, 3).join("\n\n");
+    const sumHtml = summary && !summary.includes("{{") ? esc(summary).replace(/\n\n/g,"<br><br>")
+      : opening && !opening.includes("{{") ? `<div class="kv"><b>${esc(firstSection[1].trim())}</b></div>${mdToHtml(opening, F.plan)}`
+      : "<span class='muted'>No Plan drafted yet - use <code>^plan</code></span>";
     const stages = (!path || path.includes("{{")) ? [] :
       path.split("\n").map(l => l.replace(/^[-*\d.\s]+/,"").trim()).filter(Boolean);
     const diagram = stages.length
@@ -840,18 +975,24 @@ async function renderPlan(partial){
     }
     if (fn) {
       if (/\.(svg|png)$/i.test(fn)) {
-        dhtml = `<div style="margin-top:10px"><img src="${fn}" alt="Plan diagram" style="max-width:100%"></div>`;
+        dhtml = `<img src="${fn}" alt="Plan diagram" style="max-width:100%">`;
       } else {                                       // .mermaid: render with the pinned local bundle; always retain a link fallback
         try {
           const code = await read("./" + fn);
           const mer = await loadMermaid();
-          if (mer) { const { svg } = await mer.render("planDiagram", code); dhtml = `<div style="margin-top:10px">${svg}</div>`; }
+          if (mer) { const { svg } = await mer.render("planDiagram", code); dhtml = svg; }
           else markPartial(partial, "Plan");
         } catch(e){ markPartial(partial, "Plan"); }
       }
-      if (!dhtml) dhtml = `<div class="muted" style="margin-top:8px">Plan diagram: <a href="${fn}">${esc(fn)}</a></div>`;
+      if (dhtml) {                                   // a miniature shows that a diagram exists; the pop-up shows it in full
+        window._planDiagramHtml = dhtml;
+        dhtml = `<div class="mini" onclick="showDiagram()" title="View diagram">${dhtml}</div>`;
+      } else dhtml = `<div class="muted" style="margin-top:8px">Plan diagram: <a href="${fn}">${esc(fn)}</a></div>`;
     }
-    el("plan").innerHTML = `<h2>Plan</h2><div>${sumHtml}</div>${diagram}${dhtml}`;
+    const planLinks = (dhtml && window._planDiagramHtml ? `<button type="button" class="more" onclick="showDiagram()">View diagram…</button>` : "") +
+      `<a class="more" href="${F.plan}" data-doc="${F.plan}">Read the full Plan…</a>`;
+    const mini = window._planDiagramHtml && dhtml.startsWith('<div class="mini"');
+    el("plan").innerHTML = `<h2>Plan</h2>${mini ? dhtml : ""}<div class="plan-summary">${sumHtml}</div>${diagram}${mini ? "" : dhtml}<div>${planLinks}</div>`;
   } catch(e){ markPartial(partial, "Plan"); el("plan").innerHTML = "<h2>Plan</h2><div class='muted'>Could not read PLAN.md</div>"; }
 }
 
@@ -912,7 +1053,7 @@ async function renderAgents(partial){             // Markers in _Axis/Agents/: r
 let taskEntries = [], taskFilter = "All", taskPage = 0;
 const TASK_PAGE_SIZE = 25;
 function changeTaskFilter(value){
-  taskFilter = ["All", "Active", "Blocked", "Completed", "Cancelled"].includes(value) ? value : "All";
+  taskFilter = ["All", "Active", "Planned", "Blocked", "Completed", "Cancelled"].includes(value) ? value : "All";
   taskPage = 0;
   renderTaskPage();
 }
@@ -937,7 +1078,8 @@ function renderTaskPage(){
           agechip = age > 168 ? ` <span class="agechip">${label}</span>` : ` <span class="muted" style="font-size:12px">${label}</span>`;
         }
       }
-      items.push(`<li><span class="status ${esc(t.status)}">${esc(t.status)}</span> <b>${esc(t.name)}</b>${agechip}` +
+      const nameHtml = t.details && t.details.startsWith("../Tasks/") ? `<a href="${esc(t.details)}" data-doc="${esc(t.details)}"><b>${esc(t.name)}</b></a>` : `<b>${esc(t.name)}</b>`;
+      items.push(`<li><span class="status ${esc(t.status)}">${esc(t.status)}</span> ${nameHtml}${agechip}` +
         (t.label && !t.label.includes("{{") ? ` <span class="muted">- ${esc(t.label)}</span>` : "") +
         (t.initiative && /^[a-z][a-z0-9-]*$/.test(t.initiative) ? ` <a class="chip" href="../INITIATIVES.md#${encodeURIComponent(t.initiative)}">Initiative</a>` : "") +
         (t.delivers && !t.delivers.includes("{{") && t.delivers !== "N/A" ? ` <span class="chip" style="font-size:11.5px">→ ${esc(t.delivers)}</span>` : "") +
@@ -947,9 +1089,9 @@ function renderTaskPage(){
 }
 async function renderTasks(partial){
   try {
-    const order = {Active:0, Blocked:1, Completed:2, Cancelled:3};
+    const order = {Active:0, Blocked:1, Planned:2, Completed:3, Cancelled:4};
     taskEntries = parseTasks(await read(F.tasks)).sort((a,b)=>(order[a.status]??9)-(order[b.status]??9));
-    el("taskCounts").textContent = ["Active","Blocked","Completed","Cancelled"]
+    el("taskCounts").textContent = ["Active","Blocked","Planned","Completed","Cancelled"]
       .map(s => [s, taskEntries.filter(t => t.status === s).length]).filter(([,n]) => n)
       .map(([s,n]) => `${n} ${s}`).join(" · ");
     renderTaskPage(); // Controls stay mounted, preserving keyboard focus across refreshes.
@@ -968,14 +1110,15 @@ async function renderIdeas(partial){
       try { const t = await read(DIRS.Ideas + f);
             const lines = t.split("\n"), head = lines.slice(0, 8).join("\n");
             const get = k => (head.match(new RegExp("^"+k+":[ \\t]*(.+)$","m")) || [,""])[1].trim();
-            ideas.push({ subject:(lines[0]||"").trim()||f, status:get("status"), priority:get("priority"), created:get("created")||f });
+            ideas.push({ file:f, subject:(lines[0]||"").trim()||f, status:get("status"), priority:get("priority"), created:get("created")||f });
       } catch(e){ markPartial(partial, "Ideas"); }
     }
     if (!ideas.length) { el("ideas").innerHTML = "<h2>Ideas</h2><div class='muted'>No ideas yet - use <code>^idea</code>.</div>"; return; }
     const pRank = {high:0, medium:1, low:2}, sRank = {concrete:0, promising:1, speculative:2};
     ideas.sort((a,b)=>(pRank[a.priority]??3)-(pRank[b.priority]??3) || (sRank[a.status]??3)-(sRank[b.status]??3) || (a.created<b.created?1:-1));
     el("ideas").innerHTML = "<h2>Ideas</h2><div class=\"scrollbody\"><ul>" + ideas.slice(0,25).map(i =>
-      `<li><b>${esc(i.subject)}</b> <span class="muted">- ${esc(i.status||"?")} · priority ${esc(i.priority||"?")}</span></li>`).join("") + "</ul></div>";
+      `<li><a href="${DIRS.Ideas + encodeURIComponent(i.file)}" data-doc="${DIRS.Ideas + encodeURIComponent(i.file)}"><b>${esc(i.subject)}</b></a> <span class="muted">- ${esc(i.status||"?")} · priority ${esc(i.priority||"?")}</span></li>`).join("") + "</ul></div>" +
+      `<button type="button" class="more" onclick="showFamily('Ideas')">More…</button>`;
   } catch(e){ markPartial(partial, "Ideas"); el("ideas").innerHTML = "<h2>Ideas</h2><div class='muted'>" + NEEDS_SERVER + "</div>"; }
 }
 
@@ -985,10 +1128,10 @@ async function renderNotes(partial){               // Line-1 subjects of the mos
     const items = [];
     for (const f of files) {
       try { const t = await read(DIRS.Notes + f);
-            items.push(`<li>${esc((t.split("\n")[0]||"").trim() || f)}</li>`); }
+            items.push(`<li><a href="${DIRS.Notes + encodeURIComponent(f)}" data-doc="${DIRS.Notes + encodeURIComponent(f)}">${esc((t.split("\n")[0]||"").trim() || f)}</a></li>`); }
       catch(e){ markPartial(partial, "Notes"); }
     }
-    el("notes").innerHTML = "<h2>Notes</h2>" + (items.length ? "<div class=\"scrollbody\"><ul>"+items.join("")+"</ul></div>" : "<div class='muted'>No notes yet - use <code>^note</code>.</div>");
+    el("notes").innerHTML = "<h2>Notes</h2>" + (items.length ? "<div class=\"scrollbody\"><ul>"+items.join("")+"</ul></div><button type=\"button\" class=\"more\" onclick=\"showFamily('Notes')\">More…</button>" : "<div class='muted'>No notes yet - use <code>^note</code>.</div>");
   } catch(e){ markPartial(partial, "Notes"); el("notes").innerHTML = "<h2>Notes</h2><div class='muted'>" + NEEDS_SERVER + "</div>"; }
 }
 
@@ -999,10 +1142,10 @@ async function renderLogs(partial){
     const items = [];
     for (const f of files) {
       try { const t = await read(DIRS.Logs + f);
-            items.push(`<li><span class="muted">${esc(f.slice(0,16))}</span> ${esc((t.split("\n")[0]||"").trim())}</li>`); }
+            items.push(`<li><span class="muted">${esc(f.slice(0,16))}</span> <a href="${DIRS.Logs + encodeURIComponent(f)}" data-doc="${DIRS.Logs + encodeURIComponent(f)}">${esc((t.split("\n")[0]||"").trim() || f)}</a></li>`); }
       catch(e){ markPartial(partial, "Logs"); }
     }
-    el("logs").innerHTML = "<h2>Logs</h2>" + (items.length ? sparkline(all, 14) + "<div class=\"scrollbody\"><ul>"+items.join("")+"</ul></div>" : "<div class='muted'>No logs yet.</div>");
+    el("logs").innerHTML = "<h2>Logs</h2>" + (items.length ? sparkline(all, 14) + "<div class=\"scrollbody\"><ul>"+items.join("")+"</ul></div><button type=\"button\" class=\"more\" onclick=\"showFamily('Logs')\">More…</button>" : "<div class='muted'>No logs yet.</div>");
   } catch(e){ markPartial(partial, "Logs"); el("logs").innerHTML = "<h2>Logs</h2><div class='muted'>" + NEEDS_SERVER + "</div>"; }
 }
 
@@ -1073,7 +1216,7 @@ async function renderProject(partial){             // full _Axis/PROJECT.md, sec
         const head = (nl === -1 ? chunk : chunk.slice(0, nl)).trim();
         const body = nl === -1 ? "" : chunk.slice(nl + 1);
         const gloss = GLOSS[head] ? ` <span class="gloss">(${GLOSS[head]})</span>` : "";
-        return `<div><h3>${esc(head)}${gloss}</h3>${mdSection(body)}</div>`;
+        return `<div><h3>${esc(head)}${gloss}</h3><div class="projsec">${mdSection(body)}</div></div>`;
       }).join("") + "</div>";
     }
     el("project").innerHTML = html;
@@ -1097,7 +1240,8 @@ async function renderMetrics(partial){             // count line in the header, 
         const age = newest ? await recordAgeHours(newest, paths ? paths.find(x => x.endsWith("/" + newest)) : dir + newest, partial, "Header Metrics") : null;
         overdue = !newest || (age !== null && age > CADENCE[label]);
       }
-      parts.push(overdue ? `<span style="color:var(--band-warn)">${n} ${esc(displayLabel)}</span>` : `${n} ${esc(displayLabel)}`);
+      const link = html => `<a href="./#family=${esc(label)}" data-family="${esc(label)}" title="Browse ${esc(displayLabel)}">${html}</a>`;
+      parts.push(link(overdue ? `<span style="color:var(--band-warn)">${n} ${esc(displayLabel)}</span>` : `${n} ${esc(displayLabel)}`));
     }
     catch(e){ anyFail = true; markPartial(partial, "Header Metrics"); parts.push(`- ${esc(displayLabel)}`); }
   }
@@ -1124,6 +1268,196 @@ function banner(){
   }
 }
 
+/* ---- Discovery (User, 2026-09-30): read-only drill-down into the project's records. ----
+   Every view reads only paths the bundled server already allows; nothing here writes, and nothing runs at load
+   except reader-tab routing. Pop-ups use one <dialog>; the menu opens reader tabs (./#doc=... or ./#family=...). */
+const FAMILY_DIRS = { ...DIRS, Followups:FOLLOWUPS_DIR, Reminders:REMINDERS_DIR };
+const FAMILY_TITLES = { CX:"Cross-examinations (CX)", Audit:"Audits", Followups:"User Follow-Ups", Tasks:"Task details" };
+function fmtStamp(stem){
+  const ms = axisTimestampMs(String(stem || "").replace(/\.md$/, ""));
+  return ms === null ? "" : new Date(ms).toLocaleString([], {year:"numeric", month:"short", day:"numeric", hour:"2-digit", minute:"2-digit"});
+}
+function subjectOf(md, fallback){
+  const line = String(md || "").split("\n").map(l => l.trim()).find(Boolean) || "";
+  return line.replace(/^#+\s*/, "").replace(/^\*\*(.*)\*\*$/, "$1") || fallback;
+}
+function dashPath(href, base){                      // a served project path as seen from _Axis/Dashboard/, or null
+  const raw = String(href || "").trim();
+  if (!raw || raw.startsWith("#") || /^[a-z][a-z0-9+.-]*:/i.test(raw)) return null;
+  try {
+    const root = "http://axis.invalid/_Axis/Dashboard/";
+    const url = new URL(raw, new URL(base || "./", root));
+    if (url.origin !== "http://axis.invalid" || !url.pathname.startsWith("/_Axis/") || !/\.md$/i.test(url.pathname)) return null;
+    return ".." + decodeURIComponent(url.pathname).slice("/_Axis".length);
+  } catch(e){ return null; }
+}
+function mdInline(text, base){                      // escape first, then a small safe subset of inline Markdown
+  const codes = [];
+  let s = esc(text).replace(/`([^`]+)`/g, (_, c) => { codes.push(c); return "\u0000" + (codes.length - 1) + "\u0000"; });
+  s = s.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_, label, href) => {
+    const target = href.replace(/&amp;/g, "&");
+    if (/^https?:\/\//i.test(target)) return `<a href="${esc(target)}" target="_blank" rel="noopener">${label}</a>`;
+    const path = dashPath(target, base);
+    return path ? `<a href="${esc(path)}" data-doc="${esc(path)}">${label}</a>` : `<span class="muted">${label}</span>`;
+  });
+  s = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>").replace(/(^|[\s(])\*([^*\s][^*]*)\*/g, "$1<em>$2</em>").replace(/(^|[\s(])_([^_\s][^_]*)_(?=[\s).,;:]|$)/g, "$1<em>$2</em>");
+  return s.replace(/\u0000(\d+)\u0000/g, (_, i) => `<code>${codes[+i]}</code>`);
+}
+function mdToHtml(md, base){                        // headings, lists, tables, quotes, code, rules, paragraphs
+  const lines = String(md || "").replace(/\r\n/g, "\n").split("\n");
+  const out = []; let para = [], i = 0;
+  const flush = () => { if (para.length) { out.push(`<p>${mdInline(para.join(" "), base)}</p>`); para = []; } };
+  const cells = l => l.trim().replace(/^\||\|$/g, "").split("|").map(c => c.trim());
+  while (i < lines.length) {
+    const line = lines[i], t = line.trim();
+    if (/^```/.test(t)) { flush(); const code = []; i++;
+      while (i < lines.length && !/^```/.test(lines[i].trim())) code.push(lines[i++]);
+      out.push(`<pre><code>${esc(code.join("\n"))}</code></pre>`); i++; continue; }
+    if (!t) { flush(); i++; continue; }
+    const h = t.match(/^(#{1,6})\s+(.*)$/);
+    if (h) { flush(); out.push(`<h${h[1].length}>${mdInline(h[2], base)}</h${h[1].length}>`); i++; continue; }
+    if (/^(-{3,}|\*{3,}|_{3,})$/.test(t)) { flush(); out.push("<hr>"); i++; continue; }
+    if (t.startsWith("|") && i + 1 < lines.length && /^\|?\s*:?-{3,}/.test(lines[i + 1].trim())) {
+      flush(); const head = cells(t); i += 2; const rows = [];
+      while (i < lines.length && lines[i].trim().startsWith("|")) rows.push(cells(lines[i++]));
+      out.push("<table><thead><tr>" + head.map(c => `<th>${mdInline(c, base)}</th>`).join("") + "</tr></thead><tbody>" +
+        rows.map(r => "<tr>" + r.map(c => `<td>${mdInline(c, base)}</td>`).join("") + "</tr>").join("") + "</tbody></table>");
+      continue; }
+    if (t.startsWith(">")) { flush(); const q = [];
+      while (i < lines.length && lines[i].trim().startsWith(">")) q.push(lines[i++].trim().replace(/^>\s?/, ""));
+      out.push(`<blockquote>${mdInline(q.join(" "), base)}</blockquote>`); continue; }
+    if (/^\s*([-*+]|\d+\.)\s+/.test(line)) { flush(); const items = [];
+      while (i < lines.length && /^\s*([-*+]|\d+\.)\s+/.test(lines[i])) {
+        const m = lines[i].match(/^(\s*)([-*+]|\d+\.)\s+(.*)$/); let text = m[3]; i++;
+        while (i < lines.length && /^\s{2,}\S/.test(lines[i]) && !/^\s*([-*+]|\d+\.)\s+/.test(lines[i])) text += " " + lines[i++].trim();
+        items.push({level:Math.floor(m[1].replace(/\t/g, "  ").length / 2), tag:/\d/.test(m[2]) ? "ol" : "ul", text});
+      }
+      let html = ""; const stack = [];              // stack of open lists; each holds one open <li>
+      for (const it of items) {
+        if (!stack.length || it.level > stack[stack.length - 1].level) { html += `<${it.tag}>`; stack.push(it); }
+        else {
+          while (stack.length > 1 && it.level < stack[stack.length - 1].level) html += `</li></${stack.pop().tag}>`;
+          html += "</li>";
+        }
+        html += `<li>${mdInline(it.text, base)}`;
+      }
+      while (stack.length) html += `</li></${stack.pop().tag}>`;
+      out.push(html); continue; }
+    para.push(t); i++;
+  }
+  flush();
+  return out.join("\n");
+}
+async function docView(path){
+  try { const md = await read(path), title = subjectOf(md, path.split("/").pop());
+        const lines = md.replace(/\r\n/g, "\n").split("\n"), first = lines.findIndex(l => l.trim());
+        if (first >= 0 && !/^#/.test(lines[first].trim())) lines.splice(first, 1);   // a plain subject line repeats the title
+        return {title, html:mdToHtml(lines.join("\n"), path)}; }
+  catch(e){ return {title:path.split("/").pop(), html:`<p class="muted">${e && (e.status === 403 || e.status === 404)
+    ? "This file is outside the Dashboard's read-only view, or no longer exists." : "This file could not be read."}</p>`}; }
+}
+async function familyView(family){
+  const title = FAMILY_TITLES[family] || family;
+  const dir = FAMILY_DIRS[family];
+  if (!dir) return {title, html:"<p class='muted'>Unknown record family.</p>"};
+  let paths = [];
+  try { paths = family === "Reviews" ? await listReviews() : (await listDir(dir)).map(f => dir + f); }
+  catch(e){ return {title, html:"<p class='muted'>" + (e && e.status === 404 ? "No records yet." : NEEDS_SERVER) + "</p>"}; }
+  paths.sort((a, b) => b.split("/").pop().localeCompare(a.split("/").pop()));
+  if (!paths.length) return {title, html:"<p class='muted'>No records yet.</p>"};
+  const rows = await Promise.all(paths.map(async (path, n) => {
+    const file = path.split("/").pop();
+    let subject = file.replace(/\.md$/, "");
+    if (n < 60) { try { subject = subjectOf((await read(path)).slice(0, 600), subject); } catch(e){} }
+    return `<li><span class="when">${esc(fmtStamp(file) || file)}</span><a href="${esc(path)}" data-doc="${esc(path)}">${esc(subject)}</a></li>`;
+  }));
+  return {title, html:`<p class="muted">${paths.length} record${paths.length > 1 ? "s" : ""}, newest first.</p><ul class="reclist">${rows.join("")}</ul>`};
+}
+let modalStack = [], modalCurrent = null;
+async function showView(view, push=true){
+  const modal = el("modal");
+  if (push && modalCurrent) modalStack.push(modalCurrent);
+  modalCurrent = view;
+  el("modalTitle").textContent = view.title || "Loading…";
+  el("modalBody").innerHTML = "<p class='muted'>Loading…</p>";
+  el("modalBack").hidden = !modalStack.length;
+  if (!modal.open) { if (modal.showModal) modal.showModal(); else modal.setAttribute("open", ""); }
+  const shown = view.kind === "doc" ? await docView(view.path) : view.kind === "family" ? await familyView(view.family) : view;
+  if (modalCurrent !== view) return;                 // a newer view replaced this one while it loaded
+  el("modalTitle").textContent = view.title || shown.title;
+  el("modalBody").innerHTML = shown.html;
+  el("modalBody").scrollTop = 0;
+  const open = view.kind === "doc" ? "./#doc=" + view.path : view.kind === "family" ? "./#family=" + view.family : view.open;
+  el("modalOpen").hidden = !open;
+  if (open) el("modalOpen").setAttribute("href", open);
+}
+function showDoc(path, title){ return showView({kind:"doc", path, title}); }
+function showFamily(family){ return showView({kind:"family", family}); }
+function modalBack(){ const previous = modalStack.pop(); if (previous) { modalCurrent = null; showView(previous, false); } }
+function closeModal(){ const modal = el("modal"); modalStack = []; modalCurrent = null; if (modal.close) modal.close(); else modal.removeAttribute("open"); }
+function showDiagram(){ if (window._planDiagramHtml) showView({kind:"html", title:"Plan diagram", html:`<div style="overflow:auto">${window._planDiagramHtml}</div>`}); }
+function toggleMenu(force){
+  const menu = el("menu"), button = el("menuButton");
+  const open = force === undefined ? menu.hidden : !!force;
+  menu.hidden = !open; button.setAttribute("aria-expanded", String(open));
+}
+function setTheme(theme){
+  toggleMenu(false);
+  try { if (theme) document.documentElement.setAttribute("data-axis-theme", theme); else document.documentElement.removeAttribute("data-axis-theme"); } catch(e){}
+  try { if (theme) localStorage.setItem("axis-dashboard-theme", theme); else localStorage.removeItem("axis-dashboard-theme"); } catch(e){}
+}
+function readerTarget(){
+  const hash = String((typeof location !== "undefined" && location.hash) || "");
+  const m = hash.match(/^#(doc|family)=(.+)$/);
+  if (!m) return null;
+  const value = decodeURIComponent(m[2]);
+  if (m[1] === "family") return FAMILY_DIRS[value] ? {kind:"family", family:value} : null;
+  const path = dashPath(value, "./");
+  return path ? {kind:"doc", path} : null;
+}
+async function renderReader(target, partial){       // a reader tab: one document or record list, full page, same live refresh
+  el("reader").hidden = false; el("cards").hidden = true;
+  const shown = target.kind === "doc" ? await docView(target.path) : await familyView(target.family);
+  document.title = shown.title + " - Axis Dashboard";
+  el("reader").innerHTML = `<section class="card"><p><a href="./">← Dashboard</a></p><div class="doc">` +
+    (target.kind === "family" ? `<h1>${esc(shown.title)}</h1>` : "") + shown.html + `</div></section>`;
+  try { const m = (await read(F.project)).match(/^#\s+Project:\s*(.+)/m);
+        el("projname").textContent = m && !m[1].includes("{{") ? m[1].trim() : "Not set"; } catch(e){}
+  await renderMetrics(partial);
+}
+function onDashboardClick(event){
+  const wrap = el("menuwrap");
+  if (!el("menu").hidden && wrap && !wrap.contains(event.target)) toggleMenu(false);
+  const link = event.target && event.target.closest ? event.target.closest("a") : null;
+  if (!link || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button === 1) return;
+  const family = link.getAttribute("data-family");
+  const path = link.getAttribute("data-doc") || (link.getAttribute("target") ? null : dashPath((link.getAttribute("href") || "").split("#")[0], "./"));
+  if (!family && !path) return;
+  event.preventDefault();
+  if (readerTarget()) { location.hash = family ? "family=" + family : "doc=" + path; return; }
+  showView(family ? {kind:"family", family} : {kind:"doc", path});
+}
+async function renderSnapshots(partial){           // the last five Snapshot summaries from the Snapshot index, newest first
+  let md = "";
+  try { md = await read("../SNAPSHOTS.md"); }
+  catch(e){
+    if (!e || e.status !== 404) markPartial(partial, "Snapshots");
+    el("snapshots").innerHTML = "<h2>Snapshots</h2><div class='muted'>" + (e && e.status === 404 ? "No Snapshots yet - use <code>^save</code>." : "Could not read SNAPSHOTS.md") + "</div>";
+    return;
+  }
+  const entries = md.split(/\n## /).slice(1).map(chunk => {
+    const lines = chunk.split("\n"), id = lines[0].trim();
+    const body = lines.slice(1).map(l => l.trim()).filter(l => l && !l.startsWith("[Details")).join(" ");
+    const dm = chunk.match(/\[Details\.\.\.\]\((Snapshots\/[^)]+\.md)\)/);
+    return {id, body, details: dm ? "../" + dm[1] : null};
+  }).filter(x => axisTimestampMs(x.id) !== null && !x.body.includes("{{"));
+  if (!entries.length) { el("snapshots").innerHTML = "<h2>Snapshots</h2><div class='muted'>No Snapshots yet - use <code>^save</code>.</div>"; return; }
+  const rows = entries.slice(-5).reverse().map(x => `<div class="snap"><span class="when">${esc(fmtStamp(x.id))}</span>` +
+    (x.details ? ` · <a href="${esc(x.details)}" data-doc="${esc(x.details)}">Details</a>` : "") +
+    `<div>${mdInline(x.body.length > 520 ? x.body.slice(0, 520) + "…" : x.body, "../SNAPSHOTS.md")}</div></div>`);
+  el("snapshots").innerHTML = `<h2>Snapshots</h2>${rows.join("")}<button type="button" class="more" onclick="showDoc('../SNAPSHOTS.md', 'All Snapshots')">More…</button>`;
+}
+
 async function loadAll(manual=false){
   const reload = el("reloadButton");
   const partial = new Set();
@@ -1137,11 +1471,13 @@ async function loadAll(manual=false){
   el("meta").textContent = "Refreshing…";
   banner();
   let completed = false;
+  const target = readerTarget();
   try {
+    if (target) { await renderReader(target, partial); completed = true; return; }
     const configuration = renderConfiguration(partial);
     const operational = collectOperationalNotices(partial);
     await Promise.all([configuration, operational, renderMindset(partial), renderStatus(partial), renderReminders(partial), renderFollowups(partial), renderAgentActivity(partial), renderPlan(partial), renderAgents(partial), renderTasks(partial),
-                       renderIdeas(partial), renderNotes(partial), renderWiki(partial), renderLogs(partial), renderProject(partial), renderMetrics(partial)]);
+                       renderIdeas(partial), renderNotes(partial), renderWiki(partial), renderLogs(partial), renderProject(partial), renderMetrics(partial), renderSnapshots(partial)]);
     renderDashboardStatus(await configuration, await operational);
     completed = true;
   } finally {
@@ -1159,6 +1495,12 @@ async function loadAll(manual=false){
       }, 1800);
     }
   }
+}
+try { const theme = localStorage.getItem("axis-dashboard-theme"); if (theme) document.documentElement.setAttribute("data-axis-theme", theme); } catch(e){}
+if (document.addEventListener) {                   // browser only: pop-up links, menu dismissal, reader-tab navigation
+  document.addEventListener("click", onDashboardClick);
+  document.addEventListener("keydown", event => { if (event.key === "Escape" && !el("menu").hidden) { toggleMenu(false); el("menuButton").focus(); } });
+  window.addEventListener("hashchange", () => { toggleMenu(false); if (readerTarget()) { window.scrollTo(0, 0); loadAll(); } else location.reload(); });
 }
 window._axisTimer = setInterval(loadAll, 30000);   // always live - a Dashboard that is not refreshing is a Review
 loadAll();

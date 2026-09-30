@@ -5,7 +5,7 @@
 
 ## What it shows
 
-- **Short (default):** Project name and installed version; one counts line (Tasks by state, open Follow-Ups, Reminders, live Agents, Git branch and whether the tree is clean); the Plan's current direction; Active and Blocked Tasks; open Initiatives; what is waiting on User (Follow-Ups); upcoming Reminders; the newest few Logs; and how long ago the last Snapshot and Review were made. It must fit on one ordinary terminal screen.
+- **Short (default):** Project name and installed version; under a spaced Axis Project Status title between dividers, one block of labelled rows in aligned columns (Project, Path, Version, As of; Tasks active, planned, blocked and done; open Follow-Ups; Reminders; live Agents), with no Git details; the Plan's current direction; Active and Blocked Tasks; open Initiatives; what is waiting on User (Follow-Ups); upcoming Reminders; the newest few Logs; and how long ago the last Snapshot and Review were made. It must fit on one ordinary terminal screen.
 - **Full (`^status deep dive`, or any request for more):** the same, plus more Tasks and Logs, finished Initiatives, recently completed Tasks and record counts - and, for a deep dive, the Agent's own summary of the detail records User asked about.
 
 ## Formats

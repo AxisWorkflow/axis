@@ -109,7 +109,11 @@ try:
  s=run(R/'startup-survey.py','--root',root,'survey','--session',sid,'--owner',owner,'--model',o.model,'--harness',o.harness,'--interaction',o.interaction,'--spawn',o.spawn,'--parallel',o.parallel)
  if s.get('status')!='surveyed':interrupted('startup survey failed',survey=s)
 
- notices=list(s.get('notices') or []);pending=[];later=[]
+ notices=[x for x in (s.get('notices') or []) if x!='cloud-synced-folder'];pending=[];later=[]
+ if 'cloud-synced-folder' in (s.get('notices') or []):
+     why=s.get('cloud_reason') or 'reason not recorded'
+     notices.append(f'This folder looks cloud-synced ({why}), so agents here write one at a time. If it is really a local folder, say so and it will be corrected.')
+     later.append(f'record one Log Event "Storage classified as cloud-synced" with the reason: {why}')
  if adopted:
      notices.append(f"Axis was updated from {adopted['from']} to {adopted['to']} and the update is now adopted.")
      if adopted['unrelated_changes']:notices.append('Project files changed after the update was applied (reported, not blocking): '+', '.join(adopted['unrelated_changes'][:5]))
@@ -157,7 +161,7 @@ try:
  bar='━'*40
  print(json.dumps({'axis_boot':'READY','session':sid,'notices':notices,'pending':pending,'later':later}))
  print('Banner for the user (show it first, as is):')
- print(f"```text\n  {bar}\n  │\n  +   A X I S   W O R K F L O W\n  │\n  {bar}\n\n  │   Agent:    Main\n  │   Status:   Ready\n  │   Version:  {ver}\n  │   Project:  {name}\n  │   Folder:   {folder}\n  │   Session:  {sid}\n\n  {bar}\n```")
+ print(f"```text\n{bar}\n\n  A X I S   W O R K F L O W\n\n{bar}\n\n  Project:  {name}\n  Folder:   {folder}\n  Session:  {sid}\n  Version:  {ver}\n  Status:   Ready\n  Agent:    Main\n\n{bar}\n```")
  for x in notices:print('Notice for the user: '+x)
  for x in pending:print('Pending before the first answer: '+x)
  print('Before any answer other than the greeting or a requested exact reply: read _Axis/Resources/Load-Starting-Context.md (core rules), _Axis/INSTRUCTIONS.md, _Axis/MINDSET.md, _Axis/DIRECTIVES.md, _Axis/PLAN.md, _Axis/TASKS.md, the newest Snapshots and the Notes index'+('; and: '+'; '.join(later) if later else '')+'.')

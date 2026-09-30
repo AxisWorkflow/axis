@@ -45,6 +45,9 @@ AXIS_RECORD_FAMILIES = {
     "Audit",
 }
 AXIS_ROOT_FILES = {"CHANGELOG.md", "PROJECT.md", "SETTINGS.md", "PLAN.md", "INITIATIVES.md", "TASKS.md"}
+# Read-only documents the Dashboard menu and viewer open (2.02): the User Manual, Glossary, Specification,
+# Manifest and the Snapshot index. Product documentation and index records only; no Secrets or host files.
+AXIS_ROOT_FILES |= {"USERMANUAL.md", "GLOSSARY.md", "SPECIFICATION.md", "MANIFEST.md", "SNAPSHOTS.md"}
 DASHBOARD_FILES = {
     "index.html",
     "mermaid-11.16.1.min.js",
@@ -278,6 +281,9 @@ class AxisDashboardHandler(BaseHTTPRequestHandler):
             if parts == ("_Axis", "Dashboard") and directory_request:
                 self._serve_file(parts + ("index.html",), head_only)
                 return
+            if parts == ("_Axis", "Dashboard", "project-path") and not directory_request:
+                self._serve_project_path(head_only)
+                return
             if is_lock_directory(parts) and directory_request:
                 if not head_only:
                     raise DeniedPath("lock contents are not served")
@@ -296,6 +302,22 @@ class AxisDashboardHandler(BaseHTTPRequestHandler):
             self.send_error(404, "not found")
         except OSError:
             self.send_error(404, "not found")
+
+    def _serve_project_path(self, head_only: bool) -> None:
+        """The project folder for the Dashboard title (2.02): shortened to ~/... inside the home folder, like ^status."""
+        root = self.project_root.resolve()
+        home = Path.home().resolve()
+        try:
+            shown = "~/" + root.relative_to(home).as_posix() if root != home else "~"
+        except ValueError:
+            shown = root.as_posix()
+        body = (shown + "\n").encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "text/plain; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        if not head_only:
+            self.wfile.write(body)
 
     def _serve_lock_head(self, parts: tuple[str, ...]) -> None:
         path = resolve_under_root(self.project_root, parts)
@@ -326,7 +348,7 @@ class AxisDashboardHandler(BaseHTTPRequestHandler):
             self.send_header(
                 "Content-Security-Policy",
                 "default-src 'none'; connect-src 'self'; img-src 'self' data:; "
-                "script-src 'self' 'unsafe-inline'; "
+                "script-src 'self' 'unsafe-inline'; font-src 'self'; "
                 "style-src 'self' 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'",
             )
         elif suffix == ".svg":

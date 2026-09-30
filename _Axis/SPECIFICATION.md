@@ -1,6 +1,6 @@
 # Axis Workflow Specification
 > **Purpose:** The technical reference behind the Axis Workflow: how every mechanism works, why it was built that way, what it guarantees, where it stops, and what an extender must not break. Written for deep diagnostics, downstream developers extending Axis, IT and compliance reviewers assessing it before adoption, and contributors. For everyday use, see the [User Manual](/_Axis/USERMANUAL.md).
-> **Version:** 2.01
+> **Version:** 2.02
 
 ## How to Read This Document
 
