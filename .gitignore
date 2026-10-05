@@ -45,12 +45,15 @@ _Axis/Secrets/*
 !_Axis/Secrets/.gitkeep
 !_Axis/Secrets/.recipient
 !_Axis/Secrets/.capsule.age
+!_Axis/Secrets/.identity.age
 _Trash/*
 !_Trash/.gitkeep
 _Axis/Agents/*
 !_Axis/Agents/.gitkeep
 _Axis/Tracking/*
 !_Axis/Tracking/.gitkeep
+# Runtime startup admission lock (exists only while a session is starting).
+_Axis/Flags/starting.lock/
 # Runtime update lock only; durable transaction evidence remains tracked.
 _Axis/Updates/operation.lck
 # BEGIN GENERATED: flag-ignore

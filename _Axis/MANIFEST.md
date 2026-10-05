@@ -89,6 +89,7 @@
 - `_Axis/Practices/Commands.md`
 - `_Axis/Practices/CX.md`
 - `_Axis/Practices/Dashboard.md`
+- `_Axis/Practices/Context.md`
 - `_Axis/Practices/Delegation.md`
 - `_Axis/Practices/Directives.md`
 - `_Axis/Practices/Flags.md`
@@ -198,6 +199,7 @@
 - `_Axis/Resources/Entry-Protocol.md` - the complete startup and per-turn protocol; the path for a pending update.
 - `_Axis/Resources/agent-board.py` - optional read-only Tracking board for `^board` and the awareness pass; reading the files directly remains available.
 - `_Axis/Resources/Claim-Session.md`
+- `_Axis/Resources/Default-Directives.md` - the shipped default Directives; startup adds any missing from the project's `DIRECTIVES.md`.
 - `_Axis/Resources/Detect-Capabilities.md`
 - `_Axis/Resources/Draft-Mindset.md`
 - `_Axis/Resources/Lock-File.md`

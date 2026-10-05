@@ -43,6 +43,7 @@
 - Never edit an entry file; User instructions go in `_Axis/INSTRUCTIONS.md`.
 - Only Main Agent creates/reorganizes Project Subfolders ([Practices > Folders]).
 - Before deleting, overwriting or reorganizing, confirm per [Rules > Permissions].
+- About to ask "should I?" Re-check [Settings > Permissions] first.
 - Confirm with User before loading any file over 1 MB into context.
 - Shell recipes assume a POSIX shell; on Windows that means WSL or Git Bash.
 - Check Flags before a gated feature; if blocked, degrade, Log it, tell User.

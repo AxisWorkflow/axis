@@ -18,8 +18,8 @@ o=a.parse_args();root=Path.cwd().resolve();R=root/'_Axis/Resources'
 
 def stamp():
     n=datetime.datetime.now(datetime.timezone.utc);return n.strftime('%Y.%m.%d.%H.%M.%S.')+'%03dZ'%(n.microsecond//1000)
-def run(*args):
-    r=subprocess.run([sys.executable,'-B',*map(str,args)],cwd=root,capture_output=True,text=True,timeout=120)
+def run(*args,timeout=120):
+    r=subprocess.run([sys.executable,'-B',*map(str,args)],cwd=root,capture_output=True,text=True,timeout=timeout)
     out=r.stdout.strip().splitlines()
     try:return json.loads(out[-1]) if out else {'status':'error','stderr':r.stderr[-400:]}
     except ValueError:return {'status':'error','stdout':r.stdout[-400:],'stderr':r.stderr[-400:]}
@@ -82,6 +82,67 @@ def update_state():
         state='ready' if {'ready.json','released.json'}<=names else 'pending'
         if state=='pending':return state
     return state
+
+def secrets_guidance():
+    # Encrypted Secrets: say exactly what to run when this computer cannot open them. Reads only the public
+    # .recipient and whether files exist; never a Secret, the key, or the password (GIT.md > Password Unlock).
+    import shlex,shutil
+    sec=root/'_Axis/Secrets';rec=sec/'.recipient'
+    if not ((sec/'.capsule.age').is_file() and rec.is_file()):return None
+    kid=re.search(r'^key-id: ([0-9a-f]{40}(?:[0-9a-f]{24})?)$',rec.read_text(),re.M)
+    if not kid:return None
+    keys=Path(os.environ.get('AXIS_SECRETS_KEY_DIR') or os.path.expanduser('~/.axis/keys'))
+    if (keys/f'{kid.group(1)}.agekey').is_file():
+        if not (sec/'.binding').exists():later.append('receive the encrypted Secrets: _Axis/Practices/GIT.md > Receive automatically')
+        return None
+    go='cd '+shlex.quote(str(root))
+    if not (shutil.which('age') and shutil.which('age-keygen')):
+        inst='brew install age' if sys.platform=='darwin' else 'sudo apt install age'
+        return f'This project keeps encrypted Secrets, but the age tool is not installed on this computer. In a terminal, run: {inst}  (other systems: https://github.com/FiloSottile/age#installation). Then start a new conversation here.'
+    if (sec/'.identity.age').is_file():
+        return f'This project\'s Secrets are locked on this computer. Open a terminal window (not this chat) and run: {go} && bash _Axis/Resources/secrets-capsule.sh unlock  -- then type your Secrets password at the prompt. Tell me when it says "unlocked" and I will finish receiving the Secrets.'
+    return f'This project\'s Secrets cannot be opened on this computer: its key is not here and no password copy exists. On a computer that already opens them, run in a terminal: cd <that project folder> && bash _Axis/Resources/secrets-capsule.sh password-set  -- choose a password, save and push, then on this computer run: {go} && bash _Axis/Resources/secrets-capsule.sh unlock'
+
+def network_folder():
+    # A LAN share (SMB/CIFS/NFS/AFP) is one copy with several writers: folder locks work there, with brief busy
+    # errors and short "missing" windows during renames (Lock-File > Shared Network Folders).
+    try:out=subprocess.run(['mount'],capture_output=True,text=True,timeout=5).stdout
+    except (OSError,subprocess.SubprocessError):return None
+    best=None
+    for line in out.splitlines():
+        m=re.match(r'^(.*?) on (/.*?) (?:\(|type )([a-z0-9]+)',line)
+        if not m:continue
+        point,kind=m.group(2),m.group(3)
+        if (str(root)==point or str(root).startswith(point.rstrip('/')+'/')) and (best is None or len(point)>len(best[0])):best=(point,kind)
+    return best[1] if best and best[1] in ('smbfs','cifs','smb3','nfs','nfs4','afpfs','webdav') else None
+
+def replace_shared(src, dst):
+    """os.replace with a bounded retry. On shared network folders (SMB) a rename can fail briefly with EBUSY or
+    EACCES while another computer reads the target (SMB lab, 2026-10-04: worst wait 1.05 s)."""
+    import errno as _errno, time as _time
+    deadline=_time.monotonic()+10
+    while True:
+        try:os.replace(src,dst);return
+        except OSError as e:
+            if e.errno not in (_errno.EBUSY,_errno.EACCES) or _time.monotonic()>deadline:raise
+            _time.sleep(0.05)
+
+def sync_directives():
+    # Default Directives (2.04, User decision 2026-10-04): append each Directive shipped in the managed
+    # Resources/Default-Directives.md that the project's DIRECTIVES.md lacks, unless the project opts out with
+    # <!-- axis:omit-directive: {name} -->. Existing Directives are never edited, reordered or removed.
+    src=R/'Default-Directives.md';dst=root/'_Axis/DIRECTIVES.md'
+    if not src.is_file() or not dst.is_file() or src.is_symlink() or dst.is_symlink():return []
+    def sections(text):
+        parts=re.split(r'(?m)^(?=## )',text);return [(x.splitlines()[0][3:].strip(),x.rstrip('\n')+'\n') for x in parts if x.startswith('## ')]
+    have=dst.read_text()
+    known={n.casefold() for n,_ in sections(have)}|{m.strip().casefold() for m in re.findall(r'<!-- axis:omit-directive: (.+?) -->',have)}
+    add=[(n,b) for n,b in sections(src.read_text()) if n.casefold() not in known]
+    if not add:return []
+    new=have.rstrip('\n')+'\n'+''.join('\n'+b for _,b in add)
+    tmp=dst.with_name('.DIRECTIVES.md.axis-sync');tmp.write_text(new);replace_shared(tmp,dst)
+    if dst.read_text()!=new:raise OSError('directive sync readback')
+    return [n for n,_ in add]
 
 if not (root/'_Axis/Resources/startup-state.py').is_file():stop('run this from the project root')
 if o.finish_adoption:
@@ -149,7 +210,32 @@ try:
  if 'axis:project-overlay:begin' in proj:pending.append('validate and activate the declared project overlay with _Axis/Resources/Load-Project-Overlay.md (confirm, then activate); its guidance applies only after that')
  ready=(root/'_Axis/Flags/project-ready');rv=ready.read_text().splitlines()[0].strip() if ready.exists() and ready.read_text().strip() else ''
  if not re.fullmatch(r'\d{4}(\.\d{2}){5}\.\d{3}Z',rv):pending.append('say "Your project needs to be set up." and follow _Axis/Resources/Start-Project.md')
- if re.search(r'^\*\*Value:\*\* on\s*$',(root/'_Axis/SETTINGS.md').read_text().split('### Remote Freshness',1)[-1].split('###',1)[0],re.M):later.append('run _Axis/Resources/Check-Remote-Freshness.md once')
+ rf=re.search(r'^\*\*Value:\*\* (on|auto)\s*$',(root/'_Axis/SETTINGS.md').read_text().split('### Remote Freshness',1)[-1].split('###',1)[0],re.M)
+ if rf:
+     # Check-Remote-Freshness.md, run here so that `auto` can bring the project up to date before the Agent reads it.
+     try:f=run(R/'remote-freshness.py','--project-root',root,'--session',sid,timeout=600)
+     except subprocess.TimeoutExpired:f={'status':'unverified','notice':'Remote freshness is unverified; Axis remains usable locally.'}
+     if f.get('notice'):notices.append(f['notice'])
+     elif f.get('status') not in ('disabled','already-checked','no-upstream','equal','local-ahead','fast-forwarded'):notices.append('Remote freshness is unverified; Axis remains usable locally.')
+     if f.get('status')=='fast-forwarded':
+         if f.get('workflow_changed'):pending.append("incoming commits changed Axis's own files: tell the user in one line and ask them to start a fresh conversation; do not continue this one (_Axis/Practices/GIT.md > Incoming Change Validation)")
+         else:
+             if (root/'_Axis/Secrets/.capsule.age').exists():later.append('receive the encrypted Secrets: _Axis/Practices/GIT.md > Receive automatically')
+             later.append('quietly run _Axis/Practices/Portability.md > Always-On Resume Revalidation for the received commits')
+ added=sync_directives()
+ if added:
+     notices.append('Added '+('a new default Directive' if len(added)==1 else f'{len(added)} new default Directives')+' from this Axis version: '+', '.join(added)+'.')
+     later.append('record one Log Event "Default Directives added" naming: '+', '.join(added))
+ nf=network_folder()
+ if nf:notices.append(f'This project is on a shared network folder ({nf}). Axis lets one agent write at a time here, because file locks proved unreliable on some network servers (_Axis/Resources/Lock-File.md > Shared Network Folders).')
+ sg=secrets_guidance()
+ if sg:notices.append(sg)
+ cm=re.search(r'^\*\*Value:\*\* (\S+)\s*$',(root/'_Axis/SETTINGS.md').read_text().split('### Context Management',1)[-1].split('###',1)[0],re.M) if '### Context Management' in (root/'_Axis/SETTINGS.md').read_text() else None
+ if cm and cm.group(1)=='Two-Pass':pending.append('Context Management is Two-Pass: read _Axis/Practices/Context.md and follow its Two-Pass section for every request')
+ # Default Directive "Suggest a Context Method", applied mechanically at startup because the model is known here.
+ cmv=cm.group(1) if cm and cm.group(1) in ('Default','Two-Pass') else 'Default';mid=o.model.lower()
+ if cmv=='Default' and any(k in mid for k in ('claude','sonnet','opus','haiku','fable')):notices.append('This project runs on Claude, where Two-Pass context loading used about 38% fewer tokens on question-and-lookup work in Axis\'s tests, with no loss of accuracy. Say "switch Context Management to Two-Pass" to turn it on.')
+ elif cmv=='Two-Pass' and any(k in mid for k in ('codex','gpt')):notices.append('This project uses Two-Pass context loading, which did not save tokens on Codex in Axis\'s tests. Say "switch Context Management to Default" to turn it off.')
  later.append('check for a parent Project (Start-Session Step 5, Subproject detection)')
 
  name=re.match(r'# Project: (.+)',proj);name=name.group(1).strip() if name and '{{' not in name.group(1) else 'Not set'
@@ -160,8 +246,8 @@ try:
 
  bar='━'*40
  print(json.dumps({'axis_boot':'READY','session':sid,'notices':notices,'pending':pending,'later':later}))
- print('Banner for the user (show it first, as is):')
- print(f"```text\n{bar}\n\n  A X I S   W O R K F L O W\n\n{bar}\n\n  Project:  {name}\n  Folder:   {folder}\n  Session:  {sid}\n  Version:  {ver}\n  Status:   Ready\n  Agent:    Main\n\n{bar}\n```")
+ print('Banner for the user (show it first, as is; the header was printed before startup):')
+ print(f"```text\n  Project:  {name}\n  Folder:   {folder}\n  Session:  {sid}\n  Version:  {ver}\n  Status:   Ready\n  Agent:    Main\n\n{bar}\n```")
  for x in notices:print('Notice for the user: '+x)
  for x in pending:print('Pending before the first answer: '+x)
  print('Before any answer other than the greeting or a requested exact reply: read _Axis/Resources/Load-Starting-Context.md (core rules), _Axis/INSTRUCTIONS.md, _Axis/MINDSET.md, _Axis/DIRECTIVES.md, _Axis/PLAN.md, _Axis/TASKS.md, the newest Snapshots and the Notes index'+('; and: '+'; '.join(later) if later else '')+'.')

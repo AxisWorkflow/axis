@@ -21,11 +21,11 @@
 
 ### Remote Freshness
 
-**Description:** `on` authorizes one bounded Git fetch/check against the current branch's already configured upstream during each normal Main startup. Incoming or diverged commits produce a `^resume` recommendation; nothing merges or pushes automatically. `off` makes no startup network request. Existing projects default to `off` when this Setting is absent. Git, Python 3, POSIX timeout support and verified local atomic storage are optional prerequisites for this enhancement; failure leaves Axis usable with freshness unverified.
+**Description:** `on` authorizes one bounded Git fetch/check against the current branch's already configured upstream during each normal Main startup. Incoming or diverged commits produce a `^resume` recommendation; nothing merges or pushes automatically. `auto` does the same check and, when the upstream is simply ahead and the local checkout is clean (or holds only this session's lifecycle Logs), fast-forwards before the session reads the project, so it opens up to date; anything else is only reported (including commits this computer has not pushed yet), and nothing is ever merged, rebased, stashed or pushed. `off` makes no startup network request. New projects ship with `auto` (User decision, 2026-10-04); a project without a remote makes no request. Existing projects keep their stored value, and a missing Setting still means `off`. Git, Python 3, POSIX timeout support and verified local atomic storage are optional prerequisites for this enhancement; failure leaves Axis usable with freshness unverified.
 
-**Range:** `off` or `on`
+**Range:** `off`, `on` or `auto`
 
-**Value:** off
+**Value:** auto
 
 ### CX Frequency
 
@@ -110,6 +110,14 @@
 **Range:** a whole number from `1` to `100`
 
 **Value:** 10
+
+### Context Management
+
+**Description:** How the Agent decides what project records to read for each request (see [Practices > Context]). `Default` reads as the Practices direct and lazy-loads detail when needed. `Two-Pass` first works from index entries only, lists the record IDs it needs, then opens exactly those; in Axis's benchmark it used about 38% fewer tokens on Claude with no loss of accuracy, but did not help Codex. The default Directive "Suggest a Context Method" recommends a value for the model in use; it never changes the Setting on its own.
+
+**Range:** `Default` or `Two-Pass`
+
+**Value:** Default
 
 ## Mindset Settings
 ### Reasoning

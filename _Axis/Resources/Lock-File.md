@@ -32,6 +32,20 @@ Verify the retained `OWNER` token and your lease immediately before writing. Pre
 2. Re-read `OWNER` and require the retained exact token. On missing or different ownership, STOP; never remove another holder's directory by pathname.
 3. Remove only your own `BATCH` if present, then `OWNER`, then the empty directory with `rmdir`. A failed removal is reported and left for recovery; never recursively remove a possibly replaced active path.
 
+## Shared Network Folders
+
+A project on a LAN share (SMB, CIFS, NFS) runs in Degraded Mode: startup classifies it as `serialized`, so one writer works at a time. Measured on 2026-10-04:
+
+- **Samba 4.13 in Docker:** 6,000 contended folder locks from two macOS sessions and a Linux client, with no overlap.
+- **Apple's SMB server (macOS File Sharing):** in 93 of 1,800 lock handoffs, the next holder still saw the previous holder's marker file. A lock-protected counter lost up to 24 of 1,200 updates, whether files were replaced or overwritten in place. One in-place overwrite left a stale byte behind.
+
+Folder locks are therefore not proven safe on network folders in general. Until a specific server is qualified, writers serialize. Behaviours to expect even with one writer:
+
+- **Busy rename or open.** Replacing a file another computer is reading can fail for about a second with "resource busy" or "permission denied". Retry the same step for up to 10 seconds, then stop and report. The installed Python helpers already do this.
+- **Briefly missing or stale.** During or just after another computer's change, a reader can see an old copy or no file. Recheck after a short pause before acting on "not found" or on a value that looks outdated.
+- **Open files and deletes.** A deleted file stays "delete pending" while open, so a folder holding it cannot be removed yet: close a file before removing its folder.
+- **Locks and outages.** On macOS shares, a held `flock` reports "permission denied" rather than "would block", and `lockf` is not supported. An unreachable server makes writes wait rather than fail.
+
 ## Quiescent Recovery
 
 Stale cleanup is permitted only during **quiescent recovery:** User or trusted host controls establish that all other writer processes have stopped, no delayed holder can resume, and new sessions, schedules, and spawns are suspended for the whole recovery. The recovering Main holds no ordinary locks. Marker age, a tombstone, and an `mtime` recheck alone do not establish these conditions.

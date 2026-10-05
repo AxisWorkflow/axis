@@ -70,13 +70,24 @@ def once(p,v):
     data=v if isinstance(v,bytes) else encode(v);p.parent.mkdir(parents=True,exist_ok=True)
     with p.open('xb') as f:f.write(data);f.flush();os.fsync(f.fileno())
     syncdir(p.parent);require(read(p)==data,'evidence readback failed')
+def replace_shared(src, dst):
+    """os.replace with a bounded retry. On shared network folders (SMB) a rename can fail briefly with EBUSY or
+    EACCES while another computer reads the target (SMB lab, 2026-10-04: worst wait 1.05 s)."""
+    import errno as _errno, time as _time
+    deadline=_time.monotonic()+10
+    while True:
+        try:os.replace(src,dst);return
+        except OSError as e:
+            if e.errno not in (_errno.EBUSY,_errno.EACCES) or _time.monotonic()>deadline:raise
+            _time.sleep(0.05)
+
 def replace(p,data,mode):
     p.parent.mkdir(parents=True,exist_ok=True)
     if data is None:p.unlink();syncdir(p.parent);return
     fd,n=tempfile.mkstemp(prefix='.'+p.name+'.update-',dir=p.parent)
     try:
         with os.fdopen(fd,'wb') as f:f.write(data);f.flush();os.fsync(f.fileno())
-        os.chmod(n,mode);os.replace(n,p);syncdir(p.parent)
+        os.chmod(n,mode);replace_shared(n,p);syncdir(p.parent)
     finally:
         if os.path.exists(n):os.unlink(n)
     require(read(p)==data and stat.S_IMODE(p.stat().st_mode)==mode,'write readback failed')
@@ -384,7 +395,11 @@ def inspect(root):
 def operation(root):
     U=safe(root,'_Axis/Updates');U.mkdir(exist_ok=True);p=safe(U,'operation.lck');fd=os.open(p,os.O_CREAT|os.O_RDWR|os.O_NOFOLLOW,0o600)
     try:
-        require(os.fstat(fd).st_nlink==1 and stat.S_ISREG(os.fstat(fd).st_mode),'unsafe update lock');fcntl.flock(fd,fcntl.LOCK_EX|fcntl.LOCK_NB);yield
+        require(os.fstat(fd).st_nlink==1 and stat.S_ISREG(os.fstat(fd).st_mode),'unsafe update lock')
+        # flock contention reads as EACCES on macOS SMB mounts (SMB lab, 2026-10-04).
+        try:fcntl.flock(fd,fcntl.LOCK_EX|fcntl.LOCK_NB)
+        except (BlockingIOError,PermissionError):require(False,'update operation in progress')
+        yield
     finally:os.close(fd)
 
 def main():

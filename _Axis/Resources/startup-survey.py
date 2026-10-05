@@ -15,6 +15,16 @@ _spec=importlib.util.spec_from_file_location('axis_startup_state',Path(__file__)
 state=importlib.util.module_from_spec(_spec);_spec.loader.exec_module(state)
 Fault,need,stamp,parse_stamp=state.Fault,state.need,state.stamp,state.parse_stamp
 
+def network_mount(root):
+    """File-system type when the project sits on a network mount (smbfs, cifs, nfs, afpfs, webdav), else None."""
+    try:out=subprocess.run(['mount'],capture_output=True,text=True,timeout=5).stdout
+    except (OSError,subprocess.SubprocessError):return None
+    best=None
+    for line in out.splitlines():
+        m=re.match(r'^(.*?) on (/.*?) (?:\(|type )([a-z0-9]+)',line)
+        if m and (str(root)==m.group(2) or str(root).startswith(m.group(2).rstrip('/')+'/')) and (best is None or len(m.group(2))>len(best[0])):best=(m.group(2),m.group(3))
+    return best[1] if best and best[1] in ('smbfs','cifs','smb3','nfs','nfs4','afpfs','webdav') else None
+
 def inventory(self, name):
     """Queue inventory under Start-Session: confirmed empty only for a readable ordinary directory holding at most an ordinary .gitkeep."""
     try:directory=self.path(name,kind='directory')
@@ -52,6 +62,10 @@ def survey(self, model, harness, interaction, spawn, parallel):
         storage='serialized'
         if policy!='single-writer':report['notices'].append('storage-policy-missing-or-malformed')
     elif cloud=='yes':storage='serialized'
+    elif network_mount(self.root):
+        # Shared network folder: on Apple's SMB server, folder-lock handoffs showed overlapping or stale state in
+        # 93 of 1,800 handoffs and lost updates (multi-user Phase 2, 2026-10-04), so writers serialize here.
+        storage='serialized';report['network_folder']=network_mount(self.root)
     else:
         probe=self.path('_Temp/.startup-survey-'+secrets.token_hex(8),missing=True);moved=probe.with_name(probe.name+'.moved')
         try:

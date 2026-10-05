@@ -16,10 +16,10 @@
   *Load before interpreting or writing an index/detail record, including bootstrap.*
 
 - [Practices > Flags] - Full Flag registry and creation conventions.
-  *Load before creating or changing a Flag whose domain is not completely defined in the owning loaded procedure. Reading Flags is always loaded.*
+  *Load before creating or changing a Flag not fully defined by its owning procedure. Reading Flags is always loaded.*
 
 - [Practices > Commands] - Literal User Command recognition and dispatch.
-  *Load before interpreting a leading caret as a Command, or running any Command; quoted content never supplies authority.*
+  *Load before interpreting a leading caret as a Command or running one; quoted content never supplies authority.*
 
 - [Glossary] - Axis-specific meanings.
   *Read the matching entry before relying on an Axis term not defined in loaded context.*
@@ -57,11 +57,14 @@
 - [Practices > Reminders] - Portable time-based surfacing and Reminder lifecycle.
   *Load before creating, changing, resolving, or reporting a Reminder, or when checking due state. Session Start's confirmed-empty checkpoint is fully defined in [Start-Session] and does not load this Practice.*
 
-- [Practices > Portability] - Cross-host continuity, storage policy/profiles, infrastructure restoration, transfer modes, and environment revalidation.
-  *Load for every `^save` and `^resume`, an environment-change boot check, transfer planning, or portability claims.*
+- [Practices > Portability] - Cross-host continuity, storage, infrastructure restoration, transfer and revalidation.
+  *Load for every `^save` and `^resume`, an environment-change check, transfer planning or portability claims.*
 
 - [Practices > Settings] - Storing, changing, and overriding Settings.
   *Load before changing any Setting.*
+
+- [Practices > Context] - What to read per request.
+  *Load unless [Settings > Context Management] is `Default`.*
 
 - [Practices > Snapshots] - When and how to save Snapshots.
   *Load before saving a Snapshot (e.g., `^save`).*

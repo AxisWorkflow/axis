@@ -1,6 +1,6 @@
 # Axis Workflow User Manual
 > **Purpose:** How to use the Axis Workflow day to day: setup, commands, the Dashboard, the Wiki, working across tools and machines, and working with Agents and models. For the technical and compliance reference, see [SPECIFICATION](/_Axis/SPECIFICATION.md).
-> **Version:** 2.03
+> **Version:** 2.04
 
 
 
@@ -73,7 +73,7 @@ Your own content lives in normal folders that your Agent creates and organizes a
 - Standard operating procedures in [Practices](/_Axis/PRACTICES.md).
 - Broad guidance in [Principles](/_Axis/PRINCIPLES.md).
 - Invariant rules (to keep top-of-mind) in [Rules](/_Axis/RULES.md).
-- Conditional triggers (for situational behaviors) in [Directives](/_Axis/DIRECTIVES.md).
+- Conditional triggers (for situational behaviors) in [Directives](/_Axis/DIRECTIVES.md). New Axis versions can add default Directives; the first session after an update adds any you are missing and says so. To keep one out, delete it and add `<!-- axis:omit-directive: {its name} -->` to that file.
 - Subject-by-subject rule detail in [Rules](/_Axis/Rules/), lazy-loaded when an activity needs it.
 
 **6. Users/Agents co-manage the project by:**
@@ -329,6 +329,8 @@ One Setting worth calling out is **Budget** (Frugal to Unconstrained). It steers
 
 **Max Concurrent Sessions** (default 10) caps how many agents can work on the project at the same time - your Main session, External agents on other tools or channels, and the Subagents they start. When the cap is reached, a new External agent tells you and stops, and Main does the work itself instead of starting another Subagent. Stale sessions (idle over an hour) do not count.
 
+**Context Management** (default `Default`) chooses how your agent decides what to read from the project for each request. `Two-Pass` makes it check the index first, pick only the records it needs, and open just those. In Axis's tests that used about 38% fewer tokens on Claude, with every answer still correct, but it did not help Codex. Axis suggests the right value for the model you use, once per session, and changes it only if you agree. This is an area under active development; the Technical Specification's Context Management section has the details and the evidence.
+
 Another is **Skepticism** (-2 to +2). It steers how hard the Agent doubts its own work - whether it stops to ask *why* a conclusion holds, names the assumptions sitting underneath it, and goes looking for the evidence that would prove it wrong. At the highest setting the Agent explores competing explanations in parallel before committing to one. Skepticism points inward, at the Agent's own reasoning; **CX Frequency** points outward, buying an independent critic once the work is done.
 
 ### Supervising Child Projects
@@ -376,7 +378,9 @@ Bare `^git` is convenient, but normal handoff is easier to remember as **save on
 
 #### Optional Startup Check
 
-Set **Remote Freshness** to `on` to check the configured Git upstream once when a Main session starts. Incoming commits produce a recommendation to run `^resume`; local files stay untouched, and no merge or push runs automatically. The default is `off`, including existing projects without the Setting. The optional check needs Git, Python 3 and supported local storage; offline or unavailable checks report freshness as unverified while Axis remains usable. It adds no background polling and does not replace saving and shutting down the other computer.
+Set **Remote Freshness** to `on` to check the configured Git upstream once when a Main session starts. Incoming commits produce a recommendation to run `^resume`; local files stay untouched, and no merge or push runs automatically. New projects start with `auto` (below); existing projects keep their setting, and a project without the Setting behaves as `off`. The optional check needs Git, Python 3 and supported local storage; offline or unavailable checks report freshness as unverified while Axis remains usable. It adds no background polling and does not replace saving and shutting down the other computer.
+
+Set it to `auto` for zero-delay handoff: when the other computer saved and pushed, and this copy has no unsaved work, Axis fast-forwards to the latest commits while it starts, before it reads anything, and says so in one line. If your own files changed, the histories diverged, or Axis's own instruction files arrived in the update, it only tells you what to do (usually `^resume` or a fresh conversation). It never merges, discards or pushes anything.
 
 #### First-Time Git Setup
 
@@ -414,7 +418,7 @@ If a machine has local edits while the remote is ahead, or both sides contain co
 
 Plaintext under `_Axis/Secrets/` never enters Git, even when the remote is private. If you want Git handoff to carry those files, ask Axis to **enable encrypted Secrets transport**. Axis offers the official `age` tool if it is missing, creates one project identity outside the project at `~/.axis/keys/`, and commits only a public recipient file plus one encrypted capsule whose interior hides the original filenames. The local binding used for conflict detection also stays ignored.
 
-Copy that one private identity once - by encrypted removable media or a private password-manager/file-transfer method you control - to the same external location on every authorized computer, and keep one protected recovery copy. Never put the identity in the project, Git, chat, Notes, or any location shared more broadly than the project. A clone without it can still receive the project but cannot restore its encrypted Secrets. Once configured, `^save` seals local Secrets and `^resume` receives them automatically. Failed receipt either restores and verifies the prior plaintext and binding or returns a recovery-required state while retaining protected local originals. Axis stops Secrets synchronization until that recovery is resolved. If both computers changed plaintext Secrets independently, Axis preserves both sides and asks which computer is authoritative.
+The easiest way to give another computer that identity is a password. Once, on a computer that has it, open a terminal in the project folder and run `bash _Axis/Resources/secrets-capsule.sh password-set`, then choose a long password (or leave it empty and `age` makes one for you). On each new computer, after the project arrives, run `bash _Axis/Resources/secrets-capsule.sh unlock` in a terminal and type the password; Axis installs the identity and never asks again on that computer. Type the password only into that terminal prompt, never into the chat. Anyone with both your repository and the password can read your Secrets, so keep the repository private. Alternatively, copy that one private identity once - by encrypted removable media or a private password-manager/file-transfer method you control - to the same external location on every authorized computer. Either way, keep one protected recovery copy. Never put the identity in the project, Git, chat, Notes, or any location shared more broadly than the project. A clone without it can still receive the project but cannot restore its encrypted Secrets. Once configured, `^save` seals local Secrets and `^resume` receives them automatically. Failed receipt either restores and verifies the prior plaintext and binding or returns a recovery-required state while retaining protected local originals. Axis stops Secrets synchronization until that recovery is resolved. If both computers changed plaintext Secrets independently, Axis preserves both sides and asks which computer is authoritative.
 
 Encryption protects the repository copy, not the endpoints: any process with access to a computer's plaintext project or private identity can read the Secrets, and anyone who obtained an older capsule plus the identity may retain that historical access. Prefer operating-system keychains or host-native secret stores for high-value credentials, rotate exposed credentials, and keep the GitHub repository private as defense in depth.
 

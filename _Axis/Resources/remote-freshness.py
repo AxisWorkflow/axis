@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Optional bounded startup notification. Never integrates or publishes project work."""
+"""Optional bounded startup check of the configured Git upstream.
+
+`on` only reports. `auto` also fast-forwards a clean (or receive-safe) checkout when the upstream is
+simply ahead, so a project opens up to date. It never merges, rebases, stashes, pushes or discards work."""
 from __future__ import annotations
 import argparse
 from datetime import datetime, timezone
@@ -15,6 +18,17 @@ import subprocess
 import sys
 import time
 import uuid
+
+def replace_shared(src, dst):
+    """os.replace with a bounded retry. On shared network folders (SMB) a rename can fail briefly with EBUSY or
+    EACCES while another computer reads the target (SMB lab, 2026-10-04: worst wait 1.05 s)."""
+    import errno as _errno, time as _time
+    deadline=_time.monotonic()+10
+    while True:
+        try:os.replace(src,dst);return
+        except OSError as e:
+            if e.errno not in (_errno.EBUSY,_errno.EACCES) or _time.monotonic()>deadline:raise
+            _time.sleep(0.05)
 
 class Unverified(Exception):
     pass
@@ -69,11 +83,51 @@ def lease(root, session):
 def result(status, **extra):
     return {'status':status,'notice':None,**extra}
 
+LIFECYCLE={'Session Starting','Session Started','Shutdown by User'}
+WORKFLOW_FILES={'AGENTS.md','CLAUDE.md','GEMINI.md','_Axis/CHANGELOG.md','_Axis/RULES.md','_Axis/PRACTICES.md','_Axis/PRINCIPLES.md','_Axis/MANIFEST.md','_Axis/GLOSSARY.md'}
+WORKFLOW_DIRS=('_Axis/Commands/','_Axis/Practices/','_Axis/Rules/','_Axis/Resources/','_Axis/Updates/')
+
+def local_state(git, root, target):
+    """clean, receive-safe (only untracked session-lifecycle Logs absent upstream) or substantive."""
+    raw=git('status','--porcelain=v1','-z','--untracked-files=all')
+    entries=[e for e in raw.split('\0') if e]
+    if not entries:return 'clean',{}
+    logs={}
+    for entry in entries:
+        code,path=entry[:2],entry[3:]
+        if code!='??' or not re.fullmatch(r'_Axis/Logs/\d{4}(?:\.\d{2}){5}\.\d{3}Z\.md',path):return 'substantive',{}
+        try:
+            body=ordinary(root/path).read_bytes();rows=body.decode('utf-8').splitlines()
+        except (Unverified,OSError,UnicodeError):
+            return 'substantive',{}
+        if len(rows)<4 or rows[0] not in LIFECYCLE or rows[1]!='' or rows[2]!='by: Main Agent' or not any(r.startswith('session: ') for r in rows[3:]):return 'substantive',{}
+        if git('cat-file','-e',target+':'+path,optional=True) is not None:return 'substantive',{}
+        logs[path]=hashlib.sha256(body).hexdigest()
+    return 'receive-safe',logs
+
+def fast_forward(git, root, session, head, target, count, logs):
+    lease(root,session)
+    want=git('rev-parse','--verify',target).strip()
+    git('merge','--ff-only','--no-edit','--quiet',want,discard=True,unbounded=True)
+    require(git('rev-parse','--verify','HEAD',unbounded=True).strip()==want)
+    for path,digest in logs.items():
+        require(hashlib.sha256(ordinary(root/path).read_bytes()).hexdigest()==digest)
+    state,after=local_state(lambda *c,**k:git(*c,unbounded=True,**k),root,want)
+    require(state in ('clean','receive-safe') and after==logs)
+    changed=[p for p in git('diff','--name-only','-z',head,want,unbounded=True).split('\0') if p]
+    workflow=any(p in WORKFLOW_FILES or p.startswith(WORKFLOW_DIRS) for p in changed)
+    secrets=any(p.startswith('_Axis/Secrets/') for p in changed)
+    notice=f'Brought this project up to date from the remote ({count} new commit{"s" if count!=1 else ""}).'
+    if workflow:notice+=" The incoming commits changed Axis's own instruction files, so start a fresh conversation before continuing."
+    return result('fast-forwarded',local_ahead=0,remote_ahead=count,dirty=bool(logs),notice=notice,workflow_changed=workflow,secrets_changed=secrets,changed_files=len(changed))
+
 def check(args):
     root=ordinary(Path(args.project_root).absolute(),directory=True)
     mode=setting(root,'Remote Freshness')
     if mode in (None,'off'):return result('disabled')
-    require(mode=='on')
+    require(mode in ('on','auto'))
+    # `auto` is the shipped default, so a project that is not its own Git repository (or has no Git) stays silent.
+    if mode=='auto' and (shutil.which('git') is None or not (root/'.git').is_dir()):return result('no-upstream')
     lease(root,args.session)
     deadline=time.monotonic()+args.timeout
     executable=shutil.which('git')
@@ -81,11 +135,12 @@ def check(args):
     environment={k:v for k,v in os.environ.items() if not k.startswith('GIT_')}
     environment.update(GIT_TERMINAL_PROMPT='0',GCM_INTERACTIVE='Never',GIT_ASKPASS='/usr/bin/false',SSH_ASKPASS='/usr/bin/false',SSH_ASKPASS_REQUIRE='never',GIT_SSH_COMMAND='ssh -oBatchMode=yes -oConnectTimeout=5',GIT_NO_REPLACE_OBJECTS='1',GIT_NO_LAZY_FETCH='1',GIT_CONFIG_NOSYSTEM='1')
     prefix=[executable,'--no-optional-locks','--no-replace-objects','-C',str(root),'-c','core.fsmonitor=false','-c','core.hooksPath=/dev/null','-c','gc.auto=0','-c','maintenance.auto=false','-c','credential.interactive=false','-c','protocol.allow=never','-c','protocol.file.allow=always','-c','protocol.https.allow=always','-c','protocol.ssh.allow=always']
-    def git(*command, optional=False, discard=False):
+    def git(*command, optional=False, discard=False, unbounded=False):
         remaining=deadline-time.monotonic()
-        require(remaining>0)
+        require(unbounded or remaining>0)
         process=subprocess.Popen([*prefix,*command],env=environment,stdout=subprocess.DEVNULL if discard else subprocess.PIPE,stderr=subprocess.DEVNULL,start_new_session=True)
-        try:output,_=process.communicate(timeout=remaining)
+        # A checkout is never killed part-way: the fast-forward waits for git to finish.
+        try:output,_=process.communicate(timeout=None if unbounded else remaining)
         except subprocess.TimeoutExpired:
             os.killpg(process.pid,signal.SIGKILL);process.communicate();raise Unverified()
         if process.returncode and not optional:raise Unverified()
@@ -112,15 +167,16 @@ def check(args):
     # Exclusive pending receipt deduplicates concurrent invocations before any fetch.
     with record.open('x') as f:
         json.dump({'session':args.session,'status':'pending','checked_utc':datetime.now(timezone.utc).isoformat()},f);f.write('\n');f.flush();os.fsync(f.fileno())
-    def finish(value):
+    def finish(value, moved=False):
         lease(root,args.session)
-        require(git('rev-parse','--verify','HEAD').strip()==head)
-        require((hashlib.sha256(index.read_bytes()).hexdigest() if index.exists() else None)==index_hash)
+        if not moved:
+            require(git('rev-parse','--verify','HEAD').strip()==head)
+            require((hashlib.sha256(index.read_bytes()).hexdigest() if index.exists() else None)==index_hash)
         current=json.loads(ordinary(record).read_text());require(current.get('session')==args.session and current.get('status')=='pending')
         temp=record.with_name('.'+record.name+'.'+uuid.uuid4().hex)
         with temp.open('x') as f:
             json.dump({'session':args.session,'checked_utc':datetime.now(timezone.utc).isoformat(),'status':value['status']},f);f.write('\n');f.flush();os.fsync(f.fileno())
-        os.replace(temp,record)
+        replace_shared(temp,record)
         return value
     branch=git('symbolic-ref','--quiet','--short','HEAD',optional=True)
     if not branch:return finish(result('no-upstream'))
@@ -145,7 +201,12 @@ def check(args):
     dirty=bool(git('status','--porcelain=v1','-z','--untracked-files=normal'))
     status='diverged' if left and right else 'remote-ahead' if right else 'local-ahead' if left else 'equal'
     notice=None
+    if status=='remote-ahead' and mode=='auto':
+        state,logs=local_state(git,root,target)
+        if state!='substantive':
+            return finish(fast_forward(git,root,args.session,head,target,right,logs),moved=True)
     if status=='remote-ahead':notice='Incoming Git commits are available; run ^resume before continuing.'+(' Local changes need to be preserved.' if dirty else '')
+    if status=='local-ahead' and mode=='auto':notice=f'This computer has {left} commit{"s" if left!=1 else ""} the remote does not have yet; ^save sends them.'
     if status=='diverged':notice='Local and remote Git histories have diverged; use ^resume to review reconciliation before continuing. Both sides are preserved.'
     return finish(result(status,local_ahead=left,remote_ahead=right,dirty=dirty,notice=notice))
 

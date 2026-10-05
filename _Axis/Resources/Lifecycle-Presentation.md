@@ -9,7 +9,7 @@ The session rows appear in this order: Project, Folder, Session, Version, Status
 
 ## Main startup
 
-Only after every startup completion gate passes, emit exactly one block and immediately follow it with the normal greeting. `Ready` means the session is admitted and its startup records are committed, never merely that loading began. Under Fast Boot, the items `boot.py` lists as pending (Requests, overlay, project setup) and the core reading still follow the banner, and they are complete before any answer other than the greeting or a requested exact reply.
+The startup banner arrives in two parts (User design, 2026-10-04). The brand section prints first, immediately followed by the entry file's loading notice, before any tool call, so the user sees Axis at once. Only after every startup completion gate passes, emit the session rows and the closing divider (`boot.py` prints exactly this part as its banner block) and immediately follow them with the normal greeting. Never print the session part without a passed gate, and never omit it after one: it is the visible record of the Session ID. `Ready` means the session is admitted and its startup records are committed, never merely that loading began. Under Fast Boot, the items `boot.py` lists as pending (Requests, overlay, project setup) and the core reading still follow the banner, and they are complete before any answer other than the greeting or a requested exact reply.
 
 ```text
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -17,6 +17,7 @@ Only after every startup completion gate passes, emit exactly one block and imme
   A X I S   W O R K F L O W
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{loading notice from the entry file; then startup runs}
 
   Project:  {verified Project name}
   Folder:   {verified project folder}

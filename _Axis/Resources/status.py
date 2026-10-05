@@ -152,6 +152,7 @@ def collect(root, detail):
     data = {
         'generated': now.strftime('%Y-%m-%d %H:%M UTC'), 'project': name, 'version': version, 'folder': str(root),
         'model': model_name(model),
+        'context': context_method(read(ax / 'SETTINGS.md')),
         'decisions': [{'initiative': i['name'], 'next': i['next']} for i in inits if i['status'] in ('Active', 'Blocked') and i['next']],
         'direction': direction, 'tasks': count, 'active': active, 'blocked': blocked,
         'initiatives': [i for i in inits if i['status'] not in ('Completed', 'Cancelled')],
@@ -166,6 +167,12 @@ def collect(root, detail):
         data['recent_completed'] = [t for t in tasks if t['status'] == 'Completed'][-8:]
         data['plan_sections'] = [h for h, _ in blocks(plan)]
     return data
+
+
+def context_method(settings):
+    """The Context Management Setting (2.04); missing or unrecognized means Default."""
+    m = re.search(r'^### Context Management\n(?:(?!^### ).)*?^\*\*Value:\*\* (\S+)', settings, re.M | re.S)
+    return m.group(1) if m and m.group(1) in ('Default', 'Two-Pass') else 'Default'
 
 
 def model_name(m):
@@ -209,7 +216,7 @@ def text(d, width, color):
     home = os.path.expanduser('~'); path = d['root']
     path = '~' + path[len(home):] if path == home or path.startswith(home + '/') else path
     row = lambda k, v: f"    {(k + ':').ljust(13)}{v}"
-    out += [row('Project', d['project']), row('Path', path), row('Model', d['model']), '',
+    out += [row('Project', d['project']), row('Path', path), row('Model', d['model']), row('Context', d['context']), '',
             row('Tasks', f"{t['Active']} active / {t['Blocked']} blocked"), row('Follow-Up', len(d['followups'])),
             row('Reminders', len(d['reminders'])), row('Agents', len(d['agents'])), row('Version', d['version']), '', rule, '']
     full = d['detail'] == 'full'

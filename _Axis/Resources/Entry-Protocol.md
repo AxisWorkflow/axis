@@ -34,7 +34,7 @@ Role is fixed once: Main commits under Claim-Session; External and Subagent rout
 
 1. Judge from system context and host configuration whether you are a standard-capability model (this is your own assessment; nothing else enforces it). Smaller-capability models are bounded Subagents only. Without eligibility, print neither startup output, read no project file and create no state; tell User to select a standard-capability model and STOP.
 
-2. First print this loading notice verbatim as your first visible output: `Loading The Axis Workflow. This may take a minute or two...`. Emit it before any tool call or other words. Only Start-Session owns the later missing-notice visibility fallback.
+2. First print this loading notice verbatim as your first visible output: `Loading The Axis Workflow. This may take a minute or two...`. Emit it before any tool call or other words, preceded only by the brand section of [Lifecycle-Presentation] (divider, spaced title, divider). Only Start-Session owns the later missing-notice visibility fallback.
 
 3. Mint the initial Session ID with this exact command. The timestamp command is the first and ONLY tool call permitted immediately after the loading notice. No narration or Session ID banner yet:
 

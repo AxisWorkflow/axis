@@ -15,6 +15,10 @@ ROOT=${AXIS_PROJECT_ROOT:-$(pwd -P)}
 SECRETS_DIR="$ROOT/_Axis/Secrets"
 CONFIG_FILE="$SECRETS_DIR/.recipient"
 CAPSULE_FILE="$SECRETS_DIR/.capsule.age"
+# Optional: the project identity encrypted with User's password (age scrypt).
+# It lets a new computer install the identity with one password, typed only
+# into age's own terminal prompt.
+PASSWORD_FILE="$SECRETS_DIR/.identity.age"
 BINDING_FILE="$SECRETS_DIR/.binding"
 KEY_DIR=${AXIS_SECRETS_KEY_DIR:-${HOME:?}/.axis/keys}
 TMP_BASE=${TMPDIR:-/tmp}
@@ -95,7 +99,7 @@ require_age() {
 
 is_reserved_name() {
   case "$1" in
-    .gitkeep|.recipient|.capsule.age|.binding|.recipient.tmp.*|.capsule.age.tmp.*|.binding.tmp.*|.recovery.*) return 0 ;;
+    .gitkeep|.recipient|.capsule.age|.identity.age|.binding|.recipient.tmp.*|.capsule.age.tmp.*|.identity.age.tmp.*|.binding.tmp.*|.recovery.*) return 0 ;;
     *) return 1 ;;
   esac
 }
@@ -258,7 +262,10 @@ current_status() {
   command -v age >/dev/null 2>&1 && command -v age-keygen >/dev/null 2>&1 \
     || { printf 'missing-tool\n'; return 0; }
   read_config || { printf 'malformed\n'; return 0; }
-  identity_matches || { printf 'missing-identity\n'; return 0; }
+  if ! identity_matches; then
+    if [ -f "$PASSWORD_FILE" ] && [ ! -L "$PASSWORD_FILE" ]; then printf 'locked\n'; else printf 'missing-identity\n'; fi
+    return 0
+  fi
   validate_tree "$SECRETS_DIR" || { printf 'unsafe-tree\n'; return 0; }
   local plaintext capsule
   plaintext=$(tree_digest "$SECRETS_DIR") || { printf 'unverified\n'; return 0; }
@@ -293,6 +300,8 @@ seal_core() {
     tar --exclude='./.gitkeep' \
       --exclude='./.recipient' \
       --exclude='./.capsule.age' \
+      --exclude='./.identity.age' \
+      --exclude='./.identity.age.tmp.*' \
       --exclude='./.binding' \
       --exclude='./.recipient.tmp.*' \
       --exclude='./.capsule.age.tmp.*' \
@@ -364,6 +373,7 @@ receive_core() {
     conflict|unbound) safe_error secret-conflict 2 ;;
     missing-tool) safe_error missing-age 3 ;;
     missing-identity) safe_error missing-identity 3 ;;
+    locked) safe_error locked 3 ;;
     recovery-required) safe_error recovery-required 4 ;;
     *) safe_error "$status" ;;
   esac
@@ -452,6 +462,51 @@ init_capsule() {
   printf 'initialized:%s\n' "$key_id"
 }
 
+require_terminal() {
+  # age reads passwords only from a terminal. Agents have none, so User runs
+  # these commands in their own terminal window and types into age's prompt.
+  ( : < /dev/tty ) 2>/dev/null || safe_error needs-terminal 5
+}
+
+password_set() {
+  require_age
+  read_config || safe_error malformed-config
+  identity_matches || safe_error missing-identity 3
+  require_terminal
+  local temp candidate
+  new_temp_dir
+  temp=$NEW_TEMP
+  candidate="$temp/identity.age"
+  age -p -o "$candidate" "$IDENTITY_FILE" 2>"$temp/age-error" || safe_error password-set-failed
+  [ -s "$candidate" ] || safe_error password-set-failed
+  [ "$(head -n 1 "$candidate")" = 'age-encryption.org/v1' ] || safe_error password-set-failed
+  grep -q '^-> scrypt ' "$candidate" || safe_error password-set-failed
+  mv -f -- "$candidate" "$PASSWORD_FILE" || safe_error password-write-failed
+  printf 'password-set\n'
+}
+
+unlock_identity() {
+  require_age
+  read_config || safe_error malformed-config
+  if identity_matches; then printf 'already-unlocked\n'; return 0; fi
+  [ -f "$PASSWORD_FILE" ] && [ ! -L "$PASSWORD_FILE" ] || safe_error no-password-copy 3
+  [ ! -e "$IDENTITY_FILE" ] || safe_error identity-conflict
+  require_terminal
+  local temp candidate
+  new_temp_dir
+  temp=$NEW_TEMP
+  candidate="$temp/identity.agekey"
+  age -d -o "$candidate" "$PASSWORD_FILE" 2>"$temp/age-error" || safe_error wrong-password 2
+  [ "$(age-keygen -y "$candidate" 2>"$temp/key-read-error")" = "$RECIPIENT" ] \
+    || safe_error identity-mismatch
+  mkdir -p "$KEY_DIR" || safe_error key-directory-unavailable
+  chmod 700 "$KEY_DIR" || safe_error key-directory-permissions
+  chmod 600 "$candidate" || safe_error key-permissions
+  mv -- "$candidate" "$IDENTITY_FILE" || safe_error key-install-failed
+  identity_matches || safe_error key-install-failed
+  printf 'unlocked\n'
+}
+
 require_project
 command=${1:-status}
 case "$command" in
@@ -465,6 +520,7 @@ case "$command" in
       incoming|conflict|unbound) safe_error secret-conflict 2 ;;
       missing-tool) safe_error missing-age 3 ;;
       missing-identity) safe_error missing-identity 3 ;;
+      locked) safe_error locked 3 ;;
       recovery-required) safe_error recovery-required 4 ;;
       *) safe_error "$status" ;;
     esac
@@ -473,5 +529,7 @@ case "$command" in
     require_age
     receive_core
     ;;
+  password-set) password_set ;;
+  unlock) unlock_identity ;;
   *) safe_error unknown-command ;;
 esac

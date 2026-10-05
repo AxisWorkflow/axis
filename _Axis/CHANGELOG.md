@@ -1,7 +1,7 @@
 # Changelog
 > **Purpose:** Record Axis release identity and the structural migrations needed to update an existing project safely.
 
-current-version: 2.03
+current-version: 2.04
 changelog-format: 1
 self-update-baseline: 26.08.19
 
@@ -39,6 +39,47 @@ update-impact: automatic
 ### Verification
 
 - None.
+
+## 2.04
+
+released: 2026-10-05
+
+- Context Management: a new Setting with a Two-Pass option that, in Axis's tests, used about 38% fewer tokens on Claude for question-and-lookup work with no loss of accuracy; Axis suggests the right value for the model you use.
+- Secrets can now travel to a new computer with one password: run `unlock` in a terminal and Axis installs the key. Startup tells you the exact command when Secrets are locked.
+- Projects open up to date: with Remote Freshness `auto` (the new default), startup pulls the other computer's commits when this copy has no unsaved work.
+- New default Directives reach existing projects automatically after an update; "Act at the Permissions Level" stops needless "should I?" questions at Autonomous.
+- The startup banner shows its header right away and the session details at Ready.
+- Projects on a network share run one writer at a time, with fixes that let Axis start and save reliably there.
+- `^status` shows the Context Management method.
+
+update-impact: automatic
+
+### Structural Changes
+
+- Optional Secrets password unlock: `_Axis/Resources/secrets-capsule.sh` gains `password-set` and `unlock` and a `locked` status. `.gitignore` tracks `!_Axis/Secrets/.identity.age` and `.gitattributes` marks it `-text`. Preserve an existing `_Axis/Secrets/.identity.age` like `.recipient` and `.capsule.age`. No existing file changes meaning; projects without a password copy behave as before.
+- Remote Freshness gains a third value, `auto`: startup fast-forwards a clean or receive-safe checkout when the upstream is simply ahead. `_Axis/Resources/remote-freshness.py` and `_Axis/Resources/boot.py` changed; under Fast Boot the startup check now runs inside `boot.py` for `on` and `auto`. Existing values are preserved; `off` and `on` behave as before. The shipped template now defaults to `auto` (new projects only).
+- Context Management: new Setting (`Default` or `Two-Pass`), new Practice `_Axis/Practices/Context.md` (indexed in `PRACTICES.md`, listed in the Manifest), a new default Directive "Suggest a Context Method", and `boot.py` lists the Practice as a pending read when the Setting is `Two-Pass`.
+- Startup banner in two parts: the entry files (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`) print the Axis header before the loading line, and `boot.py` prints only the session details at Ready. Entry files are replaced as usual.
+- Default Directives: new managed `_Axis/Resources/Default-Directives.md`. `_Axis/Resources/boot.py` appends any default Directive missing from the project's `DIRECTIVES.md` at startup, honouring `<!-- axis:omit-directive: {name} -->`; `Commands/update.md` and `Practices/Directives.md` describe it. New default Directives: "Act at the Permissions Level" and "Suggest a Context Method".
+- Startup Secrets guidance: `boot.py` prints the exact terminal command when this computer cannot open the encrypted Secrets (locked, no key and no password copy, or `age` missing).
+- Shared network folders: `_Axis/Resources/startup-survey.py` classifies a project on an SMB/CIFS/NFS/AFP mount as `host-storage=serialized` (one writer at a time), and `boot.py` says so. The Python helpers (`boot.py`, `remote-freshness.py`, `startup-state.py`, `update-transaction.py`) retry a busy or denied rename for up to 10 seconds. `flock` contention reported as permission denied counts as busy. `startup-state.py` closes the admission OWNER before removing its folder, which every startup on an SMB share needed. `Resources/Lock-File.md` gains "Shared Network Folders"; `Resources/Detect-Capabilities.md` documents the network-folder rule.
+- `.gitignore` ignores `_Axis/Flags/starting.lock/` (the in-flight startup admission lock), so Remote Freshness `auto` can fast-forward during startup.
+- `boot.py` suggests a Context Management value for the model in use (Two-Pass for Claude, Default for Codex/GPT).
+- `^status` shows the Context Management method (`Context:` row; `context` in JSON).
+- `_Axis/RULES.md`: one checklist line, re-check Permissions before asking "should I?". The compiled core is regenerated.
+
+### Project-State Migrations
+
+- `_Axis/SETTINGS.md` (automatic): add `### Context Management` (value `Default`) after `### Max Concurrent Sessions`, using the template's description and range. Preserve every existing value.
+- `_Axis/DIRECTIVES.md` (automatic): the first startup after this update appends each default Directive from the new managed `_Axis/Resources/Default-Directives.md` that the project lacks. In 2.04 that is "Act at the Permissions Level", plus any earlier default the project is missing. Existing Directives are unchanged. Opt out per Directive with `<!-- axis:omit-directive: {name} -->`.
+
+### Retired Paths
+
+- None.
+
+### Verification
+
+- A project on a network share starts as `host-storage=serialized`. The two default Directives are present after the first startup on 2.04, unless omitted. Context Management is present in `SETTINGS.md` with the project's value or `Default`.
 
 ## 2.03
 

@@ -9,9 +9,19 @@ If the first non-empty line of your task prompt, or its third-from-last, is `<<A
 
 ## First message of a conversation
 
-1. Print `Loading The Axis Workflow. This may take a minute or two...`
+1. Print the Axis header, then the loading line under it:
+
+   ```text
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+     A X I S   W O R K F L O W
+
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ```
+
+   Print `Loading The Axis Workflow. This may take a minute or two...`
 2. If you are a small or lightweight model (for example a Haiku-class model), say Axis needs a standard-capability model for its main session and stop. Otherwise run `python3 _Axis/Resources/boot.py --host "<your host>" --model "<your model id>" --harness <claude-code|codex|other> --spawn <yes|no> --parallel <yes|no>` from this folder. It records the session and prints a Ready banner.
-3. If it prints `READY`, always show its banner block exactly as your first output after the command, even when you go on to answer a question, and greet the user in one line. Handle any item it lists as pending, then answer. Before any answer other than the greeting or a requested exact reply, do the reading it lists. If it prints `ADOPT`, make the record edits it lists, then run the command it names. If it prints `EXTERNAL`, follow `_Axis/Resources/Start-External.md`. If it prints `STOP`, follow the file it names (`_Axis/Resources/Entry-Protocol.md` when an update is pending); after an interrupted startup tell the user startup is incomplete and do not retry. If Python is unavailable or `boot.py` cannot run at all, follow `_Axis/Resources/Boot-Manual.md`, the same startup with shell commands.
+3. If it prints `READY`, always show its banner block (the session details under the header from step 1; it carries your Session ID) exactly as your first output after the command, even when you go on to answer a question, and greet the user in one line. Handle any item it lists as pending, then answer. Before any answer other than the greeting or a requested exact reply, do the reading it lists. If it prints `ADOPT`, make the record edits it lists, then run the command it names. If it prints `EXTERNAL`, follow `_Axis/Resources/Start-External.md`. If it prints `STOP`, follow the file it names (`_Axis/Resources/Entry-Protocol.md` when an update is pending); after an interrupted startup tell the user startup is incomplete and do not retry. If Python is unavailable or `boot.py` cannot run at all, follow `_Axis/Resources/Boot-Manual.md`, the same startup with shell commands.
 
 ## Every later turn
 

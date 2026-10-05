@@ -1,6 +1,6 @@
 # Axis Workflow Specification
 > **Purpose:** The technical reference behind the Axis Workflow: how every mechanism works, why it was built that way, what it guarantees, where it stops, and what an extender must not break. Written for deep diagnostics, downstream developers extending Axis, IT and compliance reviewers assessing it before adoption, and contributors. For everyday use, see the [User Manual](/_Axis/USERMANUAL.md).
-> **Version:** 2.03
+> **Version:** 2.04
 
 ## How to Read This Document
 
@@ -35,6 +35,7 @@ Three conventions run through the whole document:
 - [Seeing Project State](#seeing-project-state)
 - [Wiki](#wiki)
 - [Delegation and Model Evaluation](#delegation-and-model-evaluation)
+- [Context Management](#context-management)
 - [Entry and Host Integration](#entry-and-host-integration)
 - [OpenClaw Integration](#openclaw-integration)
 - [Multi-Project Supervision](#multi-project-supervision)
@@ -79,7 +80,7 @@ The deployment unit is one project folder:
 | `_Axis/Tracking/` | Per-Agent activity lines | Ignored (telemetry, swept after 7 days) |
 | `_Axis/Flags/` | Small state files | Per-project Flags tracked; per-machine and per-session Flags ignored through a generated block |
 | `_Axis/Updates/` | Update transaction journals, kept as history | Tracked, except the stable `operation.lck` |
-| `_Axis/Secrets/` | The one sanctioned credential location | Plaintext ignored; `.gitkeep`, `.recipient` and `.capsule.age` may be tracked |
+| `_Axis/Secrets/` | The one sanctioned credential location | Plaintext ignored; `.gitkeep`, `.recipient`, `.capsule.age` and the password copy `.identity.age` may be tracked |
 | `_Axis/Archive/` | Default Archive root | Tracked unless **Archive in Git** is `false`; an Archive Location outside the project is never committed |
 | `_Axis/Branding/` | Read-only product brand package: stylesheet with light and dark themes, WOFF2 fonts, tokens, mark, logo, favicons | Tracked |
 | `_Temp/` | Regenerable scratch only | Ignored except its placeholder |
@@ -115,7 +116,7 @@ Every instructional file begins with a `# Title` line and a `> **Purpose:**` lin
 
 Axis keeps per-session context small. Always loaded is a compact core: the Practices index, References, Markers, Principles, the Rules checklist and the Reading Flags section of the Flags Practice. Everything else loads at an explicit trigger ("Load before X"), and the triggers stay mandatory after context loss, because the always-loaded index keeps every trigger visible.
 
-The core is also compiled into one file, `_Axis/Resources/Starting-Context.md`, so it can be read in one call instead of six. [`Load-Starting-Context.md`](/_Axis/Resources/Load-Starting-Context.md) owns the ordered source table and the rules: the bundle is verbatim concatenation with `<!-- BEGIN ... -->` boundaries and a terminal end marker, "no independent summary is permitted", and a missing, stale (older than any source) or truncated bundle is replaced by reading the sources directly. The compiler exists only in the development repository (`^compile`), so a project never regenerates it; stale bundles simply fall back. A sealed development test caps the bundle at 27,500 bytes (26,751 at 2.00). The cap was raised from 26,000 in the 2.00 batch by User decision, on the reasoning that under Fast Boot the bundle is read after the Ready banner, so its size no longer delays the first impression.
+The core is also compiled into one file, `_Axis/Resources/Starting-Context.md`, so it can be read in one call instead of six. [`Load-Starting-Context.md`](/_Axis/Resources/Load-Starting-Context.md) owns the ordered source table and the rules: the bundle is verbatim concatenation with `<!-- BEGIN ... -->` boundaries and a terminal end marker, "no independent summary is permitted", and a missing, stale (older than any source) or truncated bundle is replaced by reading the sources directly. The compiler exists only in the development repository (`^compile`), so a project never regenerates it; stale bundles simply fall back. A sealed development test caps the bundle at 28,500 bytes (26,751 at 2.00; 27,553 at 2.04). The cap was raised from 26,000 to 27,500 in the 2.00 batch and to 28,500 in the 2.04 batch by User decision, on the reasoning that under Fast Boot the bundle is read after the Ready banner, so its size no longer delays the first impression.
 
 ### References
 
@@ -516,11 +517,11 @@ Portability does not transport tools, authentication, keychains, external jobs, 
 
 Git is optional, Main-only and needs a shell and an exact-root repository ([Practices > GIT](/_Axis/Practices/GIT.md)). Setup asks for identity (never invents one) and offers a private remote. Creating the remote is the authorization boundary; afterwards `^git`, `^save` and `^resume` may fetch, fast-forward and push ordinarily without asking, and never merge, rebase, reset, stash, force-push, change visibility or add remotes. One state machine classifies `HEAD...@{upstream}` by ancestry (equal, local ahead, remote ahead, diverged) and local files (clean, receive-safe, substantive), takes one linear action, re-fetches before every push, and stops on divergence with both histories preserved. Incoming changes to entry files, the Changelog or Workflow machinery force `^shutdown` and a fresh session. A `receive-safe` class exists because an early rehearsal's desktop correctly refused to discard its own uncommitted `Shutdown by User` Log and thereby blocked every return. Rollback uses `git revert` or `git restore` into new commits, never `reset --hard`. "A remote is transport, not a distributed Axis lease": Markers are ignored, so a clone cannot prove another computer stopped.
 
-**Remote Freshness** (`off` by default) authorizes one bounded fetch against the configured upstream at startup (15-second host timeout, 10-second Git budget, no tags, submodules or prompts, never a merge) and recommends `^resume` when incoming work exists. The default keeps existing projects' network activity limited to Commands User runs.
+**Remote Freshness** (`auto` for new projects from 2.04; a missing Setting means `off`) authorizes one bounded fetch against the configured upstream at startup (15-second host timeout, 10-second Git budget, no tags, submodules or prompts, never a merge) and recommends `^resume` when incoming work exists. Value `auto` (2.04) adds one integration at startup: when the upstream is simply ahead and the checkout is clean or holds only untracked session-lifecycle Logs absent upstream, the helper runs `git merge --ff-only` with hooks disabled, never kills the checkout part-way, verifies the new `HEAD` and the preserved Logs byte for byte, and reports whether Workflow instruction files or the Secrets capsule changed. `boot.py` runs it after the startup survey and before the commit, so the Agent reads the updated project; Workflow changes require a fresh conversation, Secrets receipt and resume revalidation follow as listed items. Every other state is only reported, as with `on`. In a live Codex boot (2026-10-05, default `workspace-write` sandbox) the fetch did not complete and the check reported freshness as unverified, which is the designed safe fallback. The likely cause, not yet confirmed, is that the sandbox keeps `.git` read-only. In that case the user runs `^resume`, and the same check fast-forwarded as designed in a live Claude boot. The default keeps existing projects' network activity limited to Commands User runs.
 
 ### Encrypted Secrets transport
 
-Optional. The official `age` tools; one project identity at `~/.axis/keys/{key-id}.agekey`, outside the project; a tracked public `.recipient` and one encrypted `.capsule.age` that hides filenames; a gitignored `.binding` of content digests for conflict detection. `secrets-capsule.sh` (`init`, `status`, `seal`, `receive`) prints only status tokens, discards stderr, uses `umask 077`, rejects links, special files, unsafe archive paths, duplicates and oversized inventories, writes ciphertext atomically and decrypts it back to verify, decrypts in a restricted temporary folder, and keeps a verified pre-change copy under `_Axis/Secrets/.recovery.*/` before any receive. A change on both sides stops as `error:secret-conflict`; a failed rollback stops as `error:recovery-required` until User restores from the retained copy. Rehearsal with official `age` 1.3.1 passed initialization, opacity, clone receipt, rotation, missing identity, conflicts and output privacy. The capsule protects the repository copy, not plaintext on an authorized computer, and a copied private identity decrypts every historical capsule even after repository access is revoked: exposure means replacing the identity and rotating every credential it covered.
+Optional. The official `age` tools; one project identity at `~/.axis/keys/{key-id}.agekey`, outside the project; a tracked public `.recipient` and one encrypted `.capsule.age` that hides filenames; a gitignored `.binding` of content digests for conflict detection. `secrets-capsule.sh` (`init`, `status`, `seal`, `receive`, `password-set`, `unlock`) prints only status tokens, discards stderr, uses `umask 077`, rejects links, special files, unsafe archive paths, duplicates and oversized inventories, writes ciphertext atomically and decrypts it back to verify, decrypts in a restricted temporary folder, and keeps a verified pre-change copy under `_Axis/Secrets/.recovery.*/` before any receive. A change on both sides stops as `error:secret-conflict`; a failed rollback stops as `error:recovery-required` until User restores from the retained copy. Optional password unlock (2.04): `password-set` writes `.identity.age`, the identity encrypted with User's password in age's scrypt mode, and `unlock` installs the identity on a computer that lacks it after checking it against `.recipient`. Both need a real terminal, because `age` reads passwords only from one, so an Agent cannot type or see the password (`error:needs-terminal`). `status` reports `locked` when only the password copy is present, and `seal`/`receive` refuse while locked. A wrong password installs nothing. The tradeoff: repository plus password equals every historical capsule, so the password's strength now matters as much as the key file's custody. The real-`age` path was checked on macOS through a pseudo-terminal: set, wrong password refused, right password installs an identical key with mode 600, then receive. Rehearsal with official `age` 1.3.1 passed initialization, opacity, clone receipt, rotation, missing identity, conflicts and output privacy. The capsule protects the repository copy, not plaintext on an authorized computer, and a copied private identity decrypts every historical capsule even after repository access is revoked: exposure means replacing the identity and rotating every credential it covered.
 
 ## Seeing Project State
 
@@ -571,6 +572,99 @@ Delegation then consumes only a `PASS` (or narrowly permitted `CONDITIONAL`) sco
 Behind the Qwen3-VL row, extraction, classification, citation preservation, and prompt-injection refusal all passed 9/9 on the first attempt, while composition and strict-output work did not qualify. That is why clerical work may route locally while drafting and strict templating stay on a standard-capability model. The reasoning-tuned models show why the benchmark decides, not reputation: the scored Qwen3 alternate now passes extraction and the same clerical classes, but its accepted full run took roughly ten times longer. DeepSeek-R1 repeatedly spent extreme time or output budgets on simple structured work and regressed on diagnostic injection refusal, so Axis preserves its negative evidence and reproducible recipe but removes it from routine campaigns and installation recommendations. A materially changed model, runtime, or explicit research question can justify a new focused run; ordinary releases cannot.
 
 Live benchmarks run only when explicitly invoked through the development repository's RSI Controller; routine tests and publication never contact a model.
+
+## Context Management
+
+Context management decides which parts of a project an Agent brings into its conversation for each request. It is the main lever Axis has for what this project calls continual learning. The model behind an Agent cannot learn during a project, so everything the project has learned lives in records the Agent reads. As a project grows, reading too little misses decisions; reading too much fills the context window with irrelevant text, which can confuse the model and eventually forces the host to compress the conversation on its own terms. This section records the design, the measured evidence, what is still unknown, and how to extend it. It is meant to grow as the methods do.
+
+### The substrate: index and detail
+
+Every record family has a small index (the `TASKS.md` and `SNAPSHOTS.md` entries, or Line 1 of each Log, Note, Idea, Follow-Up and Reminder) and a detail body. That split is what makes selective reading possible: an Agent can survey hundreds of records by their subjects at a fraction of the cost of reading them. The Lazy-Load Context Directive and the Lazy-load Principle already use it informally. Context management makes the selection explicit and selectable.
+
+### The Setting, the Practice and startup
+
+[Settings > Context Management] holds the method in use: `Default` or `Two-Pass` (2.04). [Practices > Context] defines each method. Missing or unrecognized values mean `Default`. When the value is not `Default`, `boot.py` lists the Practice as a pending read before the first answer, and the PRACTICES index carries the same trigger for the manual startup path. So the method is in force from the first request and survives context loss through the normal Practice-reload rule.
+
+Invariants that every method must keep:
+- Mandatory reads never shrink: Session Start, Rules, Practices, Commands and a Command's own required reads are outside context management.
+- A WORM record being acted on is read in full.
+- When records disagree, the newest wins, and the Agent says which records it used when a decision rests on them.
+- The Setting is never changed without User. The recommending Directive only suggests.
+
+### Default
+
+The behaviour of every Axis version before 2.04. The Agent reads what Practices and Commands direct, and lazy-loads detail when a request needs it. The host's own context handling, including its automatic compaction, does the rest.
+
+### Two-Pass
+
+For each request that depends on project records:
+1. The Agent works from index-level information only.
+2. It writes a shortlist of the record IDs it needs.
+3. It opens exactly those records and acts from them.
+4. It widens the shortlist only when a read record points to another.
+
+The cost is one extra reasoning step and some small reads of subjects. The intended gain is less irrelevant text in context and fewer tokens.
+
+### Recommendation by model
+
+The default Directive "Suggest a Context Method" reads the `model` Flag and recommends:
+- `Two-Pass` for Claude models;
+- `Default` for Codex and GPT models;
+- nothing for unmeasured models.
+
+It suggests a change once per session when the current value differs, and changes the Setting only on User's answer. Recommendations follow measurement: a model family is added to the table only after the benchmark has been run on it. Default Directive sync (2.04) delivers the Directive to existing projects on the first startup after the update.
+
+### Evidence (October 2026)
+
+Measured with the Axis context benchmark (`_Dev/Specs/Context-Benchmark.md`, harness `_Dev/Scripts/Benchmarks/context/`). The test projects are synthetic Axis 2.03 projects with seeded facts: decisions revised up to four times, look-alike names, facts buried in long bodies, multi-record sums and unanswerable questions. Each test project is run under every method on both platforms, so the method is the only difference within a pair.
+
+| Run | Project | Turns | Claude: Two-Pass tokens vs Default | Codex: Two-Pass tokens vs Default | Accuracy (all methods, both platforms) |
+| --- | --- | --- | --- | --- | --- |
+| Phase A, 2 seeds | ~1,500 records | 15 | -21%, -56% | +12%, +7% | 120/120 |
+| Phase B, 2 seeds | ~5,000 records | 45 | -40%, -37% (-38% overall) | +19%, -11% (+3% overall) | 240/240 |
+
+Wall time with Two-Pass: Claude +12% (Phase A) and -11% (Phase B); Codex about +20% in both.
+
+A third method, a context-manager Agent that keeps a digest file, was also measured:
+- Claude: 16-32% fewer tokens including the manager's own cost, but slowest overall.
+- Codex: 20-28% more tokens.
+
+It is not offered as a Setting value.
+
+Accounting:
+- Claude reports usage per call (new plus cached input, summed).
+- Codex reports a running total per resumed conversation, so its last value is used.
+- Tokens are compared within a platform only.
+
+Phase C (67-turn sessions with heavy whole-month reading, two seeds, Default and Two-Pass only):
+- **Compaction:** Claude never compacted (0 of 4 sessions); Codex compacted once (1 of 4), and all 10 answers after that compaction were correct.
+- **Accuracy, Claude:** 120/120 under both methods.
+- **Accuracy, Codex:** Default 59/59 answered; Two-Pass 52/55 answered, with 3 real errors in one session (two facts reported as not recorded, one outdated decision). Six further Codex turns returned no answer because of service errors ("model is at capacity", "workspace routing discovery failed"); they are excluded.
+- **Tokens:** Two-Pass used more than Default on Claude here (+122% and +13%), because the requests themselves required reading whole months. The Practice therefore skips pass one for bulk work.
+
+### What the evidence does not show
+
+- **Quality.** Every method answered every question correctly in Phases A and B. Phase C produced the first errors, only with Two-Pass on Codex (3 of 55, one session): directional, not established.
+- **Compaction.** Even 67-turn sessions that read whole months of records rarely compacted (Claude 0 of 16 sessions across all phases; Codex 2 events in 16). The one measured post-compaction stretch (10 answers, Codex) was all correct, but quality loss after compaction remains essentially untested.
+- **Breadth.** Small samples: four matched comparisons per platform, one model per platform (Sonnet, Sol), synthetic records, one hardware platform.
+- **Mechanism.** Why Two-Pass helps Claude but not Codex is a hypothesis only. Codex may already read selectively, making the extra index pass overhead.
+
+### Roadmap
+
+1. **Phase C, reaching compaction:** sessions of 150 or more turns, workloads that force whole-file reads, or small context settings where a host allows them. Measure accuracy before and after each compaction event.
+2. **A context-manager role:** if Phase C shows quality loss, test the digest manager as a predefined Subagent role (the agent-teams Initiative) that runs at milestones rather than on every turn.
+3. **Adaptive selection:** choose the method per request size or per family, or per host, rather than per project.
+4. **Real projects:** validate on anonymized histories of real Axis projects before any quality claim.
+
+### Extending context management
+
+To add a method:
+1. Add its value to the Setting's range and a section to [Practices > Context] that keeps the invariants above.
+2. Run it in the benchmark on at least two platforms, beside `Default`, with matched seeds.
+3. Add a row to the recommendation table in the Directive only for model families where it measured better.
+4. Record the evidence here, in this section's table.
+
+Never ship a method or a recommendation without measured evidence, and never let a method reduce mandatory reads.
 
 ## Entry and Host Integration
 
@@ -871,6 +965,8 @@ A Practice is `_Axis/Practices/{Token}.md` (a single token, so references resolv
 
 A Directive uses the four headings (Keywords, Description, Triggers, Behavior) from [Practices > Directives](/_Axis/Practices/Directives.md); many Directives degrade selection accuracy, and compound triggers of more than two conditions should be chained. A Setting uses the exact `### Name` / `**Description:**` / `**Range:**` / `**Value:**` shape (the Dashboard matches `**Value:**`), names its owning Practice, and defines what a missing or malformed value means. A Mindset Setting also needs guidance in `Template-Mindset.md`, values in every Profile in `Template-Profiles.md`, and a place in the Mindset provenance stamp. Existing projects receive a new Setting only through a declared Changelog migration that adds it when absent and preserves existing values. A new Setting whose default changes existing behavior needs an explicit Changelog statement; a safety-related Setting should, like **Storage Policy**, only be able to make things safer.
 
+A default Directive (one every project should have) goes into both the template `_Axis/DIRECTIVES.md` and the managed `_Axis/Resources/Default-Directives.md`; a test keeps the two in step. Since 2.04, `boot.py` appends any default Directive a project lacks at startup, so it reaches existing projects on the first session after an update. It matches by heading without regard to case, never edits or removes an existing Directive, and honours `<!-- axis:omit-directive: {name} -->`. The template's `DIRECTIVES.md` is project state, so updates never rewrite it.
+
 ### Project overlays
 
 A project can add bounded guidance and exact Command mappings after ordinary startup, without forking Axis ([Load-Project-Overlay](/_Axis/Resources/Load-Project-Overlay.md)). The declaration is one marked block in `_Axis/PROJECT.md`; new declarations use schema 2 (`project-overlay-schema: 2`, an id matching `^[a-z0-9][a-z0-9._-]{7,127}$`, a project-relative path and the approved file's SHA-256). The overlay file has a fixed header, a matching id and a terminal marker, is at most 20,000 bytes, and must sit on a safe path (no links, parent components, case collisions, Secrets, Markers, Flags, Tracking, scratch, Trash, Wiki or `.git`). Three phases run: `prepare` during admitted startup and `confirm` before the banner check identity only; `activate` after the banner applies the guidance, writes the `project-overlay` Flag and prints `Project overlay active: {id}` once. "The hash is approved expected content, not permission to bless a changed file by hashing it again": a self-issued pin inside the overlay is never accepted. An overlay cannot replace role, lease, startup, Rules, write-once history, protected boundaries or User-only gates. The Axis development project itself runs as an overlay, which replaced an earlier alternate boot path so that every development session first becomes an ordinary Axis Main. Under Fast Boot, `boot.py` lists overlay validation as a pending item before the first answer; `turn.py` does not yet re-validate the overlay on later turns.
@@ -1016,7 +1112,7 @@ Name, background context, and goals for project. Updated as project evolves. It 
 
 ##### `SETTINGS.md`
 
-List of discrete settings to control execution of work, in two sections: Application Settings (Project Time Zone, Storage Policy, Remote Freshness, CX Frequency, CX Model, Local Model, Working Language, Max Notes, Archive Location, Archive in Git, Tracking, Permissions, Max Concurrent Sessions) and Mindset Settings (relative adjustments from -2 to 2).
+List of discrete settings to control execution of work, in two sections: Application Settings (Project Time Zone, Storage Policy, Remote Freshness, CX Frequency, CX Model, Local Model, Working Language, Max Notes, Archive Location, Archive in Git, Tracking, Permissions, Max Concurrent Sessions, Context Management) and Mindset Settings (relative adjustments from -2 to 2).
 
 - **Description** - description of why setting matters (to help with implementation).
 - **Range** - each entry must define an allowed range of values (or say "open ended").
@@ -1135,7 +1231,7 @@ The default Archive root, with the same family folders as the live ones. **Archi
 
 ##### `Secrets/`
 
-The one sanctioned credential location. Plaintext is ignored by Git; with the optional encrypted transport, `.recipient` and `.capsule.age` may be tracked, and `.binding` and any `.recovery.*` folder stay local.
+The one sanctioned credential location. Plaintext is ignored by Git; with the optional encrypted transport, `.recipient`, `.capsule.age` and the optional password copy `.identity.age` may be tracked, and `.binding` and any `.recovery.*` folder stay local.
 
 ##### `Dashboard/`
 

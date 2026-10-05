@@ -5,7 +5,7 @@
 
 ## What it shows
 
-- **Short (default):** a spaced `S T A T U S` title with the time between dividers; one block of labelled rows (Project, Path, Model; Tasks active and blocked, Follow-Up, Reminders, Agents, Version), with no Git details; then the sections Summary (the Plan's current direction), Current (Active and Blocked Tasks), Waiting on you (Follow-Ups), Reminders, Recent activity (the newest few Logs and how long ago the last Snapshot and Review were made) and Next decisions (each open Initiative's next decision). It must fit on one ordinary terminal screen.
+- **Short (default):** a spaced `S T A T U S` title with the time between dividers; one block of labelled rows (Project, Path, Model, Context - the Context Management method; Tasks active and blocked, Follow-Up, Reminders, Agents, Version), with no Git details; then the sections Summary (the Plan's current direction), Current (Active and Blocked Tasks), Waiting on you (Follow-Ups), Reminders, Recent activity (the newest few Logs and how long ago the last Snapshot and Review were made) and Next decisions (each open Initiative's next decision). It must fit on one ordinary terminal screen.
 - **Full (`^status deep dive`, or any request for more):** the same, plus more Tasks and Logs, the open Initiatives with their phase, recently completed Tasks and record counts - and, for a deep dive, the Agent's own summary of the detail records User asked about.
 
 ## Formats

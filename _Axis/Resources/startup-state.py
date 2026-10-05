@@ -27,6 +27,17 @@ OPTIONAL_FAMILIES = ('Reviews','Status')
 CAPS = ('model','host-spawn','host-parallel','host-shell','host-local-llm','host-cloud-sync','host-storage')
 OWNER_KEYS = {'schema','kind','token','session','host','phase','starting_log','started_log'}
 
+def replace_shared(src, dst):
+    """os.replace with a bounded retry. On shared network folders (SMB) a rename can fail briefly with EBUSY or
+    EACCES while another computer reads the target (SMB lab, 2026-10-04: worst wait 1.05 s)."""
+    import errno as _errno, time as _time
+    deadline=_time.monotonic()+10
+    while True:
+        try:os.replace(src,dst);return
+        except OSError as e:
+            if e.errno not in (_errno.EBUSY,_errno.EACCES) or _time.monotonic()>deadline:raise
+            _time.sleep(0.05)
+
 class Fault(Exception):
     def __init__(self, code, path=''):
         self.code, self.path = code, path
@@ -208,7 +219,7 @@ class Startup:
         if bootstrap:self.owner_check()
         else:self.guard()
         self.path(relative,missing=True)
-        os.replace(path,destination)
+        replace_shared(path,destination)
         need(self.read(relative)==text,'readback',relative)
 
     def clear_flag(self, name, starting=True):
@@ -224,7 +235,11 @@ class Startup:
     def release_admission(self, lease=False):
         if lease:self.guard(starting=False)
         else:self.owner_check()
-        os.unlink(self.path(self.owner_name));os.rmdir(self.path(self.claim_name,kind='directory'))
+        os.unlink(self.path(self.owner_name))
+        # Close the unlinked OWNER before rmdir: on SMB shares a deleted file stays "delete pending" while open, so
+        # rmdir fails ENOTEMPTY (Phase 2 on Apple SMB, 2026-10-04). The claim directory still blocks new admission.
+        if self.owner_fd is not None:os.close(self.owner_fd);self.owner_fd=None
+        os.rmdir(self.path(self.claim_name,kind='directory'))
         need(not (self.root/self.claim_name).exists(),'release_failed',self.claim_name)
 
     def collision(self, candidate):
@@ -313,7 +328,8 @@ class Startup:
         self.owner_fd=os.open(self.path(self.owner_name),(os.O_RDONLY if readonly else os.O_RDWR)|os.O_NOFOLLOW)
         regular(os.fstat(self.owner_fd),self.owner_name)
         try:fcntl.flock(self.owner_fd,fcntl.LOCK_EX|fcntl.LOCK_NB)
-        except BlockingIOError:raise Fault('operation_busy',self.owner_name) from None
+        # flock contention reads as EACCES on macOS SMB mounts (SMB lab, 2026-10-04), EWOULDBLOCK elsewhere.
+        except (BlockingIOError,PermissionError):raise Fault('operation_busy',self.owner_name) from None
         try:value=json.loads(read_fd(self.owner_fd,self.owner_name))
         except (ValueError,UnicodeError):raise Fault('owner_malformed',self.owner_name) from None
         need(isinstance(value,dict) and set(value)==OWNER_KEYS and value['schema']==1 and value['kind']=='axis-startup-admission','owner_malformed',self.owner_name)

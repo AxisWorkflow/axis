@@ -1,5 +1,5 @@
-# Directives
-> **Purpose:** Define conditional Directives to follow when a **Trigger** applies.
+# Default Directives
+> **Purpose:** The Directives every Axis project should have, as shipped with this version. Managed: each update replaces this file. At startup `boot.py` appends any Directive listed here that `_Axis/DIRECTIVES.md` lacks, unless that file opts out of it with a line `<!-- axis:omit-directive: {Directive name} -->`. Existing Directives are never edited or removed.
 
 ## Ask Questions
 

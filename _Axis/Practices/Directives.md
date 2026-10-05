@@ -20,3 +20,7 @@ Follow these principles when you draft triggers for a new Directive:
 - **Test boundaries.** Test a new Directive with conditions that **should** trigger it, conditions that **should not** trigger it but are similar, and conditions that are ambiguous. Ask User for feedback and clarification about the triggering of the Directive for the ambiguous cases.
 
 - **Test non-activation.** Conditional Directives are harder to evaluate than unconditional **Instructions** because non-activation can be correct (the "counterfactual blindness" problem). Therefore, test cases where condition is false and verify that the trigger correctly _does not_ fire.
+
+## Default Directives
+
+Every Axis version ships its default Directives twice: in the new-project template `_Axis/DIRECTIVES.md`, and in the managed `_Axis/Resources/Default-Directives.md`, which each update replaces. At startup `boot.py` appends any default Directive missing from the project's `_Axis/DIRECTIVES.md`, so existing projects receive new defaults after an update. It matches by heading, ignoring case, and never edits, reorders or removes an existing Directive. To keep a default out of a project, remove it and add the line `<!-- axis:omit-directive: {Directive name} -->` to `_Axis/DIRECTIVES.md`.

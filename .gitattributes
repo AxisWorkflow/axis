@@ -13,3 +13,4 @@ _Axis/Dashboard/*.py text eol=lf
 _Axis/Resources/*.sh text eol=lf
 _Axis/Resources/*.py text eol=lf
 _Axis/Secrets/.capsule.age -text
+_Axis/Secrets/.identity.age -text
