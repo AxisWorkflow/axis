@@ -1,6 +1,6 @@
 # Axis Workflow User Manual
 > **Purpose:** How to use the Axis Workflow day to day: setup, commands, the Dashboard, the Wiki, working across tools and machines, and working with Agents and models. For the technical and compliance reference, see [SPECIFICATION](/_Axis/SPECIFICATION.md).
-> **Version:** 2.04
+> **Version:** 2.05
 
 
 
@@ -26,7 +26,7 @@
 - Mount your AI tool (Claude Cowork, ChatGPT Work, Codex, Gemini CLI, Claude Code, ...) to the folder.
 - **Note:** For the complete shell-backed feature set on Windows, use **WSL** or **Git Bash**. Without a POSIX-like shell, Axis keeps its canonical file workflow and degrades shell-dependent enhancements.
 
-Axis drops three underscore-prefixed folders into your project (`_Axis/`, `_Temp/`, `_Trash/`), plus the readable `Wiki/`. You can generally ignore the underscore folders and work with your Agent. One exception: deposit secret files into `_Axis/Secrets/` by hand so they never go through chat.
+Axis drops four underscore-prefixed folders into your project: `_Axis/`, `_Temp/`, `_Trash/` and the readable `_Wiki/`. You can generally ignore the first three and work with your Agent. One exception: deposit secret files into `_Axis/Secrets/` by hand so they never go through chat.
 
 Your own content lives in normal folders that your Agent creates and organizes as the work develops; add `_U` to a folder name to make it read-only for Agents, or `_X` to hide it from Agents completely.
 
@@ -166,7 +166,7 @@ Run `^update`. Your Agent downloads an exact official release into temporary sta
 Yes. WSL or Git Bash unlocks the complete shell-backed feature set. Without a POSIX-like shell, the canonical file workflow still runs through the host's file tools; shell-dependent enhancements report the limitation and use their documented fallback where one exists.
 
 **Can I rename the `_Axis/` folder?**
-No - the implementation files for Axis reference `_Axis/`, `_Temp/`, `_Trash/`, and `Wiki/` literally. You can rename the parent folder holding the entire project, but do not rename those specific folders within it.
+No - the implementation files for Axis reference `_Axis/`, `_Temp/`, `_Trash/`, and `_Wiki/` literally. You can rename the parent folder holding the entire project, but do not rename those specific folders within it.
 
 **Can I use my own README for my project?**
 Yes. The Axis README you see on GitHub is not part of the download, and a cloned copy is replaced during setup. Project Setup creates a README for your project; Axis refreshes only its bounded project-summary block during `^review`, `^save`, and outgoing `^git` checkpoints, and anything you write outside that block remains yours. Use `^help manual` or `^help <topic>` to browse this manual without loading all of it.
@@ -307,17 +307,19 @@ The key difference is that **the wiki is a persistent, compounding artifact.** T
 
 The User does not write the wiki - the Agent writes and maintains all of it. The User is in charge of sourcing, exploration, and asking the right questions. The Agent does all the grunt work - the summarizing, cross-referencing, filing, and bookkeeping that makes a knowledge base actually useful over time. The Wiki is a collection of portable Markdown files. The shipped `.gitignore` excludes Wiki content because it may be large or binary-heavy, so back it up with a full-folder copy or backup service rather than assuming a normal Git checkpoint includes it.
 
+Since Version 2.05 the Wiki lives in `_Wiki/` (earlier versions used `Wiki/`). When you update an older project, Axis moves the folder for you the first time it starts on the new version. If Obsidian or another tool saves files to `Wiki/Inbox/`, point it at `_Wiki/Inbox/`.
+
 ### Wiki Images
 
 The Wiki **can** include images. To capture images easily, configure Obsidian to download images and attachments and store them locally. Image clipping & saving is optional but useful - it lets the Agent view and reference images directly instead of relying on URLs that can break. Agents, however, cannot natively read markdown with inline images in one pass - the workaround is to have the Agent read the text first, then view some or all of the referenced images separately to gain additional context.
 
-- In Obsidian `Settings` → `Files and links`, set the `Attachment folder path` to `Wiki/Inbox/`.
+- In Obsidian `Settings` → `Files and links`, set the `Attachment folder path` to `_Wiki/Inbox/`.
 
 - Then in `Settings` → `Hotkeys`, search for `Download` to find `Download attachments for current file` and bind it to a hotkey (e.g. Ctrl+Shift+D).
 
 - After clipping an article, hit the hotkey and all images get downloaded to local disk.
 
-- Agents will scan and link images in `Wiki/Inbox/` as part of their normal Wiki ingestion and maintenance routines.
+- Agents will scan and link images in `_Wiki/Inbox/` as part of their normal Wiki ingestion and maintenance routines.
 
 ### Settings
 
@@ -537,7 +539,7 @@ An External agent that needs a shared change it may not make itself can ask Main
 A **Subagent** is an Agent spawned by Main Agent to do isolated work in a fresh context window. Four types:
 
 - **CX Subagent** - stress-tests Main Agent's output. Pushes back on weak claims, surfaces missing evidence, and writes a critique report into `_Axis/CX/`. Cross-Examiners require an isolated context to stay independent; when the host cannot spawn one, Axis offers a clearly-labelled in-context review instead.
-- **Wiki Subagent** - ingests new raw sources from `Wiki/Inbox/` and integrates them into `Wiki/`. Main Agent spawns multiple Wiki Subagents in parallel for batch ingest.
+- **Wiki Subagent** - ingests new raw sources from `_Wiki/Inbox/` and integrates them into `_Wiki/`. Main Agent spawns multiple Wiki Subagents in parallel for batch ingest.
 - **Local Subagent** - runs on a local model (typically via Ollama) for cost-effective, deterministic, or offline work.
 - **General Subagent** - parallel execution of work that doesn't fit the specialized types.
 

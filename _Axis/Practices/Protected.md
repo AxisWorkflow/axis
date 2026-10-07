@@ -26,4 +26,4 @@ Only Main Agent changes protection, only on explicit User instruction, and the m
 - Suffix conventions bind honest Agents; they are not cryptography. For content that must be technically unreadable, User keeps it outside the project or uses OS permissions.
 - External Agents: `_U` and `_X` are never Write-new destinations; `_X` is invisible to them like every Agent.
 - Subagents inherit the same rules; Main never routes a Subagent into `_U` for writing or `_X` at all.
-- These suffixes are for User content in the open workspace. Workflow folders (`_Axis/`, `_Temp/`, `_Trash/`, `Wiki/`) never carry them.
+- These suffixes are for User content in the open workspace. Workflow folders (`_Axis/`, `_Temp/`, `_Trash/`, `_Wiki/`) never carry them.

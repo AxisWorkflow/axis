@@ -9,7 +9,7 @@
 - **`_Axis/Secrets/`** - Secrets (keys, tokens, credentials).
 - **`_Temp/`** - Scratch space for regenerable files.
 - **`_Trash/`** - Deletion staging - each item is kept at least 2 days, then an automatic sweep deletes it.
-- **`Wiki/`** - Knowledge base for project.
+- **`_Wiki/`** - Knowledge base for project.
 
 ### Files
 
@@ -227,8 +227,8 @@
 ### Folders
 
 - `_Axis/Wiki/` - Wiki bookkeeping by Agents (indexes, activity, status, schema).
-- `Wiki/Inbox/` - Raw input sources for the project (domain subject matter).
-- `Wiki/` - Collection of markdown files forming a knowledge base.
+- `_Wiki/Inbox/` - Raw input sources for the project (domain subject matter).
+- `_Wiki/` - Collection of markdown files forming a knowledge base.
 
 ### Files
 

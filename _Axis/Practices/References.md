@@ -58,7 +58,7 @@ Rules of use:
 - A deeper form ([File > Section] or [File > Section > Subsection]) names real headings inside the resolved file.
 - [Settings > X] names the `### X` Setting inside `_Axis/SETTINGS.md`; [Practices > X] and [Rules > X] each resolve to the single-token file in their own folder, per their table rows.
 - Any reference whose base form is not in this table is invalid: fix the reference, or extend the table AND the matching integrity check in the same change.
-- Reference names are logical, not literal paths: [Project] resolves to `_Axis/PROJECT.md`, and the [Wiki > ...] rows resolve into `Wiki/` - the table, not the bracket text, carries the path. Never rename a reference just because a folder moved; update its row instead.
+- Reference names are logical, not literal paths: [Project] resolves to `_Axis/PROJECT.md`, and the [Wiki > ...] rows resolve into `_Axis/Wiki/` - the table, not the bracket text, carries the path. Never rename a reference just because a folder moved; update its row instead.
 
 ## Documentation Boundary
 

@@ -66,7 +66,7 @@ Ask one question at a time. Wait for each answer. Push back on vague answers - a
 
 Create supporting Wiki files when missing (the first Wiki Subagent run will populate them with real content).
 
-1. `_Axis/Wiki/Input-Index.md` - Index of files in `Wiki/Inbox/` that have been ingested.
+1. `_Axis/Wiki/Input-Index.md` - Index of files in `_Wiki/Inbox/` that have been ingested.
 	- If the file already exists, do NOT overwrite it.
 	- If this file is missing, create and initialize it with: the H1 header `# Wiki Input Index`; the Purpose line `> **Purpose:** Index of all inbound raw source documents for the Wiki.`; a blank line; then a placeholder line `{{ no content yet }}`.
 2. `_Axis/Wiki/Library-Index.md` - Catalog of every Wiki page with a one-line summary.

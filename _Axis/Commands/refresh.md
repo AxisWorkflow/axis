@@ -32,7 +32,7 @@
 
 12. Surface stale work from each Task's durable `updated:` field, never detail-file `mtime`. Flag Active Tasks older than 7 days, Blocked Tasks carrying no stated reason or blocked more than 14 days, and `updated: Unknown` for review. For a Blocked Task awaiting a specific User action, create or reuse a Follow-Up only after User confirms the ask. Ask User whether each is still live, then update (advancing `updated:`), cancel, or leave it per their answer; at `Default` and `Autonomous`, close a Task yourself when its own records prove it finished or superseded, and report it.
 
-13. Refresh the Wiki, only if the Wiki is in use. Diff `_Axis/Wiki/Input-Index.md` against a live listing of `Wiki/Inbox/` and report any source that has never been ingested (recommend `^wiki`). Then run the quick health check per [Practices > Wiki > Review], or suggest `^wiki lint` for the full pass.
+13. Refresh the Wiki, only if the Wiki is in use. Diff `_Axis/Wiki/Input-Index.md` against a live listing of `_Wiki/Inbox/` and report any source that has never been ingested (recommend `^wiki`). Then run the quick health check per [Practices > Wiki > Review], or suggest `^wiki lint` for the full pass.
 
 14. Surface what is overdue - recommend, do not run: an active Note older than 30 days (`^notes`); Ideas never reviewed or last reviewed over 30 days ago (`^ideas`); an overdue open Follow-Up (`^followups`); a due or unhealthy Reminder (`^reminders`); no Review in the last 7 days (`^review`); no Snapshot in the last 48 hours (`^save`); `_Axis/PROJECT.md` still carrying `{{` placeholders, meaning setup never finished.
 

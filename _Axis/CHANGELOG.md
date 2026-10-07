@@ -1,7 +1,7 @@
 # Changelog
 > **Purpose:** Record Axis release identity and the structural migrations needed to update an existing project safely.
 
-current-version: 2.04
+current-version: 2.05
 changelog-format: 1
 self-update-baseline: 26.08.19
 
@@ -39,6 +39,35 @@ update-impact: automatic
 ### Verification
 
 - None.
+
+## 2.05
+
+released: 2026-10-07
+
+- The Wiki moves from `Wiki/` to `_Wiki/`, beside the other folders Axis creates; `_Axis/Wiki/` keeps its administration files.
+- Updating moves an existing project's Wiki automatically: the first startup on 2.05 renames `Wiki/` to `_Wiki/` with every file unchanged and points the Wiki's two index files at the new path.
+
+update-impact: automatic
+
+### Structural Changes
+
+- The Wiki's root folder moves from `Wiki/` to `_Wiki/` (User decision, 2026-10-07): `_Wiki/` holds the Library and `_Wiki/Inbox/` the raw sources, while `_Axis/Wiki/` keeps the administration files. Every Rule, Practice, Command and Resource, the Manifest, Glossary, User Manual and Specification name the new path, and the reserved folders are now four underscore-prefixed folders. The release ships `_Wiki/Inbox/.gitkeep` instead of `Wiki/Inbox/.gitkeep`.
+- `.gitignore`: the four Wiki rules name `_Wiki/` (`_Wiki/*`, `!_Wiki/Inbox`, `_Wiki/Inbox/*`, `!_Wiki/Inbox/.gitkeep`) and replace the `Wiki/` rules.
+- `_Axis/Resources/boot.py` moves a project's `Wiki/` to `_Wiki/` at startup (see Project-State Migrations). `_Axis/Resources/Boot-Manual.md` gives the same step for startups without `boot.py`, and `_Axis/Commands/update.md` says the restart performs it.
+- `_Axis/Resources/overlay-identity.py` and `_Axis/Resources/Load-Project-Overlay.md` exclude `_Wiki/` instead of `Wiki/` as a project-overlay location.
+- `_Axis/RULES.md`: the Wiki Inbox line names `_Wiki/Inbox/`. The compiled core is regenerated.
+
+### Project-State Migrations
+
+- Root `Wiki/` folder (automatic): the first startup after this update (the fresh session every `^update` ends with) renames `Wiki/` to `_Wiki/` in one move, leaving every file inside unchanged, and rewrites root `Wiki/` paths to `_Wiki/` in `_Axis/Wiki/Input-Index.md` and `_Axis/Wiki/Library-Index.md`. `Library-Activity.md` and `Library-Status.md` (append-only) and `Library-Schema.md` (changed only with User approval) are not rewritten. When both `Wiki/` and `_Wiki/` exist, or `Wiki` is not a plain folder, nothing moves and startup tells User. A project without a `Wiki/` folder is unaffected. `^update` itself never moves Wiki content.
+
+### Retired Paths
+
+- `Wiki/` (folder) - replaced by `_Wiki/`, and `Wiki/Inbox/` by `_Wiki/Inbox/`; the first startup after the update moves the folder (see Project-State Migrations) and never deletes it.
+
+### Verification
+
+- The merged `.gitignore` carries the four `_Wiki/` rules.
 
 ## 2.04
 

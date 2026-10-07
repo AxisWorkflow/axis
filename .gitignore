@@ -37,10 +37,10 @@ _Temp/*
 
 # Subprojects are parent-tracked by default. For an independent nested repository,
 # add that child's exact path, for example: /Clients/Acme/
-Wiki/*
-!Wiki/Inbox
-Wiki/Inbox/*
-!Wiki/Inbox/.gitkeep
+_Wiki/*
+!_Wiki/Inbox
+_Wiki/Inbox/*
+!_Wiki/Inbox/.gitkeep
 _Axis/Secrets/*
 !_Axis/Secrets/.gitkeep
 !_Axis/Secrets/.recipient

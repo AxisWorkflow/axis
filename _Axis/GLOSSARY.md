@@ -107,7 +107,7 @@
 ### Wiki
 
 - **Wiki** - Domain-specific knowledge that is useful for the project.
-- **Ingest** - The Wiki intake procedure: read a source and integrate it into `Wiki/` - see [Practices > Wiki].
+- **Ingest** - The Wiki intake procedure: read a source and integrate it into `_Wiki/` - see [Practices > Wiki].
 - **Library Status Record** - Append-only log of Wiki Review findings - `_Axis/Wiki/Library-Status.md`.
 
 ## Initiative

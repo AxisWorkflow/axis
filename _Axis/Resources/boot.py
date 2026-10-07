@@ -144,6 +144,28 @@ def sync_directives():
     if dst.read_text()!=new:raise OSError('directive sync readback')
     return [n for n,_ in add]
 
+def move_wiki():
+    # Wiki folder move (2.05, User decision 2026-10-07): the Wiki moved from Wiki/ to _Wiki/. A project last updated
+    # before 2.05 still keeps it in Wiki/, so the first startup on 2.05 renames the folder whole (one move; every file
+    # inside unchanged) and points the two Wiki index files at the new path. The append-only Wiki records and the
+    # User-approved schema are never rewritten. Runs under the startup admission; a later startup finds nothing to do.
+    old,new=root/'Wiki',root/'_Wiki'
+    if 'Wiki' not in os.listdir(root):return None,None  # exact name: a case-insensitive disk must not match a User's wiki/
+    if old.is_symlink() or not old.is_dir():return 'The project root has a Wiki entry that is not a plain folder, so Axis did not move it. Since Axis 2.05 the Wiki lives in _Wiki/; move its content there yourself.',None
+    if os.path.lexists(new):return 'This project has both Wiki/ and _Wiki/. Since Axis 2.05 the Wiki lives in _Wiki/: move anything you still need from Wiki/ into _Wiki/, then delete Wiki/.',None
+    replace_shared(old,new)
+    fixed=[]
+    for n in ('Input-Index.md','Library-Index.md'):
+        q=root/'_Axis/Wiki'/n
+        if not q.is_file() or q.is_symlink():continue
+        text=q.read_text(encoding='utf-8');new_text=re.sub(r'(?<![\w./-])((?:\.\./)*)Wiki/',r'\1_Wiki/',text)
+        if new_text==text:continue
+        tmp=q.with_name('.'+n+'.axis-wiki');tmp.write_text(new_text,encoding='utf-8');replace_shared(tmp,q)
+        if q.read_text(encoding='utf-8')!=new_text:raise OSError('Wiki index readback')
+        fixed.append(n)
+    note='Moved the Wiki from Wiki/ to _Wiki/, where Axis 2.05 keeps it'+(' (its index files now name the new path)' if fixed else '')+'. If Obsidian or another tool saves files to Wiki/Inbox/, point it at _Wiki/Inbox/.'
+    return note,'record one Log Event "Wiki moved to _Wiki/"'+(' naming the updated index files: '+', '.join(fixed) if fixed else '')
+
 if not (root/'_Axis/Resources/startup-state.py').is_file():stop('run this from the project root')
 if o.finish_adoption:
     # Resume the admitted startup that stopped at ADOPT: same session, same admission (read back from its OWNER).
@@ -167,10 +189,14 @@ try:
  else:i=run(R/'startup-state.py','--root',root,'initialize','--session',sid,'--owner',owner)
  if i.get('status')!='initialized':interrupted('initialize failed',initialize=i)
  adopted=adopt(sid) if us=='ready' else None
+ try:wiki_note,wiki_log=move_wiki()
+ except (OSError,UnicodeError) as e:wiki_note,wiki_log=f'Axis could not finish moving the Wiki from Wiki/ to _Wiki/ ({type(e).__name__}). Check both folders before using the Wiki.',None
  s=run(R/'startup-survey.py','--root',root,'survey','--session',sid,'--owner',owner,'--model',o.model,'--harness',o.harness,'--interaction',o.interaction,'--spawn',o.spawn,'--parallel',o.parallel)
  if s.get('status')!='surveyed':interrupted('startup survey failed',survey=s)
 
  notices=[x for x in (s.get('notices') or []) if x!='cloud-synced-folder'];pending=[];later=[]
+ if wiki_note:notices.append(wiki_note)
+ if wiki_log:later.append(wiki_log)
  if 'cloud-synced-folder' in (s.get('notices') or []):
      why=s.get('cloud_reason') or 'reason not recorded'
      notices.append(f'This folder looks cloud-synced ({why}), so agents here write one at a time. If it is really a local folder, say so and it will be corrected.')

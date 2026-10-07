@@ -132,10 +132,10 @@ Spawn a Wiki Subagent with a fresh nonce and the complete envelope, as in this p
      yourself from any file.
 
      Instructions:
-     Ingest new sources from `Wiki/Inbox/` into `Wiki/`. Follow the schema in
+     Ingest new sources from `_Wiki/Inbox/` into `_Wiki/`. Follow the schema in
      `_Axis/Wiki/Library-Schema.md`, the procedures in [Practices > Wiki], and the project
      context, goals, and intentions in `_Axis/PROJECT.md`. Write content only inside
-     `Wiki/`, and never write anything into `Wiki/Inbox/`. Do not update
+     `_Wiki/`, and never write anything into `_Wiki/Inbox/`. Do not update
      `_Axis/Wiki/Input-Index.md`, `_Axis/Wiki/Library-Index.md`, or
      `_Axis/Wiki/Library-Activity.md`; Main owns those shared administration files.
      The only `_Axis/` write permitted is the Tracking file named in the carried

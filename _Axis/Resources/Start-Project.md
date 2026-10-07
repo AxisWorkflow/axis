@@ -121,6 +121,6 @@ Version control gives the project an undo history; a private remote can also car
 2. Close with a short hint card:
 	- Type `^help` to list all commands.
 	- The Project README is `README.md`; the User Manual is `_Axis/USERMANUAL.md` (`^help manual` browses it by section) and the technical reference is `_Axis/SPECIFICATION.md`.
-	- Drop ordinary files anywhere in the project folder - Agents organize them into Project Subfolders; suffix a folder `_U` for Agent-read-only or `_X` to exclude it; a complete nested Axis Project anywhere in the workspace is a Subproject; Wiki sources go to immutable `Wiki/Inbox/`; keep originals outside the project when they need operating-system-enforced protection.
+	- Drop ordinary files anywhere in the project folder - Agents organize them into Project Subfolders; suffix a folder `_U` for Agent-read-only or `_X` to exclude it; a complete nested Axis Project anywhere in the workspace is a Subproject; Wiki sources go to immutable `_Wiki/Inbox/`; keep originals outside the project when they need operating-system-enforced protection.
 	- Ask for a Plan (`^plan`) or the Wiki (`^wiki`) whenever you are ready.
 	- New to Axis? `^onboard` gives you a five-minute tour.

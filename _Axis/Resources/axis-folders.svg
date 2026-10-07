@@ -21,7 +21,7 @@
 <text x="92" y="155" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15" font-weight="700" fill="#fbbf24">Drafts/</text>
 <path d="M37 166 V178 H56" stroke="#475569" stroke-width="1.5" fill="none"/>
 <path d="M62 172 h7 l3 3 h10 a2 2 0 0 1 2 2 v10 a2 2 0 0 1 -2 2 h-18 a2 2 0 0 1 -2 -2 v-13 a2 2 0 0 1 2 -2 z" fill="#34d399"/>
-<text x="92" y="185" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15" font-weight="700" fill="#34d399">Wiki/</text>
+<text x="92" y="185" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15" font-weight="700" fill="#34d399">_Wiki/</text>
 <text x="430" y="185" font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="13.5" fill="#cbd5e1"><tspan fill="#475569">· </tspan>knowledge base the Agent builds</text>
 <path d="M37 196 V208 H56" stroke="#475569" stroke-width="1.5" fill="none"/>
 <path d="M62 202 h7 l3 3 h10 a2 2 0 0 1 2 2 v10 a2 2 0 0 1 -2 2 h-18 a2 2 0 0 1 -2 -2 v-13 a2 2 0 0 1 2 -2 z" fill="#60a5fa"/>

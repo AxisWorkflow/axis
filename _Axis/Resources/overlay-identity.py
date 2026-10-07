@@ -58,7 +58,7 @@ def validate(root,sid,phase,expected):
     for field,key in zip(fields,keys):
         require(field.startswith(key+': ') and field.count(key+': ')==1,'invalid field order');values.append(field[len(key)+2:])
     oid,name=values[1:3];require(re.fullmatch('[a-z0-9][a-z0-9._-]{7,127}',oid),'invalid overlay ID');require(name.endswith('.md'),'overlay must be Markdown')
-    forbidden=('_Axis/Secrets/','_Axis/Agents/','_Axis/Flags/','_Axis/Tracking/','_Temp/','_Trash/','Wiki/')
+    forbidden=('_Axis/Secrets/','_Axis/Agents/','_Axis/Flags/','_Axis/Tracking/','_Temp/','_Trash/','_Wiki/')
     require(not name.casefold().startswith(tuple(v.casefold() for v in forbidden)) and not any(p.casefold()=='.git' for p in name.split('/')),'forbidden overlay path')
     source=read(root,name);require(len(source)<=20000,'overlay exceeds size limit');text=source.decode();sl=text.splitlines()
     require(len(sl)>=2 and sl[0].startswith('# Project Overlay: ') and sl[1].startswith('> **Purpose:**'),'invalid overlay header')

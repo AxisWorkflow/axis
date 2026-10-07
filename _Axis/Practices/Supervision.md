@@ -15,7 +15,7 @@ Supervision is a relational function of a parent Project's Main Agent. It is not
 
 Discover children on demand for `^^` and `^audit supervision`; never maintain a registration file or background scan.
 
-1. Start at the current Project root. Search descendant directories without following symbolic links and without entering `_Axis/`, `_Temp/`, `_Trash/`, `Wiki/`, `.git/`, another hidden system directory, or any `_X` path. `_U` content may be read for discovery, but any state-changing command against a child beneath `_U` refuses because that protected ancestor is read-only.
+1. Start at the current Project root. Search descendant directories without following symbolic links and without entering `_Axis/`, `_Temp/`, `_Trash/`, `_Wiki/`, `.git/`, another hidden system directory, or any `_X` path. `_U` content may be read for discovery, but any state-changing command against a child beneath `_U` refuses because that protected ancestor is read-only.
 
 2. Recognize a child only when one directory carries every Standard Setup Anchor in [Practices > Subprojects > Recognition Contract]. A partial anchor set is an incomplete candidate, not a child; report it only when User named that path or an audit is looking for incomplete candidates.
 
