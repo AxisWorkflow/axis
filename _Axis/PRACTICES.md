@@ -90,6 +90,9 @@
 - [Practices > Ideas] - Recording and reviewing Ideas.
   *Load for `^idea`, `^ideas`, or an Ideas review.*
 
+- [Practices > Inbox] - Filing what User drops into `_Inbox/`.
+  *Load when `_Inbox/` holds items, and for `^inbox` or `^refresh`.*
+
 - [Practices > Mindset] - How the behavioral Mindset is generated and followed.
   *Load when regenerating Mindset.*
 

@@ -5,11 +5,12 @@
 
 `{Current UTC timestamp} - {Session ID} - {one-line statement}`
 
+- `{Current UTC timestamp}` uses the identifier form `yyyy.mm.dd.hh.mm.ss.xxxZ`, made with the [Practices > Timestamps] step 1 command (no claim needed).
 - Time first, deliberately: `cat _Axis/Tracking/*.md | sort` is the complete cross-agent timeline with no flags, and `for f in _Axis/Tracking/*.md; do tail -n1 "$f"; done` is the live snapshot (portable - BSD `tail` has no `-q`, and these lines need no filename headers because every line is self-contained).
 - The Session ID field must match its filename - stating the author twice is a paired check: a mismatch means a wrong-file append, and `^audit` flags it.
 - Same-second honesty: a host clock that stamps whole seconds (`.000` milliseconds) makes same-second ties structural, and `sort` orders tied lines by whatever text follows the timestamp - read a tie as one moment, never as a sequence. Sequence proof lives in Logs, not telemetry.
 - The file is `_Axis/Tracking/{Session ID}.md` - the same identifier as the Agent's Marker, deliberately: the Marker says who is here, the tracking file says what they are doing, and the shared name is the join. This reuse is intentional and sits outside the timestamp-uniqueness domain - Tracking is telemetry, not a record family.
-- Append only. Never edit or reorder existing lines. Each Agent writes only its own file, so the channel needs no lock and works on any storage any Agent can read.
+- Append only. Never edit, reorder or delete existing lines, including your own; to correct a line, append a new line that says so. Each Agent writes only its own file, so the channel needs no lock and works on any storage any Agent can read.
 
 ## Typed Statements
 
@@ -69,7 +70,7 @@ Agents do not experience time passing, so [Settings > Tracking] defines which ev
 ## Who Tracks
 
 - Main Agents and External Agents always follow the Setting.
-- Standard-capability Subagents write their own file at `writes` and `verbose` - and the obligation travels IN the spawn prompt: Main mints the child's Session ID and embeds it with the TRACKING directive per [Start-Subagent], because a Practice the child never reads binds nobody (found live 2026-08-04). The child writes INTENT at start and DONE before returning. A child that cannot write files says so in its return and Main records both lines; either way Main glances for the file on return.
+- Standard-capability Subagents write their own file at `writes` and `verbose` - and the obligation travels IN the spawn prompt: Main mints the child's Session ID and embeds it with the TRACKING directive per [Start-Subagent], because a Practice the child never reads binds nobody. The child writes INTENT at start and DONE before returning. A child that cannot write files says so in its return and Main records both lines; either way Main glances for the file on return.
 - Local delegations NEVER track - the benchmarked Local contract stays untouched, and Main writes their INTENT and DONE lines instead.
 
 ## Telemetry, Not Evidence

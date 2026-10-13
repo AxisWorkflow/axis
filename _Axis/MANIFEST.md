@@ -7,6 +7,7 @@
 
 - **`_Axis/`** - Control folder for Axis Workflow.
 - **`_Axis/Secrets/`** - Secrets (keys, tokens, credentials).
+- **`_Inbox/`** - Drop folder for new material; Main Agent files each item into its home.
 - **`_Temp/`** - Scratch space for regenerable files.
 - **`_Trash/`** - Deletion staging - each item is kept at least 2 days, then an automatic sweep deletes it.
 - **`_Wiki/`** - Knowledge base for project.
@@ -97,6 +98,7 @@
 - `_Axis/Practices/Followups.md`
 - `_Axis/Practices/GIT.md`
 - `_Axis/Practices/Ideas.md`
+- `_Axis/Practices/Inbox.md`
 - `_Axis/Practices/IndexDetail.md`
 - `_Axis/Practices/Initiatives.md`
 - `_Axis/Practices/Logs.md`
@@ -159,6 +161,7 @@
 - `_Axis/Commands/help.md`
 - `_Axis/Commands/idea.md`
 - `_Axis/Commands/ideas.md`
+- `_Axis/Commands/inbox.md`
 - `_Axis/Commands/install.md`
 - `_Axis/Commands/kill.md`
 - `_Axis/Commands/log.md`
@@ -227,7 +230,7 @@
 ### Folders
 
 - `_Axis/Wiki/` - Wiki bookkeeping by Agents (indexes, activity, status, schema).
-- `_Wiki/Inbox/` - Raw input sources for the project (domain subject matter).
+- `_Wiki/_Inbox/` - Raw input sources for the project (domain subject matter).
 - `_Wiki/` - Collection of markdown files forming a knowledge base.
 
 ### Files

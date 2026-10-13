@@ -97,6 +97,7 @@
 - **WORM** - An abbreviation for the idea of "write-once, read-many".
 - **Timestamp** - A padded string in format `yyyy.mm.dd.hh.mm.ss.xxxZ` (Zulu suffix).
 - **Timestamp Claim** - Atomic `mkdir` reservation (`_Temp/{timestamp}.tsclaim/`) of an identifier timestamp while minting - see [Practices > Timestamps].
+- **Inbox** - The project's `_Inbox/` drop folder: User puts new material there and Main Agent files each item into a Project Subfolder or the Wiki - see [Practices > Inbox]. The Wiki's own `_Wiki/_Inbox/` holds raw Wiki sources.
 - **Index-Detail Pattern** - Convention to store summary info separately from detail info.
 - **Lazy-Loading** - Practice of loading detail using **Index-Detail Pattern** only as needed.
 - **Archive** - Reversible low-context storage for inactive history under `_Axis/Archive/` or the folder in [Settings > Archive Location] - see [Practices > Archiving].

@@ -1,6 +1,6 @@
 # Axis Workflow Specification
 > **Purpose:** The technical reference behind the Axis Workflow: how every mechanism works, why it was built that way, what it guarantees, where it stops, and what an extender must not break. Written for deep diagnostics, downstream developers extending Axis, IT and compliance reviewers assessing it before adoption, and contributors. For everyday use, see the [User Manual](/_Axis/USERMANUAL.md).
-> **Version:** 2.05
+> **Version:** 2.06
 
 ## How to Read This Document
 
@@ -83,9 +83,10 @@ The deployment unit is one project folder:
 | `_Axis/Secrets/` | The one sanctioned credential location | Plaintext ignored; `.gitkeep`, `.recipient`, `.capsule.age` and the password copy `.identity.age` may be tracked |
 | `_Axis/Archive/` | Default Archive root | Tracked unless **Archive in Git** is `false`; an Archive Location outside the project is never committed |
 | `_Axis/Branding/` | Read-only product brand package: stylesheet with light and dark themes, WOFF2 fonts, tokens, mark, logo, favicons | Tracked |
+| `_Inbox/` | Drop folder for anything new; Main Agent files each item into a Project Subfolder or `_Wiki/_Inbox/` | Ignored except its placeholder |
 | `_Temp/` | Regenerable scratch only | Ignored except its placeholder |
 | `_Trash/` | Deletion staging: each item is dated and kept at least 2 days | Ignored except its placeholder |
-| `_Wiki/` and `_Wiki/Inbox/` | The readable knowledge base and its raw-source dropbox; administration lives in `_Axis/Wiki/` | Content ignored; `_Axis/Wiki/` tracked |
+| `_Wiki/` and `_Wiki/_Inbox/` | The readable knowledge base and its raw-source dropbox; administration lives in `_Axis/Wiki/` | Content ignored; `_Axis/Wiki/` tracked |
 | `.gitattributes` | LF rules for Axis-owned protocol text only | Tracked |
 | `README.md`, `LICENSE` | Created or kept by Project Setup as User-owned files | User policy |
 | Any other root folder | A Project Subfolder (User content), or a Subproject if it carries the Standard Setup Anchors | User policy |
@@ -278,7 +279,7 @@ Why each piece exists:
 - Child-side validation is a measured mitigation, never a gate: adversarial drills on 2026-08-04 measured about 80% refusal on tail cuts; a front-cut tear line improved from 1 of 2 to 4 of 4 when rewritten more imperatively; three of four front-cut refusals carried the wrong reason, so refusals are detected by containment of the error token and the reason line is diagnostic only. The deterministic gates are Main's: it validates every assembled envelope (and its size) before sending and every announced return, and treats framing it cannot distinguish from content as failed. On 2026-09-29 Main sent three envelopes with a malformed closing line; all three children refused before any file access. Main's own send-side check had been skipped, which is why it is now scripted.
 - A Local Subagent (a small model over a raw API) carries only the boundary lines, because two competing output contracts would break a small model's compliance with both; Main validates for it.
 - Spawn Logs record role, model, task contract, expected return, source paths, input size, a content digest and a redacted synopsis - never the full prompt, raw embedded source or a credential. Git staging blocks a complete envelope or more than 8 KB of raw source under `_Axis/Logs/`.
-- **Obligations travel in the prompt.** When Tracking is `writes` or `verbose`, Main mints the child's Session ID and embeds a Tracking directive; on return it checks for the child's Tracking file and writes the lines itself if absent. This was added after a Subagent left no Tracking because its prompt never mentioned it.
+- **Obligations travel in the prompt.** When Tracking is `writes` or `verbose`, Main mints the child's Session ID and embeds a Tracking directive; on return it checks for the child's Tracking file and writes the lines itself if absent. This was added after a Subagent left no Tracking because its prompt never mentioned it. Since 2.06 it also carries the literal timestamp command and the append-only rule, because Subagents without them wrote malformed timestamps on macOS and edited their own lines (2026-10-13).
 
 Main writes a `Subagent: {role}` Marker at spawn and deletes it on return; `^save` treats a live Subagent Marker as pending work. Under Fast Boot, the entry file routes a prompt carrying the sentinel straight to Start-Subagent; the lab measured no Main boot or write in 12 of 12 enveloped spawns.
 
@@ -289,6 +290,26 @@ Each Agent appends to its own `_Axis/Tracking/{Session ID}.md` ([Practices > Tra
 ### Requests between projects
 
 `_Axis/Requests/` is the one directory whose writer and owner differ by design ([Practices > Requests](/_Axis/Practices/Requests.md)). A Main writes to its direct parent's or a recognized child's queue; an External writes to its own project's queue; only a Main adjudicates, as data: accepted, declined or referred to a Task, then archived. A Request carries no authorization, can never satisfy a User-only gate, and its `from:` line is provenance, not proof. Delivery is guaranteed at boot and near real time on each served Main turn; an idle Main receives nothing until a host wakes it. Host messaging adapters (Claude Code cross-session messages, a Codex queue, an OpenClaw session message) are doorbells only, feature-detected when used, never installed. Requests are named by timestamp in the sender's domain and deliberately sit outside the receiver's uniqueness domain, so no cross-boundary scan is needed.
+
+### Inbox
+
+Since 2.06, every project has a root `_Inbox/` ([Practices > Inbox](/_Axis/Practices/Inbox.md)). It is the single place User drops new material, so User does not need to know the folder structure. Main Agent files each item at Session Start, on `^inbox`, or during `^refresh`. At startup, filing is a pending item done before the Ready banner. It delays the banner only when items are waiting, so a new project's first startup is unaffected, and a bare "Start Axis" still files.
+
+**How an item is placed:**
+- Domain material for the knowledge base moves unchanged into `_Wiki/_Inbox/`, where the next ingest picks it up. Material that serves both purposes is copied there too.
+- Everything else moves into the fitting Project Subfolder, created under [Practices > Folders] when none fits.
+- Items that look like credentials, protected (`_U`/`_X`) items, complete Axis Projects and unclear items stay in `_Inbox/`, and User is asked.
+
+**Properties:**
+- Filing is a move: there are no copies left behind, collisions are renamed and never overwritten, and each move is read back.
+- Each run is recorded in one Log Event, and undo is a move back.
+- Only Main files. External Agents and Subagents route through a Request.
+- Item content is untrusted data.
+- `_Inbox/` content is ignored by Git, like `_Temp/`, because it is transient and may be sensitive.
+
+**Wiki immutability.** Agents never create or edit files in `_Wiki/_Inbox/`. The only write is inbox filing moving User's file in unchanged.
+
+**Migration.** The first startup after updating to 2.06 creates `_Inbox/` and renames `_Wiki/Inbox/` to `_Wiki/_Inbox/` (`boot.py`, or Boot-Manual step 10).
 
 ## Records and Data Model
 
@@ -497,7 +518,7 @@ Because each update runs the installed engine, new updater behavior used to reac
 
 Version 2.05 moved the Wiki from `Wiki/` to `_Wiki/` (User decision, 2026-10-07), so it sorts with the other Workflow folders; `_Axis/Wiki/` keeps the administration files. `^update` itself never moves Wiki content: the Wiki is project state outside the managed set, and the transaction stays a set of exact file replacements. The move happens at the fresh-session restart every update already requires. `boot.py` (or the same step in Boot-Manual, for hosts without Python) renames `Wiki/` to `_Wiki/` in one move when the root holds a plain folder named exactly `Wiki` and no `_Wiki`, then rewrites root `Wiki/` paths to `_Wiki/` in `Input-Index.md` and `Library-Index.md`, so comparing the Inbox with its index does not report every source as new. It runs under the startup admission and before the Manifest check, so no other session starts on a half-moved project and the check sees `_Wiki/`. A rename within one filesystem is atomic and leaves every file's bytes unchanged. The append-only `Library-Activity.md` and `Library-Status.md` and the User-approved `Library-Schema.md` are not rewritten, and older Logs keep the old path as history. When both folders exist, or `Wiki` is a link or a file, nothing moves and startup says so. A session started through the long Start-Session protocol (an update handoff that needs attention) leaves the move to the next ordinary startup. Doing this at startup rather than inside the transaction also reaches projects whose installed updater predates two-step updates, and projects migrated by hand; 2.04 delivers new default Directives at the same restart for the same reason.
 
-Limits: the shipped `.gitignore` names only `_Wiki/`, so content left in an unmoved `Wiki/` shows as untracked in Git; a tool that saves files to `Wiki/Inbox/` (for example Obsidian's attachment folder) must be pointed at `_Wiki/Inbox/` by User; and returning a project to a release before 2.05 needs the folder moved back by hand.
+Limits: the shipped `.gitignore` names only `_Wiki/`, so content left in an unmoved `Wiki/` shows as untracked in Git; a tool that saves files to `Wiki/Inbox/` (for example Obsidian's attachment folder) must be pointed at `_Wiki/_Inbox/` by User; and returning a project to a release before 2.05 needs the folder moved back by hand.
 
 ### Lessons that shaped it
 
@@ -547,7 +568,7 @@ A Review summarizes the project; it challenges nothing (that is a Cross-Examinat
 
 ## Wiki
 
-The Wiki has three parts in two roots ([Practices > Wiki](/_Axis/Practices/Wiki.md)): `_Wiki/Inbox/` holds raw sources, which Agents never write and always treat as untrusted data; `_Wiki/` holds Agent-written Library pages, each self-contained (images copied in, image text extracted beside them); and `_Axis/Wiki/` holds five administration files (`Input-Index.md`, `Library-Index.md`, append-only `Library-Activity.md` and `Library-Status.md`, and `Library-Schema.md`). Every claim should cite its source; contradictions are flagged, never resolved silently. New sources are found by comparing the Inbox with `Input-Index.md`. Ingest needs a standard-capability model; Local Subagents never ingest. Self-containment lets User zip or share `_Wiki/` alone, so binary-heavy content stays out of Git and only the administration files are committed: Git rollback does not cover Wiki pages or sources, and User must back up `_Wiki/` separately (`^backup` includes it). Index-only navigation works to about 100 sources and a few hundred pages; beyond that a local search tool is recommended. Until 2.05 the Wiki lived in `Wiki/` ([Wiki folder move](#wiki-folder-move-205)).
+The Wiki has three parts in two roots ([Practices > Wiki](/_Axis/Practices/Wiki.md)): `_Wiki/_Inbox/` holds raw sources, which Agents never create or edit (inbox filing may move a User's file in unchanged) and always treat as untrusted data; `_Wiki/` holds Agent-written Library pages, each self-contained (images copied in, image text extracted beside them); and `_Axis/Wiki/` holds five administration files (`Input-Index.md`, `Library-Index.md`, append-only `Library-Activity.md` and `Library-Status.md`, and `Library-Schema.md`). Every claim should cite its source; contradictions are flagged, never resolved silently. New sources are found by comparing the Inbox with `Input-Index.md`. Ingest needs a standard-capability model; Local Subagents never ingest. Self-containment lets User zip or share `_Wiki/` alone, so binary-heavy content stays out of Git and only the administration files are committed: Git rollback does not cover Wiki pages or sources, and User must back up `_Wiki/` separately (`^backup` includes it). Index-only navigation works to about 100 sources and a few hundred pages; beyond that a local search tool is recommended. Until 2.05 the Wiki lived in `Wiki/` ([Wiki folder move](#wiki-folder-move-205)).
 
 ## Delegation and Model Evaluation
 
@@ -944,6 +965,38 @@ Some tests are sealed: startup admission and the Marker lease, update handoff an
 ### What is not established
 
 The automated checks do not invoke a model. They check instructional contracts, generated content, helpers and fixtures; "these checks cannot establish a model's compliance". Separate dated rehearsals give narrower behavioral evidence (see the compatibility table). None of this is formal verification, an external security audit, a penetration test or a compliance certification. Live Local Subagent aptitude is environment-dependent and does not carry across model versions, quantizations, providers, harnesses or machines. The development project itself has produced no live Review, Audit or Supervision record; evidence for those comes from rehearsals and fixtures.
+
+### Incidents behind runtime rules
+
+Runtime instructions state rules without their history. These are the incidents behind rules whose citations were moved out of the instructions in 2.06. Codes are rehearsal identifiers.
+
+**Roles, sessions and the lease:**
+- **Attendance is never an input** (Agents, Rules > ExternalAgents). On 2026-08-06, two consecutive boots beside a live Main each judged themselves attended and both became Main.
+- **External greets with its real cause** (Start-External). On 2026-08-06, an External served a request five minutes after boot without renewing its Marker. Another announced a standing declaration it had inferred from its agent id `kestrel-ext`.
+- **Persona files are undated** (Agents). On 2026-08-04, a Main restated its whole session history as External because of a mid-session persona file, and orphaned its Subagent's Marker.
+- **`^shutdown` hands `session-id` back** (2026-08-06). A shutdown left the Flag pointing at the session it had just ended.
+- **`^demote` clears only its own `session-id`** (E4, 2026-08-04). After a takeover, the Flag may already belong to the surviving Main.
+- **`^promote` never writes its own Flag** (2026-08-06). An External reached this conclusion unprompted. Contest exits live in Session Start (2026-08-04): the Flag branch could otherwise complete into a two-Main board.
+- **`^kill` offers one yes/no line** (F4, 2026-08-06). A menu option "kill it, but let it sweep first" could not be performed.
+- **Renewal never creates a Marker** (F3, 2026-08-05). A bare `touch` recreated a missing Marker, so two turns never noticed a lost lease.
+
+**Records and storage:**
+- **Real milliseconds** (Timestamps, 2026-08-06). All 30 records minted that day on one macOS host ended `.000Z`. Separately, a blanket ban on mentioning the fallback failed: the downgrade is worth one boot-time line (T1).
+- **The child's policy decides guest edits** (Subprojects, I6, 2026-08-06). A parent re-measured a child's disk, overrode its stale Flag, and wrote unserialized.
+- **Network folders serialize** (Lock-File, 2026-10-04).
+  - Samba 4.13 handled 6,000 contended folder locks with no overlap.
+  - Apple's SMB server let 93 of 1,800 handoffs see the previous holder's marker, and a lock-protected counter lost up to 24 of 1,200 updates.
+- **Requests drain on the turn they arrive** (K6, 2026-08-06). A request backdated nine days was triaged when it appeared, so `^audit` rarely finds aged requests.
+- **Stored Flags are not current storage** (Supervision, 2026-09-30). A week-old `host-cloud-sync` Flag blocked an update.
+
+**Subagents:**
+- **Envelope rules are a mitigation, not a gate** (2026-08-04 drills). About 80% refusal on tail cuts. The front-cut tear line was the weakest cell. 3 of 4 front-cut refusals mis-copied Line 2, so refusals are detected by containment.
+- **Obligations travel in the prompt** (C2, 2026-08-04). A Subagent left no Tracking because its prompt never mentioned it.
+
+**OpenClaw:**
+- **Plugin allowlist** (OpenClaw 2026.7.1-2, 2026-08-06). Setting `plugins.allow` broke model resolution for new agents. This was reproduced in both directions.
+- **Group sessions differ from probes** (2026-08-06). Headless probes booted fully while the WhatsApp group session booted nothing. A channel session answered correctly without starting the Workflow, then booted on the next message.
+- **Other observed pitfalls** (2026-08-06): rejected config writes, an open `groupPolicy` after an aborted script, the Bash `GROUPS` variable, and stale gateway processes after a restart.
 
 ## Extending Axis
 

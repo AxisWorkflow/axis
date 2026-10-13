@@ -1,6 +1,6 @@
 # Axis Workflow User Manual
 > **Purpose:** How to use the Axis Workflow day to day: setup, commands, the Dashboard, the Wiki, working across tools and machines, and working with Agents and models. For the technical and compliance reference, see [SPECIFICATION](/_Axis/SPECIFICATION.md).
-> **Version:** 2.05
+> **Version:** 2.06
 
 
 
@@ -103,7 +103,7 @@ Your own content lives in normal folders that your Agent creates and organizes a
 
 ### Tips
 
-- **Tell side-by-side sessions apart.** Every finished answer starts with a `DONE - Summary of work` header between two divider lines and ends with a divider and the project name, for example `Oversight - Ready for input...` (or `Oversight - Background work in progress, but ready for input...` while work continues). The startup banner lists Project, Folder, Session, Version, Status and Agent, in that order. When you run several projects in split terminal panes, a glance shows which project each pane belongs to and whether it is waiting for you.
+- **Tell side-by-side sessions apart.** Every finished answer starts with the spaced-out Axis Workflow title between two divider lines and ends with a matching divider and `READY FOR INPUT` naming the project folder, for example `READY FOR INPUT (~/Projects/Taxes):` (or `READY FOR INPUT WHILE WORKING IN BACKGROUND (~/Projects/Taxes):` while work continues). The startup banner lists Project, Folder, Session, Version, Status and Agent, in that order. When you run several projects in split terminal panes, a glance shows which project each pane belongs to and whether it is waiting for you.
 
 - **Save and Resume.** Type `^save` when you leave and `^resume` when you return. With a configured Git remote, save sends a linear checkpoint and resume receives one before reconstructing the work. Both still run the complete portability and infrastructure checks; use explicit handoff language or `^shutdown` when changing computers so only one copy remains active.
 
@@ -215,6 +215,7 @@ For example, the text...
 | `^help`      | Summarize and list all commands and answer general questions.                                                  |
 | `^idea`      | Save an Idea into `_Axis/Ideas/` for future exploration.                                                       |
 | `^ideas`     | Review Ideas - update status and priority, archive, and surface top priorities.                                |
+| `^inbox`     | Scan the project's `_Inbox/` and file what arrived.                                                            |
 | `^install`   | Install extensions, tools, skills, MCPs, CLIs, functions, etc.                                                 |
 | `^kill`      | Stop another live Agent by revoking its Marker lease (tombstone; User-only).                                   |
 | `^log`       | Manually Log an entry into `_Axis/Logs/`.                                                                      |
@@ -237,6 +238,8 @@ For example, the text...
 | `^undo`      | Roll back recent changes to a checkpoint - confirm the target, checkpoint the current state, then restore.     |
 | `^update`    | Update Axis Workflow machinery to an official release while preserving project state and local customizations. |
 | `^wiki`      | Set up, update, and/or maintain the Wiki.                                                                      |
+
+`^upgrade` works as another name for `^update`.
 
 Supervision uses a separate double-caret namespace. These commands apply to recognized direct child Axis Projects; no registration or Supervisor Setting is required.
 
@@ -287,6 +290,10 @@ Reload does not contact an Agent or model. It immediately re-fetches the same ap
 
 The remaining cards are direct views of project records. **Project** runs tall in the left column. **Ideas**, **Notes**, **Logs**, **Reminders**, **User Follow Up**, and **Agent Activity** stack in the right column. Reminders is the portable queue ordered by exact UTC due time; User Follow Up holds questions, decisions, and actions only you can complete; Agent Activity covers overdue work or maintenance the Agent can advance, rather than completed-event history. A Reminder remains a checkpoint view, not proof that a background alarm is running. Snapshot and Review cadence comes from each record's UTC filename, so a clone or copy does not reset it. Ideas, Notes, and Logs show their newest entries; Logs also includes a 14-day activity sparkline. **Wiki** appears only when the Library is in use. **Plan** renders the current execution summary and diagram with a bundled, version-pinned Mermaid renderer, never a remotely executed script. **Tasks** is the full-width operational work queue below Plan. It shows an explicit range and total, with a status filter and Previous/Next controls for pages of 25; the selection stays in place across refreshes. Its age labels come from each Task's durable `updated:` field rather than filesystem `mtime`. The always-visible **Review** follows it without another divider and reads `No Review yet - use ^review.` until the first report exists. Its `Recent Developments` section is the deeper synthesized view, including commit history that the browser-only Dashboard cannot inspect.
 
+### Inbox
+
+Drop anything new for the project into `_Inbox/`: documents, data, images, notes or Wiki sources. At the start of the next session, or when you type `^inbox`, your Agent files each item where it belongs. Project material goes into the right Project Subfolder, with a new one created when nothing fits. Material for the knowledge base goes into the Wiki's `_Wiki/_Inbox/`, and an item that serves both goes to both places. `^refresh` files the inbox too. Anything unclear, protected, or that looks like a password or key stays in `_Inbox/`, and your Agent asks you about it. Your Agent tells you in one line what it filed and where. Sources meant only for the Wiki can still go straight into `_Wiki/_Inbox/`.
+
 ### Initiatives
 
 Use an Initiative when several Tasks pursue one shared outcome. For example, a Plan to grow a service might include an Initiative to improve first-time setup, with separate Tasks to investigate delays, make a change, and check the result. The Plan holds priorities, the Initiative holds shared scope and current phase, and Tasks hold the actual work.
@@ -307,19 +314,19 @@ The key difference is that **the wiki is a persistent, compounding artifact.** T
 
 The User does not write the wiki - the Agent writes and maintains all of it. The User is in charge of sourcing, exploration, and asking the right questions. The Agent does all the grunt work - the summarizing, cross-referencing, filing, and bookkeeping that makes a knowledge base actually useful over time. The Wiki is a collection of portable Markdown files. The shipped `.gitignore` excludes Wiki content because it may be large or binary-heavy, so back it up with a full-folder copy or backup service rather than assuming a normal Git checkpoint includes it.
 
-Since Version 2.05 the Wiki lives in `_Wiki/` (earlier versions used `Wiki/`). When you update an older project, Axis moves the folder for you the first time it starts on the new version. If Obsidian or another tool saves files to `Wiki/Inbox/`, point it at `_Wiki/Inbox/`.
+The Wiki lives in `_Wiki/`, with raw sources in `_Wiki/_Inbox/`. When you update a project from before 2.05, the first start on the new version moves `Wiki/` to `_Wiki/`; from before 2.06, it renames `_Wiki/Inbox/` to `_Wiki/_Inbox/`. Point Obsidian or any other tool that saved into the old inbox at `_Wiki/_Inbox/`.
 
 ### Wiki Images
 
 The Wiki **can** include images. To capture images easily, configure Obsidian to download images and attachments and store them locally. Image clipping & saving is optional but useful - it lets the Agent view and reference images directly instead of relying on URLs that can break. Agents, however, cannot natively read markdown with inline images in one pass - the workaround is to have the Agent read the text first, then view some or all of the referenced images separately to gain additional context.
 
-- In Obsidian `Settings` → `Files and links`, set the `Attachment folder path` to `_Wiki/Inbox/`.
+- In Obsidian `Settings` → `Files and links`, set the `Attachment folder path` to `_Wiki/_Inbox/`.
 
 - Then in `Settings` → `Hotkeys`, search for `Download` to find `Download attachments for current file` and bind it to a hotkey (e.g. Ctrl+Shift+D).
 
 - After clipping an article, hit the hotkey and all images get downloaded to local disk.
 
-- Agents will scan and link images in `_Wiki/Inbox/` as part of their normal Wiki ingestion and maintenance routines.
+- Agents will scan and link images in `_Wiki/_Inbox/` as part of their normal Wiki ingestion and maintenance routines.
 
 ### Settings
 
@@ -539,7 +546,7 @@ An External agent that needs a shared change it may not make itself can ask Main
 A **Subagent** is an Agent spawned by Main Agent to do isolated work in a fresh context window. Four types:
 
 - **CX Subagent** - stress-tests Main Agent's output. Pushes back on weak claims, surfaces missing evidence, and writes a critique report into `_Axis/CX/`. Cross-Examiners require an isolated context to stay independent; when the host cannot spawn one, Axis offers a clearly-labelled in-context review instead.
-- **Wiki Subagent** - ingests new raw sources from `_Wiki/Inbox/` and integrates them into `_Wiki/`. Main Agent spawns multiple Wiki Subagents in parallel for batch ingest.
+- **Wiki Subagent** - ingests new raw sources from `_Wiki/_Inbox/` and integrates them into `_Wiki/`. Main Agent spawns multiple Wiki Subagents in parallel for batch ingest.
 - **Local Subagent** - runs on a local model (typically via Ollama) for cost-effective, deterministic, or offline work.
 - **General Subagent** - parallel execution of work that doesn't fit the specialized types.
 

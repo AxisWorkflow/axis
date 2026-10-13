@@ -13,6 +13,7 @@
 - On failure it writes nothing and returns `<<AXIS:ERROR:PROMPT-ENVELOPE>>` plus a short reason. Main Logs Subject prefix `Invalid prompt envelope:`, rebuilds a smaller brief with a new nonce, and respawns once before serial fallback.
 - A Local Subagent carries the envelope but is not asked to validate it; Main performs that check and validates the model reply instead (see [Start-Subagent]).
 - The header detects tail truncation and the footer detects front truncation. If both boundaries are removed, no receiver-side scheme can identify the missing prompt.
+- Carry formats and write rules verbatim, even when Axis rules already state them: a prompt that asks a child for a timestamp includes the literal [Practices > Timestamps] step 1 command; a prompt that lets it write an append-only file says to add at the end only, never edit, reorder or delete a line, and correct by appending.
 - Do NOT pass a model token; record Subagent's model in spawn Log entry instead.
 - A spawn Log records role, model, task contract, expected return, referenced source paths, input size, a content digest when available, and a redacted Synopsis. Never copy a full prompt, raw embedded source, credential, or secret into a Log.
 - If User explicitly requests a full prompt for diagnostics, save it only in `_Axis/Secrets/` or `_Temp/`, tell User which one, and never commit it by default.

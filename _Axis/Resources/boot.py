@@ -163,8 +163,41 @@ def move_wiki():
         tmp=q.with_name('.'+n+'.axis-wiki');tmp.write_text(new_text,encoding='utf-8');replace_shared(tmp,q)
         if q.read_text(encoding='utf-8')!=new_text:raise OSError('Wiki index readback')
         fixed.append(n)
-    note='Moved the Wiki from Wiki/ to _Wiki/, where Axis 2.05 keeps it'+(' (its index files now name the new path)' if fixed else '')+'. If Obsidian or another tool saves files to Wiki/Inbox/, point it at _Wiki/Inbox/.'
+    note='Moved the Wiki from Wiki/ to _Wiki/, where Axis 2.05 keeps it'+(' (its index files now name the new path)' if fixed else '')+'. If Obsidian or another tool saves files to Wiki/Inbox/, point it at _Wiki/_Inbox/.'
     return note,'record one Log Event "Wiki moved to _Wiki/"'+(' naming the updated index files: '+', '.join(fixed) if fixed else '')
+
+def migrate_inbox():
+    # Inbox layout: every project has a root _Inbox/ drop folder, and the Wiki's raw-source folder is _Wiki/_Inbox/.
+    # Older projects get both at their first startup on this version: one rename, file contents unchanged, and the
+    # Wiki input index pointed at the new path. A later startup finds nothing to do.
+    notes,done=[],[]
+    names=os.listdir(root)
+    if '_Inbox' not in names:
+        if any(n.casefold()=='_inbox' for n in names):notes.append('The project root has a folder named like _Inbox/ in different letter case, so Axis did not create _Inbox/. Rename it to _Inbox/ to use it as the drop folder.')
+        else:
+            (root/'_Inbox').mkdir();(root/'_Inbox/.gitkeep').write_text('');done.append('created _Inbox/')
+    elif (root/'_Inbox').is_symlink() or not (root/'_Inbox').is_dir():notes.append('The project root has an _Inbox entry that is not a plain folder, so Axis cannot use it as the drop folder.')
+    w=root/'_Wiki'
+    if w.is_dir() and not w.is_symlink() and 'Inbox' in os.listdir(w):
+        old,new=w/'Inbox',w/'_Inbox'
+        if old.is_symlink() or not old.is_dir():notes.append('_Wiki/Inbox is not a plain folder, so Axis did not rename it to _Wiki/_Inbox/. Move its sources there yourself.')
+        elif os.path.lexists(new):notes.append('This project has both _Wiki/Inbox/ and _Wiki/_Inbox/. Wiki sources now live in _Wiki/_Inbox/: move anything you still need there, then delete _Wiki/Inbox/.')
+        else:
+            replace_shared(old,new);done.append('renamed _Wiki/Inbox/ to _Wiki/_Inbox/')
+            q=root/'_Axis/Wiki/Input-Index.md'
+            if q.is_file() and not q.is_symlink():
+                text=q.read_text(encoding='utf-8');new_text=re.sub(r'(?<![\w./-])((?:\.\./)*)_Wiki/Inbox/',r'\1_Wiki/_Inbox/',text)
+                if new_text!=text:
+                    tmp=q.with_name('.Input-Index.md.axis-inbox');tmp.write_text(new_text,encoding='utf-8');replace_shared(tmp,q)
+                    if q.read_text(encoding='utf-8')!=new_text:raise OSError('Wiki input index readback')
+                    done.append('pointed Input-Index.md at _Wiki/_Inbox/')
+            notes.append('Wiki sources now live in _Wiki/_Inbox/. If Obsidian or another tool saves into _Wiki/Inbox/, point it at _Wiki/_Inbox/.')
+    if done:notes.insert(0,'New in this version: drop anything for the project into _Inbox/ and Axis files it for you.' if 'created _Inbox/' in done else 'Axis updated the inbox folders.')
+    return notes,('record one Log Event "Inbox folders set up": '+'; '.join(done) if done else None)
+
+def inbox_items():
+    try:return sorted(n for n in os.listdir(root/'_Inbox') if not n.startswith('.'))
+    except OSError:return []
 
 if not (root/'_Axis/Resources/startup-state.py').is_file():stop('run this from the project root')
 if o.finish_adoption:
@@ -191,12 +224,18 @@ try:
  adopted=adopt(sid) if us=='ready' else None
  try:wiki_note,wiki_log=move_wiki()
  except (OSError,UnicodeError) as e:wiki_note,wiki_log=f'Axis could not finish moving the Wiki from Wiki/ to _Wiki/ ({type(e).__name__}). Check both folders before using the Wiki.',None
+ try:inbox_notes,inbox_log=migrate_inbox()
+ except (OSError,UnicodeError) as e:inbox_notes,inbox_log=[f'Axis could not finish setting up the inbox folders ({type(e).__name__}). Check _Inbox/ and _Wiki/ before relying on them.'],None
  s=run(R/'startup-survey.py','--root',root,'survey','--session',sid,'--owner',owner,'--model',o.model,'--harness',o.harness,'--interaction',o.interaction,'--spawn',o.spawn,'--parallel',o.parallel)
  if s.get('status')!='surveyed':interrupted('startup survey failed',survey=s)
 
  notices=[x for x in (s.get('notices') or []) if x!='cloud-synced-folder'];pending=[];later=[]
  if wiki_note:notices.append(wiki_note)
  if wiki_log:later.append(wiki_log)
+ notices+=inbox_notes
+ if inbox_log:later.append(inbox_log)
+ waiting=inbox_items()
+ if waiting:pending.append(f'file {len(waiting)} item(s) waiting in _Inbox/ under _Axis/Practices/Inbox.md, then report what went where in one line under the greeting')
  if 'cloud-synced-folder' in (s.get('notices') or []):
      why=s.get('cloud_reason') or 'reason not recorded'
      notices.append(f'This folder looks cloud-synced ({why}), so agents here write one at a time. If it is really a local folder, say so and it will be corrected.')
@@ -270,13 +309,15 @@ try:
  m=run(R/'startup-state.py','--root',root,'commit','--session',sid,'--owner',owner,'--starting-log',i['starting_log'])
  if m.get('status')!='committed':interrupted('commit failed',commit=m)
 
- bar='━'*40
+ bar='━'*27
  print(json.dumps({'axis_boot':'READY','session':sid,'notices':notices,'pending':pending,'later':later}))
- print('Banner for the user (show it first, as is; the header was printed before startup):')
- print(f"```text\n  Project:  {name}\n  Folder:   {folder}\n  Session:  {sid}\n  Version:  {ver}\n  Status:   Ready\n  Agent:    Main\n\n{bar}\n```")
+ print('Banner for the user (start your reply with it, as is, after any pending items; it repeats the header so the complete block shows together):')
+ # Four blank lines set the block apart from any text the model printed during startup (User design, 2026-10-08).
+ print(f"```text\n\n\n\n\n{bar}\n A X I S   W O R K F L O W\n{bar}\n  Project:  {name}\n  Folder:   {folder}\n  Session:  {sid}\n  Version:  {ver}\n  Status:   Ready\n  Agent:    Main\n{bar}\n```")
  for x in notices:print('Notice for the user: '+x)
  for x in pending:print('Pending before the first answer: '+x)
  print('Before any answer other than the greeting or a requested exact reply: read _Axis/Resources/Load-Starting-Context.md (core rules), _Axis/INSTRUCTIONS.md, _Axis/MINDSET.md, _Axis/DIRECTIVES.md, _Axis/PLAN.md, _Axis/TASKS.md, the newest Snapshots and the Notes index'+('; and: '+'; '.join(later) if later else '')+'.')
  print(f'On every later turn, first run: python3 _Axis/Resources/turn.py --session {sid}')
+ print(f'End every reply that hands the turn back to the user, this one included, with a blank line, a line of 27 ━, a blank line and READY FOR INPUT ({folder}): as the last line; open each later reply with 27 ━, " A X I S   W O R K F L O W", 27 ━ and a blank line (exact layout and exceptions: _Axis/Rules/Speaking.md > Final response boundary).')
 except SystemExit:raise
 except BaseException as e:interrupted(type(e).__name__)

@@ -49,7 +49,7 @@
 
 Arrive here either by working through the section above or by skipping it. The skip is the point: a profile that enabled WhatsApp before this Practice existed may satisfy the channel check while still carrying persona, memory, heartbeat, skills, or unrestricted tools. Run the targeted hardening audit every time, skip or no skip.
 
-- **Plugin trust - do NOT set `plugins.allow`, despite what the warning says.** An empty `plugins.allow` lets discovered plugins auto-load and prints "plugins.allow is empty; may auto-load" on unrelated commands. That warning is cosmetic. Acting on it is not: setting `plugins.allow` to `["whatsapp"]` on OpenClaw 2026.7.1-2 left the model unresolvable (`Unknown model: claude-cli/claude-opus-5 ... no matching models.providers["claude-cli"].models[] entry`) and a freshly registered agent could not run at all, while agents with an established session binding kept working - so the breakage looks partial and arrives later than the change. `openclaw config unset plugins.allow` restored it immediately and the identical probe then booted in full (measured 2026-08-06, both directions). `plugins.allow` is an allowlist over more than the plugin named in the warning. Leave it unset unless you are prepared to re-run the boot probe for every agent afterwards and revert the moment one fails.
+- **Plugin trust - do NOT set `plugins.allow`, despite what the warning says.** An empty `plugins.allow` lets discovered plugins auto-load and prints "plugins.allow is empty; may auto-load" on unrelated commands. That warning is cosmetic. Acting on it is not: setting `plugins.allow` to `["whatsapp"]` on OpenClaw 2026.7.1-2 left the model unresolvable (`Unknown model: claude-cli/claude-opus-5 ... no matching models.providers["claude-cli"].models[] entry`) and a freshly registered agent could not run at all, while agents with an established session binding kept working - so the breakage looks partial and arrives later than the change. `openclaw config unset plugins.allow` restored it immediately and the identical probe then booted in full. `plugins.allow` is an allowlist over more than the plugin named in the warning. Leave it unset unless you are prepared to re-run the boot probe for every agent afterwards and revert the moment one fails.
 
 - **Thin-harness audit.** Follow `^audit openclaw` read-only. If it reports `Degraded` or `Unverified`, preview and obtain approval for `^install openclaw` to apply only the resolved semantic controls in [Practices > OpenClaw]. Do not authenticate, mutate, restart, move legacy files, or erase old state merely because the audit found it.
 
@@ -95,7 +95,7 @@ Arrive here either by working through the section above or by skipping it. The s
 
   Then confirm the field is clear - `<PROJECT_PATH>/_Axis/Agents/` holds no Marker. A probe that boots and is never shut down is worse than no probe at all.
 
-  A passing probe proves this Agent CAN boot the Workflow in this workspace. It does not prove the group session will: sessions are keyed per channel and peer, and each one boots on its own. The end of this Practice checks the group session separately, and the two checks are not interchangeable (observed 2026-08-06: a workspace where the probe boots cleanly and the WhatsApp group session does not boot at all).
+  A passing probe proves this Agent CAN boot the Workflow in this workspace. It does not prove the group session will: sessions are keyed per channel and peer, and each one boots on its own. The end of this Practice checks the group session separately, and the two checks are not interchangeable.
 
 - **Have User create the group FIRST, before anything is opened.** Ask User to create a WhatsApp Group, add their own WhatsApp number, add the bot's WhatsApp number, and add any other team members who will communicate with the Agent. Neither OpenClaw nor Axis can create groups on WhatsApp - a User must do it manually. The group can be called anything, but it is helpful to mirror the agent name. **For Example:** Create a WhatsApp group called: "Product Launch - Main". Tell User NOT to send anything in it yet. Wait for User to confirm the group exists.
 
@@ -113,7 +113,7 @@ Arrive here either by working through the section above or by skipping it. The s
 
   `openclaw config set channels.whatsapp.groupPolicy allowlist`
 
-  This is not hypothetical. A script under `set -e` that aborts mid-sequence leaves the window open, reports only the original error, and says nothing about the policy (observed 2026-08-06). Nothing in OpenClaw closes it for you, and nothing warns that it is open.
+  This is not hypothetical. A script under `set -e` that aborts mid-sequence leaves the window open, reports only the original error, and says nothing about the policy. Nothing in OpenClaw closes it for you, and nothing warns that it is open.
 
 - Restart the OpenClaw gateway so the opened policy takes effect. `config set` only writes the file; every gate change in this Practice needs a restart before it means anything.
 
@@ -184,7 +184,7 @@ Arrive here either by working through the section above or by skipping it. The s
 
   Finding the key under the expected agent is only half the answer: it proves that agent handled a message, not that no other agent also woke. Enumerate the selected profile's registered agent IDs, inspect each other agent's session-key names, and require no match for `<GROUP_JID>`. Do not read transcript bodies. A match under any other agent is a routing failure: close the Policy gate, report the conflicting agent ID only, and fix the binding before continuing.
 
-- **Confirm the Agent actually booted the Workflow - a correct answer does not prove it.** A right reply proves routing and workspace access; it does not prove Session Start ran. An Agent can read a project file and answer from it without ever entering the Workflow (observed 2026-08-06: a correct canary answer, cwd correct, and not one Session Start artifact on disk). Check the workspace for boot evidence:
+- **Confirm the Agent actually booted the Workflow - a correct answer does not prove it.** A right reply proves routing and workspace access; it does not prove Session Start ran. An Agent can read a project file and answer from it without ever entering the Workflow. Check the workspace for boot evidence:
   ```
   ls <PROJECT_PATH>/_Axis/Agents/ && head -1 <PROJECT_PATH>/_Axis/Flags/session-id
   ```
@@ -213,7 +213,7 @@ This Practice runs rarely, so nothing here should depend on remembering it. Read
   before the restart proves nothing about the configuration you just wrote.
 
 - A rejected write leaves the OLD value in place. Config validation can refuse
-  your value (observed 2026-08-06: `must be object`), and the failure is a
+  your value, and the failure is a
   message on stderr, not a rollback. Always read the key back after writing it.
 
 - Never put a group JID in `commands.ownerAllowFrom` or in `groupAllowFrom`.
@@ -225,8 +225,7 @@ This Practice runs rarely, so nothing here should depend on remembering it. Read
   2026.7.1-2 - a newly registered agent could not run (`Unknown model:
   claude-cli/...`) while agents with an established session binding carried on,
   so the damage reads as an isolated new-agent problem rather than as config
-  fallout. `config unset plugins.allow` fixed it on the spot (measured
-  2026-08-06, reverted and re-broken to confirm). The warning is cosmetic; the
+  fallout. `config unset plugins.allow` fixed it on the spot. The warning is cosmetic; the
   cure is not. A config change that "applies without restarting the gateway"
   can still change what loads.
 
@@ -234,7 +233,7 @@ This Practice runs rarely, so nothing here should depend on remembering it. Read
 
 - An aborted run leaves `groupPolicy` open. A script under `set -e` that fails
   between opening the window and the Policy gate reports its own error and says
-  nothing about the policy (observed 2026-08-06). Nothing in OpenClaw closes it
+  nothing about the policy. Nothing in OpenClaw closes it
   for you and nothing warns that it is open. Restore `allowlist` on any failure
   BEFORE diagnosing, and confirm it at the end of every run.
 
@@ -273,8 +272,7 @@ This Practice runs rarely, so nothing here should depend on remembering it. Read
 - `GROUPS` is a special variable in Bash - the list of groups the invoking user
   belongs to. Assigning your merged JSON to it appears to work and then expands
   to a numeric GID, so the command silently receives `20` instead of your
-  payload (observed 2026-08-06; caught only because config validation rejected
-  a scalar). Name the variable anything else.
+  payload. Name the variable anything else.
 
 - Quote every workspace path. Project folder names contain spaces more often
   than not, and an unquoted path splits into two arguments and registers the
@@ -300,7 +298,7 @@ This Practice runs rarely, so nothing here should depend on remembering it. Read
 
 - A correct answer proves workspace access, not that the Workflow booted. An
   Agent can read a project file and answer from it with no Session Start,
-  leaving no Marker, no `session-id` Flag, and no Log (observed 2026-08-06).
+  leaving no Marker, no `session-id` Flag, and no Log.
   Check the workspace for boot artifacts before calling the pairing complete.
 
 - Finding the expected session key proves that agent answered, not that only
@@ -308,12 +306,6 @@ This Practice runs rarely, so nothing here should depend on remembering it. Read
   JID.
 
 - A headless probe booting the Workflow does NOT mean the channel session will.
-  Measured on one workspace, 2026-08-06: `openclaw agent` runs booted Axis in
-  full (Marker, Flags, Logs; ~97k and ~100k cached tokens) under both a plain
-  session key and a channel-shaped one, while a real WhatsApp group message on
-  the same agent, workspace, and model booted nothing at all (~54k cached
-  tokens). Workspace, entry files, agent, model, and session-key shape were all
-  ruled out; the difference lives in the host's channel-inbound turn assembly.
   So run BOTH checks - the probe early and the group-session check at the end -
   and never let one stand in for the other.
 
@@ -323,11 +315,7 @@ This Practice runs rarely, so nothing here should depend on remembering it. Read
   group's own session key is the one exception - that Marker is meant to live.
 
 - A channel session can answer a question correctly WITHOUT starting the
-  Workflow. Measured 2026-08-06 on one session: turn 1 asked a question
-  answerable from a single project file and got a correct answer with no
-  Session Start at all - no Marker, no Flags, no Log; turn 2 on that same
-  session said only `hello` and booted in full (166 seconds, cacheRead 54k
-  then 109k). The entry file was injected complete and untruncated in both
+  Workflow. The entry file was injected complete and untruncated in both
   turns, so this is not the host withholding doctrine - it is the host's
   channel framing urging a direct reply and winning against a protocol the
   Agent had in front of it. Headless runs boot on either message, so the skip
@@ -337,8 +325,7 @@ This Practice runs rarely, so nothing here should depend on remembering it. Read
   can send anything. Neither is a guarantee - a host that resets sessions on a
   schedule will boot fresh again on whatever arrives next.
 
-- `gateway restart` can report "killing N stale gateway process(es)" (observed
-  2026-08-06). A restart is not proof of a healthy listener - read the listener
+- `gateway restart` can report "killing N stale gateway process(es)". A restart is not proof of a healthy listener - read the listener
   line afterwards.
 
 **Standing risks**

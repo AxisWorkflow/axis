@@ -1,7 +1,7 @@
 # Changelog
 > **Purpose:** Record Axis release identity and the structural migrations needed to update an existing project safely.
 
-current-version: 2.05
+current-version: 2.06
 changelog-format: 1
 self-update-baseline: 26.08.19
 
@@ -39,6 +39,41 @@ update-impact: automatic
 ### Verification
 
 - None.
+
+## 2.06
+
+released: 2026-10-13
+
+- Startup shows a shorter loading line under the Axis header.
+- When startup finishes, the whole banner (header and session details) appears again as one block after four blank lines, so it stands out from anything the agent printed while loading; the greeting follows it.
+- A new end-of-turn frame: each finished answer starts with the spaced-out Axis Workflow title between two dividers and ends with a matching divider and `READY FOR INPUT` naming the project folder, for example `READY FOR INPUT (~/Projects/Taxes):` (or `READY FOR INPUT WHILE WORKING IN BACKGROUND (...)` while work continues).
+- Helper agents now get the exact command for making a timestamp and a plain "add lines at the end only" rule in their instructions, so their activity lines stay correctly dated and are never rewritten.
+- New `_Inbox/` folder in every project: drop anything for the project there, and Axis files each item into the right folder or the Wiki at the next session start, on `^inbox`, or during `^refresh`. Unclear or sensitive items stay put and Axis asks you.
+- The Wiki's source folder is renamed from `_Wiki/Inbox/` to `_Wiki/_Inbox/`. Axis renames it for you at the first start after updating; point Obsidian or other tools at the new name.
+- All banners now share one width: the startup banner, the end-of-turn frame and `^status` use 27-character dividers with a compact title line, and `^status` shows its time without the zone.
+
+update-impact: automatic
+
+### Structural Changes
+
+- Entry files (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`): the loading line is shortened, and step 3 shows `boot.py`'s banner block at the start of the reply after any pending items. `_Axis/Resources/Entry-Protocol.md` uses the same loading line. Entry files are replaced as usual.
+- `_Axis/Resources/boot.py` prints the complete Ready block: four blank lines, the brand section, the session rows directly under its divider and a closing divider directly under the last row. `_Axis/Resources/Lifecycle-Presentation.md` > Main startup describes the same block for startups without `boot.py`.
+- `_Axis/Rules/Speaking.md` > Final response boundary: new frame (27 `━`, the spaced-out Axis Workflow title indented by one space, 27 `━`, blank line, answer, blank line, 27 `━`, blank line, `READY FOR INPUT ({Folder}):`; background closing `READY FOR INPUT WHILE WORKING IN BACKGROUND ({Folder}):`); `_Axis/Resources/Lifecycle-Presentation.md` > Final response points to it. Wording only; no project-state change.
+- `_Axis/Resources/Start-Subagent.md`: the carried TRACKING directive (and both worked prompts) adds the literal [Practices > Timestamps] step 1 command and an APPEND-ONLY clause. `_Axis/Rules/Subagents.md` requires prompts to carry formats and write disciplines verbatim. `_Axis/Practices/Tracking.md` names the line's timestamp form and the append-to-correct rule. Wording only; no project-state change.
+- New `_Axis/Practices/Inbox.md` and `_Axis/Commands/inbox.md`; `_Axis/PRACTICES.md` indexes the Practice; `^refresh` gains step 13 (file the inbox); `boot.py` lists waiting items as pending (filed before the Ready banner), and the Practices index trigger and Boot-Manual step 10 cover the other paths (Start-Session is unchanged); `boot.py` also prints a reminder of the end-of-turn frame and its exact closing line; `boot.py` sets up the inbox folders and lists waiting items. Manifest, `.gitignore`, Rules (ProjectLayout, Wiki, UntrustedContent, RULES checklist), Practices (Folders, Wiki), Commands (wiki, onboard, update), Start-Project, Start-Subagent, Start-Wiki, Glossary, User Manual and Specification follow the five reserved folders and the `_Wiki/_Inbox/` name. Agents still never create or edit files in `_Wiki/_Inbox/`; inbox filing may move a User's file in unchanged.
+- Divider width 27 everywhere: entry files step 1 (compact header), `_Axis/Resources/Lifecycle-Presentation.md` (shared style and Ready block), `_Axis/Resources/boot.py` (Ready block), `_Axis/Resources/status.py` (`STATUS` title, time without zone; the web page keeps `UTC`), `_Axis/Commands/status.md` and `_Axis/Practices/Status.md`. Wording only; no project-state change.
+
+### Project-State Migrations
+
+- Inbox folders (automatic): the first startup after this update (the fresh session every `^update` ends with) creates `_Inbox/` with an empty `.gitkeep` when missing, renames `_Wiki/Inbox/` to `_Wiki/_Inbox/` in one move with every file unchanged, and rewrites `_Wiki/Inbox/` paths to `_Wiki/_Inbox/` in `_Axis/Wiki/Input-Index.md`. `Library-Activity.md` and the Wiki schema are never rewritten. A project holding both Wiki inbox folders is left alone and told.
+
+### Retired Paths
+
+- `_Wiki/Inbox/` (folder) - replaced by `_Wiki/_Inbox/`; the first startup after the update renames it (see Project-State Migrations) and never deletes it.
+
+### Verification
+
+- `_Inbox/` exists with `.gitkeep`, and the merged `.gitignore` carries the `_Inbox/` rules and the four `_Wiki/` rules naming `_Wiki/_Inbox`.
 
 ## 2.05
 

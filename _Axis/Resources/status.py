@@ -150,7 +150,7 @@ def collect(root, detail):
     model = (read(ax / 'Flags/model').splitlines() or [''])[0].strip()
     blocked = [t for t in tasks if t['status'] == 'Blocked']
     data = {
-        'generated': now.strftime('%Y-%m-%d %H:%M UTC'), 'project': name, 'version': version, 'folder': str(root),
+        'generated': now.strftime('%Y-%m-%d %H:%M'), 'project': name, 'version': version, 'folder': str(root),
         'model': model_name(model),
         'context': context_method(read(ax / 'SETTINGS.md')),
         'decisions': [{'initiative': i['name'], 'next': i['next']} for i in inits if i['status'] in ('Active', 'Blocked') and i['next']],
@@ -207,11 +207,11 @@ def text(d, width, color):
     A = (lambda s: f'\033[{sgr}m{s}\033[0m') if sgr else (lambda s: s)
     B = A
     M = lambda s: s
-    # Layout (User design, 2026-09-30, second revision): a spaced STATUS title with the time between dividers, one
+    # Layout: a STATUS title with the time (no zone) between 27-character dividers, one
     # block of "Label:" rows indented four spaces, a divider, then labelled sections and a closing divider.
     # Git stays in the background, so it is not shown.
-    rule = '━' * 40
-    out = [rule, '  ' + B('S T A T U S') + '    ' + d['generated'] + '  ', rule, '']
+    rule = '━' * 27
+    out = [rule, ' ' + B('STATUS') + '   ' + d['generated'], rule, '']
     t = d['tasks']
     home = os.path.expanduser('~'); path = d['root']
     path = '~' + path[len(home):] if path == home or path.startswith(home + '/') else path
@@ -310,7 +310,7 @@ def page(d, root, out):
     last = '; '.join(filter(None, [f"last Snapshot {d['snapshot']['age']}" if d['snapshot'] else '',
                                    f"last Review {d['review']['age']}" if d['review'] else '']))
     body = (f'<header class="band"><div class="wrap">{logo}<h1>{e(d["project"])}</h1>'
-            f'<div class="meta">Version {e(d["version"])} · {e(d["generated"])}</div></div></header>'
+            f'<div class="meta">Version {e(d["version"])} · {e(d["generated"])} UTC</div></div></header>'
             f'<main class="wrap"><p class="axis-eyebrow">Project status</p><p class="lede">{e(clip(d["direction"], 600))}</p>'
             f'<div class="stats">' + ''.join(f'<div class="stat"><strong>{v}</strong>{e(k)}</div>' for v, k in stats) + '</div>'
             f'<div class="grid">' + ''.join(f'<section class="card"><h2>{e(h)}</h2><ul>{b}</ul></section>' for h, b in cards) + '</div>'

@@ -11,7 +11,7 @@
 
 5. Close with a 3-line hint card:
 	- Type `^help` to list all commands (and `^dashboard` for the live overview).
-	- Drop files anywhere in the project folder - Agents read and organize them into Subfolders; Wiki sources go to `_Wiki/Inbox/`; keep untouchable originals outside the project.
+	- Drop new files into `_Inbox/` and Main Agent files them where they belong; Wiki-only sources may go straight to `_Wiki/_Inbox/`; keep untouchable originals outside the project.
 	- Ask for a Plan (`^plan`) or the Wiki (`^wiki`) whenever you are ready.
 
 6. Log one Event for the tour. STOP.
