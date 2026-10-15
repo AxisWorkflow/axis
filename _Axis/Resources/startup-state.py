@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""Optional local startup records. Python3/POSIX only; no network or model calls.
+"""Optional local startup records and record creation. Python3/POSIX only; no network or model calls.
 
 The Agent owns eligibility, instruction loading, update permission and presentation.
 This helper owns only the documented mechanical record operations on one root.
+Any Index-Detail record, under the caller's own live Marker (body on stdin or --body-file):
+  python3 _Axis/Resources/startup-state.py --root . record --session {Session ID} --family Logs
 """
 from __future__ import annotations
 import argparse
@@ -90,9 +92,13 @@ def write_fd(fd, data):
     os.fsync(fd)
 
 def archive_root(startup):
-    """Resolve [Settings > Archive Location] read-only: (project-relative root, None), (None, absolute root), or (None, None) when unavailable."""
+    """Resolve [Settings > Archive Location] read-only: (project-relative root, None), (None, absolute or home-relative root), or (None, None) when unavailable."""
     value=(startup.setting('Archive Location') or '_Axis/Archive/').strip()
     if value.rstrip('/')=='_Axis/Archive':return '_Axis/Archive',None
+    if value.startswith('~/'):
+        home=os.path.expanduser('~')
+        if not home.startswith('/') or home=='/':return None,None
+        value=home.rstrip('/')+value[1:]
     if '\\' in value or '..' in value.split('/'):return None,None
     if value.startswith('/'):
         folder=Path(value.rstrip('/') or '/')
@@ -182,6 +188,75 @@ class Startup:
             parse_stamp(path.stem)
             found.append({'session':path.stem,'host':lines[3][6:],'age_seconds':age})
         return found
+
+    def last_activity(self, sid, mtime):
+        """Newest sign of a Main session: Marker mtime, its last Tracking line, or a newer Log naming it."""
+        best=mtime
+        def when(text):
+            try:return parse_stamp(text).timestamp()
+            except Fault:return None
+        tracking=''
+        try:
+            path=self.path('_Axis/Tracking/'+sid+'.md',missing=True)
+            if path.exists():
+                fd=os.open(path,os.O_RDONLY|os.O_NOFOLLOW)
+                try:
+                    regular(os.fstat(fd),path.name);os.lseek(fd,max(0,os.fstat(fd).st_size-16384),os.SEEK_SET)
+                    tracking=os.read(fd,16384).decode('utf-8','replace')
+                finally:os.close(fd)
+        except (Fault,OSError):pass
+        for line in tracking.splitlines()[-50:]:
+            value=when(line.split(' - ',1)[0].strip())
+            if value is not None and value>best:best=value
+        try:names=sorted((p.name for p in self.path('_Axis/Logs',kind='directory').glob('*Z.md')),reverse=True)
+        except (Fault,OSError):names=[]
+        for name in names[:2000]:
+            value=when(name[:-3])
+            if value is None:continue
+            if value<=best:break
+            try:text=self.read('_Axis/Logs/'+name)
+            except (Fault,OSError,UnicodeError):continue
+            if 'session: '+sid in text.splitlines()[:12]:best=value;break
+        return best
+
+    def idle_mains(self):
+        """Foreign Main Markers at or over 1 hour old, without tombstone, with their measured idle time."""
+        found=[];now=time.time()
+        for path in sorted(self.path('_Axis/Agents',kind='directory').glob('*Z.md')):
+            name=path.relative_to(self.root).as_posix()
+            try:
+                text=self.read(name);mtime=path.stat().st_mtime
+                if text.splitlines()[:1]!=['Main: session'] or self.exists(name[:-3]+'.kill') or now-mtime<3600:continue
+            except (Fault,OSError,UnicodeError):continue
+            lines=text.splitlines();host=lines[3][6:] if len(lines)>3 and lines[3].startswith('host: ') else ''
+            found.append({'session':path.stem,'host':host,'idle_seconds':int(now-self.last_activity(path.stem,mtime))})
+        return found
+
+    def permissions(self):
+        try:value=self.setting('Permissions')
+        except Fault as error:
+            if error.code!='missing_path':raise
+            value=None
+        return value if value in ('Restricted','Default','Autonomous') else 'Default'
+
+    def sweep(self, retire):
+        """After admission: delete retired Main Markers, other Markers over 24 hours old and tombstones over 1 hour old."""
+        self.guard();now=time.time();cleared=0
+        def remove(name, minimum):
+            nonlocal cleared
+            try:
+                path=self.path(name)
+                if now-path.stat().st_mtime<minimum:return
+                os.unlink(path);cleared+=1
+            except FileNotFoundError:pass
+            except (Fault,OSError):pass
+        for path in sorted(self.path('_Axis/Agents',kind='directory').glob('*Z.kill')):
+            if now-path.stat().st_mtime>3600 and path.stem!=self.sid:remove('_Axis/Agents/'+path.stem+'.md',0);remove('_Axis/Agents/'+path.name,3600)
+        for path in sorted(self.path('_Axis/Agents',kind='directory').glob('*Z.md')):
+            if path.stem==self.sid:continue
+            remove('_Axis/Agents/'+path.name,3600 if path.stem in retire else 86400)
+        self.guard()
+        return cleared
 
     def guard(self, starting=True, foreign=True):
         self.owner_check()
@@ -299,7 +374,7 @@ class Startup:
             return candidate,name
         raise Fault('collision_limit')
 
-    def claim(self, initial, host):
+    def claim(self, initial, host, take_over=()):
         parse_stamp(initial)
         need(parse_stamp(initial)<=dt.datetime.now(dt.timezone.utc),'timestamp_future')
         need(isinstance(host,str) and host.strip()==host and 0<len(host)<=120 and all(ord(c)>=32 for c in host),'host')
@@ -316,11 +391,19 @@ class Startup:
             self.release_admission();raise Fault('unfinished_starting','_Axis/Flags/starting')
         foreign=self.foreign_mains()
         if foreign:self.release_admission();return {'status':'external','mains':foreign}
+        # Takeover of an idle Main (Claim-Session > Takeover): active within 1 hour joins as External; under the
+        # Permissions threshold asks User; at or over it, or named by User's --take-over, is retired after admission.
+        idle=self.idle_mains();recent=[m for m in idle if m['idle_seconds']<3600]
+        if recent:self.release_admission();return {'status':'external','mains':recent}
+        level=self.permissions() if idle else 'Default';limit={'Restricted':24,'Default':7,'Autonomous':3}[level]
+        ask=[m for m in idle if m['idle_seconds']<limit*3600 and m['session'] not in take_over]
+        if ask:self.release_admission();return {'status':'ask','mains':ask,'permissions':level,'threshold_hours':limit}
         final,name=self.record('Agents',lambda value:f'Main: session\n\nsession: {value}\nhost: {host}\n',initial,bootstrap=True)
         self.owner_update(session=final,phase='admitted')
         self.write_flag('starting',final+'\n'+stamp()+'\n',bootstrap=True)
         self.guard()
-        return {'status':'admitted','session':final,'owner':token,'marker':name}
+        cleared=self.sweep({m['session'] for m in idle})
+        return {'status':'admitted','session':final,'owner':token,'marker':name,'took_over':idle,'cleared':cleared,'permissions':level,'threshold_hours':limit}
 
     def load(self, session, token, readonly=False):
         parse_stamp(session);need(re.fullmatch('[0-9a-f]{32}',token),'owner_mismatch',self.owner_name)
@@ -532,23 +615,71 @@ class Startup:
     def close(self):
         if self.owner_fd is not None:os.close(self.owner_fd);self.owner_fd=None
 
+class Session(Startup):
+    """Ordinary record creation after startup. The lease is the caller's own live, untombstoned Marker; there is no
+    admission claim. Minting, claim, collision scan, exclusive create, read-back and Marker renewal are record()'s."""
+    def __init__(self, root, session):
+        super().__init__(root);parse_stamp(session)
+        self.state={'session':session,'phase':'session'};self.lease=None
+
+    def marker_body(self):return self.lease[0]
+
+    def guard(self, starting=True, foreign=True):
+        if self.exists('_Axis/Agents/'+self.sid+'.kill'):raise Fault('lease_killed',self.marker_name)
+        text=self.read(self.marker_name,optional=True)
+        need(text is not None,'lease_missing',self.marker_name)
+        info=self.path(self.marker_name).stat();lines=text.splitlines()
+        if self.lease is None:
+            main=lines[:1]==['Main: session']
+            if main:need(len(lines)==4 and lines[1]=='' and lines[2]=='session: '+self.sid and lines[3].startswith('host: ') and lines[3][6:].strip(),'marker_invalid',self.marker_name)
+            else:need(bool(lines) and lines[0].startswith(('External: ','Subagent: ')),'marker_invalid',self.marker_name)
+            self.lease=(text,identity(info),main)
+        need(text==self.lease[0] and identity(info)==self.lease[1],'marker_mismatch',self.marker_name)
+        need(time.time()-info.st_mtime<3600,'lease_stale',self.marker_name)
+        if self.lease[2]:need(not self.foreign_mains(),'foreign_main','_Axis/Agents')
+
+    def create(self, family, content):
+        need(family in FAMILIES and family!='Status','family',family)
+        need(family!='Agents' or content.startswith('Subagent: '),'family',family)
+        lines=content.split('\n')
+        need(0<len(content.encode('utf-8'))<=65536,'record_size')
+        need(len(lines)>=2 and lines[0].strip() and len(lines[0])<=80 and lines[1]=='' and '\r' not in lines[0],'record_shape')
+        self.guard()
+        final,name=self.record(family,lambda _:content)
+        return {'status':'created','id':final,'path':name}
+
 class Parser(argparse.ArgumentParser):
     def error(self, message):raise Fault('arguments')
+
+def body_input(path):
+    """Read a record body from a file or stdin, bounded, strict UTF-8; nothing is written before this succeeds."""
+    try:
+        if path is None:data=sys.stdin.buffer.read(65537)
+        else:
+            with open(path,'rb') as handle:data=handle.read(65537)
+        return data.decode('utf-8')
+    except (OSError,UnicodeError):raise Fault('body') from None
 
 def main():
     engine=None
     try:
         parser=Parser();parser.add_argument('--root',required=True);sub=parser.add_subparsers(dest='operation',required=True,parser_class=Parser)
-        claim=sub.add_parser('claim');claim.add_argument('--initial',required=True);claim.add_argument('--host',required=True)
+        claim=sub.add_parser('claim');claim.add_argument('--initial',required=True);claim.add_argument('--host',required=True);claim.add_argument('--take-over',action='append',default=[])
         for name in ('initialize','record-capabilities','commit','check-indexes'):
             command=sub.add_parser(name);command.add_argument('--session',required=True);command.add_argument('--owner',required=True)
             if name=='commit':command.add_argument('--starting-log',required=True)
             if name=='record-capabilities':command.add_argument('--observations',required=True)
+        record=sub.add_parser('record');record.add_argument('--session',required=True);record.add_argument('--family',required=True);record.add_argument('--body-file')
         args=parser.parse_args()
         if fcntl is None or not hasattr(os,'O_NOFOLLOW') or os.utime not in os.supports_fd:
             print(json.dumps({'status':'unavailable','code':'platform'}));return 3
+        if args.operation=='record':
+            content=body_input(args.body_file);engine=Session(args.root,args.session)
+            print(json.dumps(engine.create(args.family,content),sort_keys=True));return 0
         engine=Startup(args.root)
-        if args.operation=='claim':result=engine.claim(args.initial,args.host)
+        if args.operation=='claim':
+            for value in args.take_over:parse_stamp(value)
+            result=engine.claim(args.initial,args.host,tuple(args.take_over))
         else:
             engine.load(args.session,args.owner,readonly=args.operation=='check-indexes')
             if args.operation=='initialize':result=engine.initialize()

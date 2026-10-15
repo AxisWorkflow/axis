@@ -1,6 +1,6 @@
 # Axis Workflow User Manual
 > **Purpose:** How to use the Axis Workflow day to day: setup, commands, the Dashboard, the Wiki, working across tools and machines, and working with Agents and models. For the technical and compliance reference, see [SPECIFICATION](/_Axis/SPECIFICATION.md).
-> **Version:** 2.06
+> **Version:** 2.07
 
 
 
@@ -65,7 +65,7 @@ Your own content lives in normal folders that your Agent creates and organizes a
 
 **4. Start Axis:**
 
-- Open a chat in the project folder with your AI tool and type `Start Axis`. Within seconds you see a Ready banner. (Most hosts treat any first message as the request to start, but `Start Axis` is the reliable one.) If you step away for hours, the same chat picks up where it left off; only if another chat has taken over as Main does the old one stop and tell you. The Agent then reads your plan and tasks just before it answers its first real question.
+- Open a chat in the project folder with your AI tool and type `Start Axis`. Within seconds you see a Ready banner. (Most hosts treat any first message as the request to start, but `Start Axis` is the reliable one.) If you step away for hours, the same chat picks up where it left off; only if another chat has taken over as Main does the old one stop and tell you. If your tool resumes a chat without write access (some resume a session in a read-only sandbox), the Agent makes no changes and asks you to rerun it with write access. The Agent then reads your plan and tasks just before it answers its first real question.
 
 **5. Agents follow a standardized protocol:**
 
@@ -103,7 +103,7 @@ Your own content lives in normal folders that your Agent creates and organizes a
 
 ### Tips
 
-- **Tell side-by-side sessions apart.** Every finished answer starts with the spaced-out Axis Workflow title between two divider lines and ends with a matching divider and `READY FOR INPUT` naming the project folder, for example `READY FOR INPUT (~/Projects/Taxes):` (or `READY FOR INPUT WHILE WORKING IN BACKGROUND (~/Projects/Taxes):` while work continues). The startup banner lists Project, Folder, Session, Version, Status and Agent, in that order. When you run several projects in split terminal panes, a glance shows which project each pane belongs to and whether it is waiting for you.
+- **Tell side-by-side sessions apart.** Every finished answer starts with the spaced-out Axis Workflow title between two divider lines and ends with a matching divider and `READY FOR INPUT` naming the project folder, for example `READY FOR INPUT (~/Projects/Taxes):` (or `READY FOR INPUT WHILE WORKING IN BACKGROUND (~/Projects/Taxes):` while work continues). The startup banner lists Project, Folder, Session, Version, Status and Agent, in that order, and Axel, your Main Agent, greets you under it. When you run several projects in split terminal panes, a glance shows which project each pane belongs to and whether it is waiting for you.
 
 - **Save and Resume.** Type `^save` when you leave and `^resume` when you return. With a configured Git remote, save sends a linear checkpoint and resume receives one before reconstructing the work. Both still run the complete portability and infrastructure checks; use explicit handoff language or `^shutdown` when changing computers so only one copy remains active.
 
@@ -121,7 +121,7 @@ Your own content lives in normal folders that your Agent creates and organizes a
 
 - **Monitor everything from a browser.** `^dashboard` opens a live, self-refreshing overview - project, plan, tasks, ideas, notes, logs, and health warnings at a glance. Separate **Reminders**, **User Follow Up**, and **Agent Activity** cards distinguish what is coming due, what waits on you, and what the Agent should advance next. The always-visible Review carries the deeper Recent Developments analysis, so coming back after a week away does not mean reading the whole project. The Dashboard is the live view; `^status` is the quick look (one screen, or a web page), and `^review` is the dated report you can file, print, or email.
 
-- **Run cheap.** `^install ollama` tests a small local model before using it for qualified routine delegation - and only when it catches the planted flaw in the aptitude screen does critique route to it. This is one of the biggest budget levers in Axis: local cross-examination has no per-token provider charge, so your frontier-model budget goes to the work that deserves it and you can afford to cross-examine far more often than you otherwise would.
+- **Run cheap.** `^install ollama` tests a small local model before using it for qualified routine delegation - and only when it catches the planted flaw in at least 4 of 5 identical runs of the aptitude screen does critique route to it. This is one of the biggest budget levers in Axis: local cross-examination has no per-token provider charge, so your frontier-model budget goes to the work that deserves it and you can afford to cross-examine far more often than you otherwise would.
 
 - **Refresh your project.** Run the `^refresh` command now and then to identify stale file locks for quiescent recovery, remove dead Markers, archive over-limit Notes, delete leftover scratch files, and realign your Plan with your Tasks.
 
@@ -239,7 +239,7 @@ For example, the text...
 | `^update`    | Update Axis Workflow machinery to an official release while preserving project state and local customizations. |
 | `^wiki`      | Set up, update, and/or maintain the Wiki.                                                                      |
 
-`^upgrade` works as another name for `^update`.
+`^upgrade` works as another name for `^update`, and `^restore` as another name for `^resume`.
 
 Supervision uses a separate double-caret namespace. These commands apply to recognized direct child Axis Projects; no registration or Supervisor Setting is required.
 
@@ -344,7 +344,7 @@ Another is **Skepticism** (-2 to +2). It steers how hard the Agent doubts its ow
 
 ### Supervising Child Projects
 
-If one Axis Project contains other Axis Projects in its subfolders (for example a portfolio of clients, or several workstreams of one product), the parent can keep an eye on them for you. Nothing needs to be registered: Axis finds the direct child projects from the folders themselves, the next time you ask.
+If one Axis Project contains other Axis Projects in its subfolders (for example a portfolio of clients, or several workstreams of one product), the parent can keep an eye on them and direct them for you. Nothing needs to be registered: Axis finds the direct child projects from the folders themselves, the next time you ask. Putting a project inside another gives the outer project authority over it. If you don't want that, keep it as a separate project, or set its Parent Authority to `advise`.
 
 Type these in the parent project:
 
@@ -355,16 +355,32 @@ Type these in the parent project:
 | `^^status [child\|all]` | Summarizes where one or all children stand: plan, tasks, follow-ups, recent activity. |
 | `^^inspect <child>` | Takes a deeper read-only look at one child. |
 | `^^message <child> <text>` | Leaves a written request in the child's queue; its own Agent decides what to do with it. |
+| `^^do <child\|all> <task> [with <file>]` | Gives a child an order it must carry out, refer back to you, or decline for a stated reason. A session in the child does the work under the child's own rules. `with` hands the child a file from this project. |
 | `^^start`, `^^stop`, `^^restart <child>` | Starts or stops the child's Agent, when your AI host supports it. |
 | `^^update [child\|all]` | Updates every Axis project nested anywhere below this one to this project's Axis version (or a named release). It shows a preview first, asks before stopping any Agent that is working in a project, updates projects one at a time through their own `^update`, and reports each result; a project that fails or needs a decision is reported and the others continue. |
 | `^^schedule ...` | Sets up a recurring supervision check, when your host supports schedules. |
 
 Good to know:
 
-- The parent never edits a child's Plan, Tasks, records or files. It reads, reports and sends requests; each child's own Agent stays in charge of that child.
+- The parent never edits a child's Plan, Tasks, records or files. It reads, reports and sends requests; each child's own Agent stays in charge of that child. The one file it puts into a child is a document you hand over with `^^do ... with`, which lands in the child's `_Inbox/`.
 - Supervision reaches only direct children. A project nested inside a child belongs to that child's supervision.
 - Status and inspection results are saved in the parent's `_Axis/Supervision/` folder, so you can look back at them.
 - Starting, stopping and scheduling depend on your AI host (for example OpenClaw). Without that support, Axis tells you the manual step instead.
+
+#### Directing a child project
+
+Use `^^do` when you want a child to act, not just to know. For example, in the parent:
+
+> **User:** `^^do Taxes file this statement and update the quarterly estimate with 1099-INT.pdf`
+
+The parent moves `1099-INT.pdf` into `Taxes/_Inbox/`, writes the order down, and starts a session in `Taxes` (on hosts that can, such as Claude Code and Codex). That session checks the order really came from its parent, saves a checkpoint (a Git commit when the child uses Git), does the work in its own records, and reports back with that checkpoint as the point to roll back to. The parent then tells you what changed. Where the host can run it in the background, as Claude Code can, you can keep working while the child does; the parent reports when it is done. If the host cannot start a session, the parent tells you which folder to open; the order waits there.
+
+- **Binding.** A child carries out a checked order, refers it back to you (for example when it needs your answer), or declines it for a stated reason such as an expired order or an unsafe state. It never quietly ignores it. For that task the order outranks the child's own standing instructions; the child reports any conflict. It never moves a secret out of the child or changes which session is in charge there.
+- **Changes that can't be undone** exactly, pushing, publishing, spending money, or loosening a safeguard are listed for your approval before the child starts, and never go to `all` children at once. Your approval in the parent counts as your confirmation in the child.
+- **`all`** shows you the exact order, the children and how many sessions it will start, then runs one child first and the rest one at a time. A failure in that first child stops the run.
+- **Filing to children automatically.** When you drop a document into the parent's `_Inbox/` and it clearly belongs to one child, the parent delivers it to that child's `_Inbox/`. If you have written a standing instruction in the parent's `_Axis/INSTRUCTIONS.md`, for example "tax documents go to Taxes, which files them and updates the estimate", the parent issues that order itself, for tasks that can be undone, right after it greets you. Otherwise it suggests the `^^do` and offers to write such an instruction for you, so the next one routes on its own.
+- **Each child decides** how far its parent may direct it with the **Parent Authority** Setting: `direct` (the default) or `advise`, where orders become requests the child may decline. Use `advise` for a child someone else runs. Only you, working in the child, can raise it back to `direct`.
+- **Know the limit.** These are instructions the agents follow, not locks. An agent that was tricked into misbehaving in the parent could send an order you never gave, and the child could not tell. Recovery is the child's checkpoint: roll back to it.
 
 The complete rules are in the [Specification](/_Axis/SPECIFICATION.md#supervision).
 
@@ -379,17 +395,19 @@ Axis always supports the simplest fallback: `^save`, stop the old session, copy 
 #### What the Commands Do
 
 - **`^git` adapts to the state it finds.** With no repository, it checks for Git, offers an official install if needed, initializes the project, and commits its current state. With a local repository but no remote, it makes a local checkpoint and offers to create a private GitHub repository. With a configured remote, it fetches first, then performs only a linear action: fast-forward incoming work, checkpoint and push outgoing work, or report that everything is current. After an incoming update, it automatically runs the `^resume` summary.
-- **`^save` is the normal sending action.** It fetches first, runs the full portability and infrastructure assessment, refreshes the optional encrypted Secrets capsule, writes the Snapshot and Save Event, commits them together, rechecks the remote, and pushes when history is still linear. Offline or authentication failure does not lose the save: the local checkpoint remains and is reported as not yet verified remotely.
-- **`^resume` is the normal receiving action.** It fetches before reading the saved Snapshot, accepts a strict fast-forward only when local project work will not be overwritten, receives the optional encrypted Secrets capsule, and then runs the complete portability, infrastructure, queues, and continuity checks. If incoming changes replace Workflow instructions, Axis ends the old session and asks you to start a fresh one so the new instructions actually load.
+- **`^save` is the normal sending action.** It fetches first, runs the full portability and infrastructure assessment, refreshes the optional encrypted Secrets capsule, writes the Snapshot and Save Event, checks that every record name is well formed and that no write-once record (a Log, a Snapshot, a finished Task, archived history and the like) was edited, commits them together, rechecks the remote, and pushes when history is still linear. A failed record check stops the commit and names the files; the Snapshot stays saved locally. Offline or authentication failure does not lose the save: the local checkpoint remains and is reported as not yet verified remotely.
+- **`^resume` is the normal receiving action.** It fetches before reading the saved Snapshot, saves any unsent local work first, takes the incoming work (combining both sides when they changed different files), receives the optional encrypted Secrets capsule, and then runs the complete portability, infrastructure, queues, and continuity checks. If incoming changes replace Workflow instructions, Axis ends the old session and asks you to start a fresh one so the new instructions actually load.
 - **`^undo` adds recovery history.** It shows the exact target and asks before restoring. It uses a revert or a new restore commit; it never silently resets history, force-pushes, or discards later work.
 
 Bare `^git` is convenient, but normal handoff is easier to remember as **save on the computer you are leaving, resume on the computer you are joining**. Routine `^save` does not shut down, because it is also useful as an ordinary checkpoint. When you say that the save is for a handoff, shutdown, or another computer, Axis completes the send and then performs `^shutdown`. You can also run `^shutdown` yourself. Do not keep editing the sending copy after that point.
+
+`^resume` (or `^restore`) is meant to be the only thing you type on the computer you are joining. Axis keeps the project on one branch, the remote's default (usually `main`), so you never switch branches yourself: a save made on another branch moves the project back to `main`, and a resume also brings in work an older save sent elsewhere. If the computer you are joining has changes it never sent, resume saves them first; when the other computer changed different files, it combines both sides, and it stops to ask only when the same file changed on both. With **Auto Send** on (new projects start with it on), Axis also sends your work each time it records a milestone and when you type `^shutdown`, so a computer you walk away from without `^save` has usually sent its work already; with it off, `^shutdown` tells you about work that was never sent. An Archive Location inside your home folder is kept as a `~/...` path, so it works on each computer that has that folder.
 
 #### Optional Startup Check
 
 Set **Remote Freshness** to `on` to check the configured Git upstream once when a Main session starts. Incoming commits produce a recommendation to run `^resume`; local files stay untouched, and no merge or push runs automatically. New projects start with `auto` (below); existing projects keep their setting, and a project without the Setting behaves as `off`. The optional check needs Git, Python 3 and supported local storage; offline or unavailable checks report freshness as unverified while Axis remains usable. It adds no background polling and does not replace saving and shutting down the other computer.
 
-Set it to `auto` for zero-delay handoff: when the other computer saved and pushed, and this copy has no unsaved work, Axis fast-forwards to the latest commits while it starts, before it reads anything, and says so in one line. If your own files changed, the histories diverged, or Axis's own instruction files arrived in the update, it only tells you what to do (usually `^resume` or a fresh conversation). It never merges, discards or pushes anything.
+Set it to `auto` for zero-delay handoff: when the other computer saved and pushed, and this copy has no unsaved work, Axis fast-forwards to the latest commits while it starts, before it reads anything, and says so in one line. If this computer has unsent changes, both computers have new work, or Axis's own instruction files arrived in the update, it tells you to run `^resume` (or, for new instruction files, to start a fresh conversation). It never merges, discards or pushes anything.
 
 #### First-Time Git Setup
 
@@ -421,7 +439,7 @@ Back on the desktop:
 2. Start a new session in the desktop project and type `^resume`.
 3. Axis fetches and fast-forwards the laptop checkpoint before reconstructing the work. The desktop's earlier shutdown record is preserved unchanged and joins the next ordinary checkpoint; you never have to discard it just to receive the handoff.
 
-If a machine has local edits while the remote is ahead, or both sides contain commits, Axis stops. It preserves both sides and asks for a reviewed reconciliation instead of guessing, stashing, rebasing, or force-pushing.
+If the same file changed on both computers, Axis stops. It preserves both sides and asks for a reviewed reconciliation instead of guessing, stashing, rebasing, or force-pushing.
 
 #### Encrypted Secrets Between Computers
 
@@ -470,7 +488,7 @@ Clone the project onto a new machine and you inherit its decisions and nothing f
 
 Declaration is supplemented by a deliberately narrow discovery pass: Axis can notice fixed tool-manifest categories, project-local integration/automation indicators, schedule language in active Notes, and the single fact that ignored credential material exists. It reports undeclared categories and counts only. It never lists secret/config filenames, reads credential content, enumerates `PATH` or environment variables, searches keychains/home directories/global schedulers, or contacts a remote service to improve a label. Authentication and host jobs that cannot be checked safely remain `unverified`; this is an honest restoration inventory, not a machine audit.
 
-**Delegation ports too.** Every Subagent prompt is self-contained and bookended by a fresh nonce-bound envelope. The opening and closing records both carry `<<AXIS:SUBAGENT>>`, the same role, and the same random nonce. A Subagent's role is fixed by those validated boundaries rather than inferred, so the same prompt behaves the same way on any platform. A prompt cut at either end by a smaller context window is designed to fail loudly rather than quietly work from a fragment - the carried rules refuse in most measured trials, and the Main-side gates catch what slips.
+**Delegation ports too.** Every Subagent prompt is self-contained and bookended by a fresh nonce-bound envelope. The opening and closing records both carry `<<AXIS:SUBAGENT>>`, the same role, and the same random nonce. A Subagent's role is fixed by those validated boundaries rather than inferred, so the same prompt behaves the same way on any platform. A prompt cut at either end by a smaller context window is designed to fail loudly rather than quietly work from a fragment - the carried rules refuse in most measured trials, and the Main-side gates catch what slips. Where Python runs, Main checks each assembled prompt with a small script before sending it.
 
 **What ports, and what does not.** Canonical files can port: plan, tasks, follow-ups, reminders, notes, ideas, logs, snapshots, reviews, audits, cross-examinations, archived history, Wiki, settings, infrastructure declarations, and generated mindset. A same-folder switch sees them all. A full copy carries files but not installed tools, environment variables, authentication, keychains, local services, browser sessions, or host jobs. A Git clone also omits plaintext Secrets unless their optional encrypted capsule is configured, plus Wiki content, session/machine Flags, Markers, Tracking, scratch, Trash, and ignored Subprojects. The external private capsule identity never travels through Git. The conversation and unsaved work cannot travel; Snapshots are the continuity layer. In a repository-backed `^save`, the Snapshot and its Save Event enter the same selected commit. The later `^shutdown` Event and Tracking tail are operational evidence rather than canonical project state; because shutdown does not commit, a Git clone may omit that tail without making the saved checkpoint incomplete.
 
@@ -524,7 +542,7 @@ Each feature declares the Capabilities it needs in a small table in [Rules > Cap
 
 ### External Agents
 
-A project has exactly ONE Main Agent - and an **External Agent** is what any additional live session becomes: the third role beside Main and Subagent, built for always-on access. An agent that boots beside a live Main (a fresh Main Marker, judged by measured age, never inferred from mere presence) steps down automatically, announces the live Main's identity and its measured age, and serves within a deliberately additive boundary:
+A project has exactly ONE Main Agent - and an **External Agent** is what any additional live session becomes: the third role beside Main and Subagent, built for always-on access. An agent that boots beside a live Main (one active within the last hour, judged by measured activity, never inferred from mere presence) steps down automatically, announces the live Main's identity and its measured age, and serves within a deliberately additive boundary:
 
 - **Read and answer.** It reads the project (never `_Axis/Secrets/`) and answers questions - the Tracking timeline makes "what is going on right now?" a one-read answer, Subagents included.
 - **Append.** `^note`, `^idea`, its own Logs and Tracking lines, a Status report, a clearly-labelled in-context review.
@@ -532,6 +550,8 @@ A project has exactly ONE Main Agent - and an **External Agent** is what any add
 - **Never** edit an existing file, touch `_Axis/` doctrine, change the Plan or Tasks, open Secrets, or spawn Subagents.
 
 That boundary is the honest security story for leaving an agent reachable around the clock: even a fully hijacked External is limited to additive, clearly-stamped contributions that one sweep reverses - it cannot rewrite existing meaning, reach credentials, or seize the project. Becoming Main is a gated ceremony (`^promote`): the request counts only from the gateway-verified owner, the agent discloses its full footprint first, User confirms with a literal reply, a contested project additionally requires approval from a trusted surface, and the grant executes as a full re-boot that leaves a write-once record. Earlier dated rehearsals exercised these scenarios on specific hosts and versions. Current deterministic tests cover the revised protocols and failure schedules; they do not prove that every host or model follows them. Current channel delivery and GUI behavior remain limited by the evidence described below.
+
+**When the other session has gone quiet.** A new conversation takes over a Main session that has been idle long enough, so you never have to clean up after a chat you simply left. How long depends on your Permissions setting: 24 hours at `Restricted`, 7 at `Default` and 3 at `Autonomous`. Idle for less than that (but over an hour), the new conversation asks you first and recommends taking over; say no and it joins as an External Agent. Taking over clears the old session's record, together with any session record over 24 hours old, and the greeting tells you what was cleared. If you later type into the old conversation, it notices its record is gone, stops and asks you instead of writing.
 
 ### Coordinating Agents
 
@@ -574,7 +594,7 @@ The Workflow uses two model settings, both in [Settings](/_Axis/SETTINGS.md):
 
 - **`Local Model`** names a model running on the User's machine via Ollama. Often used to run Subagents locally for cost-effective work, for deterministic work, and/or for any task where speed and offline operation matter more than reasoning depth. Resolved during `^install` from `ollama list`.
 
-- **`CX Model`** names the model used for Cross-Examiner Subagents. Ships as `same-as-host` (use the host's own model in an isolated context); `^install ollama` points it at a local model instead - only after the model catches the planted flaw in the aptitude screen. A local model is effectively free per run, which is what makes frequent critique affordable; a frontier model produces sharper critique. The User picks based on stakes - frontier for board-level deliverables, local for routine development.
+- **`CX Model`** names the model used for Cross-Examiner Subagents. Ships as `same-as-host` (use the host's own model in an isolated context); `^install ollama` points it at a local model instead - only after the model catches the planted flaw in at least 4 of 5 identical runs of the aptitude screen. A local model is effectively free per run, which is what makes frequent critique affordable; a frontier model produces sharper critique. The User picks based on stakes - frontier for board-level deliverables, local for routine development.
 
 **What a small model can and cannot drive.** Small models are supported only as bounded Subagents: Main supplies the complete input, permits no direct file access, validates an explicit output contract, retries once, and falls back when validation fails. Multi-sample class scores can qualify a particular model, quantization, runtime, and machine for extraction, classification, constrained drafting, citation preservation, or similar low-stakes work without inferring aptitude across classes. A missing or failed matching score keeps the work on a stronger path. Small models do not run Session Start, maintain Axis records, ingest Wiki sources, handle secrets, or make security-sensitive trust decisions; prompt-injection performance is diagnostic and never relaxes those restrictions.
 

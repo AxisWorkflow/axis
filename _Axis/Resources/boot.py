@@ -14,6 +14,7 @@ a.add_argument('--host',required=True);a.add_argument('--model',required=True)
 a.add_argument('--harness',default='other');a.add_argument('--interaction',default='interactive')
 a.add_argument('--spawn',choices=('yes','no'),default='no');a.add_argument('--parallel',choices=('yes','no'),default='no')
 a.add_argument('--finish-adoption',metavar='SESSION',help='resume a startup that stopped with ADOPT after the listed record edits')
+a.add_argument('--take-over',action='append',default=[],metavar='SESSION',help='after the user agreed at ASK: take over this idle Main session')
 o=a.parse_args();root=Path.cwd().resolve();R=root/'_Axis/Resources'
 
 def stamp():
@@ -205,15 +206,29 @@ if o.finish_adoption:
     try:st=json.loads((root/'_Axis/Flags/starting.lock/OWNER').read_text())
     except (OSError,ValueError):stop('no admitted startup to resume','_Axis/Resources/Entry-Protocol.md')
     if st.get('session')!=o.finish_adoption or st.get('phase')!='initialized':stop('the startup to resume does not match this session','_Axis/Resources/Entry-Protocol.md')
-    sid,owner,resume_log=st['session'],st['token'],st['starting_log'];us='ready'
+    sid,owner,resume_log=st['session'],st['token'],st['starting_log'];us='ready';swept=None
 else:
     us=update_state()
     if us!='none' and us!='ready':stop('an update handoff needs attention','_Axis/Resources/Entry-Protocol.md',update=us)
-    c=run(R/'startup-state.py','--root',root,'claim','--initial',stamp(),'--host',o.host)
+    c=run(R/'startup-state.py','--root',root,'claim','--initial',stamp(),'--host',o.host,*[x for t in o.take_over for x in ('--take-over',t)])
+    def mains(c):
+        def idle(m):
+            n=int(m.get('idle_seconds',m.get('age_seconds',0)))//60;return f'{n} minutes' if n<120 else f'{n//60} hours'
+        return '; '.join(f"{m['session']} (host {m.get('host') or 'unknown'}, last active {idle(m)} ago)" for m in c.get('mains') or c.get('took_over') or [])
     if c.get('status')=='external':
-        print(json.dumps({'axis_boot':'EXTERNAL','claim':c}));print('EXTERNAL: another Main session is live. Follow _Axis/Resources/Start-External.md.');sys.exit(3)
+        print(json.dumps({'axis_boot':'EXTERNAL','claim':c}));print(f'EXTERNAL: another Main session is live: {mains(c)}. Follow _Axis/Resources/Start-External.md.');sys.exit(3)
+    if c.get('status')=='ask':
+        # Takeover ask (Claim-Session > Takeover): nothing was written; the user decides.
+        again=' '.join('--take-over '+m['session'] for m in c['mains'])
+        print(json.dumps({'axis_boot':'ASK','claim':c}))
+        print(f"ASK: another Main session is idle, under the {c['threshold_hours']}-hour takeover limit at Permissions {c['permissions']}: {mains(c)}. Ask the user in one line, naming it and recommending takeover: take it over (its record is cleared and that session stops at its next turn), or join as an External Agent beside it. On take over, run: python3 _Axis/Resources/boot.py {again} --host {o.host!r} --model {o.model!r} --harness {o.harness} --spawn {o.spawn} --parallel {o.parallel}. On join, follow _Axis/Resources/Start-External.md. Do nothing else until the user answers.")
+        sys.exit(5)
     if c.get('status')!='admitted':stop('session claim failed',claim=c)
     sid,owner=c['session'],c['owner']
+    # One line for the records the claim cleared; it replaces the old advice to run ^refresh.
+    swept=f"Cleared {c.get('cleared',0)} stale session record(s)" if c.get('cleared') or c.get('took_over') else None
+    if c.get('took_over'):swept+=f"; took over from idle Main {mains(c)}"+(' at your word' if o.take_over else f" (Permissions {c['permissions']} takes over after {c['threshold_hours']} hours)")+'; that session stops at its next turn'
+    if swept:swept+='.'
 def interrupted(why,**k):
     print(json.dumps({'axis_boot':'STOP','reason':why,'session':sid,'owner':owner,'guide':'_Axis/Resources/Lock-File.md','interrupted_after_claim':True,**k}))
     print(f'STOP: startup interrupted after the claim ({why}). Startup is incomplete: tell the user, leave _Axis/Flags/starting.lock, _Axis/Flags/starting and _Axis/Agents/{sid}.md in place, and do not retry or use Boot-Manual.md. Recovery needs a quiet moment under _Axis/Resources/Lock-File.md > Quiescent Recovery.');sys.exit(2)
@@ -235,7 +250,7 @@ try:
  notices+=inbox_notes
  if inbox_log:later.append(inbox_log)
  waiting=inbox_items()
- if waiting:pending.append(f'file {len(waiting)} item(s) waiting in _Inbox/ under _Axis/Practices/Inbox.md, then report what went where in one line under the greeting')
+ if waiting:pending.append(f'file {len(waiting)} item(s) waiting in _Inbox/ under _Axis/Practices/Inbox.md, then report what went where in one line under the greeting; for an item delivered to a child project under a routing instruction in _Axis/INSTRUCTIONS.md, run its ^^do in this same turn right after the greeting, without asking: that instruction is the user\'s standing request')
  if 'cloud-synced-folder' in (s.get('notices') or []):
      why=s.get('cloud_reason') or 'reason not recorded'
      notices.append(f'This folder looks cloud-synced ({why}), so agents here write one at a time. If it is really a local folder, say so and it will be corrected.')
@@ -261,7 +276,7 @@ try:
  if (q.get('Followups') or {}).get('count'):notices.append(f"{q['Followups']['count']} open Follow-Ups (^followups lists them)")
  if (q.get('Reminders') or {}).get('count'):later.append('check open Reminders for due items under _Axis/Practices/Reminders.md')
  mk=s.get('markers') or {}
- if mk.get('stale'):notices.append(f"{mk['stale']} idle or stale session record(s); ^refresh clears those over 24 hours old")
+ if swept:notices.append(swept)
  if mk.get('orphan_subagents'):notices.append(f"{mk['orphan_subagents']} orphaned Subagent record(s) from a crashed spawn; ^refresh can clear them")
  for x in (mk.get('fresh_external') or []):notices.append(f'An External Agent is serving this project ({x}).')
  if (s.get('notes') or {}).get('over_limit'):later.append('archive the oldest Notes over Max Notes under _Axis/Practices/Archiving.md > Automatic Note Overflow')
@@ -314,10 +329,12 @@ try:
  print('Banner for the user (start your reply with it, as is, after any pending items; it repeats the header so the complete block shows together):')
  # Four blank lines set the block apart from any text the model printed during startup (User design, 2026-10-08).
  print(f"```text\n\n\n\n\n{bar}\n A X I S   W O R K F L O W\n{bar}\n  Project:  {name}\n  Folder:   {folder}\n  Session:  {sid}\n  Version:  {ver}\n  Status:   Ready\n  Agent:    Main\n{bar}\n```")
+ print('Greeting: one blank line under the banner, greet the user in one line and introduce yourself as Axel, the Main Agent (for example "Hi, Axel here.").')
  for x in notices:print('Notice for the user: '+x)
  for x in pending:print('Pending before the first answer: '+x)
  print('Before any answer other than the greeting or a requested exact reply: read _Axis/Resources/Load-Starting-Context.md (core rules), _Axis/INSTRUCTIONS.md, _Axis/MINDSET.md, _Axis/DIRECTIVES.md, _Axis/PLAN.md, _Axis/TASKS.md, the newest Snapshots and the Notes index'+('; and: '+'; '.join(later) if later else '')+'.')
  print(f'On every later turn, first run: python3 _Axis/Resources/turn.py --session {sid}')
- print(f'End every reply that hands the turn back to the user, this one included, with a blank line, a line of 27 ━, a blank line and READY FOR INPUT ({folder}): as the last line; open each later reply with 27 ━, " A X I S   W O R K F L O W", 27 ━ and a blank line (exact layout and exceptions: _Axis/Rules/Speaking.md > Final response boundary).')
+ print('Reply frame, required on every reply that hands the turn back to the user, this one included (exceptions: _Axis/Rules/Speaking.md > Final response boundary): this reply opens with the banner instead of the header; every later reply starts with the header, with nothing before it, not even a sentence; every reply ends with the closing; progress notes during a turn get neither. A later reply looks like this (the fence only marks the example; never print the fence itself):')
+ print(f'```text\n{bar}\n A X I S   W O R K F L O W\n{bar}\n\n{{the answer, leading with the outcome}}\n\n{bar}\n\nREADY FOR INPUT ({folder}):\n```')
 except SystemExit:raise
 except BaseException as e:interrupted(type(e).__name__)

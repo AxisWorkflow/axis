@@ -3,10 +3,10 @@
 
 Runs from the project root at the start of every later turn (and about every 30 minutes inside a long turn):
   python3 _Axis/Resources/turn.py --session {Session ID}
-Exit 0 prints OK (plus any items to handle); 3 KILLED; 4 LOST LEASE (missing Marker); 6 FOREIGN MAIN or TAKEN OVER;
-2 or 5 errors. It never recreates a missing Marker, never executes an update helper, and never writes anything
-except the renewed Marker mtime."""
-import argparse,os,re,sys,time
+Exit 0 prints OK (plus any items to handle, then the reply-frame reminder for Main and External); 3 KILLED; 4 LOST LEASE (missing Marker); 6 FOREIGN MAIN or TAKEN OVER;
+7 READ-ONLY (the host refused the renewal); 2 or 5 errors. It never recreates a missing Marker, never executes an
+update helper, and never writes anything except the renewed Marker mtime."""
+import argparse,errno,os,re,sys,time
 from pathlib import Path
 
 a=argparse.ArgumentParser(description='Axis per-turn lease check');a.add_argument('--session',required=True);o=a.parse_args()
@@ -40,8 +40,13 @@ if age>=3600:
         if owner!=o.session:
             print(taken.format(why=f'this session was idle {int(age//60)} minutes and the session-id Flag no longer names it ({owner or "missing"}): another Main started meanwhile.'));sys.exit(6)
     items.append(f'this session was idle {int(age//60)} minutes; its lease was renewed because no other session replaced it - mention it to the user in one line')
+# Renewal refused by a read-only host (sandbox or file system) is not a missing Marker: report it, fail closed.
+readonly='READ-ONLY: this host refused to renew your Marker (read-only sandbox or file system); the Marker is still present. Make no shared writes and do not create or repair any Marker; ask the user to rerun this session with write access.'
 try:os.utime(marker)
-except OSError:print(lost);sys.exit(4)
+except FileNotFoundError:print(lost);sys.exit(4)
+except OSError as e:
+    if isinstance(e,PermissionError) or e.errno in (errno.EROFS,errno.EPERM,errno.EACCES):print(readonly);sys.exit(7)
+    print(lost);sys.exit(4)
 # Update handoff: file-only, like boot.py - never execute an update helper that an unconsumed update may have installed.
 d=root/'_Axis/Updates'
 try:
@@ -67,3 +72,6 @@ if first=='Main: session':
         if changed:items.append('the project overlay or its declaration changed since activation: revalidate it under _Axis/Resources/Load-Project-Overlay.md (activate phase) before applying its guidance')
 print('OK: lease renewed.')
 for x in items:print('Handle before answering: '+x)
+if first.startswith(('Main: session','External: ')):
+    home=os.path.expanduser('~');folder=str(root);folder='~'+folder[len(home):] if folder==home or folder.startswith(home+'/') else folder
+    print(f'Reply frame: start your reply with the Axis header, with nothing before it, and end it with the closing line READY FOR INPUT ({folder}): - progress notes get neither.')

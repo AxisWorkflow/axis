@@ -193,7 +193,9 @@
 - `_Axis/Resources/Continue-Session.md`
 - `_Axis/Resources/Load-Starting-Context.md`
 - `_Axis/Resources/Startup-Records-Manual.md` - complete manual startup record fallback, loaded only when selected.
-- `_Axis/Resources/startup-state.py` - optional local startup record accelerator; manual startup remains available.
+- `_Axis/Resources/startup-state.py` - optional local startup record accelerator and `record` command for any Index-Detail record; manual startup and minting remain available.
+- `_Axis/Resources/record-check.py` - optional `^save` checks of record names and write-once files before a commit; the manual checks remain available.
+- `_Axis/Resources/envelope.py` - optional send-side Subagent envelope check and nonce generator; Main's reading check remains available.
 - `_Axis/Resources/status.py` - optional read-only `^status` helper; the Agent can compose the same summary by hand.
 - `_Axis/Resources/startup-survey.py` - optional one-call startup survey; the numbered Start-Session steps remain available.
 - `_Axis/Resources/boot.py` - one-command Main startup used by the entry files.

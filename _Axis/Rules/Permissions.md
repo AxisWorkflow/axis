@@ -16,6 +16,7 @@ Missing, blank or unrecognized values mean `Default`.
 ## Judging a change
 
 - **Clear intent** means User asked for the change or the outcome it serves, or the project's own records (Plan, Tasks, Initiatives, standing instructions) plainly call for it - for example closing an Initiative whose Tasks are all finished and whose text says it is done. `Default` needs intent that is stated in this way.
+- **Standing requests.** A standing instruction User wrote for exactly the case at hand is User's explicit request for it, including the live work it starts - for example a routing instruction that has a child project process a delivered document. Act on it at every level without asking again; the gates below still apply.
 - **Inferred intent** is intent that follows from User's stated goal without being stated itself - for example treating User's approval of a plan as approval to start its first step. `Autonomous` may act on inferred intent; `Default` confirms it first.
 - **Unclear intent** means two reasonable readings of what User wants would lead to different results. Every level confirms unclear intent. A plausible guess is not clear intent.
 - **Little risk** means nothing of value is lost: the change is additive (a Git commit, a new record, a new file), reversible (Git history, a restorable Archive move, or `_Trash/`, which keeps an item for 2 days before a sweep may delete it - see [Practices > Trash]), or removes only material verifiably regenerable or saved elsewhere.

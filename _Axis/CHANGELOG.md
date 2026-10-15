@@ -1,7 +1,7 @@
 # Changelog
 > **Purpose:** Record Axis release identity and the structural migrations needed to update an existing project safely.
 
-current-version: 2.06
+current-version: 2.07
 changelog-format: 1
 self-update-baseline: 26.08.19
 
@@ -31,6 +31,45 @@ update-impact: automatic
 ### Project-State Migrations
 
 - None.
+
+### Retired Paths
+
+- None.
+
+### Verification
+
+- None.
+
+## 2.07
+
+released: 2026-10-15
+
+- A parent project can now direct its child projects: `^^do <child> <task>` hands a child an order (and, with `with`, a document for its Inbox) that a session in the child carries out under its own rules, refers back to you, or declines for a stated reason. Each child's new Parent Authority Setting (`direct` or `advise`) decides how far its parent may go. Nesting a project grants that authority; for the ordered task the order outranks the child's standing instructions, and pushing, publishing or spending go ahead only on your approved list. The child saves a checkpoint first and names it as the rollback point. On hosts that keep background work running, such as Claude Code, the parent runs the child in the background and you can keep working.
+- Startup now greets you as Axel, and replies open with the Axis header and close with `READY FOR INPUT` more reliably.
+- When a host resumes a chat read-only (for example a sandbox that blocks file changes), the per-turn check now says the host is read-only and asks you to rerun with write access, instead of wrongly reporting the session record as missing.
+- A new conversation now takes over a Main session that has gone quiet, instead of telling you to run `^refresh`: after 24 hours at `Restricted` Permissions, 7 at `Default` and 3 at `Autonomous`. Before that it asks you, recommending takeover; a session active within the last hour still makes the new one an External Agent that offers `^promote`. Startup also clears session records over 24 hours old and says what it cleared.
+- `^install ollama` now runs the planted-flaw check five times and makes the local model your Cross-Examination model only when it finds the flaw at least 4 of 5 times.
+- Handing a project between computers now needs only `^resume` (or the new `^restore`) on the computer you join. Axis keeps the project on one branch (the remote's default, usually `main`) and moves it back there if it finds it elsewhere; resume saves unsent local work first and combines both sides when they changed different files. New Setting **Auto Send** sends your work at each recorded milestone and at `^shutdown` (on for new projects, off when this update adds it). Archive Location accepts a `~/...` path inside your home folder, so one setting works on every computer.
+- Three small safety checks now run where Python is available: Axis creates records through one helper that keeps their names well formed and unique; `^save` stops before committing a misnamed record or an edited write-once record (a Log, a Snapshot, a finished Task, archived history and the like) and names the files; and Main checks every helper-agent prompt with a script before sending it.
+
+update-impact: automatic
+
+### Structural Changes
+
+- Parent authority: new `^^do <child|all> <task> [with <path>...]` in `_Axis/Practices/Supervision.md` (with Inbox Routing); `_Axis/Practices/Requests.md` gains Directives (a verified parent directive carries User's typed authority); `_Axis/Practices/Subprojects.md` gains Parent Authority and allows a delivered file in a child's `_Inbox/`; `_Axis/Practices/Inbox.md` can deliver an item to a direct child; new Setting `Parent Authority`. User Manual and Specification document it.
+- `_Axis/Resources/turn.py`: after `OK` (and any items), Main and External sessions get one line reminding them of the reply frame: start with the Axis header and nothing before it, end with `READY FOR INPUT ({folder}):`. No project-state change.
+- Low-cost guardrails: `_Axis/Resources/startup-state.py` gains a `record --session {ID} --family {Family}` command (body on stdin or `--body-file`) that creates any Index-Detail record under the caller's own live Marker; admission and startup operations are unchanged. New `_Axis/Resources/record-check.py` (`names`, `write-once`) runs in `_Axis/Commands/save.md` step 11 before the commit, with manual fallbacks. New `_Axis/Resources/envelope.py` (`check`, `new`) is the preferred send-side check in `_Axis/Resources/Start-Subagent.md` > Envelope Validation. `_Axis/Practices/Timestamps.md` names the helper before step 1 (its manual steps are the fallback; the Optional Startup Helper section becomes Record Helper); `_Axis/Practices/Logs.md` and Start-Subagent's Marker step point at it; MANIFEST, User Manual and Specification follow. No project-state change.
+- `_Axis/Resources/turn.py`: a renewal refused by a permission or read-only file-system error (`PermissionError`, or errno `EROFS`, `EPERM` or `EACCES`) prints `READ-ONLY` and exits 7, with no write; only a missing Marker prints `LOST LEASE` (exit 4). Entry files (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`) name `READ-ONLY` in the later-turn step and are replaced as usual; the Specification's per-turn table follows. No project-state change.
+- `_Axis/Practices/Markers.md` > The Lease gains the read-only rule (a refused renewal is not a lost lease: no shared writes, no Marker creation or repair, ask User to rerun with write access), so the compiled `_Axis/Resources/Starting-Context.md` carries it.
+- Tiered takeover: `_Axis/Resources/Claim-Session.md` gains `## Takeover`. An idle foreign Main's last activity is the newest of its Marker `mtime`, last Tracking line and a later Log naming it; under 1 hour joins as External; under the [Settings > Permissions] limit (24 hours `Restricted`, 7 `Default` or unset, 3 `Autonomous`) the claim asks User; at or over it, or on User's word, the boot becomes Main. After admission the claim deletes the taken-over Marker, other Markers over 24 hours old and tombstones over 1 hour old with their Marker. `startup-state.py claim` adds `--take-over {ID}`, the `ask` status and `took_over`/`cleared` in `admitted`; `boot.py` prints `ASK` (exit 5), takes `--take-over`, and replaces the stale-record `^refresh` advice with one `Cleared` notice. `Boot-Manual.md`, `Start-Session.md` item 2, `Entry-Protocol.md`, `Start-External.md`, `Practices/Markers.md` > Liveness, `Practices/Agents.md`, `Rules/ExternalAgents.md`, `Rules/MarkersFlagsAndLocks.md` and the entry files (`If it prints ASK`) follow. No project-state change: [Settings > Permissions] already exists.
+- `_Axis/Commands/install.md` Aptitude Check: fixture (d) runs five times on one assembled prompt at the sampling settings local Cross-Examination uses (model default `temperature`, no `seed`), one attempt each with no feedback retry; `flaw found {k} of 5`; the CX Model is set only at 4 of 5 or better. The other four fixtures keep one attempt plus one retry. `local-aptitude` gains Line 4 `flaw-check: {PASS|FAIL} {found}/5` (Line 3 keeps five `PASS`/`RETRY`/`FAIL` tokens; fixture (d) is never `RETRY`), and the optional `benchmark:` block follows it. `_Axis/Practices/Flags.md`, `_Axis/Resources/Start-Subagent.md` (CX precondition reads `flaw-check:`; local CX keeps the default `temperature` and no `seed`), `_Axis/Commands/audit.md`, User Manual and Specification follow. An existing `local-aptitude` Flag stays as written; without a `flaw-check:` row it gives no Cross-Examination evidence, and an existing CX Model setting is kept.
+- `_Axis/Resources/boot.py` READY output: a greeting line under the banner tells Main to introduce itself as Axel, and the end-of-turn reminder becomes one required reply frame, printed as text, with the header first on every later reply, the closing on every reply and neither on progress notes. `_Axis/Resources/Boot-Manual.md` step 9 also greets as Axel. Wording only; no project-state change.
+- `_Axis/Practices/GIT.md`: Resolve the upstream synchronizes on the remote's default branch (off it, the local shared branch is fast-forwarded to `HEAD` and checked out with no file changes; a remote side branch whose line contains the shared branch and `HEAD` is received); Take one action (renamed from Take one linear action) commits unsent local work in both modes and merges `--no-ff` when no path changed on both sides; Checkpoints gains Auto Send. `_Axis/Practices/Logs.md` triggers Auto Send after each non-lifecycle Log. `_Axis/Commands/resume.md` step 1 and `_Axis/Practices/Portability.md` (resume mutations) follow; `_Axis/Commands/save.md` steps 2, 6 and 13 integrate before saving, keep the Archive Location portable and fix receiver-side steps before sending; `_Axis/Commands/shutdown.md` sends under Auto Send or names unsent work. `_Axis/Practices/Commands.md` and `resume.md`: `^restore` is an alias for `^resume`. `_Axis/Practices/Archiving.md` and `_Axis/Resources/startup-state.py` (`archive_root`, read-only) accept a `~/...` Archive Location; `^save` and `^resume` rewrite an absolute home path to it. `_Axis/Resources/remote-freshness.py` startup notices and `_Axis/Resources/Check-Remote-Freshness.md` send unsent-work and diverged cases to `^resume`. A project already on another branch moves to the shared branch at its next `^save`, `^git` or `^resume`.
+
+### Project-State Migrations
+
+- `_Axis/SETTINGS.md` (automatic): add `### Parent Authority` (value `direct`) after `### Max Concurrent Sessions`, using the template's description and range. Preserve every existing value.
+- `_Axis/SETTINGS.md` (automatic): when absent, add `### Auto Send` (value `off`, so existing projects keep sending only on `^save` and `^git`) after `### Remote Freshness`, using the template's description and range. New projects ship `on`. Preserve every existing value.
 
 ### Retired Paths
 

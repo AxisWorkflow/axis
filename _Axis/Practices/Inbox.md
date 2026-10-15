@@ -23,7 +23,8 @@ Skip `.gitkeep`, other dotfiles, and any item still arriving (modified within th
    - **Wiki source**, meaning domain material for the knowledge base, judged by the guidance in `_Axis/Wiki/Library-Schema.md` when the Wiki is in use: move it unchanged into `_Wiki/_Inbox/`, where the next Wiki ingest picks it up ([Practices > Wiki]).
    - **Project content:** move it into the existing Project Subfolder that fits. When none fits, create one under [Practices > Folders].
    - **Both:** file it as project content and copy it unchanged into `_Wiki/_Inbox/`.
-   - **Never** into `_Axis/`, `_Temp/`, `_Trash/`, the Wiki's Library pages, or a Subproject.
+   - **A direct child project:** when the item clearly belongs to one recognized direct child, deliver it into that child's `_Inbox/` under [Practices > Supervision > Inbox Routing].
+   - **Never** into `_Axis/`, `_Temp/`, `_Trash/`, the Wiki's Library pages, or any other place inside a Subproject.
 4. **Move it.** Keep its name. On a name collision append `-2`, `-3`, and so on, and never overwrite. Then confirm the item exists at its destination and is gone from `_Inbox/`.
 
 Filing new arrivals is not a reorganization of existing content, so it needs no confirmation. Undo is moving the item back.

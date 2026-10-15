@@ -5,7 +5,7 @@
 
 #### Prompt Envelope
 
-Every spawn gets a fresh unpredictable 128-bit nonce - the Envelope Nonce - encoded as exactly 32 lowercase hexadecimal characters. Generate it from the Host's secure-random facility or, with a POSIX shell, 16 bytes from `/dev/urandom`. Never reuse a nonce across spawns. If no secure-random source is available, do not spawn: follow Restrictions & Fallback and Log under [Practices > Logs > Capability Downgrades].
+Every spawn gets a fresh unpredictable 128-bit nonce - the Envelope Nonce - encoded as exactly 32 lowercase hexadecimal characters. Generate it with `python3 _Axis/Resources/envelope.py new`, the Host's secure-random facility or, with a POSIX shell, 16 bytes from `/dev/urandom`. Never reuse a nonce across spawns. If no secure-random source is available, do not spawn: follow Restrictions & Fallback and Log under [Practices > Logs > Capability Downgrades].
 
 The first three non-empty lines of every Subagent prompt are:
 
@@ -35,7 +35,7 @@ Do NOT pass a model token: Main Agent chose the Subagent's model, tailors the in
 
 #### Envelope Validation
 
-Before sending, Main size-checks the fully assembled prompt and validates both boundaries, roles, nonce syntax, nonce equality, and exactly two appearances of the nonce. Never send an oversize or malformed prompt; split it into smaller spawns or work serially and Log `Invalid prompt envelope: {task}` with redacted metadata.
+Before sending, Main size-checks the fully assembled prompt and validates both boundaries, roles, nonce syntax, nonce equality, exactly two appearances of the nonce, and the two carried blocks (none for a Local Subagent). Prefer the script: pipe the prompt to `python3 _Axis/Resources/envelope.py check` (add `--max-bytes {limit}` for a known window), which prints `OK` or `FAIL: {reason}`; without Python, check by reading. Never send an oversize or malformed prompt; split it into smaller spawns or work serially and Log `Invalid prompt envelope: {task}` with redacted metadata.
 
 A host-spawned Subagent (CX, Wiki, General) validates the first three and final three non-empty lines before reading files or doing any work, following the rules the envelope itself carries. A host that also injects the entry file merely provides the same rules twice - neither copy may be skipped. The child-side check is a carried instruction with a measured non-zero failure rate, never an enforcement gate - the gates are Main's send-side and return validation. The checks:
 
@@ -90,7 +90,7 @@ The `^save` command relies on Markers to detect pending Subagents (matching Subj
 
 - **On spawning**
 	- Count live sessions under [Rules > MarkersFlagsAndLocks > Concurrent Sessions]. At or over [Settings > Max Concurrent Sessions], do not spawn: do the work yourself or wait for a running Subagent to return.
-	- Mint a project-unique identifier timestamp per [Practices > Timestamps], claim step included - a spawn is the case that claim exists for, and it is taken on every mint precisely so it does not depend on your noticing.
+	- Mint a project-unique identifier timestamp per [Practices > Timestamps], claim step included - a spawn is the case that claim exists for, and it is taken on every mint precisely so it does not depend on your noticing; its `startup-state.py record --family Agents` helper mints and saves the Marker in one call.
 	- Save a Marker as `_Axis/Agents/{yyyy.mm.dd.hh.mm.ss.xxxZ}.md`.
 	- Follow the Index-Detail Pattern wherein:
 	     Line 1 is the Subject (for example, `Subagent: CX`); keep to ≤ 80 chars.
@@ -176,7 +176,7 @@ Spawn a Wiki Subagent with a fresh nonce and the complete envelope, as in this p
 
 ## How to Start a CX Subagent
 
-**Precondition:** If `CX Model` in `_Axis/SETTINGS.md` is not set, then halt the spawn, tell the User that they must first select a Cross-Examination model, and offer to run `^install`. Never pass an empty, `?`, or `<unset>` model name. The value `same-as-host` is valid - it means: spawn on the host's own model.
+**Precondition:** If `CX Model` in `_Axis/SETTINGS.md` is not set, then halt the spawn, tell the User that they must first select a Cross-Examination model, and offer to run `^install`. Never pass an empty, `?`, or `<unset>` model name. The value `same-as-host` is valid - it means: spawn on the host's own model. When it names a local model, read `local-aptitude` under [Practices > Flags > Reading Flags]: unless it names that model with `flaw-check: PASS` (at least 4 of 5), tell User in one line that the model has not earned Cross-Examination and offer `^install ollama` to recheck it; a value User set themselves stands.
 
 To perform a cross-examination, Main Agent should:
 
@@ -269,7 +269,7 @@ To spawn a local agent on User's computer (for example, to do deterministic work
 	- Set `api_key` to any non-empty string.
 	- Set `model` to the **Local Model** set in [Settings > Local Model].
 	- Verify endpoint is reachable with `GET /v1/models` before sending requests.
-	- Options contract: ALWAYS set the context window explicitly (e.g., `num_ctx` 16384 on Ollama's native API; the OpenAI-compatible endpoint uses the server's model default) - Ollama's out-of-the-box context is small and truncates long prompts SILENTLY. Size-check the assembled prompt against that window before sending (~4 characters per token). Set `temperature` 0-0.3 for extraction and other deterministic work. Set the response-length cap (`max_tokens` / `num_predict`) generously - some models spend output tokens deliberating before they answer.
+	- Options contract: ALWAYS set the context window explicitly (e.g., `num_ctx` 16384 on Ollama's native API; the OpenAI-compatible endpoint uses the server's model default) - Ollama's out-of-the-box context is small and truncates long prompts SILENTLY. Size-check the assembled prompt against that window before sending (~4 characters per token). Set `temperature` 0-0.3 for extraction and other deterministic work. For Cross-Examination, keep the model's default `temperature` and set no `seed`: the Aptitude Check's flaw-spotting runs measured the model at those settings. Set the response-length cap (`max_tokens` / `num_predict`) generously - some models spend output tokens deliberating before they answer.
 	- Wall-clock budget: give each request a timeout (~120 seconds is generous for transform work on a capable model). A timeout is a FAILED attempt, and unlike a validation failure it is NOT retried - a model that cannot answer in that time will not answer on the second try either; go straight to the fallback in step 4.
 
 5. Validate the reply, retry once, then fall back:

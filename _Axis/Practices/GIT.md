@@ -50,9 +50,11 @@ Fresh remote ancestry may recommend `^resume`; it does not authorize receipt or 
 
 ### Resolve the upstream
 
-1. Prefer the current branch's configured upstream.
-2. With no upstream and exactly one remote, inspect its default/current matching branch. Establish the upstream automatically only when the mapping is unambiguous and linear; otherwise ask User.
-3. With multiple candidate remotes or branches, stop and ask which is authoritative.
+A project keeps its shared history on one branch, the remote's default branch (`{remote}/HEAD`, usually `main`), so a handoff needs nothing beyond `^save` on one computer and `^resume` on the other. Never create another branch for project work.
+
+1. With exactly one remote, synchronize on its default branch. When the remote names no default, use the current branch's configured upstream; with no upstream, establish one only when the mapping is unambiguous and linear, otherwise ask User. With multiple candidate remotes, stop and ask which is authoritative.
+2. **Off the shared branch.** When the current branch is not the shared branch and the local shared branch is absent or an ancestor of `HEAD`, move the local shared branch to `HEAD`, switch to it (no file changes), set its upstream, and say once that the project is back on the shared branch; leave the old branch in place. Then classify against the fetched shared branch, so an outgoing checkpoint sends to the shared branch. When the local shared branch has commits `HEAD` lacks, stop and propose reconciliation. Never send a handoff to a side branch or leave the receiving computer an instruction to switch branches.
+3. **Work sent to a side branch.** After the fetch, look for other remote branches strictly ahead of the remote shared branch that contain it: an earlier save sent work there. When their tips form one line that contains `HEAD`, classify against the newest tip instead; a remote-ahead result fast-forwards the shared branch to it, and the next outgoing checkpoint sends it to the shared branch. Name the branch once. Any other arrangement is Diverged.
 4. With no remote, use local-only checkpoint behavior and offer Private Remote Setup only from `^git`, not while `^save` or `^resume` is trying to finish.
 5. A fetch or authentication failure never destroys a local checkpoint. Report `saved locally; remote not verified` on an outgoing path, or `resumed locally; remote not verified` on an incoming path.
 
@@ -73,24 +75,24 @@ Use `git rev-list --left-right --count HEAD...@{upstream}` or an equivalent ance
 
 - `clean` means no tracked, untracked, deleted, or renamed project change.
 - `receive-safe` means the only local differences are verified ignored current-session artifacts and/or untracked session-lifecycle Logs under `_Axis/Logs/{timestamp}.md`. Each eligible Log must be a regular non-link file with a valid unique timestamp name, satisfy [Practices > Logs], and have the exact Subject `Session Starting`, `Session Started`, or `Shutdown by User` with a valid `by: Main Agent` and `session:` line. Its path must be absent from the fetched upstream tree and incoming range. These Logs are append-only operational evidence: hash their bytes before receipt, leave them untracked during the fast-forward, verify the same paths and bytes afterward, and let the next outgoing checkpoint commit them normally. This includes the shutdown tail intentionally written after a handoff save; returning to the original computer must not require discarding that WORM record.
-- Everything else is `substantive`. A malformed, modified, colliding, linked, non-lifecycle, or otherwise unverified Log is substantive. Never stash, discard, hide, or auto-merge substantive local work.
+- Everything else is `substantive`. A malformed, modified, colliding, linked, non-lifecycle, or otherwise unverified Log is substantive. Never stash, discard, hide, or overwrite substantive local work; commit it before integrating anything.
 
-### Take one linear action
+### Take one action
 
 - **Equal + clean:** no operation.
-- **Equal + substantive local changes:** in checkpoint mode, stage, validate, commit, re-fetch, then push only if the result remains local-ahead. In receive mode, stop and ask User to save or discard the local work through an explicit procedure.
+- **Equal + substantive local changes:** stage, validate and commit them under Checkpoints. In checkpoint mode, re-fetch, then push only if the result remains local-ahead. In receive mode the commit is `axis: checkpoint - unsent work found on this computer`, sent by the next outgoing checkpoint.
 - **Local ahead:** push normally. If the push is rejected, re-fetch and reclassify; never force.
 - **Remote ahead + clean or receive-safe:** record the old `HEAD` and any receive-safe Log hashes, run `git merge --ff-only @{upstream}`, verify the new `HEAD` equals the fetched upstream and every preserved Log is byte-identical, then run Incoming Change Validation below.
-- **Remote ahead + substantive local changes:** checkpoint mode may finish a local safety commit, after which the histories are divergent and must stop. Receive mode does not commit or pull; it reports the local work that prevents receipt.
-- **Diverged:** do not merge or rebase automatically even when files appear disjoint. Show the two bounded commit summaries, preserve both histories, and propose a reviewed reconciliation.
+- **Remote ahead + substantive local changes:** commit the local work as in Equal + substantive, in either mode; the histories now diverge, so continue as Diverged.
+- **Diverged:** when no path changed on both sides since the merge base (compare `git diff --no-renames --name-only` from the merge base to each tip), run `git merge --no-ff --no-edit @{upstream}`; never rebase, and stop if Git reports any conflict. Verify that every path changed on either side has that side's committed bytes, Log one Event naming both sides, then run Incoming Change Validation; the next outgoing checkpoint sends the merge. When any path changed on both sides, do not merge: preserve both histories, show the two bounded commit summaries, and propose a reviewed reconciliation.
 
-Re-fetch immediately before every push. A remote race becomes a rejected push and a preserved local commit, never an automatic integration.
+Re-fetch immediately before every push. A remote race becomes a rejected push and a preserved local commit; reclassify, never force.
 
 ### Incoming Change Validation
 
-After a fast-forward:
+After a fast-forward or merge:
 
-1. Compare old and new `HEAD`. Validate the checkout is at the fetched commit, no pre-existing substantive local file was removed or overwritten, and every receive-safe lifecycle Log remains byte-identical and untracked.
+1. Compare old and new `HEAD`. Validate the checkout is at the fetched commit or the verified merge, no pre-existing substantive local file was removed or overwritten, and every receive-safe lifecycle Log remains byte-identical and untracked.
 2. Run Encrypted Secrets Transport in receive mode when configured. A missing tool/identity or a conflict is a portability finding; never silently overwrite plaintext.
 3. If the incoming range changed an entry file, `_Axis/CHANGELOG.md`, or anything under `_Axis/Commands/`, `Practices/`, `Rules/`, `Resources/`, or other loaded Workflow machinery, the current in-memory instructions are stale. Say what changed in User terms, run `^shutdown`, and require a fresh session. Do not continue into `^resume` under old instructions.
 4. Otherwise run the complete [Practices > Portability > Always-On Resume Revalidation] before treating the received state as current. Bare `^git` then runs the ordinary `^resume` summary automatically; `^resume` continues its own procedure.
@@ -98,18 +100,20 @@ After a fast-forward:
 ## Command Modes
 
 - **Bare `^git`:** no repository means Setup; a repository with local changes means checkpoint unless those changes are receive-safe and the remote is ahead; a clean or receive-safe remote-ahead repository means receive and resume; local-ahead means push; equal and clean means report current. It may offer Private Remote Setup when none exists.
-- **`^save` outgoing:** perform an early fetch. A clean or receive-safe remote-ahead tree may fast-forward before the Snapshot; substantive local work plus remote-ahead is remembered as a local-only/divergent result. After the portability assessment, encrypted-capsule refresh, Snapshot, and Save Event, checkpoint and push whenever the graph remains linear.
-- **`^resume` incoming:** fetch before reading the saved checkpoint. Fast-forward only from clean or receive-safe state, receive encrypted Secrets, then revalidate and summarize. Offline/authentication failure continues from local state with remote freshness `Unverified`.
+- **`^save` outgoing:** perform an early fetch and integrate incoming work under Take one action before the Snapshot; work that needs a reviewed reconciliation is remembered as a local-only result. After the portability assessment, encrypted-capsule refresh, Snapshot, and Save Event, checkpoint and push whenever the result is local-ahead.
+- **`^resume` incoming:** fetch before reading the saved checkpoint. Move to the shared branch, commit unsent local work, fast-forward or merge under Take one action, receive encrypted Secrets, then revalidate and summarize. Offline/authentication failure continues from local state with remote freshness `Unverified`.
 - **Read-only intent:** `status`, `history`, and `diff` inspect bounded Git facts without staging, committing, fetching unless remote freshness was requested, or writing an Axis Event.
 - **Local checkpoint intent:** `checkpoint` commits after all gates but does not push. Additional natural-language text is a commit-message hint, never shell syntax.
 
 ## Checkpoints
 
 - Commit locally at meaningful moments: during `^save`, from `^git`, at milestones, and before rollback.
+- **Auto Send.** When [Settings > Auto Send] is `on` and an upstream exists, Main sends at each milestone without asking: after each Log Event it writes, other than the `Session Starting`, `Session Started` and `Shutdown by User` lifecycle Logs, and in `^shutdown`. Seal configured Secrets as for `^save`, commit the whole eligible state as `axis: checkpoint - {Log Subject}`, fetch, integrate under Take one action in checkpoint mode, and push when local-ahead. A reconciliation that needs review, a failed gate, or an unreachable remote pauses sending until the next `^save` or `^resume`, with one line to User.
 - During `^save`, write the Save Event before staging. The Snapshot and its audit Event enter the same commit. A later `^shutdown` Event is post-checkpoint operational evidence and is not promised to a Git clone unless another commit includes it.
 - Use `axis: {event}` messages: `axis: initial project state`, `axis: snapshot {timestamp}`, or `axis: checkpoint - {concise semantic summary}`. Draft from the actual diff; never include secret data, local paths, or raw User prose unnecessarily.
 - Do not create an empty commit. A clean tree is a successful no-op.
 - Before every `git add -A`, run the Subproject gate below. After staging, inspect `git diff --cached` without printing discovered secret values. Block if a staged addition contains a secret-looking value, any `_Axis/Secrets/` path other than `.recipient`, `.capsule.age` or `.identity.age`, a complete nonce-bound Subagent Prompt Envelope under `_Axis/Logs/`, or a raw embedded source block over 8 KB under `_Axis/Logs/`. Report only file and rule. Move plaintext credentials to `_Axis/Secrets/`; replace prohibited prompt/source copies with the redacted metadata required by [Start-Subagent].
+- Before a `^git` or Auto Send checkpoint commit, run the same record-name and write-once checks as `^save` step 11, with the same manual fallbacks; a refusal stops the commit and is reported like a blocked staging check.
 - Session Flags, Markers, Tracking, `_Temp/`, `_Trash/`, plaintext Secrets and `.binding`, and Wiki content stay ignored. When configured, only `_Axis/Secrets/.recipient`, `.capsule.age` and the optional `.identity.age` are tracked from the Secrets directory. Project Subfolders and parent-tracked Subprojects are committed; exact-path ignored Subprojects are independent; submodules contribute only their gitlink.
 - Routine `^git` checkpoint/push/receive uses the Git commit as its audit entry and writes no separate Event after the commit, because that would immediately dirty the synchronized tree. Log setup, remote/visibility changes, Secrets-capsule configuration, rejected safety gates, reconciliation, and rollback as their owning procedures direct; write any Event that belongs in a checkpoint before staging it.
 - A failed commit or push is reported exactly. Never claim remote synchronization from a local commit alone.
@@ -128,7 +132,7 @@ Plaintext `_Axis/Secrets/` remains ignored even in a private repository. The opt
 
 ### Send automatically
 
-Before any outgoing `^git` checkpoint or repository-backed `^save`, run `bash _Axis/Resources/secrets-capsule.sh status` when `.recipient` or `.capsule.age` exists.
+Before any outgoing `^git` checkpoint, Auto Send or repository-backed `^save`, run `bash _Axis/Resources/secrets-capsule.sh status` when `.recipient` or `.capsule.age` exists.
 
 - `ready` or `local-changes`: run `seal`, verify `sealed`, then stage the two tracked files with the project checkpoint.
 - `incoming`, `conflict`, or `unbound`: do not seal over an incoming state; stop the remote push and resolve receipt first.

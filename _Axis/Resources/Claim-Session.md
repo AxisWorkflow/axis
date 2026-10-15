@@ -15,6 +15,7 @@ Run `python3 _Axis/Resources/startup-state.py --root . claim --initial {entry-ti
 
 - `admitted`: retain returned final Session ID, owner nonce and exact Marker path; these were exclusively written and read back. Continue Start-Session with this helper admission. The bounded batch below applies only after admission succeeds.
 - `external`: no Main artifact was written. Follow Start-External with its fresh identity and required measured cause/remedy greeting.
+- `ask`: no Main artifact was written. Ask User under [Claim-Session > Takeover]; on yes, claim again adding `--take-over {ID}`. An `admitted` result reports the [Claim-Session > Takeover] sweep in `took_over` and `cleared`.
 - `error`: stop this boot with retained evidence; never switch to a path that reacquires or recreates its state. The helper is an optional accelerator, not an authority or recovery tool.
 
 Its OWNER contains canonical JSON with schema1, kind `axis-startup-admission`, token, session, host, phase, starting_log and started_log. The last two begin null. Phases are claiming, admitted, initialized and committing; the token stays fixed. Operations serialize on the existing ordinary OWNER inode and reject a changed token/state or unsafe path. A partial OWNER update stops for reviewed recovery. This is local cooperating-writer protection, not distributed consensus or authentication against a hostile file owner.
@@ -27,11 +28,21 @@ The complete original file-tool procedure below remains available without Python
 
 2. While admission is held, READ `_Axis/Flags/starting` directly. Missing, blank, or Line 1 `cleared` is absent. A remaining value means incomplete startup: release only your own admission claim and STOP for quiescent recovery. Never overwrite an unfinished startup merely because two minutes passed.
 
-3. Re-read all foreign Main Markers and their tombstones, measuring age. If a fresh foreign Main exists on an ordinary boot, release only your own admission claim, state that Main admission was lost to that session, and follow [Start-External] with a fresh External identity. No Main Marker, startup Log, Capability Flag, or `starting` Flag is written on this branch. Main candidacy becomes a committed role only after this check. An explicitly authorized promotion re-boot may instead carry its pending contest into [Start-Session] and must satisfy `^promote` before serving work; no other exception applies.
+3. Re-read all foreign Main Markers and their tombstones, measuring age, and judge every idle one under [Claim-Session > Takeover]. If a fresh foreign Main exists, or Takeover joins as External, on an ordinary boot, release only your own admission claim, state that Main admission was lost to that session, and follow [Start-External] with a fresh External identity. No Main Marker, startup Log, Capability Flag, or `starting` Flag is written on this branch. Main candidacy becomes a committed role only after this check. An explicitly authorized promotion re-boot may instead carry its pending contest into [Start-Session] and must satisfy `^promote` before serving work; no other exception applies.
 
-4. Apply [Practices > Timestamps > Bootstrap Markers] to reserve the Main Session ID, using the entry recipe's timestamp as the initial candidate. Prepare the exact canonical Main Marker Shape from [Practices > Markers > Main Marker Shape] before claiming. Within the short timestamp critical section, exclusively create and read back that first Main Marker, check its tombstone, and release only the owned timestamp claim. A collision advances the candidate before it becomes the Session ID. With admission still held, write/read back `_Axis/Flags/starting` with that final ID. Its two-minute freshness remains a diagnostic and completion check, not reclaim authority.
+4. Apply [Practices > Timestamps > Bootstrap Markers] to reserve the Main Session ID, using the entry recipe's timestamp as the initial candidate. Prepare the exact canonical Main Marker Shape from [Practices > Markers > Main Marker Shape] before claiming. Within the short timestamp critical section, exclusively create and read back that first Main Marker, check its tombstone, and release only the owned timestamp claim. A collision advances the candidate before it becomes the Session ID. With admission still held, write/read back `_Axis/Flags/starting` with that final ID, then run the [Claim-Session > Takeover] sweep. Its two-minute freshness remains a diagnostic and completion check, not reclaim authority.
 
 5. Carry the admission token and verified bootstrap Marker path into [Start-Session]. Before each startup write, verify admission ownership; lost ownership stops with no further write. After completion, delete or clear your own `starting` Flag, release only your own admission claim, and verify both are absent before the banner. Release means check the retained `OWNER` token, remove it, then `rmdir`; never release an unknown owner. A failure leaves startup incomplete. STOP this resource and continue its caller.
+
+## Takeover
+
+A foreign `Main: session` Marker at or over 1 hour old with no tombstone is an idle Main. Its last activity is the newest of its `mtime`, its last `_Axis/Tracking/{ID}.md` line and any later `_Axis/Logs/` record holding `session: {ID}`. The takeover limit is 24 hours at [Settings > Permissions] `Restricted`, 7 at `Default` (also when unset) and 3 at `Autonomous`.
+
+- Active under 1 hour: it is live. Join as External; its greeting offers `^promote`.
+- Under the limit: write nothing, release only your own claim, and ask User in one line, naming the session and its idle time and recommending takeover. On yes, claim again and take it over; otherwise join as External.
+- At or over the limit, or taken over at User's word: become Main.
+
+Sweep after your Marker and `starting` are written: delete each taken-over Main Marker that is still stale, every other Marker over 24 hours old, and every tombstone over 1 hour old with its Marker. Report the count in one greeting line. A cleared session finds its Marker missing at its next turn (lost lease) and stops writing.
 
 ## Admitted loading batch
 

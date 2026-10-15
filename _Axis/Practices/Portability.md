@@ -138,14 +138,14 @@ The Axis version and source Session are historical provenance, not proof that th
 
 Every `^resume`, whether or not a move is suspected:
 
-1. after [Practices > GIT] performs any eligible strict fast-forward and encrypted-capsule receive, reads the latest Continuity block;
+1. after [Practices > GIT] performs any eligible fast-forward or merge and encrypted-capsule receive, reads the latest Continuity block;
 2. compares its Axis version, storage policy/profile, harness/interaction class, Capability summary, infrastructure declarations/statuses, canonical IDs, omissions, and findings with current state;
 3. reuses Capability probes freshly validated at Session Start and reruns only stale or newly required probes;
 4. revalidates schemas, links, Reminder targets, paths, case, line endings, conflict copies, and visible transfer omissions;
 5. distinguishes unavailable from absent-by-design state for Git clones, full copies, same-folder switches, and replicas; and
 6. reports `Ready`, `Degraded`, or `Unverified` before continuing the normal resume summary, and names every declared item that changed from source `present` to current `absent` or `unverified`, plus any currently required absent item, with its fallback and re-establishment reference.
 
-Resume is read-mostly. Its only routine mutations are a configured strict Git fast-forward and verified encrypted-capsule receive; neither writes a receipt Log that would immediately dirty the received checkpoint. It never clears its own valid lease or a possibly live foreign Marker. Log only a new material downgrade, an approved correction, or a mutation owned by another protocol. With no shell, inspect the bounded state reachable through host file tools and mark the inaccessible remainder `Unverified`.
+Resume is read-mostly. Its only routine mutations are the Git receive steps of [Practices > GIT] (moving to the shared branch, committing unsent local work, a fast-forward or a merge of files changed on one side only), verified encrypted-capsule receive, and keeping the Archive Location portable; none writes a receipt Log that would immediately dirty the received checkpoint, except the Event a merge requires. It never clears its own valid lease or a possibly live foreign Marker. Log only a new material downgrade, an approved correction, or a mutation owned by another protocol. With no shell, inspect the bounded state reachable through host file tools and mark the inaccessible remainder `Unverified`.
 
 ## Optional Environment Signature
 

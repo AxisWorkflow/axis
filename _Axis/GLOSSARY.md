@@ -56,6 +56,7 @@
 - **Flag** - A persistent file to record durable workflow state - saved in `_Axis/Flags/`.
 - **Marker** - An ephemeral file tracking live Agents (Main, External, and Subagent sessions) - in `_Axis/Agents/`.
 - **Request** - A cross-boundary message in `_Axis/Requests/`, triaged by the receiving Main Agent - see [Practices > Requests].
+- **Directive** - A Request with `kind: directive` that carries a task User gave a child with `^^do` in the parent; the child verifies it and carries it out, refers it, or declines it for a listed reason - see [Practices > Requests > Directives].
 - **Max Concurrent Sessions** - The Setting that limits how many Agent sessions (Main, External, Subagent) may be live on a project at once; default 10 (see [Rules > MarkersFlagsAndLocks > Concurrent Sessions]).
 - **Permissions** - The Setting (`Restricted`, `Default`, `Autonomous`) that decides when an Agent confirms a change before making it; it never grants new authority (see [Rules > Permissions]).
 - **Tracking** - Append-only per-agent activity channel in `_Axis/Tracking/` - INTENT, STATUS, ASK, REPLY and DONE lines that let every Agent see what others are doing; telemetry, not evidence (see [Practices > Tracking]).

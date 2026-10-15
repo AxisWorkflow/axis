@@ -13,6 +13,8 @@ Every record in an Index-Detail directory is named by its timestamp, and that na
 
 ## Minting an Identifier
 
+When Python runs, pipe the prepared record body to `python3 _Axis/Resources/startup-state.py --root . record --session {Session ID} --family {Family}` (or pass `--body-file {path}`). It performs steps 1-5 under your own live Marker, renews that Marker and prints the new identifier and path; then write any index entry. An `error` result names its cause and path; treat a `lease_` code under [Practices > Markers > The Lease]. Without Python, for a Bootstrap Marker, or for a body over 64 KiB, the steps below are the fallback.
+
 1. Generate a candidate. Run this one command exactly and use what it prints:
 
 		TS=$(date -u +"%Y.%m.%d.%H.%M.%S.%3NZ"); case "$TS" in *3N*) TS=$(node -e 'console.log(new Date().toISOString().replace(/[-T:]/g,"."))' 2>/dev/null || python3 -c 'import datetime as d;n=d.datetime.now(d.timezone.utc);print(n.strftime("%Y.%m.%d.%H.%M.%S.")+"%03dZ"%(n.microsecond//1000))' 2>/dev/null || perl -MTime::HiRes=time -e 'my $t=time;my @g=gmtime $t;printf "%04d.%02d.%02d.%02d.%02d.%02d.%03dZ",$g[5]+1900,$g[4]+1,$g[3],$g[2],$g[1],$g[0],($t-int $t)*1000');; esac; echo "$TS"
@@ -31,9 +33,9 @@ Every record in an Index-Detail directory is named by its timestamp, and that na
 
 5. Release only the claim whose `OWNER` still matches your retained token: remove that file and `rmdir` the claim directory. On mismatch or failed removal, stop and report; never remove a replacement owner's claim. The committed record now reserves the identity permanently. Delete-blocked claims remain for recovery; never clear them in place or use recursive deletion at an active claim name. STOP.
 
-## Optional Startup Helper
+## Record Helper
 
-The independently qualified installed `startup-state.py` may perform the exact Claim-Session/Start-Session record operations specified by those Resources. Inside this optional helper, Python standard-library real UTC milliseconds are equivalent to the recipe for subsequent record IDs; the entry still runs its exact first timestamp command. The complete uniqueness domain, unconditional claim, post-claim scan, no-overwrite/readback,10-second bound, owned release and lease checks remain required. No other caller gains a minting shortcut. Missing helper support uses the complete manual procedure above.
+The installed `startup-state.py` performs the Claim-Session/Start-Session record operations and the `record` command above. Inside it, Python standard-library real UTC milliseconds are equivalent to the recipe; the entry still runs its exact first timestamp command. The complete uniqueness domain, unconditional claim, post-claim scan, no-overwrite/readback, 10-second bound, owned release and lease checks remain required. Missing helper support uses the complete manual procedure above.
 
 ## Bootstrap Markers
 

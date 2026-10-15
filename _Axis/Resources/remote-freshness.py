@@ -205,9 +205,9 @@ def check(args):
         state,logs=local_state(git,root,target)
         if state!='substantive':
             return finish(fast_forward(git,root,args.session,head,target,right,logs),moved=True)
-    if status=='remote-ahead':notice='Incoming Git commits are available; run ^resume before continuing.'+(' Local changes need to be preserved.' if dirty else '')
+    if status=='remote-ahead':notice='Incoming Git commits are available; run ^resume before continuing.'+(' It saves this computer\'s unsent changes first.' if dirty else '')
     if status=='local-ahead' and mode=='auto':notice=f'This computer has {left} commit{"s" if left!=1 else ""} the remote does not have yet; ^save sends them.'
-    if status=='diverged':notice='Local and remote Git histories have diverged; use ^resume to review reconciliation before continuing. Both sides are preserved.'
+    if status=='diverged':notice='This computer and the remote both have new work; run ^resume, which combines them when they changed different files. Both sides are preserved.'
     return finish(result(status,local_ahead=left,remote_ahead=right,dirty=dirty,notice=notice))
 
 def main():
