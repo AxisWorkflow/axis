@@ -1,14 +1,14 @@
 # ^review
-> **Purpose:** Write a Review - a dated report on the project's state, kept in `_Axis/Reviews/`.
+> **Purpose:** Write a Review - a dated report on the project's state, saved as a Memo in `_Memos/`.
 
-A Review summarizes the project's current state - what changed, what is open, how healthy it is. It challenges nothing (that is a Cross-Examination, `^cx`) and is lighter than an `^audit`. For a quick look without writing a record, use `^status`.
+A Review summarizes the project's current state - what changed, what is open, how healthy it is. It challenges nothing (that is a Cross-Examination, `^cx`) and is lighter than an `^audit`. For a quick look without writing anything, use `^status`; for the live view, the Dashboard. A report User asks for on someone else's behalf (a client, a board, a funder) is not a Review: write it in plain language as an ordinary work product in a Project Subfolder ([Practices > Folders]). Use a direct, neutral tone.
 
-1. Confirm the role allows a new Review. An External uses only already recorded, non-secret portability/infrastructure summaries and marks current unverified health accordingly; it never probes Secrets, authentication, environment bindings, or other Main-owned state. Prepare the report before claiming its identifier; do not hold a timestamp claim while doing the analysis below.
+1. Confirm the role allows a new Review. An External uses only already recorded, non-secret portability/infrastructure summaries and marks current unverified health accordingly; it never probes Secrets, authentication, environment bindings, or other Main-owned state, and it returns the report to Main through a Request instead of saving it.
 
-2. Read the most recent Reviews, if any, to see what has changed (`ls -t _Axis/Reviews/ | head -3`). Reports written before Version 2.01 live in `_Axis/Status/` with Subject `Status: {topic}`; they are Reviews under their old name. On the first Review in a project that still has that folder, move its reports unchanged (same filenames, same bytes) into `_Axis/Reviews/`, create `_Axis/Reviews/` with its `.gitkeep` if absent, remove the then-empty `_Axis/Status/`, and say so in the Event; moving a WORM record never edits it.
+2. Load [Practices > Memos]. Find the previous Review: the newest `* - Review - *.md` in `_Memos/`, else in `_Memos/Archive/`.
 
-3. Build the Recent Developments list - what has actually changed since the previous Review. The window is that report's timestamp (from item 2); if there is no previous report, use the last 14 days:
-	- a. Commits since then, if the project uses git and you have a shell: `git log --since={timestamp} --oneline --stat` (see [Practices > GIT]). Summarize what changed, not every file touched.
+3. Build the Recent Developments list - what has actually changed since the previous Review. The window starts at that report's Created time (from item 2); if there is no previous report, use the last 14 days:
+	- a. Commits since then, if the project uses git and you have a shell: `git log --since={start} --oneline --stat` (see [Practices > GIT]). Summarize what changed, not every file touched.
 	- b. Records written since then: new Notes, Ideas, Follow-Ups, Reminders, Logs, Snapshots, Cross-Examinations, and Audit reports, whether still live or archived. Filenames are timestamps, so no body needs reading to place a record in time; deduplicate identical live/archive identities.
 	- c. Wiki activity since then: the `## [date]` entries in `_Axis/Wiki/Library-Activity.md`, plus any new report sections in `_Axis/Wiki/Library-Status.md`.
 	- d. Report developments, not inventory. Group what you find into events a reader would recognise ("Issue 01 accepted after Cross-Examination", "outreach moved from 24 to 31"), and say plainly when nothing of consequence happened.
@@ -46,10 +46,10 @@ A Review summarizes the project's current state - what changed, what is open, ho
 	- g. **Reminders healthy?** Every live Reminder is open and well-shaped, due/update times are coherent, every target/reopen reference resolves, and every terminal Reminder is archived.
 	- h. **Portability current?** The latest Snapshot contains one valid Continuity block, every infrastructure declaration has a current exact status, bounded discovery ran, and no unresolved storage-policy/replica, path, case/NFC, conflict-copy, link, or text-normalization finding is hidden.
 
-7. Mint and claim the project-unique identifier per [Practices > Timestamps], then exclusively save and read back the prepared report to `_Axis/Reviews/{timestamp}.md` per the **Index-Detail Pattern:** Line 1 `Review: {short topic}` (≤ 80 chars); Line 2 blank; Lines 3+ body.
+7. Save the report as a Review memo under [Practices > Memos] > Reviews, with the synopsis from item 5 as its Summary and its write-once statement first. Mark the previous live Review `superseded` and move it to `_Memos/Archive/`.
 
-8. External Agents skip README mutation and write a Request for Main to refresh it when needed. Main alone, when `project-ready` is valid, follows `_Axis/Resources/Refresh-Project-README.md` so its bounded summary can cite the new report. Preserve User-authored README content; a refresh failure does not alter the WORM Review.
+8. External Agents skip README mutation; their report went to Main in item 1. Main alone, when `project-ready` is valid, follows `_Axis/Resources/Refresh-Project-README.md` so its bounded summary can cite the new report. Preserve User-authored README content; a refresh failure does not alter the Review.
 
-9. Log an Event that includes the path to the new report and the Project README refresh result (or `deferred to Main` for an External).
+9. Log an Event that includes the path to the new Review and the Project README refresh result.
 
-10. Present to User: a clickable link to the report plus a short summary. STOP.
+10. Present to User: a clickable link to the Review plus a short summary. STOP.

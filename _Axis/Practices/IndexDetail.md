@@ -35,7 +35,7 @@ Twelve directories conform to the **Index-Detail Pattern:**
 - `_Axis/Notes/`
 - `_Axis/Reminders/`
 - `_Axis/Snapshots/`
-- `_Axis/Reviews/`
+- `_Axis/Reviews/` (legacy: Reviews written before 2.08, until the first startup on 2.08 moves them to `_Memos/Archive/`; new Reviews are Memos)
 - `_Axis/Supervision/`
 - `_Axis/Tasks/`
 

@@ -102,8 +102,8 @@
 - [Practices > Status] - The quick-look `^status` summary, in the terminal or as a web page.
   *Load for `^status`.*
 
-- [Practices > Reviews] - Composing and saving Reviews (dated reports on project state).
-  *Load for `^review`.*
+- [Practices > Memos] - Dated Markdown messages to User in `_Memos/`, including Reviews.
+  *Load before writing, reading replies in, or archiving a Memo, and for `^memo`, `^memos` and `^review`.*
 
 - [Practices > CX] - The CX Subagent process.
   *Load when spawning or performing a CX.*

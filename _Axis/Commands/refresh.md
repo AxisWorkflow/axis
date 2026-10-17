@@ -18,7 +18,10 @@
 	- f. Repair duplicate identifiers the same way: when one timestamp names two records across the twelve directories and `_Axis/Archive/` combined (Subprojects excluded), keep the older or index-linked record under the contested name and rename the other by incrementing its milliseconds to the first free value per [Practices > Timestamps]. Present the list, rename under [Rules > Permissions], and relink per item e. Renaming repairs identity, not content, so it does not violate WORM.
 	- g. After approved repairs, re-run [Practices > Archiving > Automatic Supervision Overflow] if newly valid Supervision filenames leave more than 30 active records.
 
-6. Verify `_Axis/TASKS.md` ↔ live or archived Task details and `_Axis/SNAPSHOTS.md` ↔ live or archived Snapshot details are in sync (ignore entries in template form); report any mismatch. An indexed record has exactly one detail path, live or under `_Axis/Archive/`, never both.
+6. Verify `_Axis/TASKS.md` ↔ live or archived Task details and `_Axis/SNAPSHOTS.md` ↔ live or archived Snapshot details are in sync (ignore entries in template form); report any mismatch. An indexed record has exactly one detail path, live or under `_Axis/Archive/`, never both. Then check references: run `python3 _Axis/Resources/record-check.py links` (without Python, skip it and say so).
+	- In a mutable file (an index, the Plan, Initiatives, an open record, a Memo), repoint each `MOVED-LINK` to the path it names, and fix a `MALFORMED` or `UNRESOLVED` identifier only when the intended record is certain from the surrounding text; this mechanical repair proceeds at `Default`.
+	- In a write-once record, change nothing. List each finding with its evidence and offer an identifier correction ([Rules > RecordsAndWORM]) where the right identifier is certain.
+	- Report the rest (`BROKEN-LINK`, and identifiers that name no record anywhere) as findings for User, never guessing a replacement.
 
 7. Validate Follow-Ups under [Practices > Followups]. Finish a crash-left or pending-archive move only when a live record is already validly terminal: move it unchanged to `_Axis/Archive/Followups/`, verify, and report it. While the Archive root is unavailable, leave it live and report the pending count. Never invent an answer, outcome, or resolution reference. Surface malformed records, dangling `blocks:` targets, duplicate open asks, and open records found in Archive. Do not auto-correct their meaning; recommend `^followups` for User-directed resolution.
 
@@ -32,7 +35,7 @@
 
 12. Surface stale work from each Task's durable `updated:` field, never detail-file `mtime`. Flag Active Tasks older than 7 days, Blocked Tasks carrying no stated reason or blocked more than 14 days, and `updated: Unknown` for review. For a Blocked Task awaiting a specific User action, create or reuse a Follow-Up only after User confirms the ask. Ask User whether each is still live, then update (advancing `updated:`), cancel, or leave it per their answer; at `Default` and `Autonomous`, close a Task yourself when its own records prove it finished or superseded, and report it.
 
-13. File the project's `_Inbox/`: run `^inbox` ([Practices > Inbox]) so new arrivals reach their homes, including `_Wiki/_Inbox/`, before the Wiki check.
+13. File the project's `_Inbox/`: run `^inbox` ([Practices > Inbox]) so new arrivals reach their homes, including `_Wiki/_Inbox/`, before the Wiki check. Then archive finished Memos under [Practices > Memos] > Archiving and report what moved in one line.
 
 14. Refresh the Wiki, only if the Wiki is in use. Diff `_Axis/Wiki/Input-Index.md` against a live listing of `_Wiki/_Inbox/` and report any source that has never been ingested (recommend `^wiki`). Then run the quick health check per [Practices > Wiki > Review], or suggest `^wiki lint` for the full pass.
 

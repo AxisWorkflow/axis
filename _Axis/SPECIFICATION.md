@@ -1,6 +1,6 @@
 # Axis Workflow Specification
 > **Purpose:** The technical reference behind the Axis Workflow: how every mechanism works, why it was built that way, what it guarantees, where it stops, and what an extender must not break. Written for deep diagnostics, downstream developers extending Axis, IT and compliance reviewers assessing it before adoption, and contributors. For everyday use, see the [User Manual](/_Axis/USERMANUAL.md).
-> **Version:** 2.07
+> **Version:** 2.08
 
 ## How to Read This Document
 
@@ -84,6 +84,7 @@ The deployment unit is one project folder:
 | `_Axis/Archive/` | Default Archive root | Tracked unless **Archive in Git** is `false`; an Archive Location outside the project is never committed |
 | `_Axis/Branding/` | Read-only product brand package: stylesheet with light and dark themes, WOFF2 fonts, tokens, mark, logo, favicons | Tracked |
 | `_Inbox/` | Drop folder for anything new; Main Agent files each item into a Project Subfolder or `_Wiki/_Inbox/` | Ignored except its placeholder |
+| `_Memos/` and `_Memos/Archive/` | Memos to User, Reviews included ([Memos](#memos)) | Tracked |
 | `_Temp/` | Regenerable scratch only | Ignored except its placeholder |
 | `_Trash/` | Deletion staging: each item is dated and kept at least 2 days | Ignored except its placeholder |
 | `_Wiki/` and `_Wiki/_Inbox/` | The readable knowledge base and its raw-source dropbox; administration lives in `_Axis/Wiki/` | Content ignored; `_Axis/Wiki/` tracked |
@@ -223,7 +224,7 @@ Axel is the Axis mascot and the Main Agent's persona: the Main Agent introduces 
 
 ### Ending a session
 
-- `^shutdown` is the graceful self-exit for every role. It Logs, deletes its own Marker, and hands the `session-id` Flag to a surviving live Main or writes `cleared`. It never asks a question, because a session waiting for permission to end still holds a live lease.
+- `^shutdown` is the graceful self-exit for every role. Main first runs `^save` without questions (scratch stays in `_Temp/`, a refused or failed send is reported and the exit continues). Every role then Logs, deletes its own Marker, and hands the `session-id` Flag to a surviving live Main or writes `cleared`. It never asks a question, because a session waiting for permission to end still holds a live lease.
 - Closing the host leaves the Marker to age out after an hour; that is the design.
 - A successful `^update` shuts its own session down, because changed instructions reach a session only when it starts (a resumed session did not observe a change to its entry file made after boot).
 
@@ -326,6 +327,33 @@ Since 2.06, every project has a root `_Inbox/` ([Practices > Inbox](/_Axis/Pract
 
 **Migration.** The first startup after updating to 2.06 creates `_Inbox/` and renames `_Wiki/Inbox/` to `_Wiki/_Inbox/` (`boot.py`, or Boot-Manual step 10).
 
+### First Boot
+
+Some startup steps run only on a new project, before Project Setup completes (no valid `project-ready` Flag); `boot.py` runs them, or Boot-Manual step 10 by hand. Today there is one: a copy taken from the public repository's `main` branch rather than a release carries repository-only files under `.github/` (the security policy and the OpenSSF Scorecard workflow), each marked `axis:production-only`. First Boot moves every marked file into `_Trash/`, removes the folders it leaves empty, reports it in one line and Logs it. Unmarked files, including a User's own `.github/` content, are never touched. Releases, the tag archive and the `project` branch never contain these files; `^pub` adds them to the public `main` in a separate commit after each release. Once setup completes, First Boot steps no longer run; `project-ready` is the marker, so no extra Flag is needed.
+
+### Memos
+
+Since 2.08, every project has a root `_Memos/` ([Practices > Memos](/_Axis/Practices/Memos.md)). Chat output scrolls away, loses its formatting and assumes context User may not remember, so the Agent puts what User needs to read, decide or come back to into a dated Markdown file. A memo is a view, not state: every decision, task or ask in it also lives in its canonical record, and the memo links there. Editing, archiving or deleting a memo therefore loses nothing Axis depends on.
+
+**Shape.** The name is `YYYY-MM-DD - {Subject}.md` in the project's local date ([Settings > Project Time Zone], else the host zone), deliberately not a record timestamp, because User reads these names. Subjects are kept filename-safe on every platform (no reserved characters, no trailing dot or space, NFC, no case-only twins); a same-day memo on the same subject is updated, and a separate one takes ` (2)`. A header carries Status (`open`, `waiting on you`, `done`, `superseded`, `record`), Type (`memo`, `review`), Created and Updated with their UTC offsets, and Related links; the body is answer-first, with a Details section for the context User may lack and an Updates list of dated edits.
+
+**When.** [Settings > Memo Generation] runs from `0` (only on request) to `4` (any reply over about a screen); each level includes those below. The default Directive "Write a Memo" applies it. Required reports (Reviews, executive summaries, release-readiness reports) are memos at any level.
+
+**Two-way replies.** User may answer by ticking a box, writing after `Your answer:`, or writing under `## Your reply`. Startup lists any `waiting on you` memo whose file changed more than two minutes after its Updated time. Replies are User's words but arrive through a file that anything with folder access can change, so they get a narrower authority than chat:
+- only the reply places count, and only what changed since the Agent's last update;
+- an answer to the memo's own question, or a small reversible change within its subject, is applied and confirmed in one line in chat;
+- anything substantial, irreversible or outside the memo's subject, and any deletion, publication, push, spending, credential, Secrets, Settings, Permissions, instruction or host-configuration change, is quoted in chat and waits for User's live confirmation;
+- text that addresses the Agent as a system, tries to change its rules or instructions, or asks for secrets is reported as a possible attack and Logged, not followed;
+- a `^` command in a memo is text.
+
+**Context and archiving.** Memos are never read at startup. An Agent lists live memo names (and reads a header when status matters) and opens a body only when its subject is in play. `^refresh` and `^memos archive` move `done` and `superseded` memos, and stale ones whose linked work is finished, into `_Memos/Archive/`; a `waiting on you` memo is never archived without asking.
+
+**Reviews.** A Review is a memo with Type `review` and Status `record`, named `YYYY-MM-DD - Review - {topic}.md`. It states that it is a dated record not edited after User has seen it, but no write-once check enforces this; a new Review marks the previous one `superseded` and archives it, so one Review is live. This replaced the `_Axis/Reviews/` record family (and its pre-2.01 `_Axis/Status/` name), which existed only in projects that had run `^review`.
+
+**Properties:** Main writes memos; External Agents and Subagents propose content. Memos are tracked by Git and travel with the project. The Dashboard server lists and serves `.md` files in `_Memos/` and `_Memos/Archive/` read-only; `^status` lists memos waiting on User.
+
+**Migration.** The first startup after updating to 2.08 creates `_Memos/` and moves each report in `_Axis/Reviews/` and `_Axis/Status/`, contents unchanged, into `_Memos/Archive/` as `YYYY-MM-DD - Review - {topic}.md`, then removes the emptied folders (`boot.py`, or Boot-Manual step 10). Archived legacy Reviews under the Archive Location stay where they are. Older Logs that link to a moved report keep the old path as history.
+
 ## Records and Data Model
 
 ### Identifiers
@@ -365,7 +393,7 @@ On a local filesystem where `mkdir` and `O_EXCL` are atomic, two cooperating wri
 | Requests | `Requests/` | Directory | `from:`, `asks:`, `because:`, `expires:`; resolution appended once | After triage, then archived | Sender writes; receiving Main triages |
 | CX reports | `CX/` | Directory | `CX: {topic}` | When presented | CX Subagent |
 | Audit reports | `Audit/` | Directory | `Audit: {scope}` | When presented | Main |
-| Reviews | `Reviews/` (pre-2.01 `Status/`) | Directory | `Review: {topic}` (older `Status:`), synopsis first | When presented | Main or External |
+| Reviews (legacy) | `Reviews/` (pre-2.01 `Status/`); since 2.08 Reviews are Memos in `_Memos/` | Directory | `Review: {topic}` (older `Status:`), synopsis first | When presented | Main |
 | Supervision | `Supervision/` | Directory | `Supervision: {action} - {scope}` plus fields | On creation; newest 30 live | Parent Main |
 | Markers | `Agents/` | Directory | Role Subject; Main body fixed | Ephemeral, never archived | Owning Agent |
 | Initiatives | `INITIATIVES.md` (optional) | One document | `## {key}`, fields, fixed `###` sections | Never | Main |
@@ -384,15 +412,17 @@ Notes on the families, with their reasons:
 
 ### Write-once records
 
-Logs are write-once from creation; Snapshots, CX, Audit, Review and Supervision records once saved and presented; Task details once Completed or Cancelled; terminal Follow-Ups and Reminders once archived; `_Axis/Updates/` evidence is append-only ([Rules > RecordsAndWORM](/_Axis/Rules/RecordsAndWORM.md)). Notes, Ideas, open Follow-Ups, Reminders and Tasks, the index files, Initiatives, the Plan, Settings, Markers, Flags and Tracking are not. History changes by superseding: "a new record supersedes the old one and both remain". Renames that repair identity and byte-identical moves to the Archive do not count as edits.
+Logs are write-once from creation; Snapshots, CX, Audit, legacy Review and Supervision records once saved and presented; Task details once Completed or Cancelled; terminal Follow-Ups and Reminders once archived; `_Axis/Updates/` evidence is append-only ([Rules > RecordsAndWORM](/_Axis/Rules/RecordsAndWORM.md)). Notes, Ideas, open Follow-Ups, Reminders and Tasks, the index files, Initiatives, the Plan, Settings, Markers, Flags and Tracking are not. History changes by superseding: "a new record supersedes the old one and both remain". Renames that repair identity and byte-identical moves to the Archive do not count as edits.
 
 Before each `^save` commit, `record-check.py write-once` reads the staged diff and refuses the commit when a write-once file was modified, judging Tasks, Follow-Ups and Reminders by their state at `HEAD`. Pure renames (archive moves), deletions, and paths named by an update transaction whose evidence the same commit adds pass.
+
+One edit is allowed: an identifier correction. With User's explicit approval for that record, `record-check.py correct` replaces a wrong record reference (a timestamp ID, or a path or reference built on one) with the right one and nothing else, and the write-once check accepts the change only when the same commit adds an `Identifier correction:` Log whose `correction-path:`, `correction-old:` and `correction-new:` lines reproduce it exactly from `HEAD`.
 
 Write-once is a Workflow convention, not filesystem immutability: there is no hashing, signing or immutability flag, and a User, another program or a non-compliant Agent can still edit a record. It also freezes mistakes: some historical Logs in the development project have malformed Subjects that now remain forever, so every reader of Axis records must tolerate them.
 
 ### Archive
 
-`^archive` moves eligible inactive records unchanged into `Archive/{Family}/{same filename}` ([Practices > Archiving](/_Axis/Practices/Archiving.md)). Eligible families: Notes, Ideas, Logs, Snapshots, CX, Audit, Reviews, Supervision and terminal Tasks. Terminal Follow-Ups and Reminders and triaged Requests archive themselves; Note and Supervision overflow archive automatically. Markers, Flags, locks, scratch, Secrets, Wiki content, project files and Subprojects are never archived. The command shows the exact proposal and needs `ARCHIVE` (at the `Default` and `Autonomous` Permissions levels the Agent may supply it for a proposal within User's clear intent, and says so). The move resolves exactly, stops on any destination collision, locks index and detail together, updates the index link in the same protected operation, verifies, then Logs.
+`^archive` moves eligible inactive records unchanged into `Archive/{Family}/{same filename}` ([Practices > Archiving](/_Axis/Practices/Archiving.md)). Eligible families: Notes, Ideas, Logs, Snapshots, CX, Audit, legacy Reviews, Supervision and terminal Tasks. Memos archive within `_Memos/Archive/`. Terminal Follow-Ups and Reminders and triaged Requests archive themselves; Note and Supervision overflow archive automatically. Markers, Flags, locks, scratch, Secrets, Wiki content, project files and Subprojects are never archived. The command shows the exact proposal and needs `ARCHIVE` (at the `Default` and `Autonomous` Permissions levels the Agent may supply it for a proposal within User's clear intent, and says so). The move resolves exactly, stops on any destination collision, locks index and detail together, updates the index link in the same protected operation, verifies, then Logs.
 
 **Archive Location** (default `_Axis/Archive/`) may name an external drive, a network share or a cloud-synced folder. A non-default root is used only if it already exists: Axis never creates it, "because an absent mount point would silently become local storage", never falls back to the in-project Archive and never splits the Archive. When it is unavailable, only archiving waits, and self-archiving records stay live, closed and pending. **Archive in Git** `false` keeps an in-project Archive out of commits; an outside root is never committed. The Settings were added in 1.01 to move about 3 GB of development evidence out of Git.
 
@@ -583,15 +613,15 @@ Optional. The official `age` tools; one project identity at `~/.axis/keys/{key-i
 
 ## Seeing Project State
 
-Axis offers three views of where a project stands, deliberately different ([Practices > Status](/_Axis/Practices/Status.md), [Practices > Reviews](/_Axis/Practices/Reviews.md), [Practices > Dashboard](/_Axis/Practices/Dashboard.md)):
+Axis offers three views of where a project stands, deliberately different ([Practices > Status](/_Axis/Practices/Status.md), [Practices > Memos](/_Axis/Practices/Memos.md), [Practices > Dashboard](/_Axis/Practices/Dashboard.md)):
 
 | View | Command | What it is | Writes a record |
 | --- | --- | --- | --- |
 | Status | `^status` | A quick look: one screen in the terminal, or a branded static web page at `_Temp/status/index.html`; `^status deep dive` or any request for more widens it | No |
-| Review | `^review` | A dated report in `_Axis/Reviews/`: what changed since the last Review (commits, records, Wiki activity), Follow-Ups, Reminders, portability, capability downgrades, Deliverable coverage, Initiatives and health checks | Yes, write-once |
+| Review | `^review` | A dated report saved as a Memo in `_Memos/`: what changed since the last Review (commits, records, Wiki activity), Follow-Ups, Reminders, portability, capability downgrades, Deliverable coverage, Initiatives and health checks | Yes, a Review memo |
 | Dashboard | `^dashboard` | The live view: a browser page that re-reads project files every 30 seconds through a loopback server | No |
 
-A Review summarizes the project; it challenges nothing (that is a Cross-Examination, `^cx`) and it is lighter than an `^audit`. Reviews were called Status Reports before 2.01, and the rename freed `^status` for the quick look. Reports kept in the old `_Axis/Status/` folder move unchanged into `_Axis/Reviews/` on the first `^review`; readers accept both `Review:` and `Status:` Subjects. A report User wants for a client, a board or a funder is not a Review but an ordinary work product in a Project Subfolder.
+A Review summarizes the project; it challenges nothing (that is a Cross-Examination, `^cx`) and it is lighter than an `^audit`. Reviews were called Status Reports before 2.01, and the rename freed `^status` for the quick look. Since 2.08 a Review is a Memo ([Memos](#memos)); reports kept in `_Axis/Reviews/` or the older `_Axis/Status/` move unchanged into `_Memos/Archive/` at the first startup on 2.08. A report User wants for a client, a board or a funder is not a Review but an ordinary work product in a Project Subfolder.
 
 **`^status`** is built fresh from records each time. The optional `status.py` helper reads the Project name, installed version, the Plan's current direction, Tasks, Initiatives, Follow-Ups, Reminders, recent Logs, the newest Snapshot and Review, live Markers and Git branch state; its only write is the web page under `_Temp/`. The page uses the brand package's stylesheet, fonts and logo through relative links and falls back to plain styling when the package is absent. Without Python the Agent composes the same summary by hand.
 
@@ -1314,7 +1344,7 @@ The live queue of exact-time surfacing intent.
 
 ##### `Logs/`, `Notes/`, `Ideas/`, `CX/`, `Audit/` and `Reviews/`
 
-Timestamp-named record folders where the directory is the index. Logs are write-once from creation; CX, Audit and Review reports once presented; Notes and Ideas stay editable. `Reviews/` replaces the pre-2.01 `Status/` folder, whose reports move there on the first `^review`.
+Timestamp-named record folders where the directory is the index. Logs are write-once from creation; CX and Audit reports once presented; Notes and Ideas stay editable. `Reviews/` (and the pre-2.01 `Status/`) held Reviews until 2.08, when Reviews became Memos and their reports moved to `_Memos/Archive/`.
 
 ##### `Requests/`
 

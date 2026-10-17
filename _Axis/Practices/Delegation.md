@@ -36,6 +36,8 @@ Use the least costly route that is qualified for the work:
 
 Host Capability Flags determine whether the selected route can run and whether spawns may be parallel. A missing capability changes the route or makes it serial; it never lowers the required model capability.
 
+When the project's Claude Code settings hold the Axis guardrails (`^install guardrails`), spawn CX, Wiki and General Subagents as the `axis-cx`, `axis-wiki` and `axis-general` agent types, so the hook can hold each to its folders.
+
 ## Define Validation Before Spawning
 
 State the validator before writing the prompt. If Main cannot define a check strong enough to catch the likely consequential failure, do not send the work to a small model.

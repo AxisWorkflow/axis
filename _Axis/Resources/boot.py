@@ -196,6 +196,94 @@ def migrate_inbox():
     if done:notes.insert(0,'New in this version: drop anything for the project into _Inbox/ and Axis files it for you.' if 'created _Inbox/' in done else 'Axis updated the inbox folders.')
     return notes,('record one Log Event "Inbox folders set up": '+'; '.join(done) if done else None)
 
+def first_boot():
+    # First Boot: steps that run only before Project Setup completes (no valid project-ready Flag). A copy taken from the
+    # public repository's main branch, rather than a release, carries files marked axis:production-only that belong to
+    # that repository alone; move each into _Trash/ (reversible for two days) and remove the folders it leaves empty.
+    moved=[]
+    gh=root/'.github'
+    if not gh.is_dir() or gh.is_symlink():return moved
+    day=datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d')
+    for q in sorted(gh.rglob('*'),reverse=True):
+        if q.is_symlink() or not q.is_file():continue
+        try:head=q.read_bytes()[:400]+q.read_bytes()[-400:]
+        except OSError:continue
+        if b'axis:production-only' not in head:continue
+        (root/'_Trash').mkdir(exist_ok=True);dest=root/'_Trash'/f'{day}--{q.name}';k=2
+        while os.path.lexists(dest):dest=root/'_Trash'/f'{day}--{q.stem}-{k}{q.suffix}';k+=1
+        replace_shared(q,dest);moved.append(q.relative_to(root).as_posix())
+    for d in sorted([x for x in gh.rglob('*') if x.is_dir() and not x.is_symlink()]+[gh],key=lambda x:len(x.parts),reverse=True):
+        try:d.rmdir()
+        except OSError:pass
+    return moved
+
+def memo_zone():
+    # Memo dates use [Settings > Project Time Zone], or the host's local zone when it is Unknown or unusable.
+    try:
+        v=re.search(r'^\*\*Value:\*\* (\S+)\s*$',(root/'_Axis/SETTINGS.md').read_text().split('### Project Time Zone',1)[1].split('###',1)[0],re.M).group(1)
+        if v not in ('Unknown',):
+            from zoneinfo import ZoneInfo
+            return ZoneInfo(v)
+    except Exception:pass
+    return datetime.datetime.now().astimezone().tzinfo
+
+def memo_subject(text):
+    import unicodedata
+    text=unicodedata.normalize('NFC',''.join(' ' if c in '/\\:*?"<>|' or ord(c)<32 else c for c in text))
+    return re.sub(r'\s+',' ',text).strip()[:80].rstrip(' .')
+
+def migrate_memos():
+    # Memos (2.08): every project has a root _Memos/ folder, and a Review is a memo. The first startup on this version
+    # creates the folder and moves each live report from _Axis/Reviews/ (and the pre-2.01 _Axis/Status/) into
+    # _Memos/Archive/ as "YYYY-MM-DD - Review - {topic}.md", contents unchanged; the emptied folders are removed.
+    notes,done=[],[]
+    names=os.listdir(root)
+    if '_Memos' not in names:
+        if any(n.casefold()=='_memos' for n in names):return ['The project root has a folder named like _Memos/ in different letter case, so Axis did not create _Memos/. Rename it to _Memos/ to use it for memos.'],None
+        (root/'_Memos').mkdir();(root/'_Memos/.gitkeep').write_text('');done.append('created _Memos/')
+    elif (root/'_Memos').is_symlink() or not (root/'_Memos').is_dir():return ['The project root has a _Memos entry that is not a plain folder, so Axis cannot keep memos there.'],None
+    zone=memo_zone();moved=0
+    for fam in ('Reviews','Status'):
+        d=root/'_Axis'/fam
+        if d.is_symlink() or not d.is_dir():continue
+        for f in sorted(d.iterdir()):
+            m=re.fullmatch(r'(\d{4})\.(\d\d)\.(\d\d)\.(\d\d)\.(\d\d)\.(\d\d)\.\d{3}Z\.md',f.name)
+            if not m or f.is_symlink() or not f.is_file():continue
+            when=datetime.datetime(*map(int,m.groups()),tzinfo=datetime.timezone.utc).astimezone(zone)
+            first=f.read_text(encoding='utf-8',errors='replace').split('\n',1)[0]
+            topic=memo_subject(re.sub(r'^(?:#\s*)?(?:Review|Status)\s*:\s*','',first)) or 'Project status'
+            a=root/'_Memos/Archive';a.mkdir(exist_ok=True)
+            taken={n.casefold() for n in os.listdir(a)};base=f"{when:%Y-%m-%d} - Review - "+topic[:71].rstrip(' .');name=base+'.md';k=2
+            while name.casefold() in taken:name=f'{base} ({k}).md';k+=1
+            replace_shared(f,a/name);moved+=1
+        rest=[x for x in os.listdir(d) if x!='.gitkeep']
+        if not rest:
+            if (d/'.gitkeep').exists():(d/'.gitkeep').unlink()
+            d.rmdir()
+        else:notes.append(f'_Axis/{fam}/ still holds files Axis did not recognize as reports, so it was left in place.')
+    if moved:done.append(f'moved {moved} earlier Review(s) to _Memos/Archive/')
+    if done:notes.insert(0,'New in this version: Memos. Decisions, next steps, findings and Reviews for you now go into _Memos/ as dated, readable files'+(f'; your {moved} earlier Review(s) are in _Memos/Archive/.' if moved else '.'))
+    return notes,('record one Log Event "Memos folder set up": '+'; '.join(done) if done else None)
+
+def memo_replies():
+    # A memo waiting on User whose file changed after its own Updated time has a reply to read.
+    out=[]
+    try:items=sorted(os.listdir(root/'_Memos'))
+    except OSError:return out
+    for n in items:
+        q=root/'_Memos'/n
+        if not n.endswith('.md') or q.is_symlink() or not q.is_file():continue
+        try:head=q.read_text(encoding='utf-8',errors='replace')[:2000]
+        except OSError:continue
+        if not re.search(r'^- \*\*Status:\*\* waiting on you\s*$',head,re.M):continue
+        u=re.search(r'^- \*\*Updated:\*\* (\d{4}-\d\d-\d\d \d\d:\d\d) \(UTC([+-]\d\d):(\d\d)\)',head,re.M)
+        if not u:continue
+        sign=-1 if u.group(2).startswith('-') else 1
+        tz=datetime.timezone(sign*datetime.timedelta(hours=abs(int(u.group(2))),minutes=int(u.group(3))))
+        t=datetime.datetime.strptime(u.group(1),'%Y-%m-%d %H:%M').replace(tzinfo=tz).timestamp()
+        if q.stat().st_mtime>t+120:out.append(n)
+    return out
+
 def inbox_items():
     try:return sorted(n for n in os.listdir(root/'_Inbox') if not n.startswith('.'))
     except OSError:return []
@@ -241,6 +329,11 @@ try:
  except (OSError,UnicodeError) as e:wiki_note,wiki_log=f'Axis could not finish moving the Wiki from Wiki/ to _Wiki/ ({type(e).__name__}). Check both folders before using the Wiki.',None
  try:inbox_notes,inbox_log=migrate_inbox()
  except (OSError,UnicodeError) as e:inbox_notes,inbox_log=[f'Axis could not finish setting up the inbox folders ({type(e).__name__}). Check _Inbox/ and _Wiki/ before relying on them.'],None
+ rv0=(root/'_Axis/Flags/project-ready');setup_done=rv0.is_file() and re.fullmatch(r'\d{4}(\.\d{2}){5}\.\d{3}Z',(rv0.read_text().splitlines() or [''])[0].strip()) is not None
+ try:first_moved=[] if setup_done else first_boot()
+ except (OSError,UnicodeError):first_moved=[]
+ try:memo_notes,memo_log=migrate_memos()
+ except (OSError,UnicodeError) as e:memo_notes,memo_log=[f'Axis could not finish setting up _Memos/ ({type(e).__name__}). Check _Memos/ and _Axis/Reviews/ before relying on them.'],None
  s=run(R/'startup-survey.py','--root',root,'survey','--session',sid,'--owner',owner,'--model',o.model,'--harness',o.harness,'--interaction',o.interaction,'--spawn',o.spawn,'--parallel',o.parallel)
  if s.get('status')!='surveyed':interrupted('startup survey failed',survey=s)
 
@@ -249,6 +342,13 @@ try:
  if wiki_log:later.append(wiki_log)
  notices+=inbox_notes
  if inbox_log:later.append(inbox_log)
+ if first_moved:
+     notices.append('This copy came from the public repository rather than a release, so Axis moved its repository-only files to _Trash/: '+', '.join(first_moved)+'.')
+     later.append('record one Log Event "First Boot: repository-only files removed" naming: '+', '.join(first_moved))
+ notices+=memo_notes
+ if memo_log:later.append(memo_log)
+ replied=memo_replies()
+ if replied:pending.append(f"read the replies in {len(replied)} memo(s) edited since their last update ({', '.join(replied[:3])}) under _Axis/Practices/Memos.md > Two-way memos and replies; report them in one line under the greeting and act only within that section's limits")
  waiting=inbox_items()
  if waiting:pending.append(f'file {len(waiting)} item(s) waiting in _Inbox/ under _Axis/Practices/Inbox.md, then report what went where in one line under the greeting; for an item delivered to a child project under a routing instruction in _Axis/INSTRUCTIONS.md, run its ^^do in this same turn right after the greeting, without asking: that instruction is the user\'s standing request')
  if 'cloud-synced-folder' in (s.get('notices') or []):

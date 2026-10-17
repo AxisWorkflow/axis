@@ -3,7 +3,7 @@
 
 1. Main Agent only. External Agents send a Request to Main; Subagents return the request without acting. Installing changes the current host, not merely the project, so never delegate the trust or approval decision.
 
-2. Resolve the text after the command by intent: `qmd` or local document search GOTO **qmd**; `age`, encrypted Secrets, or Secrets transport GOTO **age**; `ollama`, a supported local model name, or local LLM setup GOTO **Ollama**; `openclaw`, thin harness, Gateway hardening, or an OpenClaw-backed channel such as WhatsApp GOTO **OpenClaw**. If User asks for a different local LLM runtime, say in one line that Axis supports Ollama as its sole local runtime, then GOTO **Ollama**. Anything else, including no target, GOTO **Other**. Never run the text as a shell tail.
+2. Resolve the text after the command by intent: `qmd` or local document search GOTO **qmd**; `age`, encrypted Secrets, or Secrets transport GOTO **age**; `ollama`, a supported local model name, or local LLM setup GOTO **Ollama**; `openclaw`, thin harness, Gateway hardening, or an OpenClaw-backed channel such as WhatsApp GOTO **OpenClaw**; `guardrails`, hooks, or write-once protection GOTO **Guardrails**. If User asks for a different local LLM runtime, say in one line that Axis supports Ollama as its sole local runtime, then GOTO **Ollama**. Anything else, including no target, GOTO **Other**. Never run the text as a shell tail.
 
 3. Every route follows **Installation Contract** before its specific steps. A route may add stricter checks but never skip the shared source, preview, approval, verification, or recording boundary.
 
@@ -88,6 +88,29 @@ OpenClaw is Axis's optional channels-and-orchestration Host Harness. Installing 
 8. Follow [Practices > OpenClaw > Verification]. A harmless headless boot probe must produce Axis session artifacts and then shut down its exact probe session. Do not authenticate a channel, send a cross-agent message, create cron work, or restart a service unless that effect was approved. If read-only effective-context inspection is unavailable, report that check as `Unverified` rather than sending an extra turn.
 9. If this Project will use OpenClaw, complete the Installation Contract recording step with one optional `host-integration` declaration in `_Axis/ENVIRONMENT.md`, a manual safe revalidation, the file/manual fallback, and [Practices > OpenClaw] as the portable rebuild reference. Record no profile, agent, channel, account, port, service, path, credential, job ID, or current-health claim.
 10. If User also asked for WhatsApp, continue to [Practices > WhatsApp] only after hardening passes. The User must independently provide/link the bot account, approve pairing, create each group, and send discovery and real verification messages. Other channels follow their first-party OpenClaw procedure with the same Axis hardening, exact-binding, sender-verification, and boot-probe boundaries. Report the verified result and STOP.
+
+## Guardrails
+
+**Guardrails** add a host hook that refuses, before it happens, a tool call that breaks an Axis rule the host can see: for every Agent, an edit to a write-once record (a Log, Snapshot, CX, Audit or Supervision record, archived history, update evidence, or a finished Task, Follow-Up or Reminder) or a malformed new record name; for a helper, any use of `_Axis/Secrets/` and any write outside its role's folders. On OpenClaw, an Agent configured as an External Agent may not spawn, use `_Axis/Secrets/`, change an existing file, or add files outside Project Subfolders, `_Axis/Requests/` and `_Temp/`. Claude Code and OpenClaw only; other hosts keep Axis's written rules and the `^save` record checks.
+
+1. Follow **Installation Contract**. On OpenClaw GOTO **OpenClaw guardrails**. Require Claude Code as the current host and `host-shell=yes`, and run `python3 _Axis/Resources/guardrails.py --check _Axis/Logs/x.md --new` as a smoke test: it must print `REFUSED`. Otherwise say the guardrails are not available on this host and STOP.
+2. Preview the exact change:
+	- add this entry to `hooks.PreToolUse` in the project's Claude Code settings, keeping every existing setting and hook:
+
+			{"matcher": "Edit|Write|MultiEdit|NotebookEdit|Read|Grep|Glob|Bash", "hooks": [{"type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/_Axis/Resources/guardrails.py\"", "timeout": 10}]}
+
+	- copy `_Axis/Resources/Helpers/axis-cx.claude-agent`, `axis-wiki.claude-agent` and `axis-general.claude-agent` into `.claude/agents/` as `axis-cx.md`, `axis-wiki.md` and `axis-general.md`, skipping any file of the same name that differs and saying so.
+
+	Say what it does not cover: what a shell command or helper script writes (Axis's own archive, update and recovery steps run that way), a broad search that reaches `_Axis/Secrets/` through a parent folder, and User's own editing. A hook that fails to run lets the call through. Ask whether the settings should travel with the project in Git (`.claude/settings.json` and `.claude/agents/`, recommended for User's own projects) or stay on this computer (`.claude/settings.local.json`, already ignored by Git, with the helper files still in `.claude/agents/`), and obtain approval.
+3. Write the approved files, preserving valid existing JSON exactly; if the existing settings file is not valid JSON, change nothing and STOP. Read them back and require exactly one Axis guardrail entry.
+4. Tell User the guardrails take effect in a new Claude Code session, where an attempted edit to an existing Log must be refused, and that Main then spawns CX, Wiki and General helpers as the `axis-cx`, `axis-wiki` and `axis-general` agent types. Remove the entry and the three files the same way to uninstall. Log the configuration change. STOP.
+
+**OpenClaw guardrails**
+
+1. Require OpenClaw as the host, `host-shell=yes` and `python3`, and run `python3 _Axis/Resources/guardrails.py --external write _Axis/Logs/x.md` as a smoke test: it must print `Axis guardrail:` and exit 2. Name the OpenClaw agent IDs that serve this project as External Agents; User confirms the list.
+2. Preview the exact change through [Practices > OpenClaw > Schema-Adaptive Hardening]: add the absolute path of `_Axis/Resources/OpenClaw/axis-guardrails` to `plugins.load.paths`, and set `plugins.entries.axis-guardrails` to `{"enabled": true, "config": {"externalAgents": [{agent IDs}]}}`, changing nothing else. Say that the plugin leaves every other agent untouched, that on current OpenClaw an error inside a plugin hook blocks the listed agents' tool calls until it is fixed or removed, and that shell commands' writes are not seen. Obtain approval.
+3. Apply with OpenClaw's own config commands, then require `openclaw config validate` to pass and `openclaw plugins list` to show `axis-guardrails` enabled; on failure restore the previous values and STOP. Reload the plugin or restart the Gateway as OpenClaw's release requires, after saying so.
+4. Tell User that the next External turn refuses an edit to an existing file. Remove the path and entry to uninstall. Log the configuration change. STOP.
 
 ## Other
 

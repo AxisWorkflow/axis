@@ -1,6 +1,6 @@
 # Axis Workflow User Manual
 > **Purpose:** How to use the Axis Workflow day to day: setup, commands, the Dashboard, the Wiki, working across tools and machines, and working with Agents and models. For the technical and compliance reference, see [SPECIFICATION](/_Axis/SPECIFICATION.md).
-> **Version:** 2.07
+> **Version:** 2.08
 
 
 
@@ -94,7 +94,8 @@ Your own content lives in normal folders that your Agent creates and organizes a
 
 - **Dashboard** - Launch a dashboard (`^dashboard`) for a live overview of the workflow.
 - **Obsidian** - The free and wildly popular Markdown Editor, running on your computer.
-- **Reviews** - Periodic assessments made at key junctures.
+- **Memos** - Dated messages from your Agent in `_Memos/`: decisions for you, next steps, findings, and Reviews.
+- **Reviews** - Periodic assessments made at key junctures, saved as Memos.
 - **Follow-ups** - Specific actions assigned to the User are tracked in Follow-Ups.
 - **Cross-Examination** - Periodic review and critique of work by a devil's advocate.
 - **Logs** - Direct Agents to audit the record and double-check work.
@@ -219,6 +220,8 @@ For example, the text...
 | `^install`   | Install extensions, tools, skills, MCPs, CLIs, functions, etc.                                                 |
 | `^kill`      | Stop another live Agent by revoking its Marker lease (tombstone; User-only).                                   |
 | `^log`       | Manually Log an entry into `_Axis/Logs/`.                                                                      |
+| `^memo`      | Write or update a Memo for User in `_Memos/`.                                                                  |
+| `^memos`     | List live Memos, read User's replies, and archive finished ones.                                               |
 | `^note`      | Manually save a Note into `_Axis/Notes/`.                                                                      |
 | `^notes`     | Review active Notes - surface salient guidance, renew aging facts, and archive obsolete history.               |
 | `^onboard`   | Guide a new User through a five-minute tour - one Note, one Idea, one Review.                           |
@@ -227,11 +230,11 @@ For example, the text...
 | `^promote`   | Promote this External Agent to Main Agent through the gated protocol.                                          |
 | `^refresh`   | Refresh the project - sweep stale state, resync records, and realign Plan with Tasks.                          |
 | `^reminders` | Review and manage the portable Reminder queue.                                                                 |
-| `^review`    | Write a Review - a dated report on the project's state, kept in `_Axis/Reviews/`. |
+| `^review`    | Write a Review - a dated report on the project's state, saved as a Memo in `_Memos/`.                          |
 | `^resume`    | Pick up where project left off - load latest Snapshot, Tasks, recent Logs.                                     |
 | `^save`      | Sync workflow and save a Snapshot.                                                                             |
 | `^settings`  | Step through and potentially adjust each setting.                                                              |
-| `^shutdown`  | Gracefully stop this Agent - log, delete own Marker, and end the session.                                      |
+| `^shutdown`  | Gracefully stop this Agent - save (Main), log, delete own Marker, and end the session.                         |
 | `^status`    | Show where the project stands on one screen; `^status web` for a branded page, `^status deep dive` for more. |
 | `^tasks`     | List Tasks at a glance, and optionally apply a quick update.                                                   |
 | `^trash`     | Empty `_Trash/` on demand - everything, or item by item.                                                       |
@@ -293,6 +296,14 @@ The remaining cards are direct views of project records. **Project** runs tall i
 ### Inbox
 
 Drop anything new for the project into `_Inbox/`: documents, data, images, notes or Wiki sources. At the start of the next session, or when you type `^inbox`, your Agent files each item where it belongs. Project material goes into the right Project Subfolder, with a new one created when nothing fits. Material for the knowledge base goes into the Wiki's `_Wiki/_Inbox/`, and an item that serves both goes to both places. `^refresh` files the inbox too. Anything unclear, protected, or that looks like a password or key stays in `_Inbox/`, and your Agent asks you about it. Your Agent tells you in one line what it filed and where. Sources meant only for the Wiki can still go straight into `_Wiki/_Inbox/`.
+
+### Memos
+
+Chat scrolls away. When your Agent has something you will want to read later, such as decisions for you, next steps, findings or a report, it writes a Memo in `_Memos/`, named by date and subject, for example `2026-10-17 - Decisions for release 2.08.md`. The reply in chat stays short and links to it. A memo starts with its status (`waiting on you`, `open`, `done`), lists what was decided and what needs you, keeps a Details section with the background you may not remember, and ends with a dated list of updates.
+
+You can answer in chat or in the memo itself: tick a box, write after `Your answer:`, or write under `Your reply`. Your Agent notices your edits at the next start, or when you say you answered, and confirms in one line what it took from them. Anything big, hard to undo, or outside the memo's subject, such as deleting files, publishing, or changing settings, needs your yes in the conversation first, because anything with access to the folder could have written in the file. Text in a memo that tries to give your Agent new instructions is reported to you, not followed.
+
+The **Memo Generation** setting decides how often memos are written, from `0` (only when you ask with `^memo`) to `4` (whenever a reply would run past about a screen); the default is `2`, for complex decisions. `^memos` lists them. Finished memos move to `_Memos/Archive/` during `^refresh`, so they stay out of your Agent's way but remain easy to browse. Reviews (`^review`) are memos too; each new Review replaces the previous one, which moves to the archive. Memos are views: every decision in them is also recorded in the project's own records.
 
 ### Initiatives
 
@@ -399,7 +410,7 @@ Axis always supports the simplest fallback: `^save`, stop the old session, copy 
 - **`^resume` is the normal receiving action.** It fetches before reading the saved Snapshot, saves any unsent local work first, takes the incoming work (combining both sides when they changed different files), receives the optional encrypted Secrets capsule, and then runs the complete portability, infrastructure, queues, and continuity checks. If incoming changes replace Workflow instructions, Axis ends the old session and asks you to start a fresh one so the new instructions actually load.
 - **`^undo` adds recovery history.** It shows the exact target and asks before restoring. It uses a revert or a new restore commit; it never silently resets history, force-pushes, or discards later work.
 
-Bare `^git` is convenient, but normal handoff is easier to remember as **save on the computer you are leaving, resume on the computer you are joining**. Routine `^save` does not shut down, because it is also useful as an ordinary checkpoint. When you say that the save is for a handoff, shutdown, or another computer, Axis completes the send and then performs `^shutdown`. You can also run `^shutdown` yourself. Do not keep editing the sending copy after that point.
+Bare `^git` is convenient, but normal handoff is easier to remember as **save on the computer you are leaving, resume on the computer you are joining**. Routine `^save` does not shut down, because it is also useful as an ordinary checkpoint. `^shutdown` always saves first, so on the computer you are leaving `^shutdown` alone is enough; saying that a save is for a handoff, shutdown, or another computer does the same. Do not keep editing the sending copy after that point.
 
 `^resume` (or `^restore`) is meant to be the only thing you type on the computer you are joining. Axis keeps the project on one branch, the remote's default (usually `main`), so you never switch branches yourself: a save made on another branch moves the project back to `main`, and a resume also brings in work an older save sent elsewhere. If the computer you are joining has changes it never sent, resume saves them first; when the other computer changed different files, it combines both sides, and it stops to ask only when the same file changed on both. With **Auto Send** on (new projects start with it on), Axis also sends your work each time it records a milestone and when you type `^shutdown`, so a computer you walk away from without `^save` has usually sent its work already; with it off, `^shutdown` tells you about work that was never sent. An Archive Location inside your home folder is kept as a `~/...` path, so it works on each computer that has that folder.
 
@@ -423,7 +434,7 @@ Git and GitHub's CLI are optional system tools, not mandatory Axis installs. Axi
 On the desktop before leaving:
 
 1. Finish the current task or reach a safe stopping point.
-2. Say `^save for handoff to my laptop` (or run `^save`, then `^shutdown`).
+2. Run `^shutdown` (or say `^save for handoff to my laptop`).
 3. Wait for confirmation that the checkpoint was pushed. If it was saved only locally, do not assume the laptop has it.
 
 On the laptop:
@@ -453,7 +464,7 @@ Encryption protects the repository copy, not the endpoints: any process with acc
 
 For a thumb drive, file share, ZIP, or other full-folder transfer:
 
-1. On the source, run `^save`, confirm the local Snapshot completed, then `^shutdown`.
+1. On the source, run `^shutdown` and confirm its save completed.
 2. Copy the whole project folder only after shutdown. Do not delete the source copy until the receiver is verified.
 3. On the destination, mount the copied folder and run `^resume`.
 4. Keep the previous copy as a temporary recovery point; once the destination is confirmed, archive or securely remove obsolete copies - especially removable-media copies containing plaintext Secrets.

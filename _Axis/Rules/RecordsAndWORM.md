@@ -7,10 +7,12 @@
 - Files in `_Axis/Snapshots/` are WORM, once saved and presented to User.
 - Files in `_Axis/CX/` are WORM, once saved and presented to User.
 - Files in `_Axis/Audit/` are WORM, once saved and presented to User.
-- Files in `_Axis/Reviews/` are WORM, once saved and presented to User.
+- Memos, Reviews included, are editable ([Practices > Memos]); a Review is a record by its own statement, not a WORM record.
 - Files in `_Axis/Supervision/` are WORM, once saved and presented to User.
 - Files in `_Axis/Followups/` are mutable only while open; terminal Follow-Ups move to `_Axis/Archive/Followups/` and are WORM.
 - Files in `_Axis/Reminders/` are mutable only while open; terminal Reminders move to `_Axis/Archive/Reminders/` and are WORM.
+- In a write-once record, cite another record by its bare identifier and family (for example `Log 2026.05.18.22.33.24.230Z`), not by a relative link: paths change when records are archived, identifiers never do. Links are fine in editable files, which `^refresh` repairs.
+- Identifier correction is the one edit a write-once record takes. When one names a wrong record identifier (a timestamp ID, or a path or reference built on one), show User the record, the wrong and right identifiers and the evidence, and proceed only on User's explicit approval for that record, given in the conversation. Then run `python3 _Axis/Resources/record-check.py correct --path {record} --old {wrong} --new {right}`, which replaces only that text, and commit it with a new Log whose Subject is `Identifier correction: {record}` and which carries the printed `correction-path:`, `correction-old:` and `correction-new:` lines and User's approval. Never use it for any other change.
 - Logs and Snapshots are retained indefinitely unless User moves inactive history through `^archive`; archived copies remain unchanged and WORM.
 - Never overwrite a Review - each has its own timestamped file.
 - Task Status values are: Active, Blocked, Completed, Cancelled.

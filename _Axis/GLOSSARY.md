@@ -91,7 +91,8 @@
 - **Log** - A WORM file that records an event - lives in `_Axis/Logs/`.
 - **Snapshot** - A WORM file that summarizes state at a meaningful point in time.
 - **Event** - Anything worth logging: decisions, milestones, mistakes, scope changes.
-- **Review** - A dated report on the project's state (`^review`), kept in `_Axis/Reviews/`: what changed since the last one, health-checks, Deliverable coverage. It summarizes and challenges nothing - unlike a Cross-Examination - and is lighter than an Audit. Called a Status Report before Version 2.01.
+- **Review** - A dated report on the project's state (`^review`), saved as a Memo in `_Memos/`: what changed since the last one, health-checks, Deliverable coverage. It summarizes and challenges nothing - unlike a Cross-Examination - and the next Review supersedes it.
+- **Memo** - A dated Markdown message to User in `_Memos/`, named `YYYY-MM-DD - Subject.md`: decisions, next steps, findings, reports, or the long version of a short reply. Editable, two-way, and never the only home of project state - see [Practices > Memos].
 - **Status** - The quick look (`^status`): a one-screen summary of the project in the terminal, or a branded static web page. Built fresh each time; writes no record.
 - **Supervision Record** - A WORM parent-project report or action record under `_Axis/Supervision/`, with older active-window overflow under `_Axis/Archive/Supervision/`.
 - **Executive Summary** - A one-glance overview at the top of a **Plan** or report.

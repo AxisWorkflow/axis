@@ -8,6 +8,7 @@
 - **`_Axis/`** - Control folder for Axis Workflow.
 - **`_Axis/Secrets/`** - Secrets (keys, tokens, credentials).
 - **`_Inbox/`** - Drop folder for new material; Main Agent files each item into its home.
+- **`_Memos/`** - Memos to User: decisions, next steps, findings and Reviews; finished ones move to `_Memos/Archive/`.
 - **`_Temp/`** - Scratch space for regenerable files.
 - **`_Trash/`** - Deletion staging - each item is kept at least 2 days, then an automatic sweep deletes it.
 - **`_Wiki/`** - Knowledge base for project.
@@ -80,7 +81,6 @@
 ### Optional project files
 
 - `_Axis/INITIATIVES.md` - optional shared outcomes and Task groups; absent is valid, and no startup detail load is required.
-- `_Axis/Reviews/` - dated Reviews (`^review`). A project updated from Version 2.00 or earlier gets it from its first `^review`, which also moves any older reports from `_Axis/Status/` into it; absent until then is valid.
 - `_Axis/Branding/` - the product brand package (stylesheet with light and dark themes, WOFF2 fonts, tokens, mark, logo, favicons), shipped read-only and replaced whole by each update; `manifest.json` lists every file with its SHA-256. Its assets are not under the MIT License (see `LICENSE-ASSETS.md`). A project updated by an updater older than 2.01 (from any earlier version) receives it with its next update after 2.01 (updaters before 2.01 cannot install a new folder); absent until then is valid, and the Dashboard and `^status` pages fall back to plain brand colours.
 
 ### Practices
@@ -113,7 +113,7 @@
 - `_Axis/Practices/Reminders.md`
 - `_Axis/Practices/Settings.md`
 - `_Axis/Practices/Snapshots.md`
-- `_Axis/Practices/Reviews.md`
+- `_Axis/Practices/Memos.md`
 - `_Axis/Practices/Status.md`
 - `_Axis/Practices/Subprojects.md`
 - `_Axis/Practices/Supervision.md`
@@ -165,6 +165,8 @@
 - `_Axis/Commands/install.md`
 - `_Axis/Commands/kill.md`
 - `_Axis/Commands/log.md`
+- `_Axis/Commands/memo.md`
+- `_Axis/Commands/memos.md`
 - `_Axis/Commands/note.md`
 - `_Axis/Commands/notes.md`
 - `_Axis/Commands/onboard.md`
@@ -205,6 +207,9 @@
 - `_Axis/Resources/agent-board.py` - optional read-only Tracking board for `^board` and the awareness pass; reading the files directly remains available.
 - `_Axis/Resources/Claim-Session.md`
 - `_Axis/Resources/Default-Directives.md` - the shipped default Directives; startup adds any missing from the project's `DIRECTIVES.md`.
+- `_Axis/Resources/guardrails.py` - optional host hook (`^install guardrails`) that refuses an Agent's edit to a write-once record or a malformed new record name, and a helper's use of `_Axis/Secrets/` or writes outside its role's folders.
+- `_Axis/Resources/Helpers/axis-cx.claude-agent`, `axis-wiki.claude-agent`, `axis-general.claude-agent` - helper role definitions `^install guardrails` copies into `.claude/agents/` as `.md` files.
+- `_Axis/Resources/OpenClaw/axis-guardrails/openclaw.plugin.json` and `index.ts` - optional OpenClaw plugin (`^install guardrails`) that applies `guardrails.py --external` to agents configured as External Agents.
 - `_Axis/Resources/Detect-Capabilities.md`
 - `_Axis/Resources/Draft-Mindset.md`
 - `_Axis/Resources/Lock-File.md`

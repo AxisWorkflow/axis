@@ -15,7 +15,8 @@
 
 ## Relationship to Reviews and the Dashboard
 
-- A Review (`^review`, [Practices > Reviews]) is the dated record kept in `_Axis/Reviews/`: what changed since the last Review, health-checks, Deliverable coverage. Run it at milestones or on a schedule.
+- A Review (`^review`) is the dated record, saved as a Memo in `_Memos/` ([Practices > Memos]): what changed since the last Review, health-checks, Deliverable coverage. Run it at milestones or on a schedule.
+- Memos waiting on User are listed by `^status`, newest first, by name only.
 - The Dashboard (`^dashboard`) is the live view and needs a local web server.
 - `^status` is neither: it is the quick look between them. When User wants to keep or share what they see, suggest `^review`.
 

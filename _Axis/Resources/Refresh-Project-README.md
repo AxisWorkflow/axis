@@ -21,7 +21,7 @@ The User Manual remains at `_Axis/USERMANUAL.md`, the Specification at `_Axis/SP
 	- `_Axis/PROJECT.md`: project name, Background, Deliverables, and Criteria.
 	- `_Axis/PLAN.md`: current Objective and immediate phase or direction, when substantive.
 	- `_Axis/TASKS.md`: counts by status and the current Active or Blocked subjects, without copying detail bodies.
-	- The newest `_Axis/Reviews/{ID}.md`, when one exists: its timestamp ID and opening synopsis only.
+	- The newest Review memo in `_Memos/` (`* - Review - *.md`), when one exists: its date and Summary only.
 
 3. Exclude Secrets, infrastructure locations, environment signatures, credentials, personal account details, Session IDs, Capability Flags, local paths, host-specific state, and record bodies. Do not invent missing facts. Keep the result useful in a private repository but safe enough that changing repository visibility would not disclose operational secrets.
 

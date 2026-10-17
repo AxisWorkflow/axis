@@ -378,14 +378,16 @@ async function listDir(url){                       // parse the filtered Axis se
   for (const m of html.matchAll(/href="([^"?]+\.md)"/g)) out.push(decodeURIComponent(m[1]).split("/").pop());
   return [...new Set(out)];
 }
-async function listReviews(){                     // Reviews, plus reports kept in the pre-2.01 Status/ folder; newest first, as paths
+const MEMOS = "../../_Memos/";
+function reviewKey(path){ const f = path.split("/").pop(); return /^\d{4}-\d\d-\d\d - /.test(f) ? f.slice(0,10).replace(/-/g, ".") + f.slice(10) : f; }
+async function listReviews(){                     // Review memos (2.08) live and archived, plus legacy Reviews/ and pre-2.01 Status/; newest first, as paths
   const out = []; let ok = false, err = null;
-  for (const d of [DIRS.Reviews, "../Status/"]) {
-    try { for (const f of await listDir(d)) out.push(d + f); ok = true; }
+  for (const d of [MEMOS, MEMOS + "Archive/", DIRS.Reviews, "../Status/"]) {
+    try { for (const f of await listDir(d)) if (!d.startsWith(MEMOS) || f.includes(" - Review - ")) out.push(d + f); ok = true; }
     catch(e){ if (!e || e.status !== 404) err = e; }
   }
-  if (!ok && err) throw err;                       // both folders missing is simply "no Review yet"
-  return out.sort((a,b) => b.split("/").pop().localeCompare(a.split("/").pop()));
+  if (!ok && err) throw err;                       // every folder missing is simply "no Review yet"
+  return out.sort((a,b) => reviewKey(b).localeCompare(reviewKey(a)));
 }
 async function listAgentEntries(){                 // one listing carries Markers and their kill tombstones
   const html = await read(DIRS.Agents); const out = [];
@@ -495,7 +497,8 @@ function axisTimestampMs(value){
 }
 async function recordAgeHours(file, url, partial=null, card=""){ // durable record time; mtime is only a malformed-name fallback
   const stem = String(file || "").replace(/\.md$/, "");
-  const createdMs = axisTimestampMs(stem);
+  const memo = stem.match(/^(\d{4})-(\d\d)-(\d\d) - /);  // a memo's local creation date
+  const createdMs = memo ? new Date(+memo[1], +memo[2] - 1, +memo[3]).getTime() : axisTimestampMs(stem);
   return createdMs === null ? fileAgeHours(url, partial, card) : (Date.now() - createdMs) / 3600000;
 }
 function detectProfile(vals){
@@ -770,8 +773,10 @@ async function renderStatus(partial){              // newest Review distilled to
   try {
     const md = await read(files[0]);
     const lines = md.split("\n");
-    const topic = lines[0].replace(/^#*\s*(?:Review|Status):\s*/i, "").trim() || "Review";
-    const paras = lines.slice(2).join("\n").split(/\n\s*\n/).map(s => s.trim()).filter(s => s && !/^#/.test(s));
+    const topic = lines[0].replace(/^#*\s*(?:Review|Status)\s*[:-]\s*/i, "").trim() || "Review";
+    const summary = md.split(/^## Summary[ \t]*$/m)[1];   // a Review memo keeps its synopsis under ## Summary
+    const body = summary !== undefined ? summary.split(/^#/m)[0] : lines.slice(2).join("\n");
+    const paras = body.split(/\n\s*\n/).map(s => s.trim()).filter(s => s && !/^#/.test(s));
     let syn = (paras[0] || "").replace(/\*\*/g, "");
     if (syn.length > 420) syn = syn.slice(0, 420) + "…";
     const age = await recordAgeHours(files[0].split("/").pop(), files[0], partial, "Review");
@@ -1363,7 +1368,7 @@ async function familyView(family){
   let paths = [];
   try { paths = family === "Reviews" ? await listReviews() : (await listDir(dir)).map(f => dir + f); }
   catch(e){ return {title, html:"<p class='muted'>" + (e && e.status === 404 ? "No records yet." : NEEDS_SERVER) + "</p>"}; }
-  paths.sort((a, b) => b.split("/").pop().localeCompare(a.split("/").pop()));
+  paths.sort((a, b) => reviewKey(b).localeCompare(reviewKey(a)));
   if (!paths.length) return {title, html:"<p class='muted'>No records yet.</p>"};
   const rows = await Promise.all(paths.map(async (path, n) => {
     const file = path.split("/").pop();

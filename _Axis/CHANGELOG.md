@@ -1,7 +1,7 @@
 # Changelog
 > **Purpose:** Record Axis release identity and the structural migrations needed to update an existing project safely.
 
-current-version: 2.07
+current-version: 2.08
 changelog-format: 1
 self-update-baseline: 26.08.19
 
@@ -39,6 +39,45 @@ update-impact: automatic
 ### Verification
 
 - None.
+
+## 2.08
+
+released: 2026-10-17
+
+- `^shutdown` now always saves first, so on the computer you are leaving `^shutdown` alone completes the handoff. The save inside shutdown never asks a question: it leaves scratch files in place and, when a send cannot complete, reports that and still shuts down.
+- New: Memos. When your Agent has something you will want to read later (decisions for you, next steps, findings, a report, or the long version of a short reply), it writes a dated Markdown memo in the new `_Memos/` folder, such as `2026-10-17 - Decisions for release 2.08.md`, and keeps the chat reply short. You can answer inside a memo; anything big or hard to undo still needs your yes in the conversation. The new **Memo Generation** setting (0-4, default 2) decides how often memos are written; `^memo` writes one on request and `^memos` lists them. Finished memos move to `_Memos/Archive/` during `^refresh`.
+- Reviews are now memos: `^review` writes `YYYY-MM-DD - Review - {topic}.md` in `_Memos/`, and the previous Review moves to the archive. The first startup after this update moves your earlier Reviews into `_Memos/Archive/`.
+- New, optional: `^install guardrails` adds a Claude Code hook that stops an Agent from editing a write-once record (a Log, Snapshot, finished Task and the like) or creating a misnamed one, keeps helper agents out of `_Axis/Secrets/`, and keeps the Wiki and Cross-Examination helpers inside their own folders. On OpenClaw, the same command adds a plugin that keeps an External Agent to adding new files in project folders, with no spawning and no Secrets. It is opt-in and changes your host settings only with your approval.
+- A session that another session took over now says so at its next turn ("taken over"), instead of reporting a lost lease, which could have led to two Main sessions.
+- A write-once record (a Log, Snapshot and the like) that points to the wrong record can now be corrected, with your explicit approval for that record: only the wrong identifier changes, and a correction Log records it.
+- `^refresh` and `^audit` now check that record references hold together: malformed record IDs, IDs that name no record, and links whose target moved or vanished. `^refresh` repairs what can safely be repaired and reports the rest. `^save` refuses a commit that would add such a problem, `^resume` reports records a handoff left behind, and archiving repoints links to moved records.
+
+update-impact: automatic
+
+### Structural Changes
+
+- `_Axis/Commands/shutdown.md` step 2: Main runs `^save` first, without questions (scratch stays in `_Temp/`, running Subagents do not stop it, save's handoff step 13 is skipped, a refusal, divergence, failed send or changed machinery keeps any local checkpoint and the shutdown continues); skipped when `^save` started the shutdown. Step 6 reports the save before the exit block. `_Axis/Commands/save.md` step 13: the shutdown it starts skips its own save. No project-state change.
+- Memos: new root folder `_Memos/` (with `.gitkeep`; finished memos in `_Memos/Archive/`), `_Axis/Practices/Memos.md`, `_Axis/Commands/memo.md` and `_Axis/Commands/memos.md`, Setting `Memo Generation`, default Directive "Write a Memo" (in `DIRECTIVES.md` and `Resources/Default-Directives.md`). `Resources/boot.py` creates `_Memos/`, moves legacy Reviews, and lists `waiting on you` memos edited after their Updated time as pending replies; `Resources/Boot-Manual.md` step 10 does the same by hand. `Commands/review.md` saves a Review memo and supersedes the previous one; `Commands/refresh.md` archives finished memos; `Resources/status.py` reads Review memos and lists memos waiting on User; the Dashboard server serves `_Memos/` and `_Memos/Archive/` read-only and the Dashboard reads Review memos. `Rules/UntrustedContent.md` routes memo replies to the Practice. Manifest, Glossary, Practices index, Project Layout and Folders rules, User Manual and Specification updated.
+- Guardrails: new `_Axis/Resources/guardrails.py` (Claude Code PreToolUse hook: write-once records and record names for every Agent; for helpers running as `axis-cx`, `axis-wiki` or `axis-general`, no `_Axis/Secrets/` and writes only in the role's folders; exit 2 refuses; `--check` self-test), helper role definitions in `_Axis/Resources/Helpers/`, an OpenClaw plugin in `_Axis/Resources/OpenClaw/axis-guardrails/` that runs `guardrails.py --external` for listed External Agent IDs (and refuses spawning and `_Axis/Secrets/`), and an `^install guardrails` route in `_Axis/Commands/install.md` (Claude Code and OpenClaw) that changes host configuration only on User's approval. `_Axis/Practices/OpenClaw.md` > Tool Surface mentions the plugin. No project-state change; nothing is installed by the update.
+- `_Axis/Resources/turn.py`: a missing Marker whose `session-id` Flag names a newer, live, untombstoned Main prints `TAKEN OVER` (exit 6) instead of `LOST LEASE` (exit 4); every other missing Marker is still `LOST LEASE`. `_Axis/Resources/Claim-Session.md` > Takeover says so. No project-state change.
+- Identifier correction: `_Axis/Resources/record-check.py` gains `correct --path --old --new` (replaces one wrong record reference in a write-once record and prints the Log fields), and `write-once` accepts exactly that change when the same commit adds an `Identifier correction:` Log naming it; `_Axis/Rules/RecordsAndWORM.md` states the rule. No project-state change.
+- Reference scan: `_Axis/Resources/record-check.py links [--scope ...] [--archive]` reports `MALFORMED`, `UNRESOLVED`, `BROKEN-LINK` and `MOVED-LINK` findings in the record folders, indexes, Plan, Initiatives, Instructions and `_Memos/`, marking write-once records; `_Axis/Commands/refresh.md` step 6 runs it and repairs mutable files; `_Axis/Commands/audit.md` item 3 a4 reports it; `--staged` is a third record check in `_Axis/Commands/save.md` step 11 (refuses only problems a staged record adds), and `--range` runs in `_Axis/Commands/resume.md` step 1 after receiving. Rules: `_Axis/RULES.md` and `_Axis/Rules/Timestamps.md` (cite identifiers only by copying them), `_Axis/Rules/RecordsAndWORM.md` (write-once records cite by bare identifier); `_Axis/Practices/Archiving.md` and `Practices/Followups.md` repoint links after a move. No project-state change.
+- First Boot: `_Axis/Resources/boot.py` (and `Boot-Manual.md` step 10), only before Project Setup completes, moves files under `.github/` marked `axis:production-only` into `_Trash/` and removes emptied folders; the Specification gains a First Boot section. No project-state change for an existing project.
+
+### Project-State Migrations
+
+- `_Axis/SETTINGS.md` (automatic): add `### Memo Generation` (value `2`) before `## Mindset Settings`, using the template's description and range. Preserve every existing value.
+- `_Memos/` (automatic, at the first startup after the update, never in the update transaction): `boot.py` (or Boot-Manual step 10) creates `_Memos/` with `.gitkeep` and moves each report in `_Axis/Reviews/` and `_Axis/Status/`, contents unchanged, into `_Memos/Archive/` as `YYYY-MM-DD - Review - {topic}.md` (local date from the record timestamp, topic from Line 1, ` (2)` on a collision), then removes the emptied folders. A folder still holding unrecognized files is left in place and reported. Reviews archived under the Archive Location stay where they are.
+- `_Axis/DIRECTIVES.md`: no update-time edit; startup appends "Write a Memo" from `Resources/Default-Directives.md` as for every new default Directive.
+
+### Retired Paths
+
+- `_Axis/Practices/Reviews.md` (folded into `_Axis/Practices/Memos.md`).
+- `_Axis/Reviews/` and the pre-2.01 `_Axis/Status/` as live folders: emptied into `_Memos/Archive/` at the first startup after the update.
+
+### Verification
+
+- Native suite on the frozen checkpoint, the local Docker Linux gate, the release-contents check, and live Claude Code checks (Memos round trip, `^shutdown` saving first, guardrails) plus a live OpenClaw External guardrails check.
 
 ## 2.07
 

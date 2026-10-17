@@ -114,7 +114,13 @@ def normalize_request_path(target: str) -> tuple[tuple[str, ...], bool]:
     return parts, directory
 
 
+# Memos (2.08): User-facing Markdown messages and Reviews; listed and read like records, never written.
+MEMO_DIRECTORIES = {("_Memos",), ("_Memos", "Archive")}
+
+
 def is_allowed_file(parts: tuple[str, ...]) -> bool:
+    if len(parts) >= 2 and parts[:-1] in MEMO_DIRECTORIES and parts[-1].endswith(".md"):
+        return True
     if len(parts) == 2 and parts[0] == "_Axis" and parts[1] in AXIS_ROOT_FILES:
         return True
     if len(parts) == 3 and parts[:2] == ("_Axis", "Dashboard") and parts[2] in DASHBOARD_FILES:
@@ -156,6 +162,8 @@ def is_browsable_directory(parts: tuple[str, ...]) -> bool:
     if parts == ("_Axis", "Dashboard"):
         return True
     if parts == ("_Axis", "Requests"):
+        return True
+    if parts in MEMO_DIRECTORIES:
         return True
     return False
 

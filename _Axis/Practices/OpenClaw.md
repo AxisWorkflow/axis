@@ -79,6 +79,8 @@ Exclude memory and plugin-management groups. Exclude browser/web, media, and oth
 
 Cross-agent delivery is opt-in. Where the installed release requires session visibility plus agent-to-agent enablement, grant both only with an exact allowlist of target Axis agent IDs. Never grant `*`, every agent, or an ambiguous name. [Practices > Requests > Accelerated Delivery] remains controlling: write and read back the destination `_Axis/Requests/{timestamp}.md` first, then send only its Subject and path as a best-effort OpenClaw notification. A failed or unavailable Host message leaves the Request as successful delivery and carries no authorization.
 
+An External Agent's tool limits can also be enforced by the optional `axis-guardrails` plugin (`^install guardrails`): it refuses spawning, `_Axis/Secrets/`, changes to existing files and new files outside Project Subfolders, `_Axis/Requests/` and `_Temp/` for the agent IDs it lists.
+
 ## Schedules
 
 Use explicit OpenClaw cron jobs, not generic heartbeats. Set the default heartbeat interval to disabled and create only the narrowly approved job that names a standalone Axis prompt. A job may wake an exact agent or session, but its provisioning authorizes only the Command it names and does not alter role recognition or confirmation gates.

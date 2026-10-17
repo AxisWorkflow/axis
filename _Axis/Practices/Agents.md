@@ -113,7 +113,7 @@ Axis ships no scheduler and does not want one - a schedule that lived inside Axi
 - **A scheduled task in a hosted app (e.g., Cowork).** Create the task in the host's own scheduling UI. Write its prompt to stand alone - a scheduled run starts a fresh session with no memory of the conversation that set it up - and point it at the entry-point file and a Command, not at a description of the work:
 
 	Read AGENTS.md and follow it. Then run ^refresh, and run ^review if the
-	newest report in _Axis/Reviews/ is more than 7 days old.
+	newest Review in _Memos/ is more than 7 days old.
 
 - **cron plus a headless CLI host.** When the host runs from a shell, `cron` (or `launchd`, or Task Scheduler) fires it. Always change into the project root first - every path in Axis is relative to it - and send output somewhere User will actually look:
 

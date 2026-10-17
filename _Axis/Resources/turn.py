@@ -16,13 +16,23 @@ marker=agents/f'{o.session}.md'
 if (agents/f'{o.session}.kill').exists():
     print('KILLED: User stopped this session. Log one final Event, append a final Tracking line, tell the user, and stop.');sys.exit(3)
 lost='LOST LEASE: your Marker is missing. Make no shared writes and never recreate it on your own; ask the user this turn. On their word you may re-register it (Practices > Markers > The Lease).'
-if not marker.is_file():print(lost);sys.exit(4)
+taken='TAKEN OVER: {why} Make no shared writes and touch no Flag; tell the user this session has ended and that a new one can be started, or ^promote used from an External session.'
+def missing():
+    # A takeover clears the idle Main's Marker. When the session-id Flag names a newer, live Main, this session was
+    # replaced: report TAKEN OVER, because re-registering a lost lease here would briefly make two Mains.
+    try:
+        owner=((root/'_Axis/Flags/session-id').read_text().splitlines() or [''])[0].strip();p=agents/f'{owner}.md'
+        newer=re.fullmatch(r'\d{4}(\.\d{2}){5}\.\d{3}Z',owner) and owner>o.session and not (agents/f'{owner}.kill').exists()
+        if newer and p.is_file() and (p.read_text().splitlines() or [''])[0]=='Main: session' and time.time()-p.stat().st_mtime<3600:
+            print(taken.format(why=f'your Marker was cleared and a newer Main session ({owner}) now holds the project.'));sys.exit(6)
+    except OSError:pass
+    print(lost);sys.exit(4)
+if not marker.is_file():missing()
 try:
     first=(marker.read_text().splitlines() or [''])[0];age=time.time()-marker.stat().st_mtime
-except OSError:print(lost);sys.exit(4)
+except OSError:missing()
 if not re.match(r'(Main: session|External: |Subagent: )',first):print('ERROR: your Marker is malformed; ask the user.');sys.exit(5)
 now=time.time();items=[]
-taken='TAKEN OVER: {why} Make no shared writes and touch no Flag; tell the user this session has ended and that a new one can be started, or ^promote used from an External session.'
 if first=='Main: session':
     for p in agents.glob('*Z.md'):
         if p==marker or (agents/(p.stem+'.kill')).exists():continue
@@ -43,7 +53,7 @@ if age>=3600:
 # Renewal refused by a read-only host (sandbox or file system) is not a missing Marker: report it, fail closed.
 readonly='READ-ONLY: this host refused to renew your Marker (read-only sandbox or file system); the Marker is still present. Make no shared writes and do not create or repair any Marker; ask the user to rerun this session with write access.'
 try:os.utime(marker)
-except FileNotFoundError:print(lost);sys.exit(4)
+except FileNotFoundError:missing()
 except OSError as e:
     if isinstance(e,PermissionError) or e.errno in (errno.EROFS,errno.EPERM,errno.EACCES):print(readonly);sys.exit(7)
     print(lost);sys.exit(4)

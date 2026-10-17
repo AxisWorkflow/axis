@@ -16,6 +16,7 @@
 - Index-Detail records are named `{yyyy.mm.dd.hh.mm.ss.xxxZ}.md` - never described.
 - The 3-digit milliseconds and the `Z` are NOT optional - see [Rules > Timestamps].
 - Record timestamps are project-unique; mint per [Practices > Timestamps].
+- Copy record IDs from disk or helper output; never type one from memory.
 - Corroborate a "not found" before it justifies creating, overwriting, or skipping.
 - Consult the matching rule file before Task, Log, Note, Wiki, or Subagent work.
 - User-blocked work: keep Task Blocked; raise or reuse one Follow-Up; never copy.

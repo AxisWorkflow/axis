@@ -41,11 +41,13 @@ Create a family folder on first use under the Archive root and retain the record
 	_Axis/Archive/Followups/{yyyy.mm.dd.hh.mm.ss.xxxZ}.md
 	_Axis/Archive/Reminders/{yyyy.mm.dd.hh.mm.ss.xxxZ}.md
 
+
+After moving records, run `python3 _Axis/Resources/record-check.py links` and repoint each `MOVED-LINK` in an editable file (an index, the Plan, Initiatives, an open record, a Memo) to the record's archived path, `Archive/{Family}/{identifier}.md` relative to `_Axis/`. Leave write-once records unchanged.
 Do not pre-load Archive contents at Session Start. Inventory them by family, filename, Line-1 Subject, and structured fields; lazy-load a body only when User asks for archived history or it is needed to restore or verify a record.
 
 ## Eligibility
 
-- Notes, Ideas, Logs, Snapshots, CX Reports, Audit Reports, Reviews, and Supervision records may be archived.
+- Notes, Ideas, Logs, Snapshots, CX Reports, Audit Reports, legacy Reviews, and Supervision records may be archived. Memos archive into `_Memos/Archive/` under [Practices > Memos].
 - A triaged request moves to `_Axis/Archive/Requests/` as the closing step of its own adjudication ([Practices > Requests]), not by `^archive`. It self-archives because leaving a resolved request in the live queue would break the empty-queue invariant the per-turn glance depends on. An un-triaged request is never archived - triage it.
 - A terminal Follow-Up moves to `_Axis/Archive/Followups/` as the closing step of its own lifecycle ([Practices > Followups]), not by `^archive`. An open Follow-Up is never archived. A terminal Follow-Up is never restored; reopening creates a new record that references the old identifier.
 - A terminal Reminder moves to `_Axis/Archive/Reminders/` as the closing step of its own lifecycle ([Practices > Reminders]), not by `^archive`. An open Reminder is never archived. Reopening mints a new record that references the old identifier.

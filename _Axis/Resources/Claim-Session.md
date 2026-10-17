@@ -42,7 +42,7 @@ A foreign `Main: session` Marker at or over 1 hour old with no tombstone is an i
 - Under the limit: write nothing, release only your own claim, and ask User in one line, naming the session and its idle time and recommending takeover. On yes, claim again and take it over; otherwise join as External.
 - At or over the limit, or taken over at User's word: become Main.
 
-Sweep after your Marker and `starting` are written: delete each taken-over Main Marker that is still stale, every other Marker over 24 hours old, and every tombstone over 1 hour old with its Marker. Report the count in one greeting line. A cleared session finds its Marker missing at its next turn (lost lease) and stops writing.
+Sweep after your Marker and `starting` are written: delete each taken-over Main Marker that is still stale, every other Marker over 24 hours old, and every tombstone over 1 hour old with its Marker. Report the count in one greeting line. A cleared session finds its Marker missing at its next turn and, with `session-id` naming the newer live Main, is told it was taken over and stops writing.
 
 ## Admitted loading batch
 

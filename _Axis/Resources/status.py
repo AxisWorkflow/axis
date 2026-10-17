@@ -127,7 +127,8 @@ def collect(root, detail):
     rem.sort(key=lambda r: r['due'] or '~')
     logs = [{'subject': subject(f), 'age': age(when(f.name), now)} for f in records(root, '_Axis/Logs')[:12 if detail == 'full' else 4]]
     snaps = records(root, '_Axis/Snapshots')
-    reviews = records(root, '_Axis/Reviews', '_Axis/Status')
+    reviews = review_memos(root) or records(root, '_Axis/Reviews', '_Axis/Status')
+    memos_waiting = waiting_memos(root)
     agents = []
     ad = ax / 'Agents'
     for f in (ad.iterdir() if ad.is_dir() else []):
@@ -158,7 +159,8 @@ def collect(root, detail):
         'initiatives': [i for i in inits if i['status'] not in ('Completed', 'Cancelled')],
         'followups': fus, 'reminders': rem[:10], 'logs': logs,
         'snapshot': {'subject': subject(snaps[0]), 'age': age(when(snaps[0].name), now)} if snaps else None,
-        'review': {'subject': subject(reviews[0]), 'age': age(when(reviews[0].name), now), 'path': str(reviews[0].relative_to(root))} if reviews else None,
+        'review': {'subject': subject(reviews[0]), 'age': age(memo_date(reviews[0].name) or when(reviews[0].name), now), 'path': str(reviews[0].relative_to(root))} if reviews else None,
+        'memos_waiting': memos_waiting,
         'agents': agents, 'git': git, 'root': str(root),
         'counts': {'Notes': n('_Axis/Notes'), 'Ideas': n('_Axis/Ideas'), 'Requests': n('_Axis/Requests'), 'Logs': n('_Axis/Logs')},
         'detail': detail,
@@ -167,6 +169,36 @@ def collect(root, detail):
         data['recent_completed'] = [t for t in tasks if t['status'] == 'Completed'][-8:]
         data['plan_sections'] = [h for h, _ in blocks(plan)]
     return data
+
+
+MEMO = re.compile(r'^(\d{4}-\d\d-\d\d) - (.+)\.md$')
+
+
+def memo_date(name):
+    m = MEMO.match(name)
+    return dt.datetime.strptime(m.group(1), '%Y-%m-%d').astimezone() if m else None
+
+
+def review_memos(root):
+    """Review memos (2.08), newest first: live ones in _Memos/, then _Memos/Archive/."""
+    out = []
+    for d in ('_Memos', '_Memos/Archive'):
+        p = root / d
+        if p.is_dir() and not p.is_symlink():
+            out += sorted((f for f in p.iterdir() if f.is_file() and MEMO.match(f.name) and ' - Review - ' in f.name), key=lambda f: f.name, reverse=True)
+    return sorted(out, key=lambda f: f.name[:10], reverse=True)
+
+
+def waiting_memos(root):
+    """Names of live memos whose header Status is `waiting on you`, newest first."""
+    p = root / '_Memos'
+    if not p.is_dir() or p.is_symlink():
+        return []
+    out = []
+    for f in sorted(p.iterdir(), key=lambda f: f.name, reverse=True):
+        if f.is_file() and MEMO.match(f.name) and re.search(r'^- \*\*Status:\*\* waiting on you\s*$', read(f)[:2000], re.M):
+            out.append(f.name[:-3])
+    return out
 
 
 def context_method(settings):
@@ -227,7 +259,7 @@ def text(d, width, color):
     cur += [f"    {A('!')} {clip('Blocked: ' + x['name'] + ' - ' + x['label'], width - 6)}" for x in d['blocked'][:6 if full else 3]]
     section('Current', cur, 'No active or blocked Tasks.')
     section('Waiting on you', [f"    - {clip(f['subject'] + (' (due ' + f['due'] + ')' if f['due'] and f['due'] != 'N/A' else ''), width - 6)}"
-                               for f in d['followups'][:5]], 'Nothing.')
+                               for f in d['followups'][:5]] + [f"    - Memo: {clip(m, width - 12)}" for m in d['memos_waiting'][:5]], 'Nothing.')
     section('Reminders', [f"    - {clip(r['subject'] + (' - ' + r['due'] if r['due'] else ''), width - 6)}" for r in d['reminders'][:3]], 'None.')
     recent = [f"    {M(l['age'].rjust(7))}  {clip(l['subject'], width - 13)}" for l in d['logs']]
     tail = ([f"last Snapshot {d['snapshot']['age']}"] if d['snapshot'] else []) + ([f"last Review {d['review']['age']}"] if d['review'] else [])
@@ -297,11 +329,11 @@ def page(d, root, out):
         return ''.join(f'<li>{e(x)}</li>' for x in items) or '<li class="muted">None</li>'
     t = d['tasks']
     stats = [(t['Active'], 'active tasks'), (t['Planned'], 'planned'), (t['Blocked'], 'blocked'), (t['Completed'], 'completed'),
-             (len(d['followups']), 'waiting on you'), (len(d['reminders']), 'reminders'), (len(d['agents']), 'agents live')]
+             (len(d['followups']) + len(d['memos_waiting']), 'waiting on you'), (len(d['reminders']), 'reminders'), (len(d['agents']), 'agents live')]
     cards = [
         ('Now', li([f"{x['name']} - {clip(x['label'], 140)}" for x in d['active']] + [f"Blocked: {x['name']} - {clip(x['label'], 120)}" for x in d['blocked']])),
         ('Initiatives', li([f"{i['name']} ({i['status']}{', ' + i['phase'] if i['phase'] and i['phase'] != i['status'] else ''})" for i in d['initiatives']])),
-        ('Waiting on you', li([f['subject'] + (f" (due {f['due']})" if f['due'] and f['due'] != 'N/A' else '') for f in d['followups']])),
+        ('Waiting on you', li([f['subject'] + (f" (due {f['due']})" if f['due'] and f['due'] != 'N/A' else '') for f in d['followups']] + ['Memo: ' + m for m in d['memos_waiting']])),
         ('Reminders', li([r['subject'] + (' - ' + r['due'] if r['due'] else '') for r in d['reminders']])),
         ('Recent activity', li([f"{l['age']}: {l['subject']}" for l in d['logs']])),
     ]

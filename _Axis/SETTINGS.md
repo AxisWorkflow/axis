@@ -135,6 +135,14 @@
 
 **Value:** Default
 
+### Memo Generation
+
+**Description:** When the Agent writes a Memo in `_Memos/` instead of putting everything in the reply (see [Practices > Memos]). Each level includes those below it. `0` = only when you ask (`^memo`). `1` = also at major milestones, such as a release or a finished phase. `2` = also for complex or multi-layered decisions, and any reply with two or more decisions for you. `3` = also for any response longer than about two screens. `4` = also for any response longer than about one screen. With a memo, the reply stays short and links to it. Missing or malformed means `2`.
+
+**Range:** `0`, `1`, `2`, `3` or `4`
+
+**Value:** 2
+
 ## Mindset Settings
 ### Reasoning
 

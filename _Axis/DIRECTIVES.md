@@ -160,3 +160,18 @@ The best way to load project context depends on the model. In Axis's benchmark, 
 - When the current value differs from the recommendation, suggest the change once per session in one plain sentence with the reason, for example: "This project runs on Claude, where Two-Pass context loading used about 38% fewer tokens in Axis's tests. Switch Context Management to Two-Pass?" Do not repeat it after User declines in the same session.
 - Change the Setting only on User's answer, following [Practices > Settings], and load [Practices > Context] before working under the new value.
 - Do not trigger this when the value already matches the recommendation, or for a model with no recommendation.
+
+## Write a Memo
+
+#### Keywords
+memo, decisions, long reply, report, summary for User, keep User on track
+#### Description
+Chat scrolls away and loses its formatting. A Memo in `_Memos/` keeps what User needs to read, decide or come back to, with the context User may not remember. [Settings > Memo Generation] sets when to write one.
+#### Triggers
+- User asks for a memo, or types `^memo`.
+- A reply reaches the level set in [Settings > Memo Generation]: a major milestone, two or more decisions for User, or a response longer than its screen limit.
+- A Command or project instruction requires a report.
+#### Behavior
+- Load [Practices > Memos] and write or update the memo.
+- Record decisions, tasks and open asks canonically first; the memo links to them.
+- Reply with the outcome in a few lines and a link to the memo.
