@@ -3,6 +3,14 @@
 
 Thank you for considering a contribution.
 
+Axis is developed by its maintainers, and pull requests on `AxisWorkflow/axis`
+are limited to collaborators. To report a bug or request a feature, type
+`^feedback` in your Axis session, or use the issue forms on GitHub; questions
+and open-ended ideas go to the repository's Discussions. Report a security
+problem privately, as `SECURITY.md` on the repository describes.
+
+The rest of this file applies to maintainers and invited collaborators.
+
 Axis accepts a contribution only after its contributor has executed the
 [Contributor License Agreement and Copyright Assignment](/_Axis/CLA.md). The
 agreement assigns copyright in the contribution to the Axis copyright owner.

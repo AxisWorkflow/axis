@@ -3,7 +3,8 @@
 
 Installed by `^install guardrails` as a Claude Code PreToolUse hook. For every Agent: no edit to a write-once record
 (Logs, Snapshots, CX, Audit, Supervision, archived history, update evidence, finished Tasks, Follow-Ups and Reminders)
-and no new record with a malformed name. For a helper running as an Axis agent type (`axis-cx`, `axis-wiki`,
+and no new record with a malformed name. A write to a record, index, Plan or Memo may not add an identifier that is
+malformed or names nothing (record-check.py's scan; `(missing)` after an identifier reports it as missing). For a helper running as an Axis agent type (`axis-cx`, `axis-wiki`,
 `axis-general`), also: writes only inside that role's folders, and no tool may touch `_Axis/Secrets/`.
 For an OpenClaw agent listed as an External Agent, the `axis-guardrails` plugin calls `--external {tool} {path}`:
 no `_Axis/Secrets/`, no change to an existing file, and new files only in Project Subfolders, `_Axis/Requests/` and
@@ -12,7 +13,7 @@ Python 3 standard library only; reads paths and status lines, never prints file 
 shell command or helper script writes, and it never affects User's own editing.
 
 Self-test without a host: python3 _Axis/Resources/guardrails.py --check {project-relative path} [--new] [--agent {type}]"""
-import json,os,re,sys
+import importlib.util,json,os,re,sys
 from pathlib import Path
 
 NAME=re.compile(r'\d{4}(?:\.\d{2}){5}\.\d{3}Z\.md')
@@ -81,6 +82,40 @@ def verdict(root,rel,exists,agent,tool):
     if tool not in WRITE_TOOLS:return None
     return write_once(root,rel,exists) or (helper_scope(agent,rel,exists) if agent else None)
 
+def new_text(root,rel,tool,ti):
+    """The file's text after this Write, Edit or MultiEdit, or None when it cannot be known."""
+    if tool=='Write':return ti.get('content') if isinstance(ti.get('content'),str) else None
+    try:text=(root/rel).read_text(encoding='utf-8',errors='replace')
+    except OSError:return None
+    edits=ti.get('edits') if tool=='MultiEdit' else [ti]
+    for e in edits or []:
+        old,new=e.get('old_string'),e.get('new_string')
+        if not isinstance(old,str) or not isinstance(new,str) or old not in text:return None
+        text=text.replace(old,new) if e.get('replace_all') else text.replace(old,new,1)
+    return text
+
+def references(root,rel,tool,ti):
+    """A refusal reason when the write adds a malformed or dangling identifier, or None."""
+    try:
+        spec=importlib.util.spec_from_file_location('record_check',root/'_Axis/Resources/record-check.py')
+        rc=importlib.util.module_from_spec(spec);spec.loader.exec_module(rc)
+        if not rc.in_scope(rel):return None
+        after=new_text(root,rel,tool,ti)
+        if after is None:return None
+        arch,known,names,_=rc.context(root,[],False);f=root/rel
+        try:before=f.read_text(encoding='utf-8',errors='replace')
+        except OSError:before=''
+        old={}
+        for k,_,d,_ in rc.scan(root,arch,known,names,f,before,rel):old[(k,d)]=old.get((k,d),0)+1
+        bad=[]
+        for k,i,d,_ in rc.scan(root,arch,known,names,f,after,rel):
+            if k not in ('MALFORMED','UNRESOLVED'):continue
+            if old.get((k,d),0):old[(k,d)]-=1
+            else:bad.append(f'{d} (line {i}, {"malformed" if k=="MALFORMED" else "names nothing"})')
+    except Exception:return None
+    if not bad:return None
+    return 'this write adds record identifiers that are malformed or name nothing: '+', '.join(bad[:5])+'. Copy each identifier from disk, or write (missing) right after one you mean to report as missing'
+
 def relative(root,path):
     p=Path(path)
     if not p.is_absolute():p=root/p
@@ -115,7 +150,7 @@ def main():
     if not isinstance(path,str) or not path:return 0
     rel=relative(root,path)
     if rel is None:return 0
-    why=verdict(root,rel,(root/rel).exists(),agent,tool)
+    why=verdict(root,rel,(root/rel).exists(),agent,tool) or (references(root,rel,tool,ti) if tool in ('Write','Edit','MultiEdit') else None)
     if why:
         print(f'Axis guardrail: {why} ({rel}). See _Axis/Rules/RecordsAndWORM.md and _Axis/Rules/Subagents.md.',file=sys.stderr);return 2
     return 0

@@ -156,6 +156,7 @@
 - `_Axis/Commands/cx.md`
 - `_Axis/Commands/dashboard.md`
 - `_Axis/Commands/demote.md`
+- `_Axis/Commands/feedback.md`
 - `_Axis/Commands/followups.md`
 - `_Axis/Commands/git.md`
 - `_Axis/Commands/help.md`

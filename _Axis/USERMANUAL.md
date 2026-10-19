@@ -1,6 +1,6 @@
 # Axis Workflow User Manual
 > **Purpose:** How to use the Axis Workflow day to day: setup, commands, the Dashboard, the Wiki, working across tools and machines, and working with Agents and models. For the technical and compliance reference, see [SPECIFICATION](/_Axis/SPECIFICATION.md).
-> **Version:** 2.08
+> **Version:** 2.09
 
 
 
@@ -26,7 +26,7 @@
 - Mount your AI tool (Claude Cowork, ChatGPT Work, Codex, Gemini CLI, Claude Code, ...) to the folder.
 - **Note:** For the complete shell-backed feature set on Windows, use **WSL** or **Git Bash**. Without a POSIX-like shell, Axis keeps its canonical file workflow and degrades shell-dependent enhancements.
 
-Axis drops four underscore-prefixed folders into your project: `_Axis/`, `_Temp/`, `_Trash/` and the readable `_Wiki/`. You can generally ignore the first three and work with your Agent. One exception: deposit secret files into `_Axis/Secrets/` by hand so they never go through chat.
+Axis reserves six underscore-prefixed folders in your project: `_Axis/`, `_Inbox/`, `_Memos/`, `_Temp/`, `_Trash/` and the readable `_Wiki/`. Drop new material in `_Inbox/`, read reports and decisions in `_Memos/`, and browse knowledge in `_Wiki/`. You can generally ignore the others and work with your Agent. One exception: deposit secret files into `_Axis/Secrets/` by hand so they never go through chat.
 
 Your own content lives in normal folders that your Agent creates and organizes as the work develops; add `_U` to a folder name to make it read-only for Agents, or `_X` to hide it from Agents completely.
 
@@ -211,6 +211,7 @@ For example, the text...
 | `^cx`        | Launch a Cross-Examination.                                                                                    |
 | `^dashboard` | Launch the Axis Dashboard in a browser.                                                                        |
 | `^demote`    | Step the current Main Agent down to an External Agent (User-only).                                             |
+| `^feedback`  | Send a bug report, feature request or question OUTSIDE this project, to the Axis Workflow developers - prepared here, sent only on your word. |
 | `^followups` | Review the User's open Follow-Ups, or add, update, resolve, withdraw, or convert one.                          |
 | `^git`       | Save or receive project changes through safe, adaptive Git synchronization.                                    |
 | `^help`      | Summarize and list all commands and answer general questions.                                                  |
@@ -305,6 +306,10 @@ You can answer in chat or in the memo itself: tick a box, write after `Your answ
 
 The **Memo Generation** setting decides how often memos are written, from `0` (only when you ask with `^memo`) to `4` (whenever a reply would run past about a screen); the default is `2`, for complex decisions. `^memos` lists them. Finished memos move to `_Memos/Archive/` during `^refresh`, so they stay out of your Agent's way but remain easy to browse. Reviews (`^review`) are memos too; each new Review replaces the previous one, which moves to the archive. Memos are views: every decision in them is also recorded in the project's own records.
 
+### Sending feedback to the Axis developers
+
+Type `^feedback` to report a bug, request a feature or ask a question. Your Agent says first that the report leaves your project for the public `AxisWorkflow/axis` repository on GitHub. It gathers your Axis version, host, model and a few settings, works through a bug's steps with you, and, each time with your yes, checks the latest release and searches for an existing report. It removes secrets, personal details and project content, then shows you the exact text. Nothing is sent until you type `send`. It creates the issue with the GitHub command-line tool when that is signed in, otherwise gives you a prefilled link or a saved draft to paste. Security problems never go public: `^feedback` sends you to GitHub's private vulnerability reporting instead. The Axis maintainers make the fixes themselves; outside pull requests are not accepted.
+
 ### Initiatives
 
 Use an Initiative when several Tasks pursue one shared outcome. For example, a Plan to grow a service might include an Initiative to improve first-time setup, with separate Tasks to investigate delays, make a change, and check the result. The Plan holds priorities, the Initiative holds shared scope and current phase, and Tasks hold the actual work.
@@ -368,7 +373,7 @@ Type these in the parent project:
 | `^^message <child> <text>` | Leaves a written request in the child's queue; its own Agent decides what to do with it. |
 | `^^do <child\|all> <task> [with <file>]` | Gives a child an order it must carry out, refer back to you, or decline for a stated reason. A session in the child does the work under the child's own rules. `with` hands the child a file from this project. |
 | `^^start`, `^^stop`, `^^restart <child>` | Starts or stops the child's Agent, when your AI host supports it. |
-| `^^update [child\|all]` | Updates every Axis project nested anywhere below this one to this project's Axis version (or a named release). It shows a preview first, asks before stopping any Agent that is working in a project, updates projects one at a time through their own `^update`, and reports each result; a project that fails or needs a decision is reported and the others continue. |
+| `^^update [child\|all]` | Updates every Axis project nested anywhere below this one to this project's Axis version (or a named release). It shows a preview first, asks before stopping any Agent that is working in a project, updates projects in parallel (parents before the projects nested inside them) through their own `^update`, and reports each result; a project that fails or needs a decision is reported and the others continue. |
 | `^^schedule ...` | Sets up a recurring supervision check, when your host supports schedules. |
 
 Good to know:

@@ -1,7 +1,7 @@
 # Changelog
 > **Purpose:** Record Axis release identity and the structural migrations needed to update an existing project safely.
 
-current-version: 2.08
+current-version: 2.09
 changelog-format: 1
 self-update-baseline: 26.08.19
 
@@ -27,6 +27,36 @@ update-impact: automatic
 ### Structural Changes
 
 - None.
+
+### Project-State Migrations
+
+- None.
+
+### Retired Paths
+
+- None.
+
+### Verification
+
+- None.
+
+## 2.09
+
+released: 2026-10-19
+
+- `^^update all` now updates nested projects in parallel instead of one at a time. A parent still finishes before the projects nested inside it, and projects that share one Git repository still go one after another.
+- To mention a record you know is missing, write `(missing)` right after its ID. `^save`'s commit check and the reference scan then accept it, while an unmarked ID that names nothing is still refused.
+- With `^install guardrails` on Claude Code, the hook now also refuses a write that adds a malformed record ID or one that names no record, at the moment it is written. The commit check at `^save` still catches the same problems on every host.
+- New: `^feedback` sends a bug report, feature request or question to the Axis developers. Your Agent prepares it (environment, reproduction, a duplicate search that asks first), removes private material, shows you the exact text and sends nothing until you type `send`. Security problems go to private reporting instead.
+
+update-impact: automatic
+
+### Structural Changes
+
+- New `_Axis/Commands/feedback.md`; `_Axis/CONTRIBUTING.md` points reporters to `^feedback` and the issue forms; Manifest, User Manual and Specification updated. No project-state change.
+- `_Axis/Practices/Supervision.md` `^^update` step 6: projects update in parallel waves by nesting depth (at most Max Concurrent Sessions at once; projects sharing one Git repository serially). No project-state change.
+- `_Axis/Resources/record-check.py`: an identifier followed by `(missing)` is acknowledged, not a finding; identifiers listed in `_Dev/Evidence/DELETED.md` resolve. `_Axis/Rules/Timestamps.md` documents the marker. No project-state change.
+- `_Axis/Resources/guardrails.py`: Write, Edit and MultiEdit on a record, index, Plan or Memo are refused when they add a malformed or dangling identifier (reusing `record-check.py`'s scan). Installed hooks pick it up without reinstalling. No project-state change.
 
 ### Project-State Migrations
 

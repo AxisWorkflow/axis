@@ -1,6 +1,6 @@
 # Axis Workflow Specification
 > **Purpose:** The technical reference behind the Axis Workflow: how every mechanism works, why it was built that way, what it guarantees, where it stops, and what an extender must not break. Written for deep diagnostics, downstream developers extending Axis, IT and compliance reviewers assessing it before adoption, and contributors. For everyday use, see the [User Manual](/_Axis/USERMANUAL.md).
-> **Version:** 2.08
+> **Version:** 2.09
 
 ## How to Read This Document
 
@@ -355,6 +355,10 @@ Since 2.08, every project has a root `_Memos/` ([Practices > Memos](/_Axis/Pract
 **Migration.** The first startup after updating to 2.08 creates `_Memos/` and moves each report in `_Axis/Reviews/` and `_Axis/Status/`, contents unchanged, into `_Memos/Archive/` as `YYYY-MM-DD - Review - {topic}.md`, then removes the emptied folders (`boot.py`, or Boot-Manual step 10). Archived legacy Reviews under the Archive Location stay where they are. Older Logs that link to a moved report keep the old path as history.
 
 ## Records and Data Model
+
+### Feedback
+
+Since 2.09, `^feedback` ([Commands > feedback](/_Axis/Commands/feedback.md)) sends a bug report, feature request, question or idea to `AxisWorkflow/axis`. The submitter's own Agent does the preparation on the submitter's budget, so reports arrive complete: a machine-readable header (`axis-feedback: 1`, version, host, harness, model, OS, a few Settings, reproduction, duplicate search, delivery), then the issue form's headings, with evidence and analysis kept apart. Main only; nothing leaves the project before User types the literal `send` after seeing the exact text, and each network check (latest release, duplicate search) asks first, because even a search reveals a topic. Redaction removes secret shapes, paths, names and project content and re-reads the draft. Delivery degrades from `gh` to a prefilled link capped at 6,000 characters to a saved draft, so no dependency is added. Security problems are routed to private vulnerability reporting and never drafted publicly. On the repository, issue forms set the type and a `needs-triage` label, pull requests are limited to collaborators, and the maintainers triage at each batch planning; the header is a claim that speeds triage, never a source of trust.
 
 ### Identifiers
 
@@ -949,7 +953,7 @@ There is no `^^shutdown`; `^^stop` is the single supervisory stop command. The o
 
 > **User:** `^^update`
 
-Unlike the other `^^` commands, `^^update` reaches every Axis project nested anywhere below the parent, not only direct children (User decision, 2026-09-29). It first shows a read-only preview: each project's current and target version (the parent's own version unless you name a release), whether the update would be routine, and which Agents are live. If any project has a live Agent, it lists them and asks whether to stop them or skip those projects; `^^update stop-agents` answers yes in advance. Then, one project at a time and parents before children, it starts a genuine session in the project that runs that project's own `^update` with a delegation line pointing at the parent's Supervision record, and afterwards a fresh session that adopts the update. The parent never edits a project's files itself, so every project keeps its own admission, lease, scoped authorization, rollback and fresh-session adoption. Your `^^update` authorizes routine updates only: a project that needs a decision, fails or cannot be updated is reported and the run continues with the others. Without a Host that can start project sessions, the parent leaves a Request in each project and lists the manual steps.
+Unlike the other `^^` commands, `^^update` reaches every Axis project nested anywhere below the parent, not only direct children (User decision, 2026-09-29). It first shows a read-only preview: each project's current and target version (the parent's own version unless you name a release), whether the update would be routine, and which Agents are live. If any project has a live Agent, it lists them and asks whether to stop them or skip those projects; `^^update stop-agents` answers yes in advance. Then, in parallel waves by nesting depth (parents before children; projects sharing one Git repository one after another), it starts a genuine session in the project that runs that project's own `^update` with a delegation line pointing at the parent's Supervision record, and afterwards a fresh session that adopts the update. The parent never edits a project's files itself, so every project keeps its own admission, lease, scoped authorization, rollback and fresh-session adoption. Your `^^update` authorizes routine updates only: a project that needs a decision, fails or cannot be updated is reported and the run continues with the others. Without a Host that can start project sessions, the parent leaves a Request in each project and lists the manual steps.
 
 #### Worked example: direct a child
 

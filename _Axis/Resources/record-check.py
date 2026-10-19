@@ -19,7 +19,9 @@ Run from the project root:
       Read-only consistency scan of the record folders, the index and Plan files and _Memos/ (or the named paths): malformed identifier
       timestamps (a missing or invented part, a wildcard), identifiers that name no record, session, update, Request
       or Evidence folder, and relative links whose target is missing (or moved, when the same name exists elsewhere).
-      Metadata fields such as created: are values, not references. Prints locations, never contents; exit 1 on findings.
+      Metadata fields such as created: are values, not references. An identifier followed by `(missing)` reports a
+      record known to be missing and counts as acknowledged, not a finding; identifiers listed in
+      _Dev/Evidence/DELETED.md (removed development Evidence) resolve. Prints locations, never contents; exit 1 on findings.
       --staged (^save): refuse only the problems staged records add beyond their HEAD version.
       --range {old}..{new} (^resume): scan the in-scope files a received range changed.
 Exit 0 prints OK (after any warning lines); 1 prints REFUSED; 2 means this check cannot run: use the manual steps."""
@@ -188,6 +190,8 @@ def identities(root,arch):
         for dirpath,dirs,files in os.walk(base):
             dirs[:]=[d for d in dirs if d not in ('Secrets','.git','node_modules')]
             for n in dirs+files:known.update(IDENT.findall(n))
+    try:known.update(IDENT.findall((root/'_Dev/Evidence/DELETED.md').read_text(encoding='utf-8',errors='replace')))
+    except OSError:pass
     return known
 
 def context(root,scopes,with_archive):
@@ -228,7 +232,8 @@ def scan(root,arch,known,names,f,text,rel):
                 if re.fullmatch(r'\d{4}\.\d{2}\.\d{2}\.\d{2}',tok) or line[m.end():].lstrip().startswith('UTC'):continue
                 out.append(('MALFORMED',i,tok,worm))
             elif tok[full.end():].startswith('.tsclaim') or re.search(r'(session|Main|External|Subagent|e\.g\.)\W{0,4}$',line[:m.start()],re.I):continue
-            elif full.group(0) not in known and full.group(0)!=f.stem:out.append(('UNRESOLVED',i,full.group(0),worm))
+            elif full.group(0) not in known and full.group(0)!=f.stem:
+                out.append(('ACKNOWLEDGED' if re.match(r'[`*_]*\s*\(missing\)',line[m.end():]) else 'UNRESOLVED',i,full.group(0),worm))
         for m in LINK.finditer(line):
             target=m.group(1)
             if re.match(r'^[a-z][a-z0-9+.-]*:',target,re.I) or target.startswith(('#','/')):continue
@@ -247,10 +252,12 @@ def scan(root,arch,known,names,f,text,rel):
 
 def report(found,count,arch):
     counts={k:0 for k in ('MALFORMED','UNRESOLVED','BROKEN-LINK','MOVED-LINK')}
+    seen=sum(1 for _,x in found if x[0]=='ACKNOWLEDGED');found=[x for x in found if x[1][0]!='ACKNOWLEDGED']
     for _,(k,_,_,_) in found:counts[k]+=1
     rows=[f'{k} {rel}:{i} {d}'+(' (write-once)' if w else '') for rel,(k,i,d,w) in found]
     lines=rows[:LIMIT*4]+([f'... {len(rows)-LIMIT*4} more'] if len(rows)>LIMIT*4 else [])
     summary=', '.join(f'{v} {k.lower()}' for k,v in counts.items())
+    summary+=f', {seen} acknowledged missing' if seen else ''
     return (1 if found else 0),([] if arch else ['NOTE: Archive Location unavailable; archived targets were not checked'])+lines+[('FINDINGS: ' if found else 'OK: ')+summary+f' in {count} files']
 
 def relof(root,arch,f):
@@ -290,6 +297,7 @@ def links_staged(root):
         before={}
         for k,_,d,_ in (scan(root,arch,known,names,f,head.decode('utf-8','replace'),rel) if head is not None else []):before[(k,d)]=before.get((k,d),0)+1
         for x in scan(root,arch,known,names,f,staged.decode('utf-8','replace'),rel):
+            if x[0]=='ACKNOWLEDGED':continue
             if before.get((x[0],x[2]),0):before[(x[0],x[2])]-=1
             else:new.append((rel,x))
     code,lines=report(new,n,arch)
