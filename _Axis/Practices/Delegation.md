@@ -5,7 +5,7 @@
 
 Delegation transfers execution, never authority. Main Agent remains responsible for the task, the permitted inputs, the model route, the validation, every project write, and the final result. Follow [Practices > Agents] for role and coordination rules; after choosing a route here, follow [Start-Subagent] for the operational spawn recipe.
 
-A Subagent never writes `_Axis/Followups/`. If delegated work reveals a specific next action only User can take, the Subagent reports a Follow-Up candidate with the proposed ask and owning record in its return. Main decides whether it meets [Practices > Followups], deduplicates it, and creates the record if warranted. An External Agent uses a Request to Main for the same handoff.
+A Subagent never writes `_Axis/Followups/`. If delegated work reveals a specific next action only User can take, the Subagent reports a Follow-Up candidate with the proposed ask and owning record in its return. Main decides whether it meets [Practices > Followups], deduplicates it, and creates the record if warranted. An External Agent uses a Message to Main for the same handoff.
 
 Before delegating, read applicable User preferences, [Settings > Budget], [Rules > Capabilities], and any task-specific Practice. Do not delegate merely because a cheaper model or a spawn tool is available. Delegate when the expected savings, context isolation, parallelism, independent perspective, or specialized role outweighs the handoff and validation overhead.
 

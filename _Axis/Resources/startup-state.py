@@ -23,9 +23,9 @@ except ImportError:
     fcntl = None
 
 ID = re.compile(r'\d{4}(?:\.\d{2}){5}\.\d{3}Z')
-FAMILIES = ('Agents','Audit','CX','Followups','Ideas','Logs','Notes','Reminders','Reviews','Snapshots','Status','Supervision','Tasks')
+FAMILIES = ('Agents','Audit','CX','Followups','Ideas','Logs','Notes','Reminders','Reviews','Snapshots','Status','Supervision','Tasks','Teams','Messages','Jobs','Schedules')
 # Reviews/ arrives with the first ^review on projects updated from 2.00; Status/ is the pre-2.01 name it replaces.
-OPTIONAL_FAMILIES = ('Reviews','Status')
+OPTIONAL_FAMILIES = ('Reviews','Status','Teams','Messages','Jobs','Schedules')
 CAPS = ('model','host-spawn','host-parallel','host-shell','host-local-llm','host-cloud-sync','host-storage')
 OWNER_KEYS = {'schema','kind','token','session','host','phase','starting_log','started_log'}
 
@@ -93,7 +93,11 @@ def write_fd(fd, data):
 
 def archive_root(startup):
     """Resolve [Settings > Archive Location] read-only: (project-relative root, None), (None, absolute or home-relative root), or (None, None) when unavailable."""
-    value=(startup.setting('Archive Location') or '_Axis/Archive/').strip()
+    try:value=startup.setting('Archive Location')
+    except Fault as error:
+        if error.code!='missing_path' or error.path!='_Axis/SETTINGS.md':raise
+        value=None
+    value=(value or '_Axis/Archive/').strip()
     if value.rstrip('/')=='_Axis/Archive':return '_Axis/Archive',None
     if value.startswith('~/'):
         home=os.path.expanduser('~')
@@ -137,13 +141,13 @@ class Startup:
             else:regular(info,name)
         return current
 
-    def read(self, name, optional=False):
+    def read(self, name, optional=False, limit=65536):
         path=self.path(name,missing=optional)
         try:fd=os.open(path,os.O_RDONLY|os.O_NOFOLLOW)
         except FileNotFoundError:
             if optional:return None
             raise Fault('missing_path',name) from None
-        try:return read_fd(fd,name).decode('utf-8')
+        try:return read_fd(fd,name,limit).decode('utf-8')
         finally:os.close(fd)
 
     def exists(self, name):
@@ -318,15 +322,25 @@ class Startup:
         need(not (self.root/self.claim_name).exists(),'release_failed',self.claim_name)
 
     def collision(self, candidate):
-        occupied=False
+        occupied=False;roots=[]
         for relative in ['_Axis/'+family for family in FAMILIES]+['_Axis/Archive']:
             if relative[6:] in OPTIONAL_FAMILIES and not os.path.lexists(self.root/relative):continue
-            stack=[self.path(relative,kind='directory')]
+            roots.append((self.path(relative,kind='directory'),relative))
+        relative,external=archive_root(self)
+        archive=self.path(relative,kind='directory') if relative else external
+        if archive is not None and archive not in [item[0] for item in roots]:
+            current=Path(archive.anchor)
+            for part in archive.parts[1:]:
+                current/=part;info=current.lstat()
+                need(stat.S_ISDIR(info.st_mode) and not stat.S_ISLNK(info.st_mode),'unsafe_path','Archive')
+            roots.append((archive,'_Axis/Archive'))
+        for base,label in roots:
+            stack=[base]
             while stack:
                 parent=stack.pop()
                 with os.scandir(parent) as entries:
                     for entry in entries:
-                        info=entry.stat(follow_symlinks=False);name=Path(entry.path).relative_to(self.root).as_posix()
+                        info=entry.stat(follow_symlinks=False);name=label+'/'+Path(entry.path).relative_to(base).as_posix()
                         need(not stat.S_ISLNK(info.st_mode),'unsafe_path',name)
                         if stat.S_ISDIR(info.st_mode):stack.append(Path(entry.path))
                         else:
@@ -340,10 +354,13 @@ class Startup:
         need(self.read(relative+'/OWNER')==body,'timestamp_owner',relative)
         os.unlink(self.path(relative+'/OWNER'));os.rmdir(self.path(relative,kind='directory'))
 
-    def record(self, family, body, initial=None, bootstrap=False):
+    def record(self, family, body, initial=None, bootstrap=False, renew_lease=True):
+        need(type(renew_lease) is bool,'renew_lease')
         candidate=initial or stamp();parse_stamp(candidate)
         for _ in range(1000):
             content=body(candidate)
+            raw=content.encode();record_limit=131072 if family in ('Teams','Messages','Jobs','Schedules') else 65536
+            need(len(raw)<=record_limit,'record_too_large',family)
             if bootstrap:self.owner_check()
             else:self.guard()
             relative='_Temp/'+candidate+'.tsclaim';path=self.path(relative,missing=True,kind='directory');started=time.monotonic()
@@ -364,13 +381,13 @@ class Startup:
             name='_Axis/'+family+'/'+candidate+'.md';destination=self.path(name,missing=True)
             need(time.monotonic()-started<10,'claim_expired',relative)
             fd=os.open(destination,os.O_RDWR|os.O_CREAT|os.O_EXCL|os.O_NOFOLLOW,0o644)
-            try:write_fd(fd,content.encode());need(read_fd(fd,name)==content.encode(),'record_readback',name)
+            try:write_fd(fd,raw);need(read_fd(fd,name,record_limit)==raw,'record_readback',name)
             finally:os.close(fd)
-            need(self.read(name)==content,'record_readback',name)
+            need(self.read(name,limit=record_limit)==content,'record_readback',name)
             if bootstrap:need(not self.exists('_Axis/Agents/'+candidate+'.kill'),'lease_killed',name)
             else:self.guard()
             self.release_timestamp(relative,owner,claim_identity,started)
-            if not bootstrap:self.renew(self.marker_name,self.marker_body())
+            if not bootstrap and renew_lease:self.renew(self.marker_name,self.marker_body())
             return candidate,name
         raise Fault('collision_limit')
 
@@ -525,9 +542,11 @@ class Startup:
 
     def initialize(self):
         need(self.state['phase']=='admitted','phase',self.owner_name);self.guard()
-        archive=self.path('_Axis/Archive/Requests',missing=True,kind='directory')
-        if not archive.exists():
-            self.guard();archive.mkdir();self.path('_Axis/Archive/Requests',kind='directory')
+        inside,_=archive_root(self)
+        if inside=='_Axis/Archive':
+            archive=self.path('_Axis/Archive/Messages',missing=True,kind='directory')
+            if not archive.exists():
+                self.guard();archive.mkdir();self.path('_Axis/Archive/Messages',kind='directory')
         self.renew('_Axis/Flags/starting',self.read('_Axis/Flags/starting'))
         tracking=self.tracking(False)
         if tracking is not None:

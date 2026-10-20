@@ -72,11 +72,23 @@
 - [Practices > Logs] - What to log and how to write WORM entries.
   *Load before your first Log of a session.*
 
+- [Practices > LinkMaintenance] - Permission-aware reference repairs and exact historical exceptions.
+  *Load when a malformed, missing, moved or broken reference is found, or before changing an exception.*
+
 - [Practices > Timestamps] - Project-unique identifier timestamps (check plus claim).
   *Load before minting your first record timestamp of the session.*
 
-- [Practices > Requests] - Cross-boundary messages the receiving Main Agent triages.
-  *Load when the queue is non-empty, or before writing into another Project's queue.*
+- [Practices > Submissions]
+  *Load for delivery, review or queue migration.*
+
+- [Practices > Messages]
+  *Load for recording or disposition.*
+
+- [Practices > Coordination] - Teams, Jobs, session bindings and bounded dispatch.
+  *Load before team/Job lifecycle, session reuse or transfer work.*
+
+- [Practices > Scheduling] - Portable definitions and bounded occurrence admission.
+  *Load before schedule creation, revision, evaluation or dispatch.*
 
 - [Practices > Notes] - Writing, renewing, and archiving Notes.
   *Load for `^note`, `^notes`, renewal, or selecting a Note for Archive.*

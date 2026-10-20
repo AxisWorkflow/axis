@@ -2,12 +2,12 @@
 """Optional host hook: refuse, before it happens, a tool call that breaks an Axis rule the host can see.
 
 Installed by `^install guardrails` as a Claude Code PreToolUse hook. For every Agent: no edit to a write-once record
-(Logs, Snapshots, CX, Audit, Supervision, archived history, update evidence, finished Tasks, Follow-Ups and Reminders)
+(Logs, Snapshots, CX, Audit, Supervision, Teams, Messages, Jobs, archived history, update evidence, finished Tasks, Follow-Ups and Reminders)
 and no new record with a malformed name. A write to a record, index, Plan or Memo may not add an identifier that is
 malformed or names nothing (record-check.py's scan; `(missing)` after an identifier reports it as missing). For a helper running as an Axis agent type (`axis-cx`, `axis-wiki`,
 `axis-general`), also: writes only inside that role's folders, and no tool may touch `_Axis/Secrets/`.
 For an OpenClaw agent listed as an External Agent, the `axis-guardrails` plugin calls `--external {tool} {path}`:
-no `_Axis/Secrets/`, no change to an existing file, and new files only in Project Subfolders, `_Axis/Requests/` and
+no `_Axis/Secrets/`, no change to an existing file, and new files only in Project Subfolders, `_Axis/Submissions/` and
 `_Temp/`. The Claude Code hook reads JSON from stdin; both exit 2 with a reason to refuse, and 0 otherwise.
 Python 3 standard library only; reads paths and status lines, never prints file contents. It does not see what a
 shell command or helper script writes, and it never affects User's own editing.
@@ -17,9 +17,9 @@ import importlib.util,json,os,re,sys
 from pathlib import Path
 
 NAME=re.compile(r'\d{4}(?:\.\d{2}){5}\.\d{3}Z\.md')
-FAMILIES=('Agents','Audit','CX','Followups','Ideas','Logs','Notes','Reminders','Reviews','Snapshots','Status','Supervision','Tasks')
+FAMILIES=('Agents','Audit','CX','Followups','Ideas','Logs','Notes','Reminders','Reviews','Snapshots','Status','Supervision','Tasks','Teams','Messages','Jobs','Schedules')
 WORM={'Logs':'a Log','Snapshots':'a Snapshot','CX':'a CX report','Audit':'an Audit report','Reviews':'a legacy Review',
-      'Status':'a legacy Status report','Supervision':'a Supervision record'}
+      'Status':'a legacy Status report','Supervision':'a Supervision record','Teams':'a Team charter','Messages':'a Message','Jobs':'a Job mandate'}
 IGNORED=('.gitkeep','.DS_Store')
 WRITE_TOOLS=('Edit','Write','MultiEdit','NotebookEdit')
 PATH_TOOLS=WRITE_TOOLS+('Read','Grep','Glob')
@@ -27,7 +27,7 @@ PATH_TOOLS=WRITE_TOOLS+('Read','Grep','Glob')
 ROLES={'axis-cx':[('_Axis/CX/',True),('_Temp/',False)],
        'axis-wiki':[('_Wiki/',False),('_Axis/Wiki/',False),('_Temp/',False)],
        'axis-general':None}  # anywhere except the folders below
-GENERAL_DENY=('_Axis/Agents/','_Axis/Flags/','_Axis/Secrets/','_Axis/Requests/','_Axis/Updates/','.git/','.claude/','.codex/','.gemini/')
+GENERAL_DENY=('_Axis/Agents/','_Axis/Flags/','_Axis/Secrets/','_Axis/Submissions/','_Axis/Messages/','_Axis/Teams/','_Axis/Jobs/','_Axis/Schedules/','_Axis/Updates/','.git/','.claude/','.codex/','.gemini/')
 SECRETS='_Axis/Secrets'
 
 def field(text,key):
@@ -46,7 +46,7 @@ def write_once(root,rel,exists):
     if family not in FAMILIES or len(parts)!=3:return None
     if not exists:
         return None if NAME.fullmatch(parts[2]) else f'a new record in _Axis/{family}/ must be named yyyy.mm.dd.hh.mm.ss.xxxZ.md (_Axis/Practices/Timestamps.md)'
-    if family in WORM:return WORM[family]+' is write-once: write a new record instead (a wrong identifier in it is fixed only with record-check.py correct, after User approves)'
+    if family in WORM:return WORM[family]+' is write-once: use the exact record-check.py correct protocol and LinkMaintenance Permissions for reference repairs; otherwise write a new record'
     if family in ('Tasks','Followups','Reminders'):
         try:text=(root/rel).read_text(encoding='utf-8',errors='replace')
         except OSError:return None
@@ -74,8 +74,10 @@ def external(rel,exists,write):
     if not write:return None
     if exists:return 'an External Agent adds new files only and never changes an existing file'
     parts=rel.split('/')
-    if rel.startswith(('_Axis/Requests/','_Temp/')) or (len(parts)>=2 and not parts[0].startswith(('_','.'))):return None
-    return 'an External Agent writes new files only in Project Subfolders, _Axis/Requests/ or _Temp/'
+    if rel.startswith('_Axis/Submissions/'):
+        return None if len(parts)==3 and re.fullmatch(r'\d{4}(?:\.\d{2}){5}\.\d{3}Z\.md',parts[-1]) else 'Submissions permits only a new timestamped detail in the queue'
+    if rel.startswith('_Temp/') or (len(parts)>=2 and not parts[0].startswith(('_','.'))):return None
+    return 'an External Agent writes new files only in Project Subfolders, _Axis/Submissions/ or _Temp/'
 
 def verdict(root,rel,exists,agent,tool):
     if agent and (rel==SECRETS or rel.startswith(SECRETS+'/')):return 'helpers never read or write _Axis/Secrets/'
@@ -99,16 +101,24 @@ def references(root,rel,tool,ti):
     try:
         spec=importlib.util.spec_from_file_location('record_check',root/'_Axis/Resources/record-check.py')
         rc=importlib.util.module_from_spec(spec);spec.loader.exec_module(rc)
-        if not rc.in_scope(rel):return None
         after=new_text(root,rel,tool,ti)
         if after is None:return None
+        if rel==rc.EXCEPTIONS_PATH:
+            try:rc.load_exceptions(root,reader=lambda _:after.encode('utf-8'))
+            except rc.ExceptionsError as error:return 'invalid reference exceptions: '+str(error)
+            return None
+        if not rc.in_scope(rel):return None
+        try:entries=rc.load_exceptions(root)
+        except rc.ExceptionsError as error:return 'invalid reference exceptions: '+str(error)
         arch,known,names,_=rc.context(root,[],False);f=root/rel
-        try:before=f.read_text(encoding='utf-8',errors='replace')
-        except OSError:before=''
+        try:before_bytes=f.read_bytes()
+        except OSError:before_bytes=b''
+        before=before_bytes.decode('utf-8','replace')
         old={}
-        for k,_,d,_ in rc.scan(root,arch,known,names,f,before,rel):old[(k,d)]=old.get((k,d),0)+1
+        for k,_,d,_ in rc.apply_exceptions(entries,rel,before_bytes,rc.scan(root,arch,known,names,f,before,rel)):
+            if k in ('MALFORMED','UNRESOLVED'):old[(k,d)]=old.get((k,d),0)+1
         bad=[]
-        for k,i,d,_ in rc.scan(root,arch,known,names,f,after,rel):
+        for k,i,d,_ in rc.apply_exceptions(entries,rel,after.encode('utf-8'),rc.scan(root,arch,known,names,f,after,rel)):
             if k not in ('MALFORMED','UNRESOLVED'):continue
             if old.get((k,d),0):old[(k,d)]-=1
             else:bad.append(f'{d} (line {i}, {"malformed" if k=="MALFORMED" else "names nothing"})')

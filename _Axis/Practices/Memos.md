@@ -85,4 +85,4 @@ A Review (`^review`) is a memo with Type `review` and Status `record`, named `YY
 
 ## Roles
 
-Main Agent writes, updates and archives memos. An External Agent or Subagent proposes memo content to Main through a Request or its return. User may edit any memo at any time; re-read it before overwriting it.
+Main Agent writes, updates and archives memos. An External Agent or Subagent proposes memo content to Main through a Message or its return. User may edit any memo at any time; re-read it before overwriting it.

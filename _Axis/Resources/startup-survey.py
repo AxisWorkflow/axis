@@ -31,6 +31,8 @@ def inventory(self, name):
     except Fault as error:return {'state':'missing' if error.code=='missing_path' else 'unsafe','entries':[]}
     entries=[];unexpected=False
     for entry in sorted(os.scandir(directory),key=lambda e:e.name):
+        if name=='_Axis/Submissions' and entry.name=='_received' and entry.is_dir(follow_symlinks=False):continue
+        if name=='_Axis/Submissions' and entry.name in ('_migration.md','_migration-complete.md') and entry.is_file(follow_symlinks=False):continue
         if entry.name=='.gitkeep' and entry.is_file(follow_symlinks=False):continue
         entries.append(entry.name)
         if entry.is_symlink() or not entry.is_file(follow_symlinks=False) or entry.name.startswith('.'):unexpected=True
@@ -121,7 +123,16 @@ def survey(self, model, harness, interaction, spawn, parallel):
         elif not dead and first.startswith('Subagent:'):subagents+=1
     report['markers']={'stale':stale,'fresh_external':externals,'orphan_subagents':subagents}
     # Queues and Trash (inventory only), stale locks and claims, Notes count.
-    report['queues']={name:inventory(self,'_Axis/'+name) for name in ('Followups','Reminders','Requests')}
+    report['queues']={name:inventory(self,'_Axis/'+name) for name in ('Followups','Reminders','Submissions')}
+    report['legacy_requests']=inventory(self,'_Axis/Requests')
+    report['pending_messages']=None
+    try:
+        message_view=self.read('_Axis/MESSAGES.md')
+        if len(message_view.encode())<=65536:
+            pending=re.search(r'^pending-count: ([0-9]+)$',message_view,re.M)
+            if pending:report['pending_messages']=int(pending[1])
+    except (OSError,ValueError,Fault):pass
+    report['coordination_indexes']=[n for n in ('TEAMS.md','MESSAGES.md','JOBS.md','SCHEDULES.md') if (self.root/'_Axis'/n).is_file()]
     report['trash']=inventory(self,'_Trash')
     locks=[q.relative_to(self.root).as_posix() for q in self.root.joinpath('_Axis').rglob('*.lock') if q.is_dir() and q.relative_to(self.root).as_posix()!=self.claim_name]
     report['locks']={'lock_dirs':locks,'timestamp_claims':[q.name for q in self.path('_Temp',kind='directory').glob('*.tsclaim')]}

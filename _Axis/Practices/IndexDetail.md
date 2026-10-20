@@ -3,7 +3,7 @@
 
 ## The Name Is the Contract
 
-Every detail file in the twelve directories below is named with a UTC timestamp and nothing else:
+Every detail file in the canonical directories below is named with a UTC timestamp and nothing else:
 
 	{yyyy.mm.dd.hh.mm.ss.xxxZ}.md
 
@@ -24,7 +24,7 @@ Get the name right first, then write the content.
 
 This section describes how Axis splits summary information and detailed information to enable lazy-loading and better memory management. This is referred to as the Index-Detail Pattern - a convention wherein there is an index of available items (often with a summary), and then a detail file that corresponds to each item in the index. The detail file is named with a UTC timestamp and holds the body of information.
 
-Twelve directories conform to the **Index-Detail Pattern:**
+These directories conform to the **Index-Detail Pattern:**
 
 - `_Axis/Agents/`
 - `_Axis/Audit/`
@@ -38,6 +38,10 @@ Twelve directories conform to the **Index-Detail Pattern:**
 - `_Axis/Reviews/` (legacy: Reviews written before 2.08, until the first startup on 2.08 moves them to `_Memos/Archive/`; new Reviews are Memos)
 - `_Axis/Supervision/`
 - `_Axis/Tasks/`
+- `_Axis/Teams/`
+- `_Axis/Messages/`
+- `_Axis/Jobs/`
+- `_Axis/Schedules/`
 
 The Index-Detail Pattern is implemented in three ways:
 
@@ -52,7 +56,7 @@ The Index-Detail Pattern is implemented in three ways:
   A file with summary information is the index (including cross-file state that a first-line scrape of the detail files will not catch) and multiple detail files catch the full information (one index file and many supporting detail files). The index file and the contents of the directory must stay in sync: if you write a detail file, also append an entry to the index, and vice versa.
 
   Tasks (`_Axis/TASKS.md` + `_Axis/Tasks/`) and
-  Snapshots (`_Axis/SNAPSHOTS.md` + `_Axis/Snapshots/`) follow this method.
+  Snapshots (`_Axis/SNAPSHOTS.md` + `_Axis/Snapshots/`) follow this method. Teams, Messages, Jobs and Schedules have small rebuildable uppercase indexes; accepted events, not index rows, determine their state. Optional `Teams/{ID}/` work folders are companions, not extra identities. See [Practices > Coordination].
 
 - **Directory-index + Marker**
 

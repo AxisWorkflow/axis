@@ -11,7 +11,7 @@ Keep OpenClaw's operational harness and remove its competing project-brain layer
 | --- | --- |
 | Channels, pairing, sender allowlists, and exact bindings | `SOUL.md`, `IDENTITY.md`, `USER.md`, and other host persona/bootstrap state |
 | Agent/session start, stop, restart, tracking, and Subagent lanes | `MEMORY.md`, `memory/`, memory search, embeddings, and cross-conversation recall |
-| Directed session messages after an Axis Request exists | Memory plugins, active memory, session-memory capture, inferred commitments, and dreaming |
+| Directed session messages after an Axis Message exists | Memory plugins, active memory, session-memory capture, inferred commitments, and dreaming |
 | Explicit cron jobs that trigger standalone Axis prompts | Generic heartbeats and host-authored proactive work |
 | Required filesystem, runtime, session, messaging, and user-interaction tools | Broad `full` tool access, default skills, and unneeded plugins/web/media tools |
 | Same-session transcripts and compaction required for routing and continuity | Treating transcripts, summaries, or OpenClaw databases as canonical Axis memory |
@@ -71,21 +71,21 @@ An OpenClaw-hosted Axis Agent still needs tools to read and write the project an
 
 - Filesystem and runtime groups required for the canonical Axis workflow.
 - Agent and session lifecycle tools required for Subagents and supervision.
-- Messaging and session-send tools required for channel replies and Request doorbells.
+- Messaging and session-send tools required for channel replies and Message doorbells.
 - `cron` for explicit approved schedules.
 - `session_status`, `agents_list`, and User-interaction tools when the installed release exposes them.
 
 Exclude memory and plugin-management groups. Exclude browser/web, media, and other optional capabilities by default; User may approve one for a specific Project whose work needs it. A deny rule wins when a profile or plugin would otherwise reintroduce a forbidden group. After policy changes, use the Host's policy-explanation or tool-list surface to verify effective tools rather than trusting configuration text alone.
 
-Cross-agent delivery is opt-in. Where the installed release requires session visibility plus agent-to-agent enablement, grant both only with an exact allowlist of target Axis agent IDs. Never grant `*`, every agent, or an ambiguous name. [Practices > Requests > Accelerated Delivery] remains controlling: write and read back the destination `_Axis/Requests/{timestamp}.md` first, then send only its Subject and path as a best-effort OpenClaw notification. A failed or unavailable Host message leaves the Request as successful delivery and carries no authorization.
+Cross-agent delivery is opt-in. Where the installed release requires session visibility plus agent-to-agent enablement, grant both only with an exact allowlist of target Axis agent IDs. Never grant `*`, every agent, or an ambiguous name. [Practices > Messages > Boundary delivery] remains controlling: persist the sender Message and read back its direct-neighbour Submissions envelope first, then send only a fixed pointer as a best-effort OpenClaw notification. A failed or unavailable Host message leaves the persisted envelope queued; only receiver import proves receipt and carries no authorization.
 
-An External Agent's tool limits can also be enforced by the optional `axis-guardrails` plugin (`^install guardrails`): it refuses spawning, `_Axis/Secrets/`, changes to existing files and new files outside Project Subfolders, `_Axis/Requests/` and `_Temp/` for the agent IDs it lists.
+An External Agent's tool limits can also be enforced by the optional `axis-guardrails` plugin (`^install guardrails`): it refuses spawning, `_Axis/Secrets/`, changes to existing files and new files outside Project Subfolders, `_Axis/Submissions/` and `_Temp/` for the agent IDs it lists.
 
 ## Schedules
 
 Use explicit OpenClaw cron jobs, not generic heartbeats. Set the default heartbeat interval to disabled and create only the narrowly approved job that names a standalone Axis prompt. A job may wake an exact agent or session, but its provisioning authorizes only the Command it names and does not alter role recognition or confirmation gates.
 
-Record every non-trivial schedule as portable intent in an Axis Note and add one `scheduler` row to `_Axis/ENVIRONMENT.md` pointing to that Note ([Practices > Agents > Host Harness]). Do not store the OpenClaw job ID, profile, channel, account, absolute path, or credential in Axis. If cron is unavailable, the Note remains the rebuild recipe and User runs the Command manually; unrelated Axis work continues.
+Create a Schedule definition with finite authority and limits, then add one `scheduler` row to `_Axis/ENVIRONMENT.md` pointing to that Schedule ([Practices > Scheduling]). Do not store the OpenClaw job ID, profile, channel, account, absolute path, or credential in Axis. If cron is unavailable, the Schedule remains the portable definition and User requests manual evaluation; unrelated Axis work continues.
 
 ## Legacy State
 
@@ -106,7 +106,7 @@ Setup or hardening is complete only when all available checks agree:
 4. The effective tool surface contains the approved filesystem/runtime, agent/session, messaging, cron, and interaction tools and none of the forbidden groups.
 5. A harmless headless boot probe enters the Axis Workflow: its Marker matches `session-id`, Host Flags exist, and a `Session Started` Event exists. Shut that exact probe session down afterward so it does not contend with the real channel session.
 6. Effective-context inspection, when the Host exposes it without sending a turn, shows `AGENTS.md` and no persona or memory bootstrap files. If read-only inspection is unavailable, mark this `Unverified`; do not mutate a session merely to make `^audit openclaw` appear complete.
-7. Exact directed messaging works only for the approved target set, and every test message follows an already-created disposable Request.
+7. Exact directed messaging works only for the approved target set, and every test message follows an already-created disposable Message.
 8. OpenClaw cron inventory matches the logical schedules declared by Axis without quoting job IDs, channels, commands, or private bindings.
 
 Run `^audit openclaw` for a read-only recap. It reports `Ready`, `Degraded`, or `Unverified`, including the exact manual or `^install openclaw` remedy; it never authenticates a channel, applies configuration, restarts the Gateway, sends a probe, reads persona/memory content, or deletes legacy state.
@@ -123,8 +123,8 @@ Run `^audit openclaw` for a read-only recap. It reports `Ready`, `Degraded`, or 
 An OpenClaw agent rooted at a parent Axis Project may act as its Supervisor when ordinary role recognition makes it that parent's Main. The relationship is inferred from recognized direct child Projects; no OpenClaw binding, Axis Setting, or registration file creates it. A phone or group message beginning `^^` dispatches [Practices > Supervision] only when the Gateway verifies User as the sender.
 
 - `^^list`, `^^status`, and `^^inspect` may use the Gateway's Subagent lane for read-only General Subagents when the Host Flags permit it. The parent Main validates their returns and writes `_Axis/Supervision/`; the Subagents never write child state.
-- `^^message` writes the child Request before attempting an exact OpenClaw session message. The Host message carries only the Request Subject and path. If no exact child session is bound, the Request remains the delivery path.
+- `^^message` persists the parent-owned outbound Message and reads back the child Submissions envelope before attempting an exact OpenClaw notification. It carries only the Subject and path. The child Main imports the envelope; a missing notification does not discard queued delivery.
 - `^^start`, `^^stop`, and `^^restart` use exact child agent/session control only when the Gateway exposes and authorizes it. Missing control takes the manual or tombstone fallback in [Practices > Supervision]; it never makes OpenClaw required.
-- `^^schedule` creates an explicit cron trigger, never a generic heartbeat. Record the portable intent in a Note and `_Axis/ENVIRONMENT.md`; the Host owns the clock, parent Main owns the report, and scheduled supervision remains read-only by default.
+- `^^schedule` creates an explicit cron trigger, never a generic heartbeat. Record the portable intent in a Schedule and reference it from `_Axis/ENVIRONMENT.md`; the Host owns the clock, parent Main owns the report, and scheduled supervision remains read-only by default.
 
-If this OpenClaw session booted as External because another parent Main is live, it may present the transient read-only supervision views allowed by [Practices > Supervision > Authority], but it cannot create a Supervision record, spawn a Supervisor Subagent, or exercise supervisory authority. Mutating `^^` requests route to the parent Main through `_Axis/Requests/`.
+If this OpenClaw session booted as External because another parent Main is live, it may present the transient read-only supervision views allowed by [Practices > Supervision > Authority], but it cannot create a Supervision record, spawn a Supervisor Subagent, or exercise supervisory authority. Mutating `^^` requests go to the parent Main as External proposals in `_Axis/Submissions/`; External never creates canonical Messages.

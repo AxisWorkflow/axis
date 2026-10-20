@@ -74,3 +74,9 @@ _Axis/Flags/reminder-check
 _Axis/Flags/environment-binding
 _Axis/Flags/local-aptitude
 # END GENERATED: flag-ignore
+
+# Local scheduler placement; portable intent stays in Schedules.
+_Axis/Flags/scheduler-binding.json
+
+# Local Coordination activation does not travel as authority.
+_Axis/Flags/coordination-placement.json

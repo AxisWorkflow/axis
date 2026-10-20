@@ -1,7 +1,7 @@
 # ^git
 > **Purpose:** Save or receive project changes through safe, adaptive Git synchronization.
 
-1. Main Agent only. External Agents send a Request to Main; Subagents return the request without acting. Read `host-shell` under [Practices > Flags > Reading Flags] and require valid `yes` for mutation. Read [Practices > GIT] completely and follow its admission, repository-boundary, Subproject, and safety gates.
+1. Main Agent only. External Agents send a Message to Main; Subagents return the request without acting. Read `host-shell` under [Practices > Flags > Reading Flags] and require valid `yes` for mutation. Read [Practices > GIT] completely and follow its admission, repository-boundary, Subproject, and safety gates.
 
 2. Interpret additional text semantically, never as raw CLI syntax:
 	- `status`, `history`, or `diff` uses the read-only mode in [Practices > GIT > Command Modes].

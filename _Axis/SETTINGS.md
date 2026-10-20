@@ -105,7 +105,7 @@
 
 ### Permissions
 
-**Description:** How often Agents stop to confirm a change before making it (see [Rules > Permissions]). `Restricted` = confirm every change that deletes, overwrites or cannot be undone exactly; `Default` = act on clear intent when the change carries little risk (reversible, additive or verifiably disposable), and confirm unclear intent, new design or direction choices, live model work and irreversible loss; `Autonomous` = act on clear intent and confirm only when intent is unclear or a mistake could not be rolled back and would be major. No level removes `^pub`, `^update`, pushing, paid spending, Secrets, WORM or role gates, and every level reports what changed.
+**Description:** How often Agents stop to confirm a change before making it (see [Rules > Permissions]). `Restricted` = confirm every change that deletes, overwrites or cannot be undone exactly; `Default` = act on clear intent when the change carries little risk (reversible, additive or verifiably disposable), and confirm unclear intent, new design or direction choices, live model work and irreversible loss; `Autonomous` = act on clear intent and confirm only when intent is unclear or a mistake could not be rolled back and would be major. No level removes `^pub`, `^update`, pushing, paid spending, Secrets, WORM (apart from exact reference repairs under [Practices > LinkMaintenance]) or role gates, and every level reports what changed.
 
 **Range:** `Restricted`, `Default`, `Autonomous`
 

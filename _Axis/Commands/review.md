@@ -3,7 +3,7 @@
 
 A Review summarizes the project's current state - what changed, what is open, how healthy it is. It challenges nothing (that is a Cross-Examination, `^cx`) and is lighter than an `^audit`. For a quick look without writing anything, use `^status`; for the live view, the Dashboard. A report User asks for on someone else's behalf (a client, a board, a funder) is not a Review: write it in plain language as an ordinary work product in a Project Subfolder ([Practices > Folders]). Use a direct, neutral tone.
 
-1. Confirm the role allows a new Review. An External uses only already recorded, non-secret portability/infrastructure summaries and marks current unverified health accordingly; it never probes Secrets, authentication, environment bindings, or other Main-owned state, and it returns the report to Main through a Request instead of saving it.
+1. Confirm the role allows a new Review. An External uses only already recorded, non-secret portability/infrastructure summaries and marks current unverified health accordingly; it never probes Secrets, authentication, environment bindings, or other Main-owned state, and it returns the report to Main through a Message instead of saving it.
 
 2. Load [Practices > Memos]. Find the previous Review: the newest `* - Review - *.md` in `_Memos/`, else in `_Memos/Archive/`.
 

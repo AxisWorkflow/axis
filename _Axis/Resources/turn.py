@@ -68,8 +68,18 @@ try:
         items.append('an update handoff needs attention: follow _Axis/Resources/Check-Update-Handoff.md before ordinary work');break
 except OSError:items.append('update handoff state unverified: inspect _Axis/Updates/ under _Axis/Resources/Check-Update-Handoff.md')
 if first=='Main: session':
-    req=[p for p in (root/'_Axis/Requests').glob('*.md')] if (root/'_Axis/Requests').is_dir() else []
-    if req:items.append(f'{len(req)} Request(s) in _Axis/Requests/: adjudicate under _Axis/Practices/Requests.md before answering')
+    incoming=root/'_Axis/Submissions'
+    if incoming.is_symlink():items.append('unsafe Submissions queue; hold import')
+    elif incoming.is_dir() and any(p.name not in ('.gitkeep','_migration.md','_migration-complete.md') and not (p.name=='_received' and p.is_dir() and not p.is_symlink()) for p in incoming.iterdir()):items.append('Submissions await Main review: process once under _Axis/Practices/Submissions.md; inspect the compact MESSAGES.md view')
+    index=root/'_Axis/MESSAGES.md'
+    try:
+        if index.is_symlink() or index.stat().st_size>65536:raise ValueError('unsafe index')
+        text=index.read_text(); pending=re.search(r'^pending-count: ([0-9]+)$',text,re.M)
+        if pending and int(pending[1]):items.append(f'{pending[1]} pending Message(s); validate the cached view under _Axis/Practices/Messages.md before acting')
+    except FileNotFoundError:pass
+    except (OSError,ValueError):items.append('Message view unverified; inspect canonical records before acting')
+    legacy=root/'_Axis/Requests'
+    if legacy.is_symlink() or (legacy.is_dir() and any(p.name!='.gitkeep' for p in legacy.iterdir())):items.append('legacy Requests held for explicit migration or upgrade; no active compatibility queue')
     # Project overlay: cheap per-turn check that the declaration and overlay file did not change since activation.
     flag=root/'_Axis/Flags/project-overlay'
     try:lines=flag.read_text().splitlines()

@@ -1,7 +1,7 @@
 # ^memo
 > **Purpose:** Write or update a Memo for User in `_Memos/`.
 
-1. Main Agent only. An External Agent proposes the content to Main through a Request under [Practices > Requests] and STOPs.
+1. Main Agent only. An External Agent proposes the content to Main through a Message under [Practices > Messages] and STOPs.
 
 2. Load [Practices > Memos]. The text after `^memo` names the subject or what to cover; with no text, cover the current discussion.
 

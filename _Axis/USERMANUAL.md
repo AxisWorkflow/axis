@@ -1,6 +1,6 @@
 # Axis Workflow User Manual
 > **Purpose:** How to use the Axis Workflow day to day: setup, commands, the Dashboard, the Wiki, working across tools and machines, and working with Agents and models. For the technical and compliance reference, see [SPECIFICATION](/_Axis/SPECIFICATION.md).
-> **Version:** 2.09
+> **Version:** 3.00
 
 
 
@@ -75,6 +75,8 @@ Your own content lives in normal folders that your Agent creates and organizes a
 - Invariant rules (to keep top-of-mind) in [Rules](/_Axis/RULES.md).
 - Conditional triggers (for situational behaviors) in [Directives](/_Axis/DIRECTIVES.md). New Axis versions can add default Directives; the first session after an update adds any you are missing and says so. To keep one out, delete it and add `<!-- axis:omit-directive: {its name} -->` to that file.
 - Subject-by-subject rule detail in [Rules](/_Axis/Rules/), lazy-loaded when an activity needs it.
+
+Before a download approval prompt, the default **Explain Download Permissions** Directive has the Agent describe the source, expected contents, destination when known, and whether the action only saves or also opens, runs, installs or imports the file. Unknowns are stated; permission to save is not permission to execute. It adds no approval step to an otherwise authorized retrieval.
 
 **6. Users/Agents co-manage the project by:**
 
@@ -206,6 +208,7 @@ For example, the text...
 | ------------ | -------------------------------------------------------------------------------------------------------------- |
 | `^archive`   | Move selected inactive history into reversible, low-context Archive storage.                                   |
 | `^audit`     | Run a read-only project audit - records, hygiene, delegation, coverage - and save the findings as a report.    |
+| `^axis` | Inspect or attach to an exactly bound project session. |
 | `^backup`    | Back up the entire project to a User-named location outside the project folder.                                |
 | `^board`     | Show what every Agent is doing - open work, questions between Agents, and overlaps. |
 | `^cx`        | Launch a Cross-Examination.                                                                                    |
@@ -219,6 +222,7 @@ For example, the text...
 | `^ideas`     | Review Ideas - update status and priority, archive, and surface top priorities.                                |
 | `^inbox`     | Scan the project's `_Inbox/` and file what arrived.                                                            |
 | `^install`   | Install extensions, tools, skills, MCPs, CLIs, functions, etc.                                                 |
+| `^jobs` | Inspect bounded work, attempts, authority and outcomes. |
 | `^kill`      | Stop another live Agent by revoking its Marker lease (tombstone; User-only).                                   |
 | `^log`       | Manually Log an entry into `_Axis/Logs/`.                                                                      |
 | `^memo`      | Write or update a Memo for User in `_Memos/`.                                                                  |
@@ -234,10 +238,12 @@ For example, the text...
 | `^review`    | Write a Review - a dated report on the project's state, saved as a Memo in `_Memos/`.                          |
 | `^resume`    | Pick up where project left off - load latest Snapshot, Tasks, recent Logs.                                     |
 | `^save`      | Sync workflow and save a Snapshot.                                                                             |
+| `^schedule` | Create, inspect and control portable schedules. |
 | `^settings`  | Step through and potentially adjust each setting.                                                              |
 | `^shutdown`  | Gracefully stop this Agent - save (Main), log, delete own Marker, and end the session.                         |
 | `^status`    | Show where the project stands on one screen; `^status web` for a branded page, `^status deep dive` for more. |
 | `^tasks`     | List Tasks at a glance, and optionally apply a quick update.                                                   |
+| `^team` | Create and control an Axis Team of Agents. |
 | `^trash`     | Empty `_Trash/` on demand - everything, or item by item.                                                       |
 | `^undo`      | Roll back recent changes to a checkpoint - confirm the target, checkpoint the current state, then restore.     |
 | `^update`    | Update Axis Workflow machinery to an official release while preserving project state and local customizations. |
@@ -253,8 +259,8 @@ Supervision uses a separate double-caret namespace. These commands apply to reco
 | `^^list` | List recognized direct children and their live Agent picture. |
 | `^^status [child\|all]` | Summarize progress, blockers, activity, and Agent state. |
 | `^^inspect <child>` | Perform a deeper read-only inspection of one child. |
-| `^^message <child> <text>` | Write a canonical child Request, then optionally notify its live Host session. |
-| `^^start <child>` | Start a genuine child Main session when the Host supports project boot. |
+| `^^message <child> <text>` | Persist an outbound Message and a bounded child submissions envelope, then optionally notify its exactly bound session. |
+| `^^start <child|all>` | Start a genuine child Main session when the Host supports project boot. |
 | `^^stop <child>` | Stop the exact child Main gracefully or fence its lease. |
 | `^^restart <child>` | Stop and start a child without overlapping Main sessions. |
 | `^^update [child\|all] [to vX.YY] [stop-agents]` | Update every Axis project nested below this one, each through its own `^update` and fresh-session adoption. |
@@ -348,15 +354,23 @@ The Wiki **can** include images. To capture images easily, configure Obsidian to
 
 The Axis Workflow follows a set of tunable parameters in [Settings](/_Axis/SETTINGS.md). Each Setting controls one aspect of how the Agent reasons, communicates, or manages the project. The easiest way to change Settings is to **select a Profile**, but you can also edit Settings one-by-one by directly editing [`_Axis/SETTINGS.md`](/_Axis/SETTINGS.md) or by requesting help from your Agent.
 
+**Verbosity** controls the amount of communication, independently of reasoning and verification effort. At `-1`, updates are brief and report only major actions, results and blockers; code excerpts, diffs and command output appear only when you ask. At `-2`, answers use maximum terseness.
+
 One Setting worth calling out is **Budget** (Frugal to Unconstrained). It steers how freely the Agent spends time, tokens, and compute on discretionary work - optional Subagents, richer models, deeper exploration, fuller records - and drives a few hard limits like how much history is re-read at startup. Note that Budget *steers* spending; it cannot *meter* it, because the Workflow has no portable way to see your actual bill or token usage. Treat it as a dial for effort, not a spending cap.
 
-**Permissions** (Restricted, Default, Autonomous) sets how often the Agent stops to ask before changing things. `Restricted` asks before anything that deletes, overwrites or cannot be undone. `Default` goes ahead when your intent is clear and nothing of value could be lost - tidying disposable scratch, committing to Git, closing finished work, archiving - and asks when it is unsure what you want, when a design or direction choice is still yours, before live model runs, and before anything that cannot be undone. `Autonomous` acts whenever your intent is clear and asks only when it is unsure or a mistake could not be undone and would matter. At `Default` and `Autonomous` the Agent may supply a command's confirmation word (such as `ARCHIVE`) itself and tells you it did. No level publishes, pushes, runs `^update`, spends money, touches Secrets or rewrites history without you. `Default` acts on what you actually said (or what your Plan and Tasks say); `Autonomous` may also act on what plainly follows from your goal. Every level asks before loosening a test or safety check to make work pass, and before touching anything outside the project folder that the Agent did not create itself. Typing `^update` or `^pub` is itself your go-ahead: the Agent never starts them on its own, but does not ask again when you type them. Whatever the Agent changes without asking is listed in its answer with how to undo it; at `Autonomous` it also lists any design or direction choices it made for you. Things moved to `_Trash/` stay there at least 2 days before an automatic sweep deletes them (`^trash` empties it sooner). New projects start at `Default`; say "set Permissions to Autonomous" (or edit the Setting) to change it.
+**Permissions** (Restricted, Default, Autonomous) sets how often the Agent stops to ask before changing things. `Restricted` asks before anything that deletes, overwrites or cannot be undone. `Default` goes ahead when your intent is clear and nothing of value could be lost - tidying disposable scratch, committing to Git, closing finished work, archiving - and asks when it is unsure what you want, when a design or direction choice is still yours, before live model runs, and before anything that cannot be undone. `Autonomous` acts whenever your intent is clear and asks only when it is unsure or a mistake could not be undone and would matter. At `Default` and `Autonomous` the Agent may supply a command's confirmation word (such as `ARCHIVE`) itself and tells you it did. No level publishes, pushes, runs `^update`, spends money, touches Secrets or rewrites history without you, except the narrowly logged reference corrections described under Keeping Links Valid. `Default` acts on what you actually said (or what your Plan and Tasks say); `Autonomous` may also act on what plainly follows from your goal. Every level asks before loosening a test or safety check to make work pass, and before touching anything outside the project folder that the Agent did not create itself. Typing `^update` or `^pub` is itself your go-ahead: the Agent never starts them on its own, but does not ask again when you type them. Whatever the Agent changes without asking is listed in its answer with how to undo it; at `Autonomous` it also lists any design or direction choices it made for you. Things moved to `_Trash/` stay there at least 2 days before an automatic sweep deletes them (`^trash` empties it sooner). New projects start at `Default`; say "set Permissions to Autonomous" (or edit the Setting) to change it.
 
 **Max Concurrent Sessions** (default 10) caps how many agents can work on the project at the same time - your Main session, External agents on other tools or channels, and the Subagents they start. When the cap is reached, a new External agent tells you and stops, and Main does the work itself instead of starting another Subagent. Stale sessions (idle over an hour) do not count.
 
 **Context Management** (default `Default`) chooses how your agent decides what to read from the project for each request. `Two-Pass` makes it check the index first, pick only the records it needs, and open just those. In Axis's tests that used about 38% fewer tokens on Claude, with every answer still correct, but it did not help Codex. Axis suggests the right value for the model you use, once per session, and changes it only if you agree. This is an area under active development; the Technical Specification's Context Management section has the details and the evidence.
 
 Another is **Skepticism** (-2 to +2). It steers how hard the Agent doubts its own work - whether it stops to ask *why* a conclusion holds, names the assumptions sitting underneath it, and goes looking for the evidence that would prove it wrong. At the highest setting the Agent explores competing explanations in parallel before committing to one. Skepticism points inward, at the Agent's own reasoning; **CX Frequency** points outward, buying an independent critic once the work is done.
+
+### Keeping Links Valid
+
+Axis repairs genuine broken references as it encounters them. At **Autonomous**, it never asks for repair permission. At **Default**, it repairs routine cases automatically and asks only when an exceptional or drastic change needs a substantive choice. At **Restricted**, it asks before every repair, including index links; you can approve an explicitly listed batch at once. The same policy covers narrow, logged reference corrections in write-once records, never changes to their meaning. If the intended target cannot be established, Axis reports that rather than inventing one.
+
+An old Log may intentionally quote a mistake. Axis can record that exact occurrence in optional `_Axis/EXCEPTIONS.md` without editing the Log. The exception binds the file, its complete content hash, the finding, line and occurrence, and explains why it is intentional. It does not exempt the same bad reference elsewhere; changed source bytes invalidate it. Scans report matches as acknowledged rather than defects. Adding or changing an exception follows the same permission policy as a repair. Read-only checks such as `^audit` stay read-only. You can ask to review the registry; removing an entry makes its unresolved finding visible again.
 
 ### Supervising Child Projects
 
@@ -374,7 +388,7 @@ Type these in the parent project:
 | `^^do <child\|all> <task> [with <file>]` | Gives a child an order it must carry out, refer back to you, or decline for a stated reason. A session in the child does the work under the child's own rules. `with` hands the child a file from this project. |
 | `^^start`, `^^stop`, `^^restart <child>` | Starts or stops the child's Agent, when your AI host supports it. |
 | `^^update [child\|all]` | Updates every Axis project nested anywhere below this one to this project's Axis version (or a named release). It shows a preview first, asks before stopping any Agent that is working in a project, updates projects in parallel (parents before the projects nested inside them) through their own `^update`, and reports each result; a project that fails or needs a decision is reported and the others continue. |
-| `^^schedule ...` | Sets up a recurring supervision check, when your host supports schedules. |
+| `^^schedule ...` | Defines a bounded recurring supervision check; automatic wake-up needs a configured host trigger. |
 
 Good to know:
 
@@ -565,9 +579,41 @@ A project has exactly ONE Main Agent - and an **External Agent** is what any add
 - **Create new documents** in content areas, each opening with a provenance stamp naming its author and moment - visible, attributable, reversible.
 - **Never** edit an existing file, touch `_Axis/` doctrine, change the Plan or Tasks, open Secrets, or spawn Subagents.
 
-That boundary is the honest security story for leaving an agent reachable around the clock: even a fully hijacked External is limited to additive, clearly-stamped contributions that one sweep reverses - it cannot rewrite existing meaning, reach credentials, or seize the project. Becoming Main is a gated ceremony (`^promote`): the request counts only from the gateway-verified owner, the agent discloses its full footprint first, User confirms with a literal reply, a contested project additionally requires approval from a trusted surface, and the grant executes as a full re-boot that leaves a write-once record. Earlier dated rehearsals exercised these scenarios on specific hosts and versions. Current deterministic tests cover the revised protocols and failure schedules; they do not prove that every host or model follows them. Current channel delivery and GUI behavior remain limited by the evidence described below.
+External is instructed to make only additive, attributable contributions. Optional host hooks enforce part of that boundary; they do not sandbox a compromised agent or remove its operating-system access. Credentials that require technical isolation need host permissions or storage outside the workspace. Becoming Main is a gated ceremony (`^promote`): the request counts only from the gateway-verified owner, the agent discloses its full footprint first, User confirms with a literal reply, a contested project additionally requires approval from a trusted surface, and the grant executes as a full re-boot that leaves a write-once record. Earlier dated rehearsals exercised these scenarios on specific hosts and versions. Current deterministic tests cover the revised protocols and failure schedules; they do not prove that every host or model follows them. Current channel delivery and GUI behavior remain limited by the evidence described below.
 
 **When the other session has gone quiet.** A new conversation takes over a Main session that has been idle long enough, so you never have to clean up after a chat you simply left. How long depends on your Permissions setting: 24 hours at `Restricted`, 7 at `Default` and 3 at `Autonomous`. Idle for less than that (but over an hour), the new conversation asks you first and recommends taking over; say no and it joins as an External Agent. Taking over clears the old session's record, together with any session record over 24 hours old, and the greeting tells you what was cleared. If you later type into the old conversation, it notices its record is gone, stops and asks you instead of writing.
+
+### An Axis Team of Agents and its Jobs
+
+An Axis Team of Agents has a shared charter, a separate Team Leader and named workers. Your project Main accepts the final work. Teams organize collaboration; Messages retain its exchanges; Jobs record exactly what is authorized, its limits, attempts and outcome. A team can recover with a different leader or provider from these files.
+
+An [Assignment](/_Axis/GLOSSARY.md#assignment) is a type of [Message](/_Axis/GLOSSARY.md#message) giving an agent a specific part of a [Job](/_Axis/GLOSSARY.md#job). One landing-page review Job might have separate Assignments for mobile layout and accessibility. Assignments live in Messages; Jobs retain the overall authorized work and limits. The [Glossary](/_Axis/GLOSSARY.md) also defines Submissions, receipts, admission, attempts, schedule occurrences and the supporting-record terms.
+
+Axis uses one explicitly active writer placement. Moving a copy, changing Main or letting activation expire requires reactivation after the previous placement stops; this does not reset Job budgets.
+
+Use `^team create` to define the objective, leader/members, outputs, validator and limits. `^team status`, `pause`, `resume` and `stop` show or control it. `^jobs` lists bounded work; `^jobs show <ID>` explains authority, limits, attempts and remaining validation. `^board` combines current agent activity with these views. A pause stops new dispatch; a stop may leave workers reaching a safe checkpoint, and Axis reports any unconfirmed stop.
+
+Defaults are a 60-minute Job, 3 rounds, 12 total agent starts and at most a leader plus two workers at once. Tighter host, project or User limits win, and validators/retries count. Authority expires after 24 hours by default; recurring work needs renewal. Spending and external-action approvals still apply. Task completion requires validation, not a unanimous vote.
+
+Without a supported launcher, Main prepares bounded prompt envelopes and you open genuinely separate sessions, then return their results for validation. The records and procedure remain usable without Python, a provider CLI, tmux or a scheduler. Axis does not silently turn Main into its own independent leader or reviewer.
+
+### Scheduling
+
+`^schedule create` previews an exact schedule: local and UTC time, timezone, action, authority, expiry, resource limits and output. `list`, `show`, `pause`, `resume`, `retire` and `due` inspect/control it. A timer proposes work; it cannot approve it. Without a configured trigger, schedules are evaluated at manual/checkpoint turns and do not wake a sleeping machine.
+
+The baseline supports one-time, daily/weekly calendar, elapsed fixed-rate/completion-relative intervals and verified events. Unsupported recurrence is reported. Defaults skip nonexistent daylight-saving times, select the first repeated time, coalesce missed occurrences to one within expiry, and queue at most one while work is active. Unknown clock changes and external effects are held for reconciliation. Only classified safe failures get at most two retries inside the same deadline. Duplicate triggers do not admit another occurrence; Axis does not promise exactly-once external effects.
+
+Scheduled child-project supervision initially reports status/inspection only. Recurring child starts or changes require a separately approved standing mandate. Reminders continue to mean things you must do, independently of executable schedules.
+
+### Sessions, delivery and migration
+
+The baseline adapter supports on-demand startup. Warm or managed residency requires a separately supported host integration and explicit opt-in; the baseline does not provide persistent residency. The optional `axis` launcher shows exact project/session bindings and uses verified adapter operations. A surviving terminal, PID or provider conversation cannot restore an expired Axis lease. Unsupported attach/notify/stop operations keep the manual route available.
+
+A [Submission](/_Axis/GLOSSARY.md#submission) presents information to your Main for consideration. `_Axis/Submissions/` is the only incoming submission queue; only receiving Main processes it. Messages is the communication and audit trail for teams, other agents and projects. Authorized local agents can record Messages directly. A child project's Result can arrive as a Submission and retain its Result meaning; receiving it does not validate the work.
+
+Coordination records and Submissions begin with an ordinary Subject and readable Markdown. A labelled JSON payload and checksum at the end support validation; the system checks that readable content and payload agree. Original submissions remain visible under `Submissions/_received/`, linked to the receiving Message. Subject-first indexes and details continue to work without YAML frontmatter or Obsidian metadata ingestion.
+
+The 3.00 upgrade moves the old Requests queue to Submissions while preserving exact contents and outcomes. Main processes those migrated entries afterward. Already accepted 2.09 work remains done, referred work keeps its Task link, and historical archives remain unchanged. Migration never executes old contents; interrupted moves and collisions require recovery against the retained plan. After new-format writes, downgrade requires reviewed export/reconciliation.
 
 ### Coordinating Agents
 
@@ -575,7 +621,7 @@ When several agents work on one project - Main, External agents on channels, Sub
 
 At each checkpoint - a new turn, before changing a shared file, before starting or returning from a Subagent - every agent reads what the others have posted since it last looked. That is how it notices a question addressed to it, or that another agent is already working on the same file. Type `^board` for the Board: who is live, what each is working on, open questions between agents, overlapping work and recent completions. The Dashboard's Agents card shows the same picture.
 
-An External agent that needs a shared change it may not make itself can ask Main; Main decides it like any Request, records the decision and replies. A question between agents never grants permission: file locks and roles still decide who may write, and anything that needs you still comes to you.
+An External agent that needs a shared change it may not make itself can ask Main; Main decides it like any Message, records the decision and replies. A question between agents never grants permission: file locks and roles still decide who may write, and anything that needs you still comes to you.
 
 ### Subagents
 
@@ -620,7 +666,7 @@ The Workflow uses two model settings, both in [Settings](/_Axis/SETTINGS.md):
 
 [OpenClaw](https://openclaw.ai) is the wildly popular open-source gateway that connects an AI agent to the messaging apps you already use - WhatsApp, Telegram, Discord, Slack, iMessage, and two dozen more - and keeps it running around the clock: message it from your phone, wake it on a schedule, let it work while you sleep. One gateway can run several isolated agents, each with its own workspace and its own background sub-agents.
 
-Axis uses OpenClaw as a **thin harness**, not as a second project brain. The integration keeps the things a Markdown workflow cannot provide by itself - channels, verified sender routing, agent/session lifecycle, directed messaging, cron triggers, and the runtime tools needed to operate the project. Axis owns identity, instructions, memory, project knowledge, Requests, and every canonical record.
+Axis uses OpenClaw as a **thin harness**, not as a second project brain. The integration keeps the things a Markdown workflow cannot provide by itself - channels, verified sender routing, agent/session lifecycle, directed messaging, cron triggers, and the runtime tools needed to operate the project. Axis owns identity, instructions, memory, project knowledge, Messages, and every canonical record.
 
 The two meet at one file: OpenClaw injects the workspace's `AGENTS.md`, and that starts the ordinary Axis entry protocol. Point one OpenClaw agent workspace at one Axis Project and its roles, leases, records, Commands, and supervision become available through the connected channel.
 
@@ -633,7 +679,7 @@ The two meet at one file: OpenClaw injects the workspace's `AGENTS.md`, and that
 | Agent/session launching, tracking, stopping, and restarting | Personality and stance through `_Axis/MINDSET.md` |
 | Directed session-message delivery | Persistent memory through Notes and project files |
 | Explicit cron jobs and scheduled wakeups | Portable schedule intent and supervision policy |
-| Operational transcripts and same-session compaction | Requests as the authoritative inter-agent message |
+| Operational transcripts and same-session compaction | Messages as the authoritative inter-agent message |
 | The required filesystem/runtime tool substrate | Capability detection and graceful degradation |
 
 OpenClaw must retain enough operational session state to route a turn, continue a live conversation, compact a long context, and control an Agent. That is not Axis memory. It remains bounded Host mechanics and is never a source of project truth.
@@ -641,8 +687,8 @@ OpenClaw must retain enough operational session state to route a turn, continue 
 - **One agent, one project.** Give each OpenClaw agent its own Axis Project folder. On startup it becomes that project's Main Agent, unless a standing declaration or another live Main makes it an External Agent. Markers, leases, and file locks preserve the same one-Main boundary used on every other Host.
 - **Role stays Axis-owned.** A standing role declaration takes effect at the next boot; a live session changes role only through User-run `^promote` or `^demote`. OpenClaw display metadata, transcripts, and configuration cannot reassign it mid-session.
 - **Delegation stays gated.** OpenClaw Subagents become Axis Subagents: each task carries the nonce-bound Prompt Envelope in isolated context, and Main validates the return. ACP mode can instead start a full external harness such as Claude Code, which boots through the project entry file; Local Subagents continue to call Ollama directly.
-- **Requests stay authoritative.** Axis writes and reads back the destination Request before trying an exact OpenClaw session message. The Host message carries only the Request Subject and path. Without messaging, the Request is still delivered for the child's next boot.
-- **Schedules stay explicit.** OpenClaw cron may trigger a standalone Axis prompt such as `Read AGENTS.md and follow it. Then run ^refresh.` Generic heartbeats are disabled. The Host binding does not travel, so Axis records the portable intent in a Note and `_Axis/ENVIRONMENT.md`.
+- **Messages stay authoritative.** Axis persists its local outbound Message and reads back the direct child's Submissions envelope before trying an exact OpenClaw notification. The notification carries only the Subject and path. The child's genuine Main imports the envelope; queued delivery alone does not prove receipt or authorize action.
+- **Schedules stay explicit.** OpenClaw cron may trigger a standalone Axis prompt such as `Read AGENTS.md and follow it. Then run ^refresh.` Generic heartbeats are disabled. The Host binding does not travel, so Axis records the portable intent in a Schedule and references it from `_Axis/ENVIRONMENT.md`.
 - **The project remains portable.** Leaving OpenClaw requires no memory export or record conversion. Open the same authoritative folder, or a correctly transferred copy, in another compatible Host and run `^resume`.
 
 #### Security and Audit Boundaries
@@ -684,6 +730,8 @@ See the [OpenClaw practice](/_Axis/Practices/OpenClaw.md) for the complete thin-
 ## Integrations
 
 ### Add-ons
+
+**Cloudflare:** `^install cloudflare` reads [Cloudflare's current agent-setup instructions](https://developers.cloudflare.com/agent-setup/prompt.md) and selects the route for your agent. Axis previews the skills/plugins, MCP connection, install scope and login effects before making changes. The CLI is optional, authentication stays in the native browser, and setup does not authorize deployments, DNS or billing changes. Cloudflare is not required for Axis.
 
 The **Axis Workflow** runs directly from markdown - you do not need to install anything else to get Axis to run, and to run well. You may find, however, that certain third-party extensions, services, and applications will work well with Axis and significantly improve its functionality.
 

@@ -163,11 +163,10 @@
 - Prefer prose over bullets unless the content really is a list.
 - Cite specific files, line numbers, or values when it helps the User act on what you said.
 ##### Verbosity = -1
-- Terse. Just the answer.
-- Skip explanation the User likely already knows.
-- No throat-clearing, no preamble, no "Sure, I can help with that."
-- Bullets are fine, but a one-sentence answer is better when it is enough.
-- Code, commands, and numbers without surrounding prose are often the right output.
+- Keep updates brief. Report only major actions, results, and blockers.
+- Omit code excerpts, diffs, and command output unless User asks.
+- Skip explanations the User likely already knows.
+- No throat-clearing or preamble; one sentence is enough when it answers the request.
 ##### Verbosity = -2
 - Maximum terseness. Just the answer, nothing else.
 - Output code, commands, numbers, or single-line replies wherever possible.

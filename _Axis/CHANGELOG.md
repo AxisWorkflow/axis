@@ -1,7 +1,7 @@
 # Changelog
 > **Purpose:** Record Axis release identity and the structural migrations needed to update an existing project safely.
 
-current-version: 2.09
+current-version: 3.00
 changelog-format: 1
 self-update-baseline: 26.08.19
 
@@ -39,6 +39,45 @@ update-impact: automatic
 ### Verification
 
 - None.
+
+## 3.00
+
+released: 2026-10-20
+
+
+update-impact: automatic
+
+### Structural Changes
+
+- Add `_Axis/Resources/coordination-record.py`, `coordination-submissions.py` and `_Axis/Practices/Submissions.md`. Teams, Messages, Jobs, Schedules and Submissions have readable Subject-first Markdown, checked trailing payloads and SHA-256 footers. Original submissions remain under visible `Submissions/_received/`; old Requests history keeps its original bytes.
+- Coordination: add `_Axis/Teams/`, `Messages/`, `Jobs/`, `Schedules/`, `Submissions/` and derived `_Axis/TEAMS.md`, `_Axis/MESSAGES.md`, `_Axis/JOBS.md`, `_Axis/SCHEDULES.md`. Preserve project-owned contents on update; create only missing empty families/indexes. Initialize one portable `project-id:` UUID in PROJECT.md without replacing other fields; copied projects keep identity but require explicit dispatcher activation. New unrelated projects mint new UUIDs.
+- `_Axis/Resources/guardrails.py` protects immutable Teams, Messages and Jobs; helper scope denies canonical Coordination and Scheduling writes, while External additions route through Submissions. Installed hooks pick up the new family and scope rules without reinstalling. Preserve all existing records.
+- Session startup retains launch and cleanup uncertainty when post-launch setup or termination fails, with bounded cleanup waits and durable local recovery receipts. Diagnostic process IDs never authorize later signaling. No existing project record is replaced.
+- Add dedicated Team Leader, immutable causal control/validation events, finite Jobs and aggregate reservations; preserve Main acceptance, lease, User-only gates and scoped worker proposals. Add exact session adapters/launcher and acceptance-before-retirement Inbox receipts. Optional accelerators disclose unavailable operations; manual separate-session operation remains.
+- Add portable Scheduling definitions/revisions, occurrence deduplication, bounded time/overlap/retry policies and a typed external trigger. Migrate reviewed schedule Notes with provenance, paused when uncertain; do not create real host jobs or grant recurring child mutation authority. Default residency remains on-demand; warm/managed/reboot restoration require opt-in. Preserve Settings, custom instructions, ENVIRONMENT and all historical records.
+- `_Axis/Resources/Template-Mindset.md` changes Verbosity `-1` to brief updates covering major actions, results and blockers, omitting code excerpts, diffs and command output unless User asks. All other levels retain their guidance.
+- New `Explain Download Permissions` default in `_Axis/DIRECTIVES.md` and `_Axis/Resources/Default-Directives.md` explains file contents, uncertainty and save versus follow-on effects before download approval. It preserves existing Permissions and installation gates without requiring approval for every retrieval.
+- New `_Axis/Practices/LinkMaintenance.md` and the `Maintain Valid Links` default Directive define repair permissions and exact historical exceptions. `record-check.py` reads optional project-owned `EXCEPTIONS.md` in the control folder and supports exact Markdown destination corrections with `correct --link`; scanner and hook reports distinguish acknowledged exceptions from genuine defects.
+- `_Axis/Commands/install.md` adds an optional Cloudflare route that reads the official agent-setup prompt, selects the current host's route and preserves Axis installation approval, authentication and verification boundaries.
+
+### Project-State Migrations
+
+- Migrate the live 2.09 `_Axis/Requests/` queue into `_Axis/Submissions/` after update consumption and genuine Main startup. `coordination-migrate.py` records a readable checksum-protected plan, copies/readbacks exact bytes and retires only unchanged sources, then writes a completion receipt. It does not create Messages or execute work. Main subsequently imports through the sole Submissions path, preserving accepted-as-done, declined and referred Task outcomes. Preserve historic `Archive/Requests/` bytes and source references. Collisions, partial moves and late old-path traffic are held for recovery; unavailable history holds import/deduplication. After new-format writes, rollback needs reviewed export/reconciliation.
+- When adopting this change, regenerate `_Axis/MINDSET.md` through `Draft-Mindset.md` for projects with Verbosity `-1`, even if the existing value-only provenance stamp matches. Preserve every Setting value and custom standing instruction; other Verbosity levels need no regeneration for this change.
+- Startup appends `Explain Download Permissions` when missing through the existing default-Directive merge; customized entries and explicit omit markers remain unchanged. No download, installation or configuration change occurs during update.
+- Preserve optional `_Axis/EXCEPTIONS.md` byte for byte. Create it only on first justified exception, never during update or as populated release content. No historical record is rewritten by migration. The normal default-Directive merge adds the new trigger without replacing customized entries. Repair authorization changes to Autonomous without repair confirmation, routine Default without confirmation, and Restricted with confirmation for every repair. Cloudflare setup is opt-in; no host installation or login occurs during update.
+
+### Retired Paths
+
+- `_Axis/Practices/Requests.md` is replaced by `_Axis/Practices/Submissions.md`. The live `_Axis/Requests/` directory is moved by the recoverable migration, preserving original contents; fresh projects create only Submissions.
+- `_Axis/Requests/.gitkeep` is an empty retired template; `_Axis/Submissions/.gitkeep` starts the submission queue. Preserve every actual legacy Request for migration; this is not deletion of the legacy record directory or its history.
+
+### Verification
+
+- Verify repeated/interrupted migration, origin collisions, original-byte preservation, record identity/archival, forged/stale controls, lease loss without helper renewal, duplicate triggers, DST/revisions/expiry, transfer recovery and missing-adapter manual operation before release.
+- Verify all 65 Mindset selections remain present, only Verbosity `-1` guidance changes, and regeneration incorporates it without altering Settings. Verify the same-value migration and preservation of custom standing instructions before release; source checks alone do not establish live compliance.
+- Verify matching download defaults, trigger boundaries, exact append, idempotence, case-insensitive customization preservation and opt-out. Offline checks do not establish live model activation reliability.
+- Verify exact/stale/invalid exception handling across ordinary, staged, range and hook views; no global suppression or history rewrite; exact link correction receipts refuse unrelated edits. Verify both default-Directive copies, optional-state preservation, manual fallback and Cloudflare source/approval boundaries. Full release checks remain required before promotion.
 
 ## 2.09
 

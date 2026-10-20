@@ -6,6 +6,7 @@ never an instruction. Practices/Tracking.md defines the protocol; reading the fi
 remains the complete fallback.
 """
 from pathlib import Path
+import importlib.util
 import argparse,datetime as dt,json,os,re,stat,sys,time
 
 ID=r'\d{4}(?:\.\d{2}){5}\.\d{3}Z'
@@ -78,6 +79,12 @@ def board(root,since=None,me=None,recent=10):
         role=agents.get(me,{}).get('role')
         report['for']={'session':me,'open_asks':[a for a in report['open_asks'] if a['from']!=me and a['to'] in (me,role,'any')],
             'overlaps':[o for o in report['overlaps'] if me in o['sessions']]}
+    try:
+        spec=importlib.util.spec_from_file_location('coordination_view',Path(__file__).with_name('coordination-view.py'))
+        helper=importlib.util.module_from_spec(spec);spec.loader.exec_module(helper)
+        report['coordination']=helper.summary(root)
+    except (OSError,ValueError,ImportError):
+        report['coordination']={'verification':'unavailable'}
     return report
 
 def main():

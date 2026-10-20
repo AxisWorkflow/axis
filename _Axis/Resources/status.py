@@ -6,7 +6,7 @@ never writes them, and prints a terminal summary (default), JSON, or a static
 branded web page under `_Temp/status/`. Without Python the Agent composes the
 same summary by hand from the same records.
 """
-import argparse, datetime as dt, html, json, os, re, shutil, subprocess, sys
+import argparse, datetime as dt, html, importlib.util, json, os, re, shutil, subprocess, sys
 from pathlib import Path
 
 sys.dont_write_bytecode = True
@@ -18,6 +18,13 @@ def read(p):
         return Path(p).read_text(encoding='utf-8', errors='replace')
     except OSError:
         return ''
+
+
+def coordination_summary(root):
+    try:
+        spec=importlib.util.spec_from_file_location('axis_coordination_view',Path(__file__).with_name('coordination-view.py'))
+        module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);return module.summary(root)
+    except (OSError,ValueError,ImportError):return {'verification':'unavailable'}
 
 
 def records(root, *dirs):
@@ -162,7 +169,8 @@ def collect(root, detail):
         'review': {'subject': subject(reviews[0]), 'age': age(memo_date(reviews[0].name) or when(reviews[0].name), now), 'path': str(reviews[0].relative_to(root))} if reviews else None,
         'memos_waiting': memos_waiting,
         'agents': agents, 'git': git, 'root': str(root),
-        'counts': {'Notes': n('_Axis/Notes'), 'Ideas': n('_Axis/Ideas'), 'Requests': n('_Axis/Requests'), 'Logs': n('_Axis/Logs')},
+        'counts': {'Notes': n('_Axis/Notes'), 'Ideas': n('_Axis/Ideas'), 'Submissions': n('_Axis/Submissions'), 'Logs': n('_Axis/Logs')},
+        'coordination': coordination_summary(root),
         'detail': detail,
     }
     if detail == 'full':
@@ -275,7 +283,7 @@ def text(d, width, color):
         if d.get('recent_completed'):
             section('Recently completed', [f"    - {clip(x['name'], width - 6)}" for x in d['recent_completed']], '')
         c = d['counts']
-        section('Records', [f"    {c['Logs']} Logs, {c['Notes']} Notes, {c['Ideas']} Ideas, {c['Requests']} Requests waiting"], '')
+        section('Records', [f"    {c['Logs']} Logs, {c['Notes']} Notes, {c['Ideas']} Ideas, {c['Messages']} Message envelopes waiting"], '')
     out.append(rule)
     return '\n'.join(out)
 

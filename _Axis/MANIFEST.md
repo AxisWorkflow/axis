@@ -42,7 +42,11 @@
 - `_Axis/Notes/`
 - `_Axis/Practices/`
 - `_Axis/Rules/`
-- `_Axis/Requests/`
+- `_Axis/Messages/`
+- `_Axis/Teams/`
+- `_Axis/Jobs/`
+- `_Axis/Schedules/`
+- `_Axis/Submissions/`
 - `_Axis/Resources/`
 - `_Axis/Snapshots/`
 - `_Axis/Supervision/`
@@ -71,6 +75,12 @@
 - `_Axis/SETTINGS.md`
 - `_Axis/SNAPSHOTS.md`
 - `_Axis/TASKS.md`
+- `_Axis/TEAMS.md`
+- `_Axis/MESSAGES.md`
+- `_Axis/JOBS.md`
+- `_Axis/SCHEDULES.md`
+
+Optional project state: `EXCEPTIONS.md` in the Axis control folder, created on first justified historical-reference exception. Its absence is normal; updates preserve it and releases never supply project-specific entries. See [Practices > LinkMaintenance].
 
 - `_Axis/Dashboard/index.html`
 - `_Axis/Dashboard/mermaid-11.16.1.min.js` - pinned Mermaid renderer.
@@ -102,6 +112,7 @@
 - `_Axis/Practices/IndexDetail.md`
 - `_Axis/Practices/Initiatives.md`
 - `_Axis/Practices/Logs.md`
+- `_Axis/Practices/LinkMaintenance.md`
 - `_Axis/Practices/Markers.md`
 - `_Axis/Practices/Mindset.md`
 - `_Axis/Practices/Notes.md`
@@ -109,7 +120,10 @@
 - `_Axis/Practices/Portability.md`
 - `_Axis/Practices/Planning.md`
 - `_Axis/Practices/References.md`
-- `_Axis/Practices/Requests.md`
+- `_Axis/Practices/Submissions.md`
+- `_Axis/Practices/Messages.md`
+- `_Axis/Practices/Coordination.md`
+- `_Axis/Practices/Scheduling.md`
 - `_Axis/Practices/Reminders.md`
 - `_Axis/Practices/Settings.md`
 - `_Axis/Practices/Snapshots.md`
@@ -153,6 +167,10 @@
 - `_Axis/Commands/audit.md`
 - `_Axis/Commands/backup.md`
 - `_Axis/Commands/board.md`
+- `_Axis/Commands/axis.md`
+- `_Axis/Commands/schedule.md`
+- `_Axis/Commands/jobs.md`
+- `_Axis/Commands/team.md`
 - `_Axis/Commands/cx.md`
 - `_Axis/Commands/dashboard.md`
 - `_Axis/Commands/demote.md`
@@ -211,6 +229,16 @@
 - `_Axis/Resources/guardrails.py` - optional host hook (`^install guardrails`) that refuses an Agent's edit to a write-once record or a malformed new record name, and a helper's use of `_Axis/Secrets/` or writes outside its role's folders.
 - `_Axis/Resources/Helpers/axis-cx.claude-agent`, `axis-wiki.claude-agent`, `axis-general.claude-agent` - helper role definitions `^install guardrails` copies into `.claude/agents/` as `.md` files.
 - `_Axis/Resources/OpenClaw/axis-guardrails/openclaw.plugin.json` and `index.ts` - optional OpenClaw plugin (`^install guardrails`) that applies `guardrails.py --external` to agents configured as External Agents.
+- `_Axis/Resources/coordination.py`
+- `_Axis/Resources/coordination-record.py`
+- `_Axis/Resources/coordination-submissions.py`
+- `_Axis/Resources/coordination-migrate.py`
+- `_Axis/Resources/coordination-transfer.py`
+- `_Axis/Resources/coordination-view.py`
+- `_Axis/Resources/scheduling.py`
+- `_Axis/Resources/session-adapters.py`
+- `_Axis/Resources/axis`
+- `_Axis/Resources/Coordination-Manual.md`
 - `_Axis/Resources/Detect-Capabilities.md`
 - `_Axis/Resources/Draft-Mindset.md`
 - `_Axis/Resources/Lock-File.md`

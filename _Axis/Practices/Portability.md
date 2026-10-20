@@ -87,7 +87,7 @@ These are portability findings, not authority to rename User content. Traverse n
 
 Every `^save` runs all safe, locally observable checks before it writes the one ordinary Snapshot:
 
-1. validate the current lease, locks, in-flight update state, Requests, and replica/storage hazards;
+1. validate the current lease, locks, in-flight update state, Messages, and replica/storage hazards;
 2. validate portability-relevant record schemas, links, timestamps, Reminder targets, and generated contracts;
 3. validate `_Axis/ENVIRONMENT.md`, revalidate every declaration into the exact infrastructure status vocabulary, run bounded discovery, and identify source-side infrastructure that a receiving environment may need to restore;
 4. check Workflow-relevant absolute paths, required symlinks or hard links, broken paths, case collisions/mismatches, sync-conflict copies, platform-reserved/control names, UTF-8 BOM, and CRLF in Axis structured text;

@@ -98,7 +98,7 @@ Ask User if they want to work with you to draft a Plan to govern the Project.
 ## Step 8: Transfer Root Ownership
 
 1. Quietly verify `_Axis/PROJECT.md` contains no `{{`. If any remain: on the Interactive path, return to Step 5. On the Quick Setup path, do not send User into the Interactive interview - remove or fill the leftover placeholder sections yourself, asking a single question only where content is genuinely required, then continue.
-2. Follow `_Axis/Resources/Refresh-Project-README.md` in Project Setup mode. This creates the Project README (replacing only the marked Axis introduction from a cloned repository), preserves customized content, and resolves the root `LICENSE` lifecycle without choosing a license for the User.
+2. Initialize the portable `project-id:` UUID once under [Practices > Coordination], preserving an existing valid identity. Never ship or copy a template UUID into unrelated projects. Follow `_Axis/Resources/Refresh-Project-README.md` in Project Setup mode. This creates the Project README (replacing only the marked Axis introduction from a cloned repository), preserves customized content, and resolves the root `LICENSE` lifecycle without choosing a license for the User.
 3. Quietly write a current UTC timestamp into the Flag `_Axis/Flags/project-ready` (overwrite if present). Project Setup is not complete until the README and license ownership decision has been resolved, including a safely preserved malformed or customized root file reported to User.
 4. On the Quick Setup path, GOTO Step 10. On the Interactive path, continue to Step 9.
 

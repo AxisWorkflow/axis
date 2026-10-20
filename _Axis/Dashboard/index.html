@@ -310,6 +310,7 @@
       <section class="card listcard" id="agent-activity"><h2>Agent Activity</h2><div class="muted">loading…</div></section>
     </div>
   </div>
+  <section class="card wide" id="coordination"><h2>Teams, Messages and Jobs</h2><div class="muted">loading…</div></section>
   <section class="card wide" id="wiki" style="display:none"><h2>Wiki</h2><div class="muted">loading…</div></section>
   <hr class="section-divider" aria-hidden="true">
   <section class="card wide" id="plan"><h2>Plan</h2><div class="muted">loading…</div></section>
@@ -818,10 +819,11 @@ async function collectOperationalNotices(partial){ // actionable notices for the
     const u = [...new Set(locks)];
     if (u.length) notices.push({html:`A stale write lock may be blocking work: ${esc(u.slice(0,3).join(", "))}${u.length>3?" …":""}.`, important:false});
   } catch(e){ markPartial(partial, "Status"); }
-  try {                                            // requests waiting in the queue - normally empty; a boot or served turn drains it
-    const nreq = (await listDir("../Requests/")).length;
-    if (nreq) notices.push({html:`${nreq} request${nreq>1?"s are":" is"} awaiting a Main Agent - type <code>Start Axis</code> in a session to triage.`, important:false});
-  } catch(e){ markPartial(partial, "Status"); }
+  try {                                            // pending Submissions; a boot or served turn imports them
+    const submissions = await read("../Submissions/");
+    const nreq = new Set([...submissions.matchAll(/href="([^"?\/]+\.md)"/g)].map(m => m[1])).size;
+    if (nreq) notices.push({html:`${nreq} Submission${nreq>1?"s are":" is"} awaiting a Main Agent - type <code>Start Axis</code> in a session to triage.`, important:false});
+  } catch(e){ markUnlessMissing(partial, "Status", e); }
   try {                                            // Notes over the Max Notes limit
     const max = parseInt(vals["Max Notes"], 10);
     if (!isNaN(max)) { const n = (await listDir(DIRS.Notes)).length;
@@ -1463,6 +1465,22 @@ async function renderSnapshots(partial){           // the last five Snapshot sum
   el("snapshots").innerHTML = `<h2>Snapshots</h2>${rows.join("")}<button type="button" class="more" onclick="showDoc('../SNAPSHOTS.md', 'All Snapshots')">More…</button>`;
 }
 
+async function renderCoordination(partial){
+  const sections = [];
+  for (const name of ["Teams","Messages","Jobs","Schedules"]) {
+    try {
+      const text = await read("../" + name.toUpperCase() + ".md");
+      const rows = text.split("\n").filter(line => line.startsWith("| [")).slice(0,20);
+      const items = rows.map(line => {
+        const cells = line.replace(/^\||\|$/g, "").split("|").map(s=>s.trim());
+        return "<li>" + esc(cells[1] || "Record") + " <span class=muted>" + esc(cells[2] || "unverified") + "</span></li>";
+      }).join("");
+      sections.push("<div><h3><a target=_blank rel=noopener href=../" + name.toUpperCase() + ".md>" + name + "</a></h3>" + (items ? "<ul>"+items+"</ul>" : "<p class=muted>No active entries recorded.</p>") + "</div>");
+    } catch(e) { markUnlessMissing(partial,"Coordination",e); }
+  }
+  el("coordination").innerHTML = "<h2>Teams, Messages and Jobs</h2><p class=muted>Cached project views. Open a record to verify authority, limits and current control before acting. Scheduling is checkpoint-driven unless a verified trigger is configured.</p>" + (sections.join("") || "<p class=muted>No coordination records yet.</p>");
+}
+
 async function loadAll(manual=false){
   const reload = el("reloadButton");
   const partial = new Set();
@@ -1482,7 +1500,7 @@ async function loadAll(manual=false){
     const configuration = renderConfiguration(partial);
     const operational = collectOperationalNotices(partial);
     await Promise.all([configuration, operational, renderMindset(partial), renderStatus(partial), renderReminders(partial), renderFollowups(partial), renderAgentActivity(partial), renderPlan(partial), renderAgents(partial), renderTasks(partial),
-                       renderIdeas(partial), renderNotes(partial), renderWiki(partial), renderLogs(partial), renderProject(partial), renderMetrics(partial), renderSnapshots(partial)]);
+                       renderIdeas(partial), renderNotes(partial), renderWiki(partial), renderLogs(partial), renderProject(partial), renderMetrics(partial), renderSnapshots(partial), renderCoordination(partial)]);
     renderDashboardStatus(await configuration, await operational);
     completed = true;
   } finally {

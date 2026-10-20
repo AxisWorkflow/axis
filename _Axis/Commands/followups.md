@@ -5,7 +5,7 @@
 
 2. With no additional text: list the complete open queue in the ordering defined by the Practice. Show each Subject, type, due state, self-contained ask, and the records it blocks. Say plainly when none are open. This is read-only: do not write a Log. STOP.
 
-3. With additional text, require Main Agent. An External Agent sends a Request to Main; a Subagent returns a candidate to Main; either then STOPS without touching the queue. Main classifies the request as one of these operations:
+3. With additional text, require Main Agent. An External Agent sends a Message to Main; a Subagent returns a candidate to Main; either then STOPS without touching the queue. Main classifies the request as one of these operations:
 	- **add** - create a question, decision, or action for User; a request to reopen a terminal item is an add with a new identity that references the archived record, never a restoration;
 	- **update** - change an open item's due date, pointer, Subject, type, or explanatory paragraph;
 	- **resolve** - record User's answer or completed action;

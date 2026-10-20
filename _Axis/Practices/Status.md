@@ -22,4 +22,4 @@
 
 ## Implementation
 
-`_Axis/Resources/status.py` is an optional, read-only accelerator (Python 3 standard library only). It reads `_Axis/PROJECT.md`, `CHANGELOG.md`, `PLAN.md`, `TASKS.md`, `INITIATIVES.md`, and the `Followups/`, `Reminders/`, `Logs/`, `Snapshots/`, `Reviews/` (and pre-2.01 `Status/`), `Notes/`, `Ideas/`, `Requests/` and `Agents/` folders, plus `git branch` and `git status` when Git is present. Its only write is the web page under `_Temp/status/`. Without Python the Agent composes the same summary by hand; nothing else changes.
+`_Axis/Resources/status.py` is an optional, read-only accelerator (Python 3 standard library only). It reads `_Axis/PROJECT.md`, `CHANGELOG.md`, `PLAN.md`, `TASKS.md`, `INITIATIVES.md`, and the `Followups/`, `Reminders/`, `Logs/`, `Snapshots/`, `Reviews/` (and pre-2.01 `Status/`), `Notes/`, `Ideas/`, `Messages/` and `Agents/` folders, plus `git branch` and `git status` when Git is present. Its only write is the web page under `_Temp/status/`. Without Python the Agent composes the same summary by hand; nothing else changes.

@@ -43,11 +43,15 @@ AXIS_RECORD_FAMILIES = {
     "Snapshots",
     "CX",
     "Audit",
+    "Teams",
+    "Messages",
+    "Jobs",
+    "Schedules",
 }
 AXIS_ROOT_FILES = {"CHANGELOG.md", "PROJECT.md", "SETTINGS.md", "PLAN.md", "INITIATIVES.md", "TASKS.md"}
 # Read-only documents the Dashboard menu and viewer open (2.02): the User Manual, Glossary, Specification,
 # Manifest and the Snapshot index. Product documentation and index records only; no Secrets or host files.
-AXIS_ROOT_FILES |= {"USERMANUAL.md", "GLOSSARY.md", "SPECIFICATION.md", "MANIFEST.md", "SNAPSHOTS.md"}
+AXIS_ROOT_FILES |= {"USERMANUAL.md", "GLOSSARY.md", "SPECIFICATION.md", "MANIFEST.md", "SNAPSHOTS.md", "TEAMS.md", "MESSAGES.md", "JOBS.md", "SCHEDULES.md"}
 DASHBOARD_FILES = {
     "index.html",
     "mermaid-11.16.1.min.js",
@@ -161,7 +165,7 @@ def is_browsable_directory(parts: tuple[str, ...]) -> bool:
         return True
     if parts == ("_Axis", "Dashboard"):
         return True
-    if parts == ("_Axis", "Requests"):
+    if parts == ("_Axis", "Submissions"):
         return True
     if parts in MEMO_DIRECTORIES:
         return True
@@ -218,9 +222,9 @@ def visible_directory_entries(root: Path, parts: tuple[str, ...]) -> list[tuple[
                     entries.append((name, True))
             elif child.is_file() and (
                 is_allowed_file_for_root(root, child_parts)
-                # Requests are listed by NAME only - the Dashboard's queue count;
-                # request bodies stay outside the read contract.
-                or (parts == ("_Axis", "Requests") and name.endswith(".md"))
+                # Submissions are listed by NAME only - the Dashboard's queue count;
+                # submitted bodies stay outside the read contract.
+                or (parts == ("_Axis", "Submissions") and name.endswith(".md") and not name.startswith("_"))
             ):
                 entries.append((name, False))
         except OSError:

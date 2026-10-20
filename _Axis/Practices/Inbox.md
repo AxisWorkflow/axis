@@ -7,7 +7,7 @@
 
 - At Session Start, before the Ready banner, whenever `_Inbox/` holds items: `boot.py` lists it as pending, and the one-line report follows the greeting.
 - On `^inbox`, and as a step of `^refresh`.
-- Main Agent only. An External Agent or Subagent lists what it sees and routes filing to Main through a Request; it never moves an item.
+- Main Agent only. An External Agent or Subagent lists what it sees and routes filing to Main through a Message; it never moves an item.
 
 Skip `.gitkeep`, other dotfiles, and any item still arriving (modified within the last minute, or changing size between two reads).
 

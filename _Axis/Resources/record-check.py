@@ -12,27 +12,31 @@ Run from the project root:
       deletions pass. Paths named by an update transaction whose evidence is added in the same commit pass, and so
       does an identifier correction whose Log the same commit adds (below).
   python3 _Axis/Resources/record-check.py correct --path {path} --old {wrong identifier} --new {right identifier}
-      The one edit a write-once record takes, only after User approves it for that record: replace a wrong record
+      The one edit a write-once record takes, under LinkMaintenance Permissions: replace a wrong record
       identifier (a timestamp ID, or a path or reference built on one) with the right one, and change nothing else.
-      Prints the Log fields the same commit must add.
+      --link replaces exact simple Markdown destinations only. Prints the Log fields the same commit must add.
   python3 _Axis/Resources/record-check.py links [--scope {folder} ...] [--archive]
       Read-only consistency scan of the record folders, the index and Plan files and _Memos/ (or the named paths): malformed identifier
-      timestamps (a missing or invented part, a wildcard), identifiers that name no record, session, update, Request
+      timestamps (a missing or invented part, a wildcard), identifiers that name no record, session, update, Submission
       or Evidence folder, and relative links whose target is missing (or moved, when the same name exists elsewhere).
       Metadata fields such as created: are values, not references. An identifier followed by `(missing)` reports a
       record known to be missing and counts as acknowledged, not a finding; identifiers listed in
       _Dev/Evidence/DELETED.md (removed development Evidence) resolve. Prints locations, never contents; exit 1 on findings.
+      Optional _Axis/EXCEPTIONS.md binds acknowledged historical quotations to exact source bytes and occurrences;
+      acknowledged exceptions remain visible, stale entries never suppress findings, invalid registries refuse the check.
       --staged (^save): refuse only the problems staged records add beyond their HEAD version.
-      --range {old}..{new} (^resume): scan the in-scope files a received range changed.
+      --range {old}..{new} (^resume): scan the in-scope files a received range changed. Git checks use their index or
+      destination-commit registry and source bytes, never uncommitted working-tree exceptions.
 Exit 0 prints OK (after any warning lines); 1 prints REFUSED; 2 means this check cannot run: use the manual steps."""
-import argparse,datetime as dt,json,os,re,subprocess,sys
-from pathlib import Path
+import argparse,datetime as dt,hashlib,json,os,re,subprocess,sys
+from pathlib import Path,PurePosixPath
 
 NAME=re.compile(r'\d{4}(?:\.\d{2}){5}\.\d{3}Z\.md')
-FAMILIES=('Audit','CX','Followups','Ideas','Logs','Notes','Reminders','Reviews','Snapshots','Status','Supervision','Tasks')
+FAMILIES=('Audit','CX','Followups','Ideas','Logs','Notes','Reminders','Reviews','Snapshots','Status','Supervision','Tasks','Teams','Messages','Jobs','Schedules')
 IGNORED=('.gitkeep','.DS_Store')
 WORM={'Logs':'Logs','Snapshots':'Snapshots','CX':'CX reports','Audit':'Audit reports','Reviews':'Review reports',
-      'Status':'Status reports','Supervision':'Supervision records'}
+      'Status':'Status reports','Supervision':'Supervision records','Teams':'Team charters',
+      'Messages':'Messages','Jobs':'Job mandates'}
 LIMIT=50
 
 def valid(name):
@@ -66,6 +70,7 @@ def names(root,since):
         for entry in sorted(base.iterdir()):
             relative=folder+'/'+entry.name
             if entry.name in IGNORED and not entry.is_symlink():continue
+            if folder.endswith(('/Teams','/Messages')) and entry.is_dir() and not entry.is_symlink() and valid(entry.name+'.md') and (base/(entry.name+'.md')).is_file() and not (base/(entry.name+'.md')).is_symlink() and (base/(entry.name+'.md')).stat().st_nlink==1:continue
             if entry.is_symlink() or not entry.is_file() or not valid(entry.name):malformed.append(relative)
             else:found.append(relative)
     known=None
@@ -101,7 +106,7 @@ def rule(root,path):
     family=parts[1]
     if family=='Archive':return 'archived history is write-once'
     if family=='Updates':return None if parts[-1]=='operation.lck' else 'update evidence is write-once'
-    if family in WORM:return WORM[family]+' are write-once'
+    if family in WORM and (family not in ('Teams','Messages','Jobs') or len(parts)==3):return WORM[family]+' are write-once'
     if family in ('Tasks','Followups','Reminders') and len(parts)==3:
         data=git(root,'show','HEAD:'+path)
         if data is None:return None
@@ -127,22 +132,59 @@ def update_exempt(root,added):
 IDENT=re.compile(r'\d{4}\.\d{2}\.\d{2}\.\d{2}\.\d{2}\.\d{2}\.\d{3}Z')
 REF=re.compile(r'[A-Za-z0-9_./*~-]{1,200}')
 
-def correct(root,path,old,new):
+def replace_link(data,old,new):
+    """Exact one-line Markdown destinations only, excluding code and block quotations."""
+    if old==new or not all(isinstance(s,str) and 0<len(s)<=4096 and not re.search(r'[\s<>`\\()]',s) for s in (old,new)):
+        raise ValueError('link destinations must be distinct nonempty single-line tokens')
+    if re.match(r'(?i)^(javascript|data|vbscript):',new):raise ValueError('active link schemes are not repair destinations')
+    text=data.decode('utf-8');out=[];count=0;fence=None
+    for line in text.splitlines(keepends=True):
+        mark=re.match(r'^ {0,3}(`{3,}|~{3,})',line)
+        if mark:
+            token=mark[1]
+            if fence is None:fence=token
+            elif token[0]==fence[0] and len(token)>=len(fence):fence=None
+            out.append(line);continue
+        if fence or line.startswith(('    ','\t')) or line.lstrip().startswith('>'):
+            out.append(line);continue
+        code=[m.span() for m in re.finditer(r'(`+).*?\1',line)]
+        spans=[m.span(1) for m in LINK.finditer(line) if m[1]==old and not any(a<=m.start()<b for a,b in code)]
+        for a,b in reversed(spans):line=line[:a]+new+line[b:]
+        count+=len(spans);out.append(line)
+    if not count:raise ValueError('no unquoted Markdown destination matches --old')
+    return ''.join(out).encode('utf-8'),count
+
+def protected_coordination_detail(rel,data):
+    return bool(re.match(r'^_Axis/(?:Archive/)?(?:Teams|Messages|Jobs|Schedules)/',rel) or re.search(rb'^checksum-sha256: [^\r\n]+\r?$',data,re.M))
+
+def correct(root,path,old,new,link=False):
     """Replace old with new in one write-once record and nothing else (Rules > RecordsAndWORM > Identifier correction)."""
-    rel=path.strip('/')
-    if '..' in rel.split('/') or rule_kind(rel) is None:return 1,['REFUSED: not a write-once record path under _Axis/']
-    if not (REF.fullmatch(old) and REF.fullmatch(new)) or old==new or not IDENT.search(new) or not re.search(r'\d{4}\.\d{2}\.\d{2}',old):
+    rel=path
+    if not _safe_relative(rel) or rule_kind(rel) is None or (link and not rel.endswith('.md')):return 1,['REFUSED: not a write-once record path under _Axis/']
+    if not link and (not (REF.fullmatch(old) and REF.fullmatch(new)) or old==new or not IDENT.search(new) or not re.search(r'\d{4}\.\d{2}\.\d{2}',old)):
         return 1,['REFUSED: --old and --new must be single record references: --old holding at least a timestamp date, --new a full identifier timestamp']
     f=root/rel
-    if f.is_symlink() or not f.is_file():return 1,['REFUSED: no such record']
-    data=f.read_bytes();o,n=old.encode(),new.encode();count=data.count(o)
+    if any(p.is_symlink() for p in (f,*f.parents)) or not f.is_file() or f.stat().st_nlink!=1:return 1,['REFUSED: no such ordinary record']
+    data=f.read_bytes()
+    if protected_coordination_detail(rel,data):return 1,['REFUSED: checked Coordination history cannot be rewritten; append a correction record or exact exception']
+    o,n=old.encode(),new.encode();count=data.count(o)
     if count==0:return 1,['REFUSED: the wrong identifier does not occur in the record']
-    after=data.replace(o,n);tmp=f.with_name('.'+f.name+'.axis-correct');tmp.write_bytes(after);os.replace(tmp,f)
+    try:after,count=replace_link(data,old,new) if link else (data.replace(o,n),count)
+    except (ValueError,UnicodeError) as error:return 1,['REFUSED: '+str(error)]
+    import tempfile,stat
+    fd,name=tempfile.mkstemp(prefix='.'+f.name+'.axis-correct-',dir=f.parent);tmp=Path(name)
+    try:
+        with os.fdopen(fd,'wb') as stream:
+            os.fchmod(stream.fileno(),stat.S_IMODE(f.stat().st_mode));stream.write(after);stream.flush();os.fsync(stream.fileno())
+        if f.read_bytes()!=data:return 1,['REFUSED: source changed before replacement']
+        os.replace(tmp,f)
+    finally:
+        if tmp.exists():tmp.unlink()
     if f.read_bytes()!=after:return 1,['REFUSED: readback failed']
     import hashlib
-    return 0,[f'correction-path: {rel}',f'correction-old: {old}',f'correction-new: {new}',f'occurrences: {count}',
+    return 0,[f'correction-path: {rel}',f'correction-old: {old}',f'correction-new: {new}',f'correction-mode: {"link" if link else "identifier"}',f'occurrences: {count}',
               'before-sha256: '+hashlib.sha256(data).hexdigest(),'after-sha256: '+hashlib.sha256(after).hexdigest(),
-              'OK: commit this with a Log whose Subject is "Identifier correction: {record}" and which carries the lines above and User\'s approval']
+              'OK: commit this with a Log whose Subject is "Identifier correction: {record}" and which carries these fields, target evidence, Permissions authorization and rollback']
 
 def rule_kind(rel):
     parts=rel.split('/')
@@ -160,27 +202,175 @@ def corrections(root,added):
         text=data.decode('utf-8','replace')
         if not text.startswith('Identifier correction: '):continue
         f={k:field(text,k) for k in ('correction-path','correction-old','correction-new')}
-        if not all(f.values()):continue
+        if not all(f.values()) or not _safe_relative(f['correction-path']) or rule_kind(f['correction-path']) is None:continue
         head,staged=git(root,'show','HEAD:'+f['correction-path']),git(root,'show',':'+f['correction-path'])
         if head is None or staged is None:continue
-        if head.count(f['correction-old'].encode()) and head.replace(f['correction-old'].encode(),f['correction-new'].encode())==staged:ok.add(f['correction-path'])
+        if protected_coordination_detail(f['correction-path'],head) or protected_coordination_detail(f['correction-path'],staged):continue
+        mode=field(text,'correction-mode') or 'identifier'
+        if mode=='link':
+            if not f['correction-path'].endswith('.md'):continue
+            try:expected,count=replace_link(head,f['correction-old'],f['correction-new'])
+            except (ValueError,UnicodeError):continue
+            if expected==staged and field(text,'before-sha256')==hashlib.sha256(head).hexdigest() and field(text,'after-sha256')==hashlib.sha256(staged).hexdigest() and field(text,'occurrences')==str(count):ok.add(f['correction-path'])
+        elif mode=='identifier':
+            old,new=f['correction-old'],f['correction-new']
+            if REF.fullmatch(old) and REF.fullmatch(new) and old!=new and IDENT.search(new) and re.search(r'\d{4}\.\d{2}\.\d{2}',old) and head.count(old.encode()) and head.replace(old.encode(),new.encode())==staged:ok.add(f['correction-path'])
     return ok
 
 NEAR=re.compile(r'(?<![\w.])\d{4}\.\d{2}\.\d{2}\.\d{2}[0-9A-Za-z.:*?]*')
 SCOPE=['_Axis/Logs','_Axis/Snapshots','_Axis/Tasks','_Axis/Followups','_Axis/Reminders','_Axis/Notes','_Axis/Ideas','_Axis/CX','_Axis/Audit',
-       '_Axis/Reviews','_Axis/Supervision','_Axis/Requests','_Axis/TASKS.md','_Axis/SNAPSHOTS.md','_Axis/PLAN.md','_Axis/INITIATIVES.md',
+       '_Axis/Reviews','_Axis/Supervision','_Axis/Teams','_Axis/Messages','_Axis/Jobs','_Axis/Schedules','_Axis/TEAMS.md','_Axis/MESSAGES.md','_Axis/JOBS.md','_Axis/SCHEDULES.md','_Axis/TASKS.md','_Axis/SNAPSHOTS.md','_Axis/PLAN.md','_Axis/INITIATIVES.md',
        '_Axis/PROJECT.md','_Axis/INSTRUCTIONS.md','_Memos']
 LINK=re.compile(r'\[[^\]\n]*\]\(([^)\s]+)\)')
 VALUE=re.compile(r'^\s*(?:[-*]\s*)?(?:\*\*)?(created|updated|completed|cancelled|raised|resolved|reviewed|verified|released|compiled|due-at|started|generated|when|date|at|time)(?:\*\*)?:',re.I)
 
-def archive_root(root):
-    try:text=(root/'_Axis/SETTINGS.md').read_text(encoding='utf-8')
-    except OSError:return None
+EXCEPTIONS_PATH='_Axis/EXCEPTIONS.md'
+EXCEPTIONS_LIMIT=262144
+EXCEPTIONS_COUNT=1000
+EXCEPTION_KINDS={'MALFORMED','UNRESOLVED','BROKEN-LINK','MOVED-LINK'}
+ACK_EXCEPTION='ACKNOWLEDGED-EXCEPTION'
+
+class ExceptionsError(ValueError):
+    """An exception registry cannot be trusted; callers must not silently ignore this error."""
+
+def _safe_relative(value):
+    return (isinstance(value,str) and bool(value) and len(value)<=1024 and
+            not any(c in value for c in '\\*?[]\x00\r\n') and not value.startswith('/') and
+            str(PurePosixPath(value))==value and
+            not any(p in ('..','.git','Secrets') or p.endswith('_X') or Path(p).stem.endswith('_X') for p in value.split('/')) and value!='.')
+
+def _json_unique(pairs):
+    result={}
+    for key,value in pairs:
+        if key in result:raise ExceptionsError('duplicate JSON key: '+key)
+        result[key]=value
+    return result
+
+def _working_source(root,rel,arch=None):
+    """Read exact bytes without following source or parent symlinks. None means absent."""
+    if not _safe_relative(rel):raise ExceptionsError('unsafe source path')
+    if rel.startswith('ARCHIVE/'):
+        if arch is None:return None
+        base=arch;parts=rel.split('/')[1:]
+    else:base=root;parts=rel.split('/')
+    if base.is_symlink():raise ExceptionsError('symlinked source root: '+rel)
+    path=base
+    for part in parts:
+        path=path/part
+        if path.is_symlink():raise ExceptionsError('symlinked source: '+rel)
+    try:
+        with path.open('rb') as stream:
+            data=stream.read(EXCEPTIONS_LIMIT+1) if rel==EXCEPTIONS_PATH else stream.read()
+    except FileNotFoundError:return None
+    except OSError as e:raise ExceptionsError('unreadable source: '+rel+' ('+type(e).__name__+')') from e
+    return data
+
+def _git_entries(root,revision):
+    raw=git(root,'ls-files','--stage','-z') if revision=='INDEX' else git(root,'ls-tree','-r','-z',revision)
+    if raw is None:raise ExceptionsError('cannot read '+revision+' file inventory')
+    entries={}
+    for entry in raw.split(b'\0'):
+        if not entry:continue
+        meta,path=entry.split(b'\t',1);parts=meta.decode('ascii').split()
+        rel=path.decode('utf-8','surrogateescape')
+        if revision=='INDEX' and parts[2]!='0':raise ExceptionsError('unmerged index entry: '+rel)
+        entries[rel]=(parts[0],parts[1] if revision=='INDEX' else parts[2])
+    return entries
+
+def _git_reader(root,revision,entries=None):
+    entries=_git_entries(root,revision) if entries is None else entries;cache={}
+    def read(rel):
+        if rel in cache:return cache[rel]
+        if rel not in entries:return None
+        mode,oid=entries[rel]
+        if mode not in ('100644','100755'):raise ExceptionsError('non-regular '+revision+' source: '+rel)
+        if rel==EXCEPTIONS_PATH:
+            size=git(root,'cat-file','-s',oid)
+            if size is None:raise ExceptionsError('cannot read registry size from '+revision)
+            if int(size)>EXCEPTIONS_LIMIT:raise ExceptionsError('registry exceeds '+str(EXCEPTIONS_LIMIT)+' bytes')
+        data=git(root,'cat-file','blob',oid)
+        if data is None:raise ExceptionsError('cannot read '+revision+' source: '+rel)
+        cache[rel]=data;return data
+    return read
+
+def load_exceptions(root,revision=None,reader=None):
+    """Read optional EXCEPTIONS.md. revision=None means disk, INDEX or a commit selects Git bytes.
+
+    A single fenced axis-link-exceptions JSON object has schema=1 and exceptions=[...]. Each
+    exact entry binds path, source_sha256, kind, line, detail, occurrence and reason. occurrence
+    is 1-based among findings with the same kind/line/detail. Invalid registries raise
+    ExceptionsError (including duplicates, unknown fields and symlinks); absence returns [].
+    """
+    if reader is None:reader=_git_reader(root,revision) if revision else lambda rel:_working_source(root,rel)
+    data=reader(EXCEPTIONS_PATH)
+    if data is None:return []
+    if len(data)>EXCEPTIONS_LIMIT:raise ExceptionsError('registry exceeds '+str(EXCEPTIONS_LIMIT)+' bytes')
+    try:text=data.decode('utf-8')
+    except UnicodeError as e:raise ExceptionsError('registry is not UTF-8') from e
+    fences=re.findall(r'^```axis-link-exceptions[ \t]*\r?\n(.*?)^```[ \t]*\r?$',text,re.M|re.S)
+    openings=re.findall(r'^```axis-link-exceptions[^\n]*$',text,re.M)
+    if len(fences)!=1 or len(openings)!=1:raise ExceptionsError('registry needs exactly one axis-link-exceptions fenced block')
+    try:obj=json.loads(fences[0],object_pairs_hook=_json_unique)
+    except (ValueError,RecursionError) as e:raise ExceptionsError('invalid registry JSON: '+str(e)[:160]) from e
+    if not isinstance(obj,dict) or set(obj)!={'schema','exceptions'} or type(obj['schema']) is not int or obj['schema']!=1:
+        raise ExceptionsError('registry must contain only schema: 1 and exceptions')
+    entries=obj['exceptions']
+    if not isinstance(entries,list) or len(entries)>EXCEPTIONS_COUNT:raise ExceptionsError('exceptions must be a list of at most '+str(EXCEPTIONS_COUNT)+' entries')
+    keys={'path','source_sha256','kind','line','detail','occurrence','reason'};seen=set()
+    for i,e in enumerate(entries,1):
+        prefix='exception '+str(i)+': '
+        if not isinstance(e,dict) or set(e)!=keys:raise ExceptionsError(prefix+'unknown or missing fields')
+        if not _safe_relative(e['path']) or e['path']==EXCEPTIONS_PATH or e['path']=='ARCHIVE':raise ExceptionsError(prefix+'path must be an exact safe project-relative or ARCHIVE/ path')
+        if not isinstance(e['source_sha256'],str) or not re.fullmatch('[0-9a-f]{64}',e['source_sha256']):raise ExceptionsError(prefix+'source_sha256 must be a lowercase SHA-256')
+        if not isinstance(e['kind'],str) or e['kind'] not in EXCEPTION_KINDS:raise ExceptionsError(prefix+'unsupported finding kind')
+        if any(type(e[k]) is not int or not 1<=e[k]<=10000000 for k in ('line','occurrence')):raise ExceptionsError(prefix+'line and occurrence must be positive integers')
+        if not isinstance(e['detail'],str) or not 1<=len(e['detail'])<=4096 or any(c in e['detail'] for c in '\x00\r\n'):raise ExceptionsError(prefix+'detail must be a nonempty single-line exact scanner detail')
+        if not isinstance(e['reason'],str) or not e['reason'].strip() or len(e['reason'])>4096:raise ExceptionsError(prefix+'reason must be nonempty and at most 4096 characters')
+        key=tuple(e[k] for k in ('path','source_sha256','kind','line','detail','occurrence'))
+        if key in seen:raise ExceptionsError(prefix+'duplicate exception identity')
+        seen.add(key)
+    return entries
+
+def _finding_occurrences(findings):
+    counts={}
+    for item in findings:
+        k,line,detail,_=item;key=(k,line,detail);counts[key]=counts.get(key,0)+1
+        yield item,(*key,counts[key])
+
+def apply_exceptions(entries,rel,source_bytes,findings):
+    """Pure exact matching; raw scan() stays compatible and does not load working-tree authority."""
+    digest=hashlib.sha256(source_bytes).hexdigest()
+    allowed={(e['kind'],e['line'],e['detail'],e['occurrence']):i for i,e in enumerate(entries,1)
+             if e['path']==rel and e['source_sha256']==digest}
+    return [(ACK_EXCEPTION,x[1],x[0]+' '+x[2]+' [exception '+str(allowed[key])+']',x[3]) if key in allowed else x
+            for x,key in _finding_occurrences(findings)]
+
+def exception_diagnostics(entries,reader,raw_findings=None):
+    """Stale entries are visible, never authority. Findings outside this scan are not guessed."""
+    rows=[];sources={};raw_findings=raw_findings or {}
+    for i,e in enumerate(entries,1):
+        rel=e['path'];why=None
+        if rel not in sources:
+            try:sources[rel]=reader(rel)
+            except ExceptionsError as error:sources[rel]=str(error)
+        data=sources[rel]
+        if isinstance(data,str):why=data
+        elif data is None:why='source is absent from this view'
+        elif hashlib.sha256(data).hexdigest()!=e['source_sha256']:why='source SHA-256 differs; review before rebinding'
+        elif rel in raw_findings and (e['kind'],e['line'],e['detail'],e['occurrence']) not in {key for _,key in _finding_occurrences(raw_findings[rel])}:
+            why='bound finding is not present in this scan'
+        if why:rows.append(f'STALE-EXCEPTION {i} {rel}:{e["line"]}: {why}')
+    return rows
+
+def archive_root(root,text=None,allow_missing=False):
+    if text is None:
+        try:text=(root/'_Axis/SETTINGS.md').read_text(encoding='utf-8')
+        except OSError:return None
     m=re.search(r'^### Archive Location\s*$.*?^\*\*Value:\*\*\s*(.+?)\s*$',text,re.M|re.S)
     v=(m.group(1).strip() if m else '_Axis/Archive/')
     if v.startswith('~/'):v=os.path.expanduser('~')+v[1:]
     p=Path(v) if os.path.isabs(v) else root/v
-    return p if p.is_dir() else None
+    return p if allow_missing or p.is_dir() else None
 
 def identities(root,arch):
     """Every identifier timestamp that names something real: record files, path names, sessions."""
@@ -206,6 +396,7 @@ def context(root,scopes,with_archive):
     if with_archive and arch:files+=[p for p in arch.rglob('*.md')]
     texts={}
     for f in files:
+        if f==root/EXCEPTIONS_PATH:continue
         try:texts[f]=f.read_text(encoding='utf-8',errors='replace')
         except OSError:continue
         known.update(re.findall(r'session[^\n]{0,12}?('+IDENT.pattern+')',texts[f],re.I))
@@ -217,13 +408,61 @@ def context(root,scopes,with_archive):
         for q in arch.rglob('*.md'):names.setdefault(q.name,[]).append(q)
     return arch,known,names,texts
 
-def scan(root,arch,known,names,f,text,rel):
+def snapshot_context(root,revision):
+    """Resolve Git checks against the chosen index/commit, not uncommitted source/registry bytes."""
+    entries=_git_entries(root,revision);reader=_git_reader(root,revision,entries)
+    settings=reader('_Axis/SETTINGS.md');arch=archive_root(root,settings.decode('utf-8','replace') if settings else '',True)
+    archive_rel=arch.relative_to(root).as_posix() if arch.is_relative_to(root) else None
+    known=set();names={};texts={};present=set()
+    for rel,(mode,_) in entries.items():
+        if any(p in ('Secrets','.git','node_modules') for p in rel.split('/')):continue
+        present.add(rel)
+        present.update(p.as_posix() for p in PurePosixPath(rel).parents if p.as_posix()!='.')
+        if rel.startswith(('_Axis/','_Dev/Evidence/','_Memos/')):known.update(IDENT.findall(rel))
+        if in_scope(rel) and mode in ('100644','100755'):
+            data=reader(rel);f=root/rel;texts[f]=data.decode('utf-8','replace')
+            known.update(re.findall(r'session[^\n]{0,12}?('+IDENT.pattern+')',texts[f],re.I))
+            names.setdefault(f.name,[]).append(f)
+        elif archive_rel is not None and rel.startswith(archive_rel+'/') and rel.endswith('.md'):
+            names.setdefault(Path(rel).name,[]).append(root/rel)
+    deleted=reader('_Dev/Evidence/DELETED.md')
+    if deleted:known.update(IDENT.findall(deleted.decode('utf-8','replace')))
+    if archive_rel is not None:
+        if archive_rel not in present:arch=None
+    elif arch.is_dir():
+        for dirpath,dirs,files in os.walk(arch):
+            dirs[:]=[d for d in dirs if d not in ('Secrets','.git','node_modules')]
+            for n in dirs+files:known.update(IDENT.findall(n))
+            for n in files:
+                if n.endswith('.md'):names.setdefault(n,[]).append(Path(dirpath)/n)
+    else:arch=None
+    def exists(path):
+        path=Path(os.path.normpath(path))
+        try:rel=path.relative_to(root).as_posix()
+        except ValueError:return path.exists()
+        return rel in present
+    return arch,known,names,texts,reader,exists
+
+def coordination_metadata_lines(text,rel):
+    if not re.match(r'^_Axis/(?:Archive/)?(?:Teams|Messages|Jobs|Schedules)/',rel):return set()
+    try:
+        import importlib.util
+        spec=importlib.util.spec_from_file_location('axis_record_format',Path(__file__).with_name('coordination-record.py'))
+        module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+        return module.reference_metadata_lines(text)
+    except (OSError,ValueError,TypeError,AttributeError,RecursionError):return set()
+
+def scan(root,arch,known,names,f,text,rel,exists=None):
     """Findings in one file: (kind, line, detail, write-once?)."""
     from urllib.parse import unquote
+    if rel==EXCEPTIONS_PATH:return []
     out=[]
     kind=rule_kind(rel);done=(kind=='Tasks' and (field(text,'status') or '').casefold() in ('completed','cancelled')) or (kind in ('Followups','Reminders') and (field(text,'outcome') or 'N/A') not in ('N/A',''))
     worm=kind in WORM or done or rel.startswith(('_Axis/Archive/','ARCHIVE/'))
+    metadata=coordination_metadata_lines(text,rel)
     for i,line in enumerate(text.splitlines(),1):
+        if i in metadata:continue
+        if re.match(r'^\s*"(?:created|updated|expires|deadline|authority_expires|session|issuer_session)"\s*:',line):continue
         if VALUE.match(line) or '<!-- compiled:' in line or re.fullmatch(r'\s*[\w-]+:\s*'+IDENT.pattern+r'\s*',line) or re.match(r'#+ .* - '+IDENT.pattern+r'\s*$',line):continue
         bare=re.sub(r'[a-z][a-z0-9+.-]*://\S+',lambda u:' '*len(u.group(0)),line,flags=re.I)
         for m in NEAR.finditer(bare):
@@ -238,12 +477,12 @@ def scan(root,arch,known,names,f,text,rel):
             target=m.group(1)
             if re.match(r'^[a-z][a-z0-9+.-]*:',target,re.I) or target.startswith(('#','/')):continue
             t=unquote(target.split('#',1)[0].split('?',1)[0])
-            if not t or (f.parent/t).exists():continue
+            if not t or (exists(f.parent/t) if exists else (f.parent/t).exists()):continue
             local=Path(os.path.normpath((f.parent/t).as_posix()))
             if arch:
                 try:
                     sub=local.relative_to(root/'_Axis/Archive') if local.is_relative_to(root/'_Axis/Archive') else local.relative_to(root)
-                    if (arch/sub).exists():continue
+                    if exists(arch/sub) if exists else (arch/sub).exists():continue
                 except ValueError:pass
             alt=[q for q in names.get(Path(t).name,[]) if q!=f]
             if alt:out.append(('MOVED-LINK',i,target+' -> '+(alt[0].relative_to(root).as_posix() if alt[0].is_relative_to(root) else 'Archive/'+alt[0].relative_to(arch).as_posix()),worm))
@@ -252,57 +491,99 @@ def scan(root,arch,known,names,f,text,rel):
 
 def report(found,count,arch):
     counts={k:0 for k in ('MALFORMED','UNRESOLVED','BROKEN-LINK','MOVED-LINK')}
-    seen=sum(1 for _,x in found if x[0]=='ACKNOWLEDGED');found=[x for x in found if x[1][0]!='ACKNOWLEDGED']
-    for _,(k,_,_,_) in found:counts[k]+=1
-    rows=[f'{k} {rel}:{i} {d}'+(' (write-once)' if w else '') for rel,(k,i,d,w) in found]
+    seen=sum(1 for _,x in found if x[0]=='ACKNOWLEDGED');ack=sum(1 for _,x in found if x[0]==ACK_EXCEPTION)
+    visible=[x for x in found if x[1][0]!='ACKNOWLEDGED'];problems=[x for x in visible if x[1][0]!=ACK_EXCEPTION]
+    for _,(k,_,_,_) in problems:counts[k]+=1
+    rows=[f'{k} {rel}:{i} {d}'+(' (write-once)' if w else '') for rel,(k,i,d,w) in visible]
     lines=rows[:LIMIT*4]+([f'... {len(rows)-LIMIT*4} more'] if len(rows)>LIMIT*4 else [])
     summary=', '.join(f'{v} {k.lower()}' for k,v in counts.items())
     summary+=f', {seen} acknowledged missing' if seen else ''
-    return (1 if found else 0),([] if arch else ['NOTE: Archive Location unavailable; archived targets were not checked'])+lines+[('FINDINGS: ' if found else 'OK: ')+summary+f' in {count} files']
+    summary+=f', {ack} acknowledged exception(s)' if ack else ''
+    return (1 if problems else 0),([] if arch else ['NOTE: Archive Location unavailable; archived targets were not checked'])+lines+[('FINDINGS: ' if problems else 'OK: ')+summary+f' in {count} files']
 
 def relof(root,arch,f):
     return f.relative_to(root).as_posix() if f.is_relative_to(root) else 'ARCHIVE/'+f.relative_to(arch).as_posix()
 
 def links(root,scopes,with_archive):
-    arch,known,names,texts=context(root,scopes,with_archive);found=[]
-    for f,text in texts.items():
-        rel=relof(root,arch,f);found+=[(rel,x) for x in scan(root,arch,known,names,f,text,rel)]
-    return report(found,len(texts),arch)
+    try:
+        entries=load_exceptions(root)
+        arch,known,names,texts=context(root,scopes,with_archive);found=[];raw={}
+        reader=lambda rel:_working_source(root,rel,arch)
+        for f,text in texts.items():
+            rel=relof(root,arch,f)
+            try:data=reader(rel)
+            except ExceptionsError:data=None
+            raw[rel]=scan(root,arch,known,names,f,data.decode('utf-8','replace') if data is not None else text,rel)
+            findings=apply_exceptions(entries,rel,data,raw[rel]) if data is not None else raw[rel]
+            found+=[(rel,x) for x in findings]
+        code,lines=report(found,len(texts),arch)
+        return code,exception_diagnostics(entries,reader,raw)+lines
+    except ExceptionsError as error:return 1,['REFUSED: invalid '+EXCEPTIONS_PATH+': '+str(error)]
 
 def in_scope(rel):
-    return rel.endswith('.md') and any(rel==s or rel.startswith(s+'/') for s in SCOPE)
+    return rel!=EXCEPTIONS_PATH and rel.endswith('.md') and any(rel==s or rel.startswith(s+'/') for s in SCOPE)
 
 def links_range(root,span):
     """Handoff check (^resume): scan the in-scope files a received range changed."""
     if not exact_repo(root):return 2,['UNAVAILABLE: no Git repository at this root']
-    raw=git(root,'diff','--name-only','-z',span)
+    if span.count('..')!=1 or '...' in span:return 2,['UNAVAILABLE: --range requires {old}..{new}']
+    old,new=span.split('..');ends=[]
+    for ref in (old or 'HEAD',new or 'HEAD'):
+        oid=git(root,'rev-parse','--verify','--end-of-options',ref+'^{commit}')
+        if oid is None:return 2,['UNAVAILABLE: range endpoint is not a commit']
+        ends.append(oid.decode().strip())
+    raw=git(root,'diff','--name-only','-z',*ends,'--')
     if raw is None:return 2,['UNAVAILABLE: git diff '+span+' failed']
-    arch,known,names,_=context(root,SCOPE,False);found=[];n=0
-    for rel in [p for p in raw.decode('utf-8','surrogateescape').split('\0') if p and in_scope(p)]:
-        f=root/rel
-        if not f.is_file():continue
-        n+=1;found+=[(rel,x) for x in scan(root,arch,known,names,f,f.read_text(encoding='utf-8',errors='replace'),rel)]
-    return report(found,n,arch)
+    try:
+        arch,known,names,_,reader,exists=snapshot_context(root,ends[1]);entries=load_exceptions(root,reader=reader)
+        paths=set(raw.decode('utf-8','surrogateescape').split('\0'));found=[];findings={};n=0;warnings=[]
+        if EXCEPTIONS_PATH in paths:
+            paths.update(e['path'] for e in entries)
+            try:paths.update(e['path'] for e in load_exceptions(root,revision=ends[0]))
+            except ExceptionsError as error:warnings.append('NOTE: invalid prior exception registry: '+str(error))
+        for rel in sorted(p for p in paths if p and in_scope(p)):
+            data=reader(rel)
+            if data is None:continue
+            n+=1;findings[rel]=scan(root,arch,known,names,root/rel,data.decode('utf-8','replace'),rel,exists)
+            found+=[(rel,x) for x in apply_exceptions(entries,rel,data,findings[rel])]
+        code,lines=report(found,n,arch)
+        return code,warnings+exception_diagnostics(entries,reader,findings)+lines
+    except ExceptionsError as error:return 1,['REFUSED: invalid '+EXCEPTIONS_PATH+' or Git source view: '+str(error)]
 
 def links_staged(root):
     """Commit check (^save): refuse a reference problem a staged record adds; problems already at HEAD are history."""
     if not exact_repo(root):return 2,['UNAVAILABLE: no Git repository at this root']
-    raw=git(root,'diff','--cached','--name-only','-z','--diff-filter=AMR')
+    raw=git(root,'diff','--cached','--name-only','-z','--diff-filter=AMRD')
     if raw is None:return 2,['UNAVAILABLE: git diff --cached failed']
-    arch,known,names,_=context(root,SCOPE,False);new=[];n=0
-    for rel in [p for p in raw.decode('utf-8','surrogateescape').split('\0') if p and in_scope(p)]:
-        staged=git(root,'show',':'+rel)
-        if staged is None:continue
-        n+=1;f=root/rel;head=git(root,'show','HEAD:'+rel) if has_head(root) else None
-        before={}
-        for k,_,d,_ in (scan(root,arch,known,names,f,head.decode('utf-8','replace'),rel) if head is not None else []):before[(k,d)]=before.get((k,d),0)+1
-        for x in scan(root,arch,known,names,f,staged.decode('utf-8','replace'),rel):
-            if x[0]=='ACKNOWLEDGED':continue
-            if before.get((x[0],x[2]),0):before[(x[0],x[2])]-=1
-            else:new.append((rel,x))
-    code,lines=report(new,n,arch)
-    if code:return 1,lines[:-1]+[f'REFUSED: {len(new)} new reference problem(s) in staged records; fix them (copy each identifier from disk) before committing']
-    return 0,['OK']
+    try:
+        arch,known,names,_,reader,exists=snapshot_context(root,'INDEX');entries=load_exceptions(root,reader=reader)
+        head_view=snapshot_context(root,'HEAD') if has_head(root) else None;head_entries=[];warnings=[];head_valid=True
+        if head_view:
+            try:head_entries=load_exceptions(root,reader=head_view[4])
+            except ExceptionsError as error:
+                head_valid=False;warnings=['NOTE: invalid HEAD exception registry; no historical baseline exemptions: '+str(error)]
+        paths=set(raw.decode('utf-8','surrogateescape').split('\0'));new=[];findings={};n=0
+        if EXCEPTIONS_PATH in paths:paths.update(e['path'] for e in entries+head_entries)
+        for rel in sorted(p for p in paths if p and in_scope(p)):
+            staged=reader(rel)
+            if staged is None:continue
+            n+=1;f=root/rel;head=head_view[4](rel) if head_view else None;before={}
+            if head is not None and head_valid:
+                ha,hk,hn,_,_,he=head_view
+                prior=apply_exceptions(head_entries,rel,head,scan(root,ha,hk,hn,f,head.decode('utf-8','replace'),rel,he))
+                for k,_,d,_ in prior:
+                    if k not in ('ACKNOWLEDGED',ACK_EXCEPTION):before[(k,d)]=before.get((k,d),0)+1
+            findings[rel]=scan(root,arch,known,names,f,staged.decode('utf-8','replace'),rel,exists)
+            for x in apply_exceptions(entries,rel,staged,findings[rel]):
+                if x[0]=='ACKNOWLEDGED':continue
+                if x[0]!=ACK_EXCEPTION and before.get((x[0],x[2]),0):before[(x[0],x[2])]-=1
+                else:new.append((rel,x))
+        diagnostics=warnings+exception_diagnostics(entries,reader,findings);code,lines=report(new,n,arch)
+        if code:
+            count=sum(x[0]!=ACK_EXCEPTION for _,x in new)
+            return 1,diagnostics+lines[:-1]+[f'REFUSED: {count} new reference problem(s) in staged records; fix them (copy each identifier from disk) before committing']
+        return 0,diagnostics+(lines if any(x[0]==ACK_EXCEPTION for _,x in new) else ['OK'])
+    except ExceptionsError as error:return 1,['REFUSED: invalid '+EXCEPTIONS_PATH+' or Git source view: '+str(error)]
 
 def write_once(root):
     if not exact_repo(root):return 2,['UNAVAILABLE: no Git repository at this root']
@@ -332,7 +613,7 @@ def write_once(root):
 def main():
     p=argparse.ArgumentParser(description='Axis pre-commit record checks');p.add_argument('--root',default='.')
     sub=p.add_subparsers(dest='check',required=True);n=sub.add_parser('names');n.add_argument('--since');sub.add_parser('write-once')
-    c=sub.add_parser('correct');c.add_argument('--path',required=True);c.add_argument('--old',required=True);c.add_argument('--new',required=True)
+    c=sub.add_parser('correct');c.add_argument('--path',required=True);c.add_argument('--old',required=True);c.add_argument('--new',required=True);c.add_argument('--link',action='store_true')
     k=sub.add_parser('links');k.add_argument('--scope',action='append');k.add_argument('--archive',action='store_true')
     k.add_argument('--staged',action='store_true');k.add_argument('--range')
     a=p.parse_args();root=Path(os.path.abspath(a.root))
@@ -340,7 +621,7 @@ def main():
         print('UNAVAILABLE: --since is not a Session ID');return 2
     if not (root/'_Axis').is_dir():print('UNAVAILABLE: run from the project root');return 2
     if a.check=='links':code,lines=links_staged(root) if a.staged else links_range(root,a.range) if a.range else links(root,a.scope or SCOPE,a.archive)
-    else:code,lines=names(root,a.since) if a.check=='names' else correct(root,a.path,a.old,a.new) if a.check=='correct' else write_once(root)
+    else:code,lines=names(root,a.since) if a.check=='names' else correct(root,a.path,a.old,a.new,a.link) if a.check=='correct' else write_once(root)
     for line in lines:print(line)
     return code
 

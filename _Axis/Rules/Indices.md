@@ -6,3 +6,4 @@
 - Tasks are indexed & summarized in `TASKS.md` (more than just a dir listing).
 - Snapshots are indexed & summarized in `SNAPSHOTS.md` (more than just a dir listing).
 - Include a link to "Details..." when an index entry has a supporting detail file.
+- Teams, Messages, Jobs and Schedules use rebuildable `TEAMS.md`, `MESSAGES.md`, `JOBS.md` and `SCHEDULES.md`; indexes grant no authority.

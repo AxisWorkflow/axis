@@ -28,7 +28,7 @@ DECLARABLE_DIR=r'_Axis/[A-Z][A-Za-z0-9_-]*/'
 # 2.01 two-step update: step one installs only these updater files (installed engine), so step two can be planned and
 # applied by the new release's updater in the same ^update. Step one changes no project state and no boot doctrine.
 UPDATER_FILES=('_Axis/Resources/update-transaction.py','_Axis/Commands/update.md','_Axis/Resources/Check-Update-Handoff.md')
-STATE_DIRS=('Agents','Archive','Audit','CX','Flags','Followups','Ideas','Logs','Notes','Reminders','Requests','Reviews','Secrets','Snapshots','Status','Supervision','Tasks','Tracking','Updates','Wiki')
+STATE_DIRS=('Agents','Archive','Audit','CX','Flags','Followups','Ideas','Logs','Notes','Reminders','Requests','Teams','Messages','Jobs','Schedules','Submissions','Reviews','Secrets','Snapshots','Status','Supervision','Tasks','Tracking','Updates','Wiki')
 
 def require(v,m):
     if not v:raise ValueError(m)
