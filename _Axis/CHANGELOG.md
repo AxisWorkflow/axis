@@ -1,7 +1,7 @@
 # Changelog
 > **Purpose:** Record Axis release identity and the structural migrations needed to update an existing project safely.
 
-current-version: 3.00
+current-version: 3.01
 changelog-format: 1
 self-update-baseline: 26.08.19
 
@@ -39,6 +39,34 @@ update-impact: automatic
 ### Verification
 
 - None.
+
+## 3.01
+
+released: 2026-10-21
+
+update-impact: automatic
+
+### Structural Changes
+
+- Fix fresh packaged coordination: ignore only safe empty `.gitkeep` placeholders in record families so Teams, Messages, Jobs and Schedules can be read and indexed. Reject nonempty or linked substitutes.
+
+- Scope coordination archive reads and index links to family directories and compatible flat year folders; skip unrelated evidence and support trees, refuse relevant macOS cloud placeholders before opening, and preserve prior indexes when history is unavailable.
+
+- Startup banners show the effective Context Management method between Version and Status; fast and manual startup use the same display.
+
+### Project-State Migrations
+
+- None.
+
+### Retired Paths
+
+- None.
+
+### Verification
+
+- Confirm exact row order and Context values for Two-Pass, Default, missing, blank and unrecognized settings without changing the saved Setting.
+- Verify scoped archive lookup and unchanged indexes on unavailable history; preserve record identity, deduplication and compatible flat-year archives.
+- Verify fresh packaged coordination with safe empty placeholders and a validated Job; refuse nonempty, linked and directory substitutes.
 
 ## 3.00
 

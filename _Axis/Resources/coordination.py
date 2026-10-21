@@ -883,34 +883,46 @@ class Store:
             next(entries, None)
         return folder
 
-    def _archive_records(self):
+    def _archive_paths(self, family):
+        """Only record directories: canonical families and flat legacy year folders."""
+        need(family in FAMILIES, 'family', family)
         try:
             archive, external = _START.archive_root(self.io)
         except (OSError, _START.Fault):
-            return []
+            return
         folder = self.path(archive, missing=True, kind='directory') if archive else external
-        if folder is None or not folder.exists(): return []
+        if folder is None or not folder.exists(): return
         self.require_history()
+        locations = [(folder / family, False)]
+        with os.scandir(folder) as entries:
+            locations.extend((Path(entry.path), True) for entry in entries if re.fullmatch(r'[0-9]{4}', entry.name))
+        for location, legacy in locations:
+            if not os.path.lexists(location): continue
+            info = location.lstat()
+            need(stat.S_ISDIR(info.st_mode) and not stat.S_ISLNK(info.st_mode), 'unsafe-archive', location)
+            with os.scandir(location) as entries:
+                for entry in entries:
+                    if not entry.name.endswith('.md') or not _START.ID.fullmatch(entry.name[:-3]): continue
+                    path = Path(entry.path)
+                    info = path.lstat()
+                    need(stat.S_ISREG(info.st_mode) and info.st_nlink == 1, 'unsafe-path', path)
+                    # macOS cloud placeholders must be made local explicitly, not hydrated by a queue read.
+                    need(not getattr(info, 'st_flags', 0) & getattr(stat, 'SF_DATALESS', 0x40000000), 'history-unavailable', path)
+                    yield path, legacy
+
+    def _archive_records(self, family):
         found = []
-        def unavailable(error):raise error
-        for parent, dirs, files in os.walk(folder, followlinks=False, onerror=unavailable):
-            for name in dirs:
-                need(not (Path(parent) / name).is_symlink(), 'unsafe-archive', name)
-            for name in files:
-                if _START.ID.fullmatch(name[:-3]) and name.endswith('.md'):
-                    path = Path(parent) / name
-                    # Legacy archive records have no coordination envelope.
-                    try:
-                        record = read_record(path)
-                    except CoordinationError as exc:
-                        if exc.code == 'unsafe-path' or Path(parent).name in FAMILIES: raise
-                        with path.open('rb') as source:
-                            raw = source.read(8192)
-                        if b'axis.coordination/' in raw: raise
-                        if exc.code == 'unsafe-path': raise
-                        continue
-                    need(record['id'] == name[:-3], 'record-identity', path)
-                    found.append(record)
+        for path, legacy in self._archive_paths(family):
+            try:
+                record = read_record(path)
+            except CoordinationError as exc:
+                if exc.code == 'unsafe-path' or not legacy: raise
+                with path.open('rb') as source:
+                    raw = source.read(8192)
+                if b'axis.coordination/' in raw: raise
+                continue
+            need(record['id'] == path.stem and (legacy or record['family'] == family), 'record-identity', path)
+            found.append(record)
         return found
 
     def records(self, family):
@@ -919,6 +931,10 @@ class Store:
         result = []
         if folder.exists():
             for path in sorted(folder.iterdir()):
+                if path.name == '.gitkeep':
+                    info = path.lstat()
+                    need(stat.S_ISREG(info.st_mode) and info.st_nlink == 1 and info.st_size == 0, 'unexpected-record-file', path.name)
+                    continue
                 if path.is_dir() and family in {'Teams','Messages'}:
                     self.path(path.relative_to(self.root).as_posix(), kind='directory'); identity(path.name)
                     need((folder/(path.name+'.md')).is_file(), 'support-owner-missing', path.name)
@@ -928,7 +944,7 @@ class Store:
                 record = read_record(path)
                 need(record['family'] == family and record['id'] == path.stem and record['project'] == self.project_id(), 'record-identity', path)
                 result.append(record)
-        for record in self._archive_records():
+        for record in self._archive_records(family):
             if record['family'] == family and record['project'] == self.project_id(): result.append(record)
         ids = [record['id'] for record in result]
         need(len(ids) == len(set(ids)), 'record-collision', family)
@@ -1335,7 +1351,9 @@ class Store:
         if local.exists():
             return family + '/' + ident + '.md'
         matches = []
-        for path in self.require_history().rglob(ident + '.md'):
+        self.require_history()
+        for path, _legacy in self._archive_paths(family):
+            if path.stem != ident: continue
             try:
                 record = read_record(path)
             except CoordinationError:
@@ -1347,6 +1365,7 @@ class Store:
 
     def rebuild_indexes(self):
         with self.locked():
+            self.require_history()
             all_records = {family: self.records(family) for family in FAMILIES}
             result = {}
             pending = {m['id']: m for m in self.pending_messages()}

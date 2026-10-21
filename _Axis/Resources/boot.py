@@ -416,6 +416,7 @@ try:
  if cm and cm.group(1)=='Two-Pass':pending.append('Context Management is Two-Pass: read _Axis/Practices/Context.md and follow its Two-Pass section for every request')
  # Default Directive "Suggest a Context Method", applied mechanically at startup because the model is known here.
  cmv=cm.group(1) if cm and cm.group(1) in ('Default','Two-Pass') else 'Default';mid=o.model.lower()
+ context_label='Two-pass' if cmv=='Two-Pass' else cmv
  if cmv=='Default' and any(k in mid for k in ('claude','sonnet','opus','haiku','fable')):notices.append('This project runs on Claude, where Two-Pass context loading used about 38% fewer tokens on question-and-lookup work in Axis\'s tests, with no loss of accuracy. Say "switch Context Management to Two-Pass" to turn it on.')
  elif cmv=='Two-Pass' and any(k in mid for k in ('codex','gpt')):notices.append('This project uses Two-Pass context loading, which did not save tokens on Codex in Axis\'s tests. Say "switch Context Management to Default" to turn it off.')
  later.append('check for a parent Project (Start-Session Step 5, Subproject detection)')
@@ -430,7 +431,7 @@ try:
  print(json.dumps({'axis_boot':'READY','session':sid,'notices':notices,'pending':pending,'later':later}))
  print('Banner for the user (start your reply with it, as is, after any pending items; it repeats the header so the complete block shows together):')
  # Four blank lines set the block apart from any text the model printed during startup (User design, 2026-10-08).
- print(f"```text\n\n\n\n\n{bar}\n A X I S   W O R K F L O W\n{bar}\n  Project:  {name}\n  Folder:   {folder}\n  Session:  {sid}\n  Version:  {ver}\n  Status:   Ready\n  Agent:    Main\n{bar}\n```")
+ print(f"```text\n\n\n\n\n{bar}\n A X I S   W O R K F L O W\n{bar}\n  Project:  {name}\n  Folder:   {folder}\n  Session:  {sid}\n  Version:  {ver}\n  Context:  {context_label}\n  Status:   Ready\n  Agent:    Main\n{bar}\n```")
  print('Greeting: one blank line under the banner, greet the user in one line and introduce yourself as Axel, the Main Agent (for example "Hi, Axel here.").')
  for x in notices:print('Notice for the user: '+x)
  for x in pending:print('Pending before the first answer: '+x)

@@ -1,6 +1,6 @@
 # Axis Workflow User Manual
 > **Purpose:** How to use the Axis Workflow day to day: setup, commands, the Dashboard, the Wiki, working across tools and machines, and working with Agents and models. For the technical and compliance reference, see [SPECIFICATION](/_Axis/SPECIFICATION.md).
-> **Version:** 3.00
+> **Version:** 3.01
 
 
 
@@ -106,7 +106,7 @@ Before a download approval prompt, the default **Explain Download Permissions** 
 
 ### Tips
 
-- **Tell side-by-side sessions apart.** Every finished answer starts with the spaced-out Axis Workflow title between two divider lines and ends with a matching divider and `READY FOR INPUT` naming the project folder, for example `READY FOR INPUT (~/Projects/Taxes):` (or `READY FOR INPUT WHILE WORKING IN BACKGROUND (~/Projects/Taxes):` while work continues). The startup banner lists Project, Folder, Session, Version, Status and Agent, in that order, and Axel, your Main Agent, greets you under it. When you run several projects in split terminal panes, a glance shows which project each pane belongs to and whether it is waiting for you.
+- **Tell side-by-side sessions apart.** Every finished answer starts with the spaced-out Axis Workflow title between two divider lines and ends with a matching divider and `READY FOR INPUT` naming the project folder, for example `READY FOR INPUT (~/Projects/Taxes):` (or `READY FOR INPUT WHILE WORKING IN BACKGROUND (~/Projects/Taxes):` while work continues). The startup banner lists Project, Folder, Session, Version, Context, Status and Agent, in that order; Context shows the effective `Two-pass` or `Default` method, and Axel, your Main Agent, greets you under it. When you run several projects in split terminal panes, a glance shows which project each pane belongs to and whether it is waiting for you.
 
 - **Save and Resume.** Type `^save` when you leave and `^resume` when you return. With a configured Git remote, save sends a linear checkpoint and resume receives one before reconstructing the work. Both still run the complete portability and infrastructure checks; use explicit handoff language or `^shutdown` when changing computers so only one copy remains active.
 
@@ -127,6 +127,8 @@ Before a download approval prompt, the default **Explain Download Permissions** 
 - **Run cheap.** `^install ollama` tests a small local model before using it for qualified routine delegation - and only when it catches the planted flaw in at least 4 of 5 identical runs of the aptitude screen does critique route to it. This is one of the biggest budget levers in Axis: local cross-examination has no per-token provider charge, so your frontier-model budget goes to the work that deserves it and you can afford to cross-examine far more often than you otherwise would.
 
 - **Refresh your project.** Run the `^refresh` command now and then to identify stale file locks for quiescent recovery, remove dead Markers, archive over-limit Notes, delete leftover scratch files, and realign your Plan with your Tasks.
+
+- **Keep coordination history available.** Coordination reads the relevant Archive family folders (and compatible flat year folders), without scanning unrelated development evidence. If a required archived record is cloud-only on macOS, make that specific record available offline and retry. Unavailable history holds new deduplicated work and index refresh.
 
 - **Keep Obsidian fast on a big project.** Obsidian indexes every file in the folder you open as a vault, and it slows down or stalls at "Loading cache..." once that runs to tens of thousands of files. Move bulky history you rarely read out of the project (the Archive Location in `^settings` is made for that), keep large generated or downloaded folders outside it, and if Obsidian hangs after a big cleanup, quit Obsidian and clear its cache as Obsidian's own help describes for your system. Heavy plugins such as obsidian-git are slow on large repositories.
 
