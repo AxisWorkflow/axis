@@ -4,7 +4,7 @@
 This Contributor License Agreement and Copyright Assignment (the "Agreement")
 is between the individual or legal entity identified in the signature record
 ("You") and Kenneth A. Younge ("Owner"). Owner's contact email is
-support@simaxis.ai. It applies to every Contribution
+support@axisworkflow.ai. It applies to every Contribution
 You submit to the Axis Workflow project after You accept this Agreement and, if
 the signature record says so, to Your listed prior Contributions.
 
@@ -96,7 +96,7 @@ in the project, its trademarks, or another contributor's work.
 ## 6. Trademarks
 
 This Agreement assigns no trademark to You and grants You no right to use
-"Axis Workflow", "Axis" as the project name, "SimAxis", or related marks,
+"Axis Workflow", "Axis" as the project name, or related marks,
 except truthful nominative reference permitted by applicable law or the
 project's trademark notice.
 

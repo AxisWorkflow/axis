@@ -255,7 +255,13 @@ def migrate_memos():
             a=root/'_Memos/Archive';a.mkdir(exist_ok=True)
             taken={n.casefold() for n in os.listdir(a)};base=f"{when:%Y-%m-%d} - Review - "+topic[:71].rstrip(' .');name=base+'.md';k=2
             while name.casefold() in taken:name=f'{base} ({k}).md';k+=1
-            replace_shared(f,a/name);moved+=1
+            before=f.read_bytes()
+            receipt=subprocess.run([sys.executable,'-B',str(R/'record-check.py'),'--root',str(root),'record-move','--session',sid,'--path',f.relative_to(root).as_posix(),'--to',(a/name).relative_to(root).as_posix(),'--reason','Review to memo migration'],cwd=root,capture_output=True,text=True,timeout=30)
+            if receipt.returncode:raise OSError('reference move receipt unavailable; report left in place')
+            if f.read_bytes()!=before or (a/name).exists():raise OSError('memo migration changed before move')
+            replace_shared(f,a/name)
+            if (a/name).read_bytes()!=before:raise OSError('memo migration readback differs')
+            moved+=1
         rest=[x for x in os.listdir(d) if x!='.gitkeep']
         if not rest:
             if (d/'.gitkeep').exists():(d/'.gitkeep').unlink()
@@ -356,6 +362,7 @@ try:
      notices.append(f'This folder looks cloud-synced ({why}), so agents here write one at a time. If it is really a local folder, say so and it will be corrected.')
      later.append(f'record one Log Event "Storage classified as cloud-synced" with the reason: {why}')
  if adopted:
+     pending.insert(0,'complete the post-update checkpoint under _Axis/Practices/GIT.md > Update checkpoints before ordinary work, including compaction, migration receipts and warning Logs; report checkpoint blocked with exact causes if unavailable')
      notices.append(f"Axis was updated from {adopted['from']} to {adopted['to']} and the update is now adopted.")
      if adopted['unrelated_changes']:notices.append('Project files changed after the update was applied (reported, not blocking): '+', '.join(adopted['unrelated_changes'][:5]))
  if s.get('manifest_missing'):notices.append('Missing Workflow files: '+', '.join(s['manifest_missing']))

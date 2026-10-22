@@ -1,5 +1,19 @@
 # Changelog - Axis Workflow Branding package
 
+## 2.0.2 - 22 October 2026
+
+Wording only; no asset, colour or rule changed.
+
+- SimAxis is retired: the owner is now Kenneth Younge (Kenneth Younge Advisory, kennethyounge.com).
+  `LICENSE-ASSETS.md` names Kenneth Younge alone, and asks questions to support@axisworkflow.ai.
+- The canonical credit line is now "Axis Workflow™ is free and open source (MIT License), from
+  Kenneth Younge Advisory - training and consulting at kennethyounge.com."
+- The full package is exported as `Axis Workflow Branding/` (was `SimAxis Branding/`). Where the two
+  packages go in the development project is unchanged: the full package at the repository root as
+  `Branding/`, the product package at `_Axis/Branding/`.
+- The two IBM Plex Mono WOFF2 files were packed again by a newer fontTools: their glyphs and font
+  tables are unchanged, only the compressed bytes (and so their SHA-256) differ.
+
 ## 2.0.1 - 29 September 2026
 
 Names only; no asset or rule changed.

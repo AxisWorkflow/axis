@@ -1,6 +1,6 @@
 # Axis Workflow User Manual
 > **Purpose:** How to use the Axis Workflow day to day: setup, commands, the Dashboard, the Wiki, working across tools and machines, and working with Agents and models. For the technical and compliance reference, see [SPECIFICATION](/_Axis/SPECIFICATION.md).
-> **Version:** 3.01
+> **Version:** 3.02
 
 
 
@@ -374,6 +374,8 @@ Axis repairs genuine broken references as it encounters them. At **Autonomous**,
 
 An old Log may intentionally quote a mistake. Axis can record that exact occurrence in optional `_Axis/EXCEPTIONS.md` without editing the Log. The exception binds the file, its complete content hash, the finding, line and occurrence, and explains why it is intentional. It does not exempt the same bad reference elsewhere; changed source bytes invalidate it. Scans report matches as acknowledged rather than defects. Adding or changing an exception follows the same permission policy as a repair. Read-only checks such as `^audit` stay read-only. You can ask to review the registry; removing an entry makes its unresolved finding visible again.
 
+Cross-project links produce a warning and a Log instead of blocking your save. Axis keeps a record when a report is renamed or a referenced file is trashed, so historical citations remain understandable. If a genuine record check still blocks a checkpoint, you can explicitly approve the named files and check for that exact commit; unrelated safeguards continue to apply. Updates receive their own local checkpoint after adoption.
+
 ### Supervising Child Projects
 
 If one Axis Project contains other Axis Projects in its subfolders (for example a portfolio of clients, or several workstreams of one product), the parent can keep an eye on them and direct them for you. Nothing needs to be registered: Axis finds the direct child projects from the folders themselves, the next time you ask. Putting a project inside another gives the outer project authority over it. If you don't want that, keep it as a separate project, or set its Parent Authority to `advise`.
@@ -597,7 +599,7 @@ Use `^team create` to define the objective, leader/members, outputs, validator a
 
 Defaults are a 60-minute Job, 3 rounds, 12 total agent starts and at most a leader plus two workers at once. Tighter host, project or User limits win, and validators/retries count. Authority expires after 24 hours by default; recurring work needs renewal. Spending and external-action approvals still apply. Task completion requires validation, not a unanimous vote.
 
-Without a supported launcher, Main prepares bounded prompt envelopes and you open genuinely separate sessions, then return their results for validation. The records and procedure remain usable without Python, a provider CLI, tmux or a scheduler. Axis does not silently turn Main into its own independent leader or reviewer.
+Without a supported launcher, Main prepares bounded prompt envelopes and you open separate sessions, then return their results for validation. For file deliverables, Main captures the files as result attachments with checked sizes and hashes; naming a path or reporting success is insufficient. The optional `coordination.py capture-result` helper preserves the assigned worker identity and checks its file scope. Capture does not accept the work: Main must still validate it. The manual procedure remains available without Python, a provider CLI, tmux or a scheduler. Axis does not silently turn Main into its own independent leader or reviewer.
 
 ### Scheduling
 
@@ -619,7 +621,9 @@ The 3.00 upgrade moves the old Requests queue to Submissions while preserving ex
 
 ### Coordinating Agents
 
-When several agents work on one project - Main, External agents on channels, Subagents it spawns, even agents from different tools - each keeps a short running diary in `_Axis/Tracking/`, one file per agent. Before starting a piece of work an agent writes an INTENT line naming what it is about to do and which Tasks or files it will touch; along the way it adds STATUS lines; it can ASK another agent (or Main, or anyone) a question and receive a REPLY; and just before it finishes it writes DONE with the outcome. Because each agent writes only its own file, this works on any storage and with any tool that can read and write files.
+Agents can timestamp, append and verify their activity line in one command. If tracking was missed, Main reports the gap as retrospective; it does not invent an earlier action or completion time. Before launching a separate session, Main checks that its temporary-file location stays inside the assigned project; this does not change your persistent host settings or replace sandbox protections.
+
+When several agents work on one project - Main, External agents on channels, Subagents it spawns, even agents from different tools - each keeps a short running diary in `_Axis/Tracking/`, creating its own file on the first append if needed. Before starting a piece of work an agent writes an INTENT line naming what it is about to do and which Tasks or files it will touch; along the way it adds STATUS lines; it can ASK another agent (or Main, or anyone) a question and receive a REPLY; and just before it finishes it writes DONE with the outcome. Because each agent writes only its own file, this works on any storage and with any tool that can read and write files.
 
 At each checkpoint - a new turn, before changing a shared file, before starting or returning from a Subagent - every agent reads what the others have posted since it last looked. That is how it notices a question addressed to it, or that another agent is already working on the same file. Type `^board` for the Board: who is live, what each is working on, open questions between agents, overlapping work and recent completions. The Dashboard's Agents card shows the same picture.
 
@@ -759,7 +763,7 @@ The **Axis Workflow** runs directly from markdown - you do not need to install a
 
 ## Trademarks
 
-"Axis Workflow", "Axis" when used as the name of this project, and their associated logos and lockups are trademarks of Kenneth A. Younge. The "Axis Workflow" trademark application was filed in Switzerland. "SimAxis" and its associated marks are trademarks of [SimAxis](https://simaxis.ai). Together, these are the "Marks" used in this notice. The [Axis MIT License](/_Axis/LICENSE) covers Axis-authored text, templates, and code. It does not grant rights to the Marks or automatically license the User's project. Copyright and trademark are separate: the MIT License covers copyright only and grants no trademark rights.
+"Axis Workflow", "Axis" when used as the name of this project, and their associated logos and lockups are trademarks of Kenneth A. Younge. The "Axis Workflow" trademark application was filed in Switzerland. These are the "Marks" used in this notice. The [Axis MIT License](/_Axis/LICENSE) covers Axis-authored text, templates, and code. It does not grant rights to the Marks or automatically license the User's project. Copyright and trademark are separate: the MIT License covers copyright only and grants no trademark rights.
 
 #### You may, without asking
 
@@ -770,15 +774,15 @@ The **Axis Workflow** runs directly from markdown - you do not need to install a
 #### Please do not
 
 - Use the Marks, or confusingly similar names, logos, or domains, as the name of a fork, product, service, company, course, or website. Give forks their own name and describe them as "based on the Axis Workflow".
-- Imply sponsorship, certification, or endorsement by SimAxis without a written agreement.
+- Imply sponsorship, certification, or endorsement by Kenneth A. Younge or Kenneth Younge Advisory without a written agreement.
 - Alter the Marks or combine them with other names or logos.
 
 #### Symbols and attribution
 
 - On first prominent use in a document, write "Axis Workflow™"; after that, plain "Axis Workflow" or "Axis" is fine.
-- When an attribution line is appropriate, use: "Axis Workflow™ is free and open source (MIT License), from SimAxis - training and consulting at simaxis.ai."
+- When an attribution line is appropriate, use: "Axis Workflow™ is free and open source (MIT License), from Kenneth Younge Advisory - training and consulting at kennethyounge.com."
 
-Questions or permission requests can be sent to [support@simaxis.ai](mailto:support@simaxis.ai).
+Questions or permission requests can be sent to [support@axisworkflow.ai](mailto:support@axisworkflow.ai).
 
 
 

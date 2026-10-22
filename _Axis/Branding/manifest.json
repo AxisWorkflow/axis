@@ -1,34 +1,34 @@
 {
  "package": "Axis Workflow Branding (product)",
- "version": "2.0.1",
- "released": "29 September 2026",
- "built": "2026-09-29T09:15:10Z",
+ "version": "2.0.2",
+ "released": "22 October 2026",
+ "built": "2026-10-22T08:58:57Z",
  "installs-at": "_Axis/Branding/ (or Branding/)",
- "subset-of": "Axis Workflow Branding 2.0.1",
- "generator": "SimAxis project: Marketing/Assets/Branding-src/build.py",
+ "subset-of": "Axis Workflow Branding 2.0.2",
+ "generator": "Kenneth Younge Advisory project: Marketing/Assets/Branding-src/build.py",
  "files": [
   {
    "path": "CHANGELOG.md",
-   "bytes": 2562,
-   "sha256": "da2bc803cbaf842287e2accfdbb244f563057565789e044517b94eb3653d1512",
+   "bytes": 3444,
+   "sha256": "4a93b86f3f7628c36c3817a72c64aab79db623d3dc4acc021d099cb7193e2034",
    "origin": "identical to the full package"
   },
   {
    "path": "LICENSE-ASSETS.md",
-   "bytes": 1306,
-   "sha256": "c468531b4897fa90802e97c5b7607418f73da11463a57adc5d75fc20760b4d0e",
+   "bytes": 1333,
+   "sha256": "6bb3768e550b7e481d7e59c8de4f70dbd108c9951b00ad7c03ae03196fad5bab",
    "origin": "identical to the full package"
   },
   {
    "path": "README.md",
-   "bytes": 2118,
-   "sha256": "f71138af0be521b5a0bbf7593d88060baad452da56aacf757dd082c6b2921452",
+   "bytes": 2123,
+   "sha256": "4861ac9df25047c2f1a489a168f0c8754d4053f9dadb7c444af1d5797dfb973d",
    "origin": "product package document"
   },
   {
    "path": "css/axis-brand.css",
-   "bytes": 11470,
-   "sha256": "e21c33053d21353339d23b49a80653e7305f4bf73df7140b54c9c1ec31544369",
+   "bytes": 11476,
+   "sha256": "43bc766754da010bb2b41abacd7176d50e90a9d37d5fe565d3eb2e560cb4b8f8",
    "origin": "identical to the full package"
   },
   {
@@ -69,14 +69,14 @@
   },
   {
    "path": "fonts/ibmplexmono-bold.woff2",
-   "bytes": 40404,
-   "sha256": "3f88887aea6776474c9f7fb8319c876d20ac460e3e254a4c8fd130d8a09edec1",
+   "bytes": 40380,
+   "sha256": "16bf96c3a4b54832c402cbd4e77acc88fae3bed7fa3a84fa2ead493f1f3ac804",
    "origin": "identical to the full package"
   },
   {
    "path": "fonts/ibmplexmono.woff2",
-   "bytes": 39184,
-   "sha256": "202f5b69ee67cd16290d263422f390f5a07bd85583b2adf1c0eeb5078ece469a",
+   "bytes": 39172,
+   "sha256": "fa6f8076408d050e6efaa414c288d055f21e02d2649e9cb75ec8bd7c45e60fbe",
    "origin": "identical to the full package"
   },
   {
@@ -124,13 +124,13 @@
   {
    "path": "tokens/tokens.css",
    "bytes": 4828,
-   "sha256": "d8519af91530fa285b6a04282a9348c3f9c19d19cafe18af13f0ba3b649fdc78",
+   "sha256": "a68fee9b416474d2ae7bcea76e53ebd0436e364a713c883dffb26be45b057417",
    "origin": "identical to the full package"
   },
   {
    "path": "tokens/tokens.json",
    "bytes": 5232,
-   "sha256": "a1af1cda05d846e0c1167ad56f066a16216c76c1ce035ef04d5aa7b4abfd4362",
+   "sha256": "31d8a45751ddeab3f69db024ab7cac9c9a171451091797b393f7a5cac85ef59f",
    "origin": "identical to the full package"
   }
  ]

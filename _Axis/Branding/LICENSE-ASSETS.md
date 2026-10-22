@@ -1,6 +1,6 @@
 # Brand assets - license and trademark notice
 
-Copyright © 2026 Kenneth Younge (SimAxis). All rights reserved.
+Copyright © 2026 Kenneth Younge. All rights reserved.
 
 "Axis Workflow" is a trademark of Kenneth Younge (Swiss application filed 25 July 2026). The mark
 (the Curved crosshair), the logos, the wordmark, the mascot Axel, and the illustrations in this
@@ -13,7 +13,7 @@ article, a talk, a review, a tutorial, or a link to the official project. You ma
 - use them, or anything confusingly similar, as the name, logo or mascot of a fork, a derived
   product, a service, or a company;
 - modify, recolour, redraw, animate or combine them with other marks;
-- use them in a way that suggests endorsement by, or affiliation with, SimAxis or the Axis Workflow
+- use them in a way that suggests endorsement by, or affiliation with, Kenneth Younge, Kenneth Younge Advisory or the Axis Workflow
   project when there is none.
 
 A fork of the software is welcome under the MIT License. Give it its own name and its own look.
@@ -21,4 +21,4 @@ A fork of the software is welcome under the MIT License. Give it its own name an
 The fonts in `fonts/` are not brand assets: Inter and IBM Plex Mono are licensed under the SIL Open
 Font License 1.1 (see `fonts/inter-OFL.txt` and `fonts/ibmplexmono-OFL.txt`).
 
-Questions: support@simaxis.ai
+Questions: support@axisworkflow.ai

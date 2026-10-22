@@ -657,6 +657,26 @@ class Session(Startup):
         need(time.time()-info.st_mtime<3600,'lease_stale',self.marker_name)
         if self.lease[2]:need(not self.foreign_mains(),'foreign_main','_Axis/Agents')
 
+    def track(self, kind, scope, text):
+        """Append one current-time line to this session's telemetry, including its first line."""
+        need(kind in ('INTENT','STATUS','ASK','REPLY','DONE'),'tracking_type')
+        need(isinstance(scope,str) and 0<len(scope)<=1024 and not any(c in scope for c in '\r\n[]'),'tracking_scope')
+        need(isinstance(text,str) and bool(text.strip()) and len(text.encode())<=4096 and not any(ord(c)<32 for c in text),'tracking_text')
+        self.guard();relative='_Axis/Tracking/'+self.sid+'.md'
+        path=self.path(relative,missing=True)
+        fd=os.open(path,os.O_RDWR|os.O_APPEND|os.O_CREAT|os.O_NOFOLLOW,0o644)
+        try:
+            info=os.fstat(fd);regular(info,relative)
+            if info.st_size:
+                os.lseek(fd,-1,os.SEEK_END);need(os.read(fd,1)==b'\n','tracking_partial_line',relative)
+            self.guard();now=stamp();line=f'{now} - {self.sid} - {kind} [{scope}] {text}\n';raw=line.encode()
+            write_fd(fd,raw);os.fsync(fd)
+            need(identity(path.stat())==identity(info),'tracking_replaced',relative)
+            os.lseek(fd,-len(raw),os.SEEK_END);need(os.read(fd,len(raw))==raw,'tracking_readback',relative)
+            self.guard()
+            return {'status':'appended','path':relative,'timestamp':now,'type':kind}
+        finally:os.close(fd)
+
     def create(self, family, content):
         need(family in FAMILIES and family!='Status','family',family)
         need(family!='Agents' or content.startswith('Subagent: '),'family',family)
@@ -689,9 +709,12 @@ def main():
             if name=='commit':command.add_argument('--starting-log',required=True)
             if name=='record-capabilities':command.add_argument('--observations',required=True)
         record=sub.add_parser('record');record.add_argument('--session',required=True);record.add_argument('--family',required=True);record.add_argument('--body-file')
+        track=sub.add_parser('track');track.add_argument('--session',required=True);track.add_argument('--type',choices=('INTENT','STATUS','ASK','REPLY','DONE'),required=True);track.add_argument('--scope',required=True);track.add_argument('--text',required=True)
         args=parser.parse_args()
         if fcntl is None or not hasattr(os,'O_NOFOLLOW') or os.utime not in os.supports_fd:
             print(json.dumps({'status':'unavailable','code':'platform'}));return 3
+        if args.operation=='track':
+            engine=Session(args.root,args.session);print(json.dumps(engine.track(args.type,args.scope,args.text),sort_keys=True));return 0
         if args.operation=='record':
             content=body_input(args.body_file);engine=Session(args.root,args.session)
             print(json.dumps(engine.create(args.family,content),sort_keys=True));return 0

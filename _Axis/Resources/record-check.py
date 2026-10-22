@@ -117,9 +117,30 @@ def rule(root,path):
             return ('a resolved Follow-Up' if family=='Followups' else 'a terminal Reminder')+' is write-once'
     return None
 
+def compaction_exempt(root,added):
+    """A receipt accounts for exact deletions only; it never waives a retained-file modification."""
+    removed=set()
+    for path in added:
+        if not re.fullmatch(r'_Axis/Updates/'+IDENT.pattern+r'/compacted\.json',path):continue
+        prefix=path.rsplit('/',1)[0]+'/'
+        try:
+            value=json.loads(git(root,'show',':'+path).decode(),object_pairs_hook=_json_unique)
+            items=value['removed'];canonical=(json.dumps(items,sort_keys=True,indent=2)+'\n').encode()
+            if value['schema']!=1 or value['transaction']!=path.split('/')[2] or hashlib.sha256(canonical).hexdigest()!=value['removed_sha256']:continue
+            kept=value['kept']
+            if not isinstance(kept,list) or not isinstance(items,list):continue
+            accounted=set()
+            for item in items:
+                if set(item)!={'name','sha256','bytes'} or not _safe_relative(item['name']) or '/' in item['name'] or item['name'] in kept:break
+                old=git(root,'show','HEAD:'+prefix+item['name']);new=git(root,'show',':'+prefix+item['name'])
+                if old is not None and new is None and len(old)==item['bytes'] and hashlib.sha256(old).hexdigest()==item['sha256']:accounted.add(prefix+item['name'])
+            else:removed.update(accounted)
+        except (ValueError,KeyError,TypeError,AttributeError):continue
+    return removed
+
 def update_exempt(root,added):
     """Paths named by an update transaction whose evidence this commit adds (apply, adoption or rollback)."""
-    exempt=set()
+    exempt=compaction_exempt(root,added)
     for tx in sorted({p.split('/')[2] for p in added if p.startswith('_Axis/Updates/') and p.count('/')>=3}):
         data=git(root,'show',':_Axis/Updates/'+tx+'/start.json')
         try:
@@ -362,6 +383,129 @@ def exception_diagnostics(entries,reader,raw_findings=None):
         if why:rows.append(f'STALE-EXCEPTION {i} {rel}:{e["line"]}: {why}')
     return rows
 
+RECEIPT_SUBJECTS={'move':'Reference move','override':'Checkpoint override','warnings':'Reference warnings'}
+
+def receipt_data(data):
+    if not data:return None
+    try:
+        text=data.decode('utf-8');subject=text.splitlines()[0]
+        matches=list(re.finditer(r'^```axis-record-receipt\n(.*?)\n```\s*$',text,re.M|re.S))
+        if len(matches)!=1:return None
+        value=json.loads(matches[0][1],object_pairs_hook=_json_unique)
+        if value.get('schema')!=1 or RECEIPT_SUBJECTS.get(value.get('kind'))!=subject:return None
+        return value
+    except (ValueError,TypeError,AttributeError,IndexError):return None
+
+def session_writer(root,session):
+    import importlib.util
+    spec=importlib.util.spec_from_file_location('axis_receipt_session',Path(__file__).with_name('startup-state.py'))
+    module=importlib.util.module_from_spec(spec);sys.modules[spec.name]=module;spec.loader.exec_module(module)
+    writer=module.Session(root,session);writer.guard()
+    marker=root/'_Axis/Agents'/(session+'.md')
+    if marker.read_text().splitlines()[0]!='Main: session':raise ValueError('only Main records checkpoint receipts')
+    return writer
+
+def save_receipt(root,session,value):
+    writer=session_writer(root,session)
+    subject=RECEIPT_SUBJECTS[value['kind']]
+    body=subject+'\n\nby: Main Agent\nsession: '+session+'\n\n```axis-record-receipt\n'+json.dumps(value,sort_keys=True,indent=2)+'\n```\n'
+    if len(body.encode())>8192:raise ValueError('receipt exceeds 8 KiB; split the approved paths into smaller receipts')
+    _,path=writer.record('Logs',lambda identifier:body)
+    return str(path)
+
+def move_receipt(root,session,source,target,reason,recover=False):
+    """Write intent before the caller moves exact bytes; never overwrite or move a project boundary."""
+    if not all(_safe_relative(p) for p in (source,target)) or source==target:raise ValueError('move requires distinct project-local paths')
+    if foreign_link(root,root/'anchor',source) or foreign_link(root,root/'anchor',target):raise ValueError('move crosses a project boundary')
+    data=_working_source(root,source);proof=None
+    if recover:
+        destination=_working_source(root,target)
+        if data is not None or destination is None or not exact_repo(root):raise ValueError('recovery requires an absent source, existing destination and exact-root Git history')
+        revisions=git(root,'log','--all','--format=%H','-256','--',source) or b''
+        for revision in revisions.decode().splitlines():
+            old=git(root,'show',revision+':'+source)
+            if old==destination:proof=revision;data=old;break
+        if proof is None:raise ValueError('no exact historical source bytes match this destination; retain the unresolved finding')
+    elif data is None or _working_source(root,target) is not None or (root/target).exists():raise ValueError('source must be a plain file and destination must be absent')
+    if not reason.strip():raise ValueError('move reason required')
+    value={'schema':1,'kind':'move','source':source,'target':target,'sha256':hashlib.sha256(data).hexdigest(),'reason':reason}
+    if proof is None and exact_repo(root) and git(root,'show','HEAD:'+source)==data:
+        proof=(git(root,'rev-parse','HEAD') or b'').decode().strip()
+    if proof:value['source_commit']=proof
+    return save_receipt(root,session,value)
+
+def reference_history(root,known,names,reader,paths,revision=None):
+    history={}
+    for path in paths:
+        if not re.fullmatch(r'_Axis/(?:Archive/)?Logs/'+IDENT.pattern+r'\.md',path):continue
+        try:value=receipt_data(reader(path))
+        except ExceptionsError:continue
+        if not value or value.get('kind')!='move' or set(value)-{'source_commit'}!={'schema','kind','source','target','sha256','reason'}:continue
+        src,dst,digest=value['source'],value['target'],value['sha256']
+        if not all(_safe_relative(p) for p in (src,dst)) or src==dst or not isinstance(digest,str) or not re.fullmatch('[a-f0-9]{64}',digest):continue
+        # Even committed receipts need byte evidence; merely committing a fabricated alias cannot bless it.
+        candidates=[reader(dst)]
+        if revision is None:candidates.append(reader(src))
+        else:candidates.append(git(root,'show','HEAD:'+src) if revision=='INDEX' else None)
+        proof=value.get('source_commit')
+        if isinstance(proof,str) and re.fullmatch(r'[a-f0-9]{40}|[a-f0-9]{64}',proof):candidates.append(git(root,'show',proof+':'+src))
+        verified=any(data is not None and hashlib.sha256(data).hexdigest()==digest for data in candidates)
+        if not verified and exact_repo(root):
+            ref='HEAD' if revision in (None,'INDEX') else revision
+            origin=git(root,'log','--follow','--diff-filter=A','--format=%H','-1',ref,'--',path)
+            commit=origin.decode().strip() if origin else ''
+            if re.fullmatch(r'[a-f0-9]{40}|[a-f0-9]{64}',commit):
+                candidates=[git(root,'show',commit+':'+dst),git(root,'show',commit+'^:'+src)]
+                verified=any(data is not None and hashlib.sha256(data).hexdigest()==digest for data in candidates)
+        if not verified:continue
+        history.setdefault(src,set()).add(dst)
+    names['__history__']={src:next(iter(dst)) for src,dst in history.items() if len(dst)==1}
+    for src in names['__history__']:known.update(IDENT.findall(Path(src).name))
+
+def staged_receipts(root,kind):
+    raw=git(root,'diff','--cached','--name-only','-z','--diff-filter=A') or b''
+    for path in raw.decode('utf-8','surrogateescape').split('\0'):
+        if not re.fullmatch(r'_Axis/Logs/'+IDENT.pattern+r'\.md',path):continue
+        value=receipt_data(git(root,'show',':'+path))
+        if value and value.get('kind')==kind:yield path,value
+
+def blob_digest(root,revision,path):
+    data=git(root,'show',revision+':'+path)
+    return hashlib.sha256(data).hexdigest() if data is not None else None
+
+def approved_paths(root,check):
+    head=(git(root,'rev-parse','--verify','HEAD') or b'').decode().strip();approved=set()
+    for log,value in staged_receipts(root,'override'):
+        if set(value)!={'schema','kind','head','check','paths','reason','user_words'} or value['head']!=head or value['check']!=check:continue
+        if not all(isinstance(value[k],str) and value[k].strip() for k in ('reason','user_words')) or not isinstance(value['paths'],list) or not value['paths']:continue
+        good=set()
+        for item in value['paths']:
+            if not isinstance(item,dict) or set(item)!={'path','before_sha256','after_sha256'} or not _safe_relative(item['path']):break
+            path=item['path']
+            if path==log or item['before_sha256']!=blob_digest(root,'HEAD',path) or item['after_sha256']!=blob_digest(root,'',path):break
+            # No blanket waiver for deletions, names, Secrets, leases, or files outside this exact commit.
+            if item['before_sha256']==item['after_sha256']:break
+            good.add(path)
+        else:approved.update(good)
+    return approved
+
+def approval_receipt(root,session,check,paths,reason,user_words):
+    if check not in ('write-once','links') or not exact_repo(root) or not has_head(root):raise ValueError('override requires an existing project repository and named record check')
+    if not reason.strip() or not user_words.strip() or not paths:raise ValueError('record the reason and actual User approval words')
+    bindings=[]
+    for path in sorted(set(paths)):
+        if not _safe_relative(path):raise ValueError('override path is not project-local')
+        before,after=blob_digest(root,'HEAD',path),blob_digest(root,'',path)
+        if before==after:raise ValueError('override requires an exact changed staged file: '+path)
+        bindings.append({'path':path,'before_sha256':before,'after_sha256':after})
+    return save_receipt(root,session,{'schema':1,'kind':'override','head':git(root,'rev-parse','HEAD').decode().strip(),'check':check,'paths':bindings,'reason':reason,'user_words':user_words})
+
+def warning_receipt(root,session,lines):
+    warnings=[line for line in lines if line.split(' ',1)[0] in WARNING_KINDS]
+    if not warnings:return None
+    # The recorded diagnostics bind the staged view before this Log is staged. Re-run checks after staging it.
+    return save_receipt(root,session,{'schema':1,'kind':'warnings','head':(git(root,'rev-parse','HEAD') or b'').decode().strip(),'index_tree':(git(root,'write-tree') or b'').decode().strip(),'warnings':[line[:500] for line in warnings[:5]],'diagnostics_sha256':hashlib.sha256('\n'.join(lines).encode()).hexdigest(),'summary':lines[-1] if lines else ''})
+
 def archive_root(root,text=None,allow_missing=False):
     if text is None:
         try:text=(root/'_Axis/SETTINGS.md').read_text(encoding='utf-8')
@@ -406,6 +550,9 @@ def context(root,scopes,with_archive):
     for f in files:names.setdefault(f.name,[]).append(f)
     if arch:
         for q in arch.rglob('*.md'):names.setdefault(q.name,[]).append(q)
+    logs=[p.relative_to(root).as_posix() for p in (root/'_Axis/Logs').glob('*.md')]
+    logs += [p.relative_to(root).as_posix() for p in (root/'_Axis/Archive/Logs').glob('*.md')]
+    reference_history(root,known,names,lambda p:_working_source(root,p),logs)
     return arch,known,names,texts
 
 def snapshot_context(root,revision):
@@ -441,6 +588,7 @@ def snapshot_context(root,revision):
         try:rel=path.relative_to(root).as_posix()
         except ValueError:return path.exists()
         return rel in present
+    reference_history(root,known,names,reader,entries,revision)
     return arch,known,names,texts,reader,exists
 
 def coordination_metadata_lines(text,rel):
@@ -452,10 +600,31 @@ def coordination_metadata_lines(text,rel):
         return module.reference_metadata_lines(text)
     except (OSError,ValueError,TypeError,AttributeError,RecursionError):return set()
 
+WARNING_KINDS={'EXTERNAL-LINK','HISTORICAL-LINK'}
+ANCHORS=('AGENTS.md','CLAUDE.md','GEMINI.md','_Axis/MANIFEST.md','_Axis/PROJECT.md','_Axis/PRACTICES.md','_Axis/RULES.md','_Temp')
+
+def foreign_link(root,f,target,exists=None):
+    from urllib.parse import unquote
+    if target.startswith('parent:'):return True
+    if re.match(r'^[a-z][a-z0-9+.-]*:',target,re.I) or target.startswith('#'):return False
+    value=unquote(target.split('#',1)[0].split('?',1)[0])
+    if not value:return False
+    local=Path(os.path.normpath(f.parent/value))
+    if not local.is_relative_to(root):return True
+    check=exists or (lambda p:p.exists())
+    # Only inspect anchors along this target's path; never traverse or read child instructions.
+    for ancestor in (local,*local.parents):
+        if ancestor==root:break
+        if all(check(ancestor/a) for a in ANCHORS) or all((ancestor/a).exists() for a in ANCHORS):return True
+    return False
+
 def scan(root,arch,known,names,f,text,rel,exists=None):
     """Findings in one file: (kind, line, detail, write-once?)."""
     from urllib.parse import unquote
     if rel==EXCEPTIONS_PATH:return []
+    receipt=receipt_data(text.encode('utf-8'))
+    if receipt and rule_kind(rel)=='Logs':
+        text=re.sub(r'^```axis-record-receipt\n.*?\n```\s*$',lambda m:'\n'*m[0].count('\n'),text,flags=re.M|re.S)
     out=[]
     kind=rule_kind(rel);done=(kind=='Tasks' and (field(text,'status') or '').casefold() in ('completed','cancelled')) or (kind in ('Followups','Reminders') and (field(text,'outcome') or 'N/A') not in ('N/A',''))
     worm=kind in WORM or done or rel.startswith(('_Axis/Archive/','ARCHIVE/'))
@@ -465,6 +634,16 @@ def scan(root,arch,known,names,f,text,rel,exists=None):
         if re.match(r'^\s*"(?:created|updated|expires|deadline|authority_expires|session|issuer_session)"\s*:',line):continue
         if VALUE.match(line) or '<!-- compiled:' in line or re.fullmatch(r'\s*[\w-]+:\s*'+IDENT.pattern+r'\s*',line) or re.match(r'#+ .* - '+IDENT.pattern+r'\s*$',line):continue
         bare=re.sub(r'[a-z][a-z0-9+.-]*://\S+',lambda u:' '*len(u.group(0)),line,flags=re.I)
+        foreign=[]
+        for match in LINK.finditer(line):
+            if foreign_link(root,f,match[1],exists):foreign.append((match.start(),match.end(),match[1]))
+        for match in re.finditer(r'parent:[^\s`<>\)]+',line):foreign.append((match.start(),match.end(),match[0]))
+        legacy=re.search(r'delegated by parent supervision record\s+[`*]*(?:_Axis/Supervision/)?('+IDENT.pattern+r')',line,re.I)
+        if legacy:foreign.append((legacy.start(),legacy.end(),'parent:_Axis/Supervision/'+legacy[1]+'.md'))
+        emitted=set()
+        for start,end,target in foreign:
+            bare=bare[:start]+' '*(end-start)+bare[end:]
+            if target not in emitted:out.append(('EXTERNAL-LINK',i,target,worm));emitted.add(target)
         for m in NEAR.finditer(bare):
             tok=m.group(0).rstrip('.:');full=IDENT.match(tok)
             if not full:
@@ -475,10 +654,13 @@ def scan(root,arch,known,names,f,text,rel,exists=None):
                 out.append(('ACKNOWLEDGED' if re.match(r'[`*_]*\s*\(missing\)',line[m.end():]) else 'UNRESOLVED',i,full.group(0),worm))
         for m in LINK.finditer(line):
             target=m.group(1)
-            if re.match(r'^[a-z][a-z0-9+.-]*:',target,re.I) or target.startswith(('#','/')):continue
+            if foreign_link(root,f,target,exists) or re.match(r'^[a-z][a-z0-9+.-]*:',target,re.I) or target.startswith(('#','/')):continue
             t=unquote(target.split('#',1)[0].split('?',1)[0])
             if not t or (exists(f.parent/t) if exists else (f.parent/t).exists()):continue
             local=Path(os.path.normpath((f.parent/t).as_posix()))
+            alias=names.get('__history__',{}).get(local.relative_to(root).as_posix()) if local.is_relative_to(root) else None
+            if alias:
+                out.append(('HISTORICAL-LINK',i,target+' -> '+alias,worm));continue
             if arch:
                 try:
                     sub=local.relative_to(root/'_Axis/Archive') if local.is_relative_to(root/'_Axis/Archive') else local.relative_to(root)
@@ -492,11 +674,13 @@ def scan(root,arch,known,names,f,text,rel,exists=None):
 def report(found,count,arch):
     counts={k:0 for k in ('MALFORMED','UNRESOLVED','BROKEN-LINK','MOVED-LINK')}
     seen=sum(1 for _,x in found if x[0]=='ACKNOWLEDGED');ack=sum(1 for _,x in found if x[0]==ACK_EXCEPTION)
-    visible=[x for x in found if x[1][0]!='ACKNOWLEDGED'];problems=[x for x in visible if x[1][0]!=ACK_EXCEPTION]
+    visible=[x for x in found if x[1][0]!='ACKNOWLEDGED'];problems=[x for x in visible if x[1][0]!=ACK_EXCEPTION and x[1][0] not in WARNING_KINDS]
     for _,(k,_,_,_) in problems:counts[k]+=1
     rows=[f'{k} {rel}:{i} {d}'+(' (write-once)' if w else '') for rel,(k,i,d,w) in visible]
     lines=rows[:LIMIT*4]+([f'... {len(rows)-LIMIT*4} more'] if len(rows)>LIMIT*4 else [])
     summary=', '.join(f'{v} {k.lower()}' for k,v in counts.items())
+    warns=sum(x[1][0] in WARNING_KINDS for x in visible)
+    summary+=f', {warns} warning(s)' if warns else ''
     summary+=f', {seen} acknowledged missing' if seen else ''
     summary+=f', {ack} acknowledged exception(s)' if ack else ''
     return (1 if problems else 0),([] if arch else ['NOTE: Archive Location unavailable; archived targets were not checked'])+lines+[('FINDINGS: ' if problems else 'OK: ')+summary+f' in {count} files']
@@ -578,12 +762,27 @@ def links_staged(root):
                 if x[0]=='ACKNOWLEDGED':continue
                 if x[0]!=ACK_EXCEPTION and before.get((x[0],x[2]),0):before[(x[0],x[2])]-=1
                 else:new.append((rel,x))
+        approvals=approved_paths(root,'links')
+        new=[(rel,(ACK_EXCEPTION,x[1],x[2]+' (User-approved checkpoint override)',x[3])) if rel in approvals and x[0] not in WARNING_KINDS else (rel,x) for rel,x in new]
         diagnostics=warnings+exception_diagnostics(entries,reader,findings);code,lines=report(new,n,arch)
         if code:
-            count=sum(x[0]!=ACK_EXCEPTION for _,x in new)
+            count=sum(x[0]!=ACK_EXCEPTION and x[0] not in WARNING_KINDS for _,x in new)
             return 1,diagnostics+lines[:-1]+[f'REFUSED: {count} new reference problem(s) in staged records; fix them (copy each identifier from disk) before committing']
-        return 0,diagnostics+(lines if any(x[0]==ACK_EXCEPTION for _,x in new) else ['OK'])
+        return 0,diagnostics+(lines if any(x[0]==ACK_EXCEPTION or x[0] in WARNING_KINDS for _,x in new) else ['OK'])
     except ExceptionsError as error:return 1,['REFUSED: invalid '+EXCEPTIONS_PATH+' or Git source view: '+str(error)]
+
+def update_transaction(path):
+    parts=PurePosixPath(path).parts
+    return parts[2] if len(parts)>3 and parts[:2]==('_Axis','Updates') else None
+
+def rename_entries(entries):
+    """Update evidence has transaction-local identity, even when Git guesses a rename."""
+    out=[]
+    for status,path,new in entries:
+        if status.startswith('R') and update_transaction(path) and update_transaction(new) and update_transaction(path)!=update_transaction(new):
+            out.extend([('D',path,None),('A',new,None)])
+        else:out.append((status,path,new))
+    return out
 
 def write_once(root):
     if not exact_repo(root):return 2,['UNAVAILABLE: no Git repository at this root']
@@ -595,18 +794,23 @@ def write_once(root):
         status=tokens[i]
         if status[:1] in 'RC':entries.append((status,tokens[i+1],tokens[i+2]));i+=3
         else:entries.append((status,tokens[i+1],None));i+=2
+    entries=rename_entries(entries)
     exempt=update_exempt(root,[p for s,p,_ in entries if s=='A'])|corrections(root,[p for s,p,_ in entries if s=='A'])
     # A move Git did not pair (heavy edit, rename limit) keeps its identity: pair a deletion and an addition by name.
-    deleted={p.rsplit('/',1)[-1]:p for s,p,_ in entries if s=='D'}
+    deleted={}
+    for status,path,_ in entries:
+        if status=='D':deleted.setdefault(Path(path).name,[]).append(path)
     for status,path,_ in list(entries):
-        old=deleted.get(path.rsplit('/',1)[-1]) if status=='A' else None
+        candidates=deleted.get(Path(path).name,[]) if status=='A' and not update_transaction(path) else []
+        candidates=[old for old in candidates if not update_transaction(old) and (Path(old).parent==Path(path).parent or NAME.fullmatch(Path(path).name))]
+        old=candidates[0] if len(candidates)==1 else None
         if old and git(root,'rev-parse','HEAD:'+old)!=git(root,'rev-parse',':'+path):entries.append(('R000',old,path))
-    refused=[]
+    overrides=approved_paths(root,'write-once');refused=[]
     for status,path,new in entries:
         if status[:1] in 'MT':why=rule(root,path);label=path
         elif status[:1]=='R' and status!='R100':why=rule(root,path);label=path+' -> '+new;why=why and why+' (renamed with changes)'
         else:continue
-        if why and path not in exempt:refused.append('WRITE-ONCE '+label+': '+why)
+        if why and path not in exempt and not (path in overrides and (new is None or new in overrides)):refused.append('WRITE-ONCE '+label+': '+why)
     if refused:return 1,refused[:LIMIT]+[f'REFUSED: {len(refused)} write-once file(s) changed; do not commit; show User these paths and ask how to proceed']
     return 0,['OK']
 
@@ -615,13 +819,26 @@ def main():
     sub=p.add_subparsers(dest='check',required=True);n=sub.add_parser('names');n.add_argument('--since');sub.add_parser('write-once')
     c=sub.add_parser('correct');c.add_argument('--path',required=True);c.add_argument('--old',required=True);c.add_argument('--new',required=True);c.add_argument('--link',action='store_true')
     k=sub.add_parser('links');k.add_argument('--scope',action='append');k.add_argument('--archive',action='store_true')
-    k.add_argument('--staged',action='store_true');k.add_argument('--range')
+    k.add_argument('--staged',action='store_true');k.add_argument('--range');k.add_argument('--log-warnings',action='store_true');k.add_argument('--session')
+    m=sub.add_parser('record-move');m.add_argument('--session',required=True);m.add_argument('--path',required=True);m.add_argument('--to',required=True);m.add_argument('--reason',required=True);m.add_argument('--recover',action='store_true')
+    o=sub.add_parser('approve');o.add_argument('--session',required=True);o.add_argument('--check',dest='approved_check',choices=('links','write-once'),required=True);o.add_argument('--path',action='append',required=True);o.add_argument('--reason',required=True);o.add_argument('--user-words',required=True)
     a=p.parse_args();root=Path(os.path.abspath(a.root))
     if a.check=='names' and a.since is not None and not re.fullmatch(r'\d{4}(?:\.\d{2}){5}\.\d{3}Z',a.since):
         print('UNAVAILABLE: --since is not a Session ID');return 2
     if not (root/'_Axis').is_dir():print('UNAVAILABLE: run from the project root');return 2
+    if a.check in ('record-move','approve'):
+        try:
+            path=move_receipt(root,a.session,a.path,a.to,a.reason,a.recover) if a.check=='record-move' else approval_receipt(root,a.session,a.approved_check,a.path,a.reason,a.user_words)
+            print('RECORDED: '+path);return 0
+        except (ValueError,OSError,RuntimeError,ExceptionsError) as error:print('REFUSED: '+str(error));return 1
+    if a.check=='links' and a.log_warnings and (not a.staged or not a.session):p.error('--log-warnings requires --staged and --session')
     if a.check=='links':code,lines=links_staged(root) if a.staged else links_range(root,a.range) if a.range else links(root,a.scope or SCOPE,a.archive)
     else:code,lines=names(root,a.since) if a.check=='names' else correct(root,a.path,a.old,a.new,a.link) if a.check=='correct' else write_once(root)
+    if a.check=='links' and a.log_warnings:
+        try:
+            logged=warning_receipt(root,a.session,lines)
+            if logged:lines.append('RECORDED: '+logged+'; stage this Log and re-run the three checks before committing')
+        except (ValueError,OSError,RuntimeError) as error:code=1;lines.append('REFUSED: warning Log could not be recorded: '+str(error))
     for line in lines:print(line)
     return code
 

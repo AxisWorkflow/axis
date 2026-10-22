@@ -416,6 +416,7 @@ class Scheduler:
         self.root = Path(self.core.root)
         self.event_verifier = event_verifier
         self._held = None
+        self._indexes_dirty = False
 
     def _now(self):
         return instant(self.core.now())
@@ -464,15 +465,21 @@ class Scheduler:
             stream.flush()
             os.fsync(stream.fileno())
         self._held = (path, owner, time.monotonic(), (path.stat().st_dev, path.stat().st_ino))
+        self._indexes_dirty = False
         try:
             self._check()
             yield
+            self._check()
         finally:
             held = self._held
             self._held = None
             if held and time.monotonic() - held[2] < 10 and path.is_dir() and not path.is_symlink() and (path.stat().st_dev, path.stat().st_ino) == held[3] and self._read_json(owner_path) == owner:
                 owner_path.unlink()
                 path.rmdir()
+        # Derived views must not consume the scheduler's mutation lock window.
+        if self._indexes_dirty:
+            self._indexes_dirty = False
+            self.core.rebuild_indexes()
 
     def _context(self):
         try:
@@ -643,7 +650,7 @@ class Scheduler:
         module = sys.modules.get(type(self.core).__module__)
         core_digest = getattr(module, "digest", digest)
         result = self.core.replace_record("Schedules", record["id"], new, core_digest(record))
-        self.core.rebuild_indexes()
+        self._indexes_dirty = True
         return result
 
     def _revision(self, record, definition, *, replay=False):
@@ -767,9 +774,18 @@ class Scheduler:
         jobs = []
         records = self.core.records("Jobs")
         need(len(records) <= 10000, "job-index-too-large")
+        module = sys.modules.get(type(self.core).__module__)
+        project = getattr(module, "project_records", None)
+        messages = teams = None
         for job in records:
             if job.get("schedule") == schedule_id:
-                projection = self.core.project("Jobs", job["id"])
+                if callable(project):
+                    if messages is None:
+                        messages = self.core.records("Messages")
+                        teams = self.core.records("Teams")
+                    projection = project(job, messages, teams)
+                else:
+                    projection = self.core.project("Jobs", job["id"])
                 need(not projection.get("held"), "job-state-held", job["id"])
                 jobs.append((job, projection))
         return jobs
@@ -789,7 +805,7 @@ class Scheduler:
                 return result
             binding = self._binding()
             need(record.get("activation") == {"activation": binding["activation"], "executor": binding["executor"]}, "activation-changed")
-            now, definition = self._now(), record["definition"]
+            now, observed_monotonic, definition = self._now(), time.monotonic(), record["definition"]
             definition["authority"] = self.core.validate_authority(definition["authority"], live=True)
             definition = validate_definition(definition, now)
             policy = definition["policies"]
@@ -798,7 +814,7 @@ class Scheduler:
             wall = (now - last).total_seconds()
             uncertain = clock_uncertain or wall < 0 or wall > policy["clock_jump_seconds"]
             if runtime.get("clock_generation") == PROCESS_TOKEN:
-                elapsed = time.monotonic() - runtime.get("monotonic", time.monotonic())
+                elapsed = observed_monotonic - runtime.get("monotonic", observed_monotonic)
                 uncertain = uncertain or abs(wall - elapsed) > 5
             if uncertain or runtime.get("hold"):
                 runtime["hold"] = runtime.get("hold", "clock-uncertain")
@@ -938,7 +954,7 @@ class Scheduler:
                 if definition["trigger"]["type"] == "event":
                     runtime["last_event"] = candidate["planned"]
             runtime.update(cursor=stamp(now), last_observed=stamp(now), clock_generation=PROCESS_TOKEN,
-                           monotonic=time.monotonic(), notices=result["notices"][-64:])
+                           monotonic=observed_monotonic, notices=result["notices"][-64:])
             next_at = next_occurrence(definition["trigger"], now, completion=completion)
             runtime["next_due"] = next_at
             if definition["trigger"]["type"] == "calendar":

@@ -9,5 +9,6 @@
 - A reference to "... in Settings" refers to a Setting in `_Axis/SETTINGS.md`.
 - References to Axis, the Workflow, and the Axis Workflow are all synonymous.
 - When subject is missing in prose, assume that it refers to "you", the Agent.
-- Direct User to https://simaxis.ai for copyright, licensing, and support.
+- Direct User to the README's License and Trademarks sections for copyright and licensing, and to support@axisworkflow.ai for questions and permissions.
+- Direct User to https://kennethyounge.com for training and consulting.
 - Direct User to https://github.com/AxisWorkflow/axis for the public Axis repository.

@@ -1,7 +1,7 @@
 # Changelog
 > **Purpose:** Record Axis release identity and the structural migrations needed to update an existing project safely.
 
-current-version: 3.01
+current-version: 3.02
 changelog-format: 1
 self-update-baseline: 26.08.19
 
@@ -39,6 +39,36 @@ update-impact: automatic
 ### Verification
 
 - None.
+
+## 3.02
+
+released: 2026-10-22
+
+update-impact: automatic
+
+### Structural Changes
+
+- Scope update-evidence rename detection to each transaction and account for exact compaction deletions. Keep immutable-record and local-reference gates; cross-project links warn and log without refusing a commit. Add exact commit-bound User approvals for otherwise irreparable record refusals.
+- Require a local checkpoint after update adoption, including delegated and updater-only updates. Audit and refresh report precise checkpoint blockers.
+- Add guarded one-call Tracking timestamp/append/readback in `startup-state.py`; require actual pre-write INTENT and honest current-time retrospective reporting. Clarify interruption, completion, wait and finite-schedule evidence limits. Check per-invocation temporary-directory bindings before separate session launches, without persistent host changes or claims of filesystem confinement.
+
+- Developer attribution and contact move from SimAxis to Kenneth Younge Advisory (kennethyounge.com) and support@axisworkflow.ai. Buy Me a Coffee now points to buymeacoffee.com/axisworkflow. No MIT license or CLA terms change; Kenneth A. Younge remains the copyright and trademark owner.
+- Replace `_Axis/Branding/` whole with supplied Branding 2.0.2. Wording changes and repacked IBM Plex Mono WOFF2 bytes only; verify every file against its package manifest. The full root `Branding/` remains development-only.
+
+### Project-State Migrations
+
+- Preserve existing records unchanged. Before Review/Status-to-memo migration, append a structured `Reference move` Log with old path, descriptive destination and exact digest. This durable alias preserves old identifiers and citations. Approved Trash moves use the same history; purging Trash retains the receipt. Already-migrated reports may recover aliases only from byte-matched history.
+- Reference-warning and explicitly User-approved checkpoint-override receipts remain project-owned Logs. Do not ship populated receipts or replace local history.
+
+### Retired Paths
+
+- None.
+
+### Verification
+
+- Confirm consecutive real updates, compaction, parent provenance, Review migration and a terminal Task's trashed memo can commit without overrides. Altered retained evidence, local missing references and mismatched/replayed approvals still refuse.
+- Verify Tracking first append/readback and refusal under missing/killed/stale leases, malformed lines, symlinks and hardlinks; keep existing prefixes unchanged.
+- Verify scheduler load repairs and retained result attachments under the existing regression, crash and full-soak evidence; run the complete native/Linux release suites.
 
 ## 3.01
 

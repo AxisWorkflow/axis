@@ -118,6 +118,12 @@ After a fast-forward or merge:
 - Routine `^git` checkpoint/push/receive uses the Git commit as its audit entry and writes no separate Event after the commit, because that would immediately dirty the synchronized tree. Log setup, remote/visibility changes, Secrets-capsule configuration, rejected safety gates, reconciliation, and rollback as their owning procedures direct; write any Event that belongs in a checkpoint before staging it.
 - A failed commit or push is reported exactly. Never claim remote synchronization from a local commit alone.
 
+## Update checkpoints
+
+Every completed update has its own local checkpoint before ordinary work resumes. After fresh-session adoption, startup migrations and compaction, Main stages the eligible update state, its receipts, reconciliation records and migration aliases, runs the Secrets and complete-envelope checks plus `record-check.py names`, `write-once` and `links --staged`, logs nonblocking reference warnings under [Practices > LinkMaintenance], then commits locally as `axis: adopt update {transaction}`. This includes delegated `^^update`: the child Main owns its checkpoint; the parent verifies the reported commit and never writes the child's Git state. An updater-only first step checkpoints after `finish-updater` before step two. Do not initialize Git just for an update, commit through a parent's repository, or push merely because adoption finished.
+
+If no exact-root repository or usable Git exists, report the local update and checkpoint unavailable. If a real gate fails, report `checkpoint blocked` with the check and exact paths immediately, preserve receipts and continue only unrelated safe work. Repair under current authority or use an explicit scoped User approval under [Practices > LinkMaintenance]; never postpone an unexplained refusal until the next save. No checkpoint Event is written after its commit merely to report success.
+
 ## Encrypted Secrets Transport
 
 Plaintext `_Axis/Secrets/` remains ignored even in a private repository. The optional capsule tracks only `_Axis/Secrets/.recipient` (public configuration) and `.capsule.age` (one encrypted archive whose interior hides the plaintext filenames). The private identity lives outside the project at `~/.axis/keys/{key-id}.agekey`; it never enters Git, chat, records, a Snapshot, Dashboard, or a Subagent in plain form. The one exception is the optional `.identity.age`: the same identity encrypted with User's password (see Password Unlock below).

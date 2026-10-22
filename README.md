@@ -1,10 +1,10 @@
 # Axis Workflow
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-2ea44f.svg)](/_Axis/LICENSE)
-[![Version](https://img.shields.io/badge/Version-3.01-blue.svg)](https://github.com/AxisWorkflow/axis)
+[![Version](https://img.shields.io/badge/Version-3.02-blue.svg)](https://github.com/AxisWorkflow/axis)
 [![Works with](https://img.shields.io/badge/Works%20with-Claude%20Cowork%20%7C%20Claude%20Code%20%7C%20ChatGPT%20Work%20%7C%20Codex%20%7C%20Cursor%20%7C%20Gemini%20CLI-6f42c1.svg)](https://github.com/AxisWorkflow/axis)
 
-The [**Axis Workflow™**](https://github.com/AxisWorkflow/axis) is an open-source project developed by [SimAxis](https://simaxis.ai), released under the [MIT License](/_Axis/LICENSE). The license grants no trademark rights. If you like **Axis**, [please buy us a coffee](https://buymeacoffee.com/SimAxis). Please **[star the repo](https://github.com/AxisWorkflow/axis)** - it helps others to find it.
+The [**Axis Workflow™**](https://github.com/AxisWorkflow/axis) is an open-source project developed by [Kenneth Younge Advisory](https://kennethyounge.com), released under the [MIT License](/_Axis/LICENSE). The license grants no trademark rights. If you like **Axis**, [please buy us a coffee](https://buymeacoffee.com/axisworkflow). Please **[star the repo](https://github.com/AxisWorkflow/axis)** - it helps others to find it.
 
 > **How to use Axis:** read the **[User Manual](/_Axis/USERMANUAL.md)**. Technical, security and compliance details are in the **[Specification](/_Axis/SPECIFICATION.md)**.
 
@@ -125,7 +125,7 @@ Open the live Dashboard with `^dashboard` to see the whole project at a glance, 
 
 ## Trademarks
 
-"Axis Workflow", "Axis" when used as the name of this project, and their associated logos and lockups are trademarks of Kenneth A. Younge. The "Axis Workflow" trademark application was filed in Switzerland. "SimAxis" and its associated marks are trademarks of [SimAxis](https://simaxis.ai). Together, these are the "Marks" used in this notice. The [Axis MIT License](/_Axis/LICENSE) covers Axis-authored text, templates, and code. It does not grant rights to the Marks or automatically license the User's project. Copyright and trademark are separate: the MIT License covers copyright only and grants no trademark rights.
+"Axis Workflow", "Axis" when used as the name of this project, and their associated logos and lockups are trademarks of Kenneth A. Younge. The "Axis Workflow" trademark application was filed in Switzerland. These are the "Marks" used in this notice. The [Axis MIT License](/_Axis/LICENSE) covers Axis-authored text, templates, and code. It does not grant rights to the Marks or automatically license the User's project. Copyright and trademark are separate: the MIT License covers copyright only and grants no trademark rights.
 
 #### You may, without asking
 
@@ -136,15 +136,15 @@ Open the live Dashboard with `^dashboard` to see the whole project at a glance, 
 #### Please do not
 
 - Use the Marks, or confusingly similar names, logos, or domains, as the name of a fork, product, service, company, course, or website. Give forks their own name and describe them as "based on the Axis Workflow".
-- Imply sponsorship, certification, or endorsement by SimAxis without a written agreement.
+- Imply sponsorship, certification, or endorsement by Kenneth A. Younge or Kenneth Younge Advisory without a written agreement.
 - Alter the Marks or combine them with other names or logos.
 
 #### Symbols and attribution
 
 - On first prominent use in a document, write "Axis Workflow™"; after that, plain "Axis Workflow" or "Axis" is fine.
-- When an attribution line is appropriate, use: "Axis Workflow™ is free and open source (MIT License), from SimAxis - training and consulting at simaxis.ai."
+- When an attribution line is appropriate, use: "Axis Workflow™ is free and open source (MIT License), from Kenneth Younge Advisory - training and consulting at kennethyounge.com."
 
-Questions or permission requests can be sent to [support@simaxis.ai](mailto:support@simaxis.ai).
+Questions or permission requests can be sent to [support@axisworkflow.ai](mailto:support@axisworkflow.ai).
 
 
 

@@ -10,7 +10,9 @@
 - The Session ID field must match its filename - stating the author twice is a paired check: a mismatch means a wrong-file append, and `^audit` flags it.
 - Same-second honesty: a host clock that stamps whole seconds (`.000` milliseconds) makes same-second ties structural, and `sort` orders tied lines by whatever text follows the timestamp - read a tie as one moment, never as a sequence. Sequence proof lives in Logs, not telemetry.
 - The file is `_Axis/Tracking/{Session ID}.md` - the same identifier as the Agent's Marker, deliberately: the Marker says who is here, the tracking file says what they are doing, and the shared name is the join. This reuse is intentional and sits outside the timestamp-uniqueness domain - Tracking is telemetry, not a record family.
-- Append only. Never edit, reorder or delete existing lines, including your own; to correct a line, append a new line that says so. Each Agent writes only its own file, so the channel needs no lock and works on any storage any Agent can read.
+- Create your own Tracking file on the first append if absent; this does not authorize creating or replacing a Marker. Append only. Never edit, reorder or delete existing lines, including your own; to correct a line, append a new line that says so. Each Agent writes only its own file, so the channel needs no lock and works on any storage any Agent can read.
+
+When tracking is enabled and Python is available, use `python3 _Axis/Resources/startup-state.py --root . track --session {Session ID} --type INTENT --scope {scope} --text {statement}` before the first product write; use the same command with `DONE` at completion. It obtains the current UTC time, creates your own file on first append, appends and reads back the line under your live lease. Computing a timestamp alone is not an append. Without the helper, append the same line through file tools and read it back before proceeding.
 
 ## Typed Statements
 
@@ -35,14 +37,14 @@ An INTENT is open until its author writes a DONE, or a `STATUS` whose text begin
 
 ## Writing Discipline
 
-- Write INTENT before you start, not a summary afterward: the channel says what is happening now, and the Log remains the durable record of what happened.
+- Write INTENT before you start and verify the appended line, not a summary afterward: the channel says what is happening now, and the Log remains the durable record of what happened.
 - Keep one open INTENT per unit of work; close each with DONE, or STATUS `stopped` when you are interrupted, before you return or end the turn that finishes it. A unit left open across turns carries a STATUS at each meaningful milestone.
 - Name real scope. Readers use it to notice overlap; a vague scope defeats the purpose.
 - Never put a secret value, credential or pasted source content in a line.
 
 ## Awareness Pass
 
-Agents cannot be interrupted, so awareness happens at checkpoints: turn start, before a shared write, before spawning, before returning, and during long work at each STATUS. At each checkpoint:
+Host interruption can arrive between checkpoints; agents must not assume continuous execution. Awareness happens at checkpoints: turn start, before a shared write, before spawning, before returning, and during long work at each STATUS. At each checkpoint:
 
 1. Read the lines added since your last pass from every Agent whose Marker is fresh and has no tombstone (the optional `_Axis/Resources/agent-board.py` does this in one read-only call; see the Board below). After context loss, read each live file's tail again.
 2. Answer or act on open ASKs addressed to you, your role, or `any` that you can handle; reply once.
@@ -70,7 +72,7 @@ Agents do not experience time passing, so [Settings > Tracking] defines which ev
 ## Who Tracks
 
 - Main Agents and External Agents always follow the Setting.
-- Standard-capability Subagents write their own file at `writes` and `verbose` - and the obligation travels IN the spawn prompt: Main mints the child's Session ID and embeds it with the TRACKING directive per [Start-Subagent], because a Practice the child never reads binds nobody. The child writes INTENT at start and DONE before returning. A child that cannot write files says so in its return and Main records both lines; either way Main glances for the file on return.
+- Standard-capability Subagents write their own file at `writes` and `verbose` - and the obligation travels IN the spawn prompt: Main mints the child's Session ID and embeds it with the TRACKING directive per [Start-Subagent], because a Practice the child never reads binds nobody. The child writes INTENT at start and DONE before returning. A child that cannot write files says so in its return. Main inspects the actual Tracking file on return; a missing or late INTENT remains a gap. Main records a current-time STATUS in Main's own file prefixed `Retrospective:` with the observed outcome, never a backdated INTENT or an invented child line.
 - Local delegations NEVER track - the benchmarked Local contract stays untouched, and Main writes their INTENT and DONE lines instead.
 
 ## Telemetry, Not Evidence

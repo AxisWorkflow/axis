@@ -1173,14 +1173,20 @@ class Store:
         payload['attachments'] = self.validate_attachments(attachments)
         with self.locked(): return self._record('Messages', payload)
 
-    def capture_result(self, job, attempt, body):
+    def capture_result(self, job, attempt, body, *, attachments=None):
         self.require_main()
         founding = self.read('Jobs', job); state = self.project('Jobs', job)
         item = state.get('attempts', {}).get(attempt)
         need(not state['held'] and item is not None, 'unknown-attempt')
+        attachments = copy.deepcopy(attachments if attachments is not None else [])
+        need(isinstance(attachments, list), 'attachments')
+        allowed_scope = item.get('scope', founding['scope'])
+        for attachment in attachments:
+            need(isinstance(attachment, dict) and isinstance(attachment.get('path'), str) and any(attachment['path'] == base or attachment['path'].startswith(base + '/') for base in allowed_scope), 'attachment-scope')
         return self.message('result', 'main', body, team=founding.get('team'), job=job,
                             correlation=founding['operation_key'], epoch=item['epoch'],
-                            data={'attempt': attempt, 'manual_capture': True, 'reported_session': item['session']})
+                            data={'attempt': attempt, 'manual_capture': True, 'reported_session': item['session']},
+                            attachments=attachments)
 
     def disposition(self, message_id, outcome, reference=None):
         need(outcome in {'received', 'admitted', 'declined', 'referred', 'validated', 'rejected', 'closed'}, 'disposition')
@@ -1210,6 +1216,8 @@ class Store:
 
     def pending_messages(self):
         messages = self.records('Messages')
+        jobs = teams = None
+        projections = {}
         result = []
         for message in messages:
             if message['kind'] in {'receipt', 'decision', 'validation', 'control'} or 'event' in message:
@@ -1237,7 +1245,14 @@ class Store:
             # Main-accepted result validation resolves the underlying result proposal.
             accepted_validations = [m for m in messages if m.get('event', {}).get('action') == 'validate' and m.get('event', {}).get('data', {}).get('message') == message['id']]
             if accepted_validations and message.get('job'):
-                view = self.project('Jobs', message['job'])
+                job_id = identity(message['job'])
+                if job_id not in projections:
+                    if jobs is None:
+                        jobs = {record['id']: record for record in self.records('Jobs')}
+                        teams = self.records('Teams')
+                    need(job_id in jobs, 'record-missing', job_id)
+                    projections[job_id] = project_records(jobs[job_id], messages, teams)
+                view = projections[job_id]
                 if not view['held'] and any(m['id'] in view['validations'] for m in accepted_validations): state = 'validated'
             if held or state not in {'admitted', 'declined', 'referred', 'validated', 'rejected', 'closed'}:
                 result.append({'id': message['id'], 'subject': message['subject'], 'state': 'held' if held else state, 'head': head, 'kind': message['kind']})
