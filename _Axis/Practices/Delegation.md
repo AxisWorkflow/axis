@@ -65,7 +65,7 @@ This can reduce expensive-model context by passing validated structured facts in
 
 ## Accept, Retry, or Fall Back
 
-Main never blindly forwards or writes a Subagent return. Before acceptance, verify the selected shape, preservation, semantic, and judgment checks; then confirm required facts, prohibited claims, material omissions, and source fidelity.
+Main never blindly forwards or writes a Subagent return. Verify that every changed or produced path was inside the persisted attempt scope; a supporting evidence file is still a write. Accept valid in-scope artifacts separately from any scope defect, and retain the defect instead of reporting whole-run compliance. Before acceptance, verify the selected shape, preservation, semantic, and judgment checks; then confirm required facts, prohibited claims, material omissions, and source fidelity.
 
 Retry once only when the failure is correctable through specific validation feedback and the applicable recipe permits it. On a repeated failure, a failed aptitude gate, an unverified fingerprint, or an unavailable route, follow [Start-Subagent > Restrictions & Fallback] and record the required downgrade or fallback. Do not keep retrying until an answer happens to pass.
 

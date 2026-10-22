@@ -1,7 +1,7 @@
 # Changelog
 > **Purpose:** Record Axis release identity and the structural migrations needed to update an existing project safely.
 
-current-version: 3.02
+current-version: 3.03
 changelog-format: 1
 self-update-baseline: 26.08.19
 
@@ -39,6 +39,29 @@ update-impact: automatic
 ### Verification
 
 - None.
+
+## 3.03
+
+released: 2026-10-23
+
+update-impact: automatic
+
+### Structural Changes
+
+- Coordination reuses only successful decoding of freshly read identical bytes in a bounded process-local cache; filesystem, link, size, identity and history checks remain fresh. Budget scans reuse one Team snapshot per operation.
+- Coordination and Delegation require immutable authority references, persisted dispatch for every host route, aligned evidence scopes, and truthful checkpoint/capacity recovery.
+
+### Project-State Migrations
+
+- None.
+
+### Retired Paths
+
+- None.
+
+### Verification
+
+- Compare cached decoding with the unchanged decoder and verify tamper detection, object isolation, bounded retention and concurrent reads; qualify unchanged coordination/scheduling suites, performance, loaded soak and release gates. Retain live scope failures separately from accepted artifacts.
 
 ## 3.02
 

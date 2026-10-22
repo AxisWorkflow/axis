@@ -8,6 +8,7 @@ rebuildable views. Control decisions are immutable Messages with an explicit cau
 from __future__ import annotations
 import argparse
 import contextlib
+from collections import OrderedDict
 import copy
 import datetime as dt
 import hashlib
@@ -20,6 +21,7 @@ import secrets
 import stat
 import sys
 import time
+import threading
 import uuid
 from urllib.parse import quote
 sys.dont_write_bytecode = True
@@ -100,7 +102,54 @@ def _unique_pairs(pairs):
     return result
 
 
+# Cache successful parsing only, never filesystem observations or mutable records.
+# Each caller still reads fresh bytes through the original no-link/size checks.
+_DECODE_MAX_BYTES = 64 * 1024 * 1024
+_DECODE_MAX_ENTRIES = 16384
+
+
+class _DecodeState:
+    def __init__(self):
+        self.pid = os.getpid()
+        self.lock = threading.Lock()
+        self.values = OrderedDict()
+        self.bytes = 0
+
+
+_DECODE_STATE = _DecodeState()
+
+
 def _decode(text):
+    global _DECODE_STATE
+    cache = _DECODE_STATE
+    if cache.pid != os.getpid():
+        # Never acquire a mutex inherited from another process. A local state
+        # reference also keeps concurrent first reads from mixing locks/counters.
+        cache = _DecodeState()
+        _DECODE_STATE = cache
+    with cache.lock:
+        cached = cache.values.get(text)
+        if cached is not None:
+            cache.values.move_to_end(text)
+    if cached is not None:
+        return json.loads(cached[0])
+    record = _decode_uncached(text)
+    payload = canonical(record)
+    # Include key/value storage and a conservative per-entry container allowance.
+    weight = sys.getsizeof(text) + sys.getsizeof(payload) + 256
+    if weight <= _DECODE_MAX_BYTES:
+        with cache.lock:
+            prior = cache.values.pop(text, None)
+            if prior is not None:
+                cache.bytes -= prior[1]
+            cache.values[text] = (payload, weight)
+            cache.bytes += weight
+            while len(cache.values) > _DECODE_MAX_ENTRIES or cache.bytes > _DECODE_MAX_BYTES:
+                _, removed = cache.values.popitem(last=False)
+                cache.bytes -= removed[1]
+    return record
+
+def _decode_uncached(text):
     try:
         subject, record = _FORMAT.decode(text, MAX_RECORD)
     except (ValueError, TypeError, RecursionError) as exc:
@@ -1081,9 +1130,10 @@ class Store:
         team = self.project('Teams', mandate['team'])
         need(not team['held'], 'team-held')
         spent = reserved = rounds = 0
+        teams = self.records('Teams')
         for other in jobs:
             if other.get('team') != mandate['team']:continue
-            view = project_records(other, messages, self.records('Teams'))
+            view = project_records(other, messages, teams)
             need(not view['held'], 'team-held')
             spent += view['launches'];rounds += view['rounds']
             if view['state'] not in TERMINAL and (admission or other['id'] != mandate.get('id')):
@@ -1100,9 +1150,10 @@ class Store:
         budget = mandate.get('budget_key', mandate['authority']['digest'])
         caps = [mandate['limits']['aggregate_launches']] if 'aggregate_launches' in mandate['limits'] else []
         spent = reserved = 0
+        teams = self.records('Teams')
         for record in jobs:
             if record.get('budget_key', record['authority']['digest']) != budget: continue
-            view = project_records(record, messages, self.records('Teams'))
+            view = project_records(record, messages, teams)
             need(not view['held'], 'budget-held')
             spent += view['launches']
             if view['state'] not in TERMINAL:
