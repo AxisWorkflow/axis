@@ -1,0 +1,25 @@
+# Checked Completion
+> **Purpose:** Finish Snapshot indexing, final presentation and explicit session retirement when checked tools are in use.
+
+Load only for a checked-session save, ordinary final response or shutdown. This is an optional implementation of individual steps, not an alternative save policy. Follow the ordinary `^save` and `^shutdown` commands, including portability, semantic review, current queues, README, checkpoint and configured Git/Secrets duties. Never claim that indexing or retirement proves those duties succeeded.
+
+## Fixed grants and scope
+
+The trusted launcher may add `--allow-save`, `--allow-index`, `--allow-presentation` and, only for explicitly authorized shutdown, `--allow-shutdown` to `checked-session.py`. These grants are separate from read, replay and record creation. Tool arguments cannot enable them. The completion module loads only when a granted completion operation is called; ordinary startup and turns do not import it.
+
+Verify the host's actual alternative-tool boundary as in `Checked-Session.md`. No operation supplies a shell, arbitrary destination, general mutable-file editor or role reassignment. Missing capability holds the affected operation; use ordinary procedures only where the existing host scope and authority permit them. Do not broaden access to make a test pass.
+
+## Snapshot and final response
+
+1. Call `begin_save` for ordinary step 1. It checks active Subagents and refreshes only the existing Main Marker and its still-owned session Flag; its bounded result supplies the current version and refresh time even when the Changelog is too large for a scoped text read. Set `during_shutdown` only inside an explicitly granted shutdown. Complete all safely observable save checks and record any unavailable observation truthfully. An unavailable optional observation can produce `Unverified`; it never turns an unperformed required invariant into a pass. Do not remove Git, Secrets, active workers or recovery obligations merely to fit the interface.
+2. Create the prepared Snapshot with `create_record`. Call `review_snapshot` with its returned ID. Read the returned exact content, verify the single Continuity block, current Task/Follow-Up/Reminder IDs, findings and limitations. Correct a bad unpublished draft using the ordinary authorized procedure; these tools never overwrite a record.
+3. Call `index_snapshot` with that ID, the returned record and index digests, and a single-paragraph summary under 200 words. It accepts only a Snapshot created and reviewed in this tool process. It preserves every existing index byte and appends one fixed entry under an owned short lock. Changed content, duplicate entry, unsafe storage, pending lifecycle work, links or contention refuse. A partial failure keeps recoverable records; do not create another Snapshot merely to hide it. A restarted tool process needs ordinary scoped recovery, not fabricated remembered ownership.
+4. Complete the remaining save checkpoint and reporting steps. `begin_save` opens the ordinary own-session save Tracking intent; close it truthfully with `save_tracking` (`DONE`, or `STATUS` for incomplete work), respecting Tracking=off. `read_created_record` provides unchanged Log/Snapshot readback only for records created in this tool process; it grants no other history access. For an ordinary final answer, call `format_response` with the reviewed answer body and truthful background-task boolean. Relay its `text` verbatim as the final response, without another frame. The formatter supplies the verified folder; it does not certify the body's facts or whether a background task exists. Structured/exact-output exceptions still bypass presentation decoration.
+
+## Explicit shutdown
+
+A separately requested shutdown performs its own save; only the ordinary direct save-to-shutdown handoff skips that save. Finish reports and ordinary writes first. Call `retire_session` only at the retirement step of an authorized shutdown, after recording the actual save outcome; a failed save must remain a failed or local-only save. The tool records `Shutdown by User`, appends final Tracking, removes only its own live Main Marker, and hands back its session Flag if still owned.
+
+An owned ten-second admission fence excludes new startup during removal and handback. Existing or uncertain fences are never stolen; serialized/unverified storage uses the ordinary manual procedure. Interruption retains evidence for quiescent recovery. After Marker removal, only identity handback and its fence cleanup may write. A returned `identity_handback: unverified` means stopped with cleanup outstanding, not a fully verified shutdown.
+
+Unavailable display metadata is shown as unknown/unavailable; it never grants access or suppresses the lease and storage checks. Use the returned terminal presentation after the ordinary brief Snapshot/Portability/Git report. Never add READY after it. Stop serving this conversation: subsequent messages get only the instruction to start a new session. Retired tools refuse further ordinary operations; do not recreate or renew the old Marker.

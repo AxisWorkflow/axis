@@ -1,11 +1,13 @@
 # Timestamps
 > **Purpose:** Mint identifier timestamps that are unique across the entire Project, using an owned atomic claim, a post-claim existence check, and exclusive creation.
 
+For a host exposing checked record tools, load `_Axis/Resources/Checked-Session.md`; creation uses the same claim protocol, while content review and index updates remain Main duties.
+
 Every record in an Index-Detail directory is named by its timestamp, and that name is the record's identity (see [Practices > IndexDetail > The Name Is the Contract]). This Practice adds one guarantee on top: no identifier timestamp names two records anywhere in the Project. That uniqueness is what turns a bare timestamp into an unambiguous key - `grep -rn "{timestamp}"` from the project root finds THE record plus every cross-reference to it, with nothing to disambiguate. Clocks can repeat or move backward, and concurrent writers can choose the same millisecond. The existence check covers historical collisions as well as concurrency. Real milliseconds are what make that window a millisecond wide instead of a second wide - which is why step 1 goes to some trouble to get them, and why `000` is never an acceptable stand-in.
 
 ## Scope
 
-- An identifier timestamp is one that becomes a filename in the Index-Detail directories or their `_Axis/Archive/` families. Only identifiers pass through this procedure.
+- An identifier timestamp is one that becomes a filename in the Index-Detail directories or their `_Axis/Archive/` families, or the prefix of a new Memo filename in `_Memos/` or `_Memos/Archive/`. Only identifiers pass through this procedure. Memo subjects follow ` - ` after the identifier; legacy date-prefixed Memos are not identifier timestamps.
 - Metadata stamps are values, not identities: Flag bodies and Line 2 refreshes, `reviewed:` and `completed:` field values, times quoted in prose. Mint them directly; never check or claim them.
 - Initial Main and External Markers use the narrow Bootstrap Markers exception below. Their identifiers still require a claim, a post-claim check, and exclusive creation; only the prior-Marker lease check is exempt.
 - A rename keeps identity: archiving a record, or repairing a malformed name under `^refresh`, moves an existing identity - it is not a new mint (the existence check still guards the repaired name's destination).
@@ -13,7 +15,7 @@ Every record in an Index-Detail directory is named by its timestamp, and that na
 
 ## Minting an Identifier
 
-When Python runs, pipe the prepared record body to `python3 _Axis/Resources/startup-state.py --root . record --session {Session ID} --family {Family}` (or pass `--body-file {path}`). It performs steps 1-5 under your own live Marker, renews that Marker and prints the new identifier and path; then write any index entry. An `error` result names its cause and path; treat a `lease_` code under [Practices > Markers > The Lease]. Without Python, for a Bootstrap Marker, or for a body over 64 KiB, the steps below are the fallback.
+When Python runs, pipe the prepared record body to `python3 _Axis/Resources/startup-state.py --root . record --session {Session ID} --family {Family}` (or pass `--body-file {path}`). It performs steps 1-5 under your own live Marker, renews that Marker and prints the new identifier and path; then write any index entry. For a Memo use `memo --session {Session ID} --subject "{Subject}"` instead of `record --session {Session ID} --family {Family}`; Memos have no index entry. An `error` result names its cause and path; treat a `lease_` code under [Practices > Markers > The Lease]. Without Python, for a Bootstrap Marker, or for a body over 64 KiB, the steps below are the fallback.
 
 1. Generate a candidate. Run this one command exactly and use what it prints:
 
@@ -24,6 +26,8 @@ When Python runs, pipe the prepared record body to `python3 _Axis/Resources/star
 2. Prepare the record body before acquiring anything. An optional early existence check may skip occupied candidates, but it is never the authoritative check. The complete uniqueness domain is:
 
 		find _Axis/{Agents,Audit,CX,Followups,Ideas,Logs,Notes,Reminders,Reviews,Snapshots,Status,Supervision,Tasks,Teams,Messages,Jobs,Schedules} _Axis/Archive -name "{candidate}.md" -print
+
+	Also scan `_Memos/` and `_Memos/Archive/` for `"{candidate} - *.md"`; a matching prefix reserves the identifier regardless of subject. Missing Memo folders are empty for collision scanning, but an inaccessible or linked folder is an error. Create a missing plain `_Memos/` under the normal Main write guards before creating a Memo.
 
 	`_Axis/Reviews/`, `_Axis/Status/` and unused Teams/Messages/Jobs/Schedules folders may be absent; treat missing optional families as empty. `_Axis/Archive` here means the Archive root from [Settings > Archive Location]; scan only its family folders. When that root is unavailable, scan the live directories, record that the archived half is unverified, and continue: archived identities are older than any current mint, so the claim and live recheck still hold. The optional startup helper scans only the in-project `_Axis/Archive/` for the same reason. Distinguish an empty successful listing from inaccessible directories or failed tools. Without a shell, use equivalent host file tools. Increment milliseconds with normal second/day carry when a candidate is occupied.
 

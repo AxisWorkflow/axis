@@ -1,7 +1,7 @@
 # References
-> **Purpose:** Define the Axis Reference notation and the resolver table that maps every reference to its file.
+> **Purpose:** Define Axis References and their file resolver.
 
-An Axis Reference is an internal pointer to another file (and optionally a section > subsection) of the Axis Workflow. It takes the form [File], [File > Section], or [File > Section > Subsection] - single brackets NOT followed by a `(...)` path (which would make it a markdown link). Resolve every reference with the table below - there is no heuristic resolution.
+Axis References point to Workflow files or sections: [File], [File > Section], [File > Section > Subsection]. Their brackets have no following `(...)` path; that would be a Markdown link. Resolve each through this table, never heuristically.
 
 ## Resolver Table
 
@@ -34,6 +34,7 @@ An Axis Reference is an internal pointer to another file (and optionally a secti
 | [Lifecycle-Presentation] | `_Axis/Resources/Lifecycle-Presentation.md` |
 | [Continue-Session] | `_Axis/Resources/Continue-Session.md` |
 | [Load-Starting-Context] | `_Axis/Resources/Load-Starting-Context.md` |
+| [Displaced-Session], [Resources > Displaced-Session] | `_Axis/Resources/Displaced-Session.md` |
 | [Claim-Session], [Resources > Claim-Session] | `_Axis/Resources/Claim-Session.md` |
 | [Lock-File], [Resources > Lock-File] | `_Axis/Resources/Lock-File.md` |
 | [Load-Project-Overlay], [Resources > Load-Project-Overlay] | `_Axis/Resources/Load-Project-Overlay.md` |
@@ -55,10 +56,10 @@ An Axis Reference is an internal pointer to another file (and optionally a secti
 
 Rules of use:
 
-- A deeper form ([File > Section] or [File > Section > Subsection]) names real headings inside the resolved file.
+- Deeper forms name real headings in the resolved file.
 - [Settings > X] names the `### X` Setting inside `_Axis/SETTINGS.md`; [Practices > X] and [Rules > X] each resolve to the single-token file in their own folder, per their table rows.
-- Any reference whose base form is not in this table is invalid: fix the reference, or extend the table AND the matching integrity check in the same change.
-- Reference names are logical, not literal paths: [Project] resolves to `_Axis/PROJECT.md`, and the [Wiki > ...] rows resolve into `_Axis/Wiki/` - the table, not the bracket text, carries the path. Never rename a reference just because a folder moved; update its row instead.
+- Unlisted base forms are invalid. Fix the reference or extend this table AND its integrity check together.
+- References are logical names: [Project] resolves to `_Axis/PROJECT.md`; [Wiki > ...] rows resolve into `_Axis/Wiki/`. The table supplies paths. When folders move, update the row; never rename the reference solely for that move.
 
 ## Documentation Boundary
 

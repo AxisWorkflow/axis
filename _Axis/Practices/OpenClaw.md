@@ -3,6 +3,10 @@
 
 [OpenClaw](https://openclaw.ai) is optional. Axis uses it for capabilities the portable file workflow cannot supply by itself: messaging channels, sender verification and routing, agent/session lifecycle, directed message delivery, cron triggers, and the filesystem/runtime substrate that lets the hosted Agent operate the Project. OpenClaw injects the workspace `AGENTS.md`, which starts the ordinary Axis entry protocol and assigns Main, External, or Subagent through the same recognition rules used on every Host ([Practices > Agents]). Missing OpenClaw disables only those Host enhancements; Axis continues through files and manual triggers.
 
+## Persistent conversations and displaced sessions
+
+An OpenClaw conversation may outlive its Axis lease and several installed versions. On every served turn apply [Displaced-Session] before writes: lost/contested lease stays read-only, and changed or unverified boot context requires a fresh Axis session. User may explicitly rejoin through complete current startup inside the same host conversation; never resurrect the old Marker or silently become External. Keep the existing lease thresholds, default role and disabled generic heartbeat. No-shell renewal needs safe update-existing semantics, not an unconditional overwrite. Separate DM/group sessions each undergo admission; only an exact verified native identity can establish that two surfaces share a session.
+
 ## Thin Harness Contract
 
 Keep OpenClaw's operational harness and remove its competing project-brain layer.

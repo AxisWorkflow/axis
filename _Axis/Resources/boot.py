@@ -295,6 +295,8 @@ def inbox_items():
     except OSError:return []
 
 if not (root/'_Axis/Resources/startup-state.py').is_file():stop('run this from the project root')
+merge_status=run(R/'merge-project.py','--root',root,'status')
+if merge_status.get('status') not in ('clear','recovery'):stop('project merge state requires attention','_Axis/Practices/Merging.md',merge=merge_status)
 if o.finish_adoption:
     # Resume the admitted startup that stopped at ADOPT: same session, same admission (read back from its OWNER).
     try:st=json.loads((root/'_Axis/Flags/starting.lock/OWNER').read_text())
@@ -315,7 +317,7 @@ else:
         # Takeover ask (Claim-Session > Takeover): nothing was written; the user decides.
         again=' '.join('--take-over '+m['session'] for m in c['mains'])
         print(json.dumps({'axis_boot':'ASK','claim':c}))
-        print(f"ASK: another Main session is idle, under the {c['threshold_hours']}-hour takeover limit at Permissions {c['permissions']}: {mains(c)}. Ask the user in one line, naming it and recommending takeover: take it over (its record is cleared and that session stops at its next turn), or join as an External Agent beside it. On take over, run: python3 _Axis/Resources/boot.py {again} --host {o.host!r} --model {o.model!r} --harness {o.harness} --spawn {o.spawn} --parallel {o.parallel}. On join, follow _Axis/Resources/Start-External.md. Do nothing else until the user answers.")
+        print(f"ASK: another Main session is idle, under the {c['threshold_hours']}-hour takeover limit at Permissions {c['permissions']}: {mains(c)}. The recorded host conversation may still be open even while its Axis lease is idle. Ask the user in one line, naming it and recommending takeover: take it over (its record is cleared and that session stops at its next turn), or join as an External Agent beside it. On take over, run: python3 _Axis/Resources/boot.py {again} --host {o.host!r} --model {o.model!r} --harness {o.harness} --spawn {o.spawn} --parallel {o.parallel}. On join, follow _Axis/Resources/Start-External.md. Do nothing else until the user answers.")
         sys.exit(5)
     if c.get('status')!='admitted':stop('session claim failed',claim=c)
     sid,owner=c['session'],c['owner']
@@ -331,6 +333,8 @@ try:
  else:i=run(R/'startup-state.py','--root',root,'initialize','--session',sid,'--owner',owner)
  if i.get('status')!='initialized':interrupted('initialize failed',initialize=i)
  adopted=adopt(sid) if us=='ready' else None
+ layout=run(R/'coordination-layout.py','--root',root,'--session',sid,'--owner',owner)
+ if layout.get('status')!='harmonized':interrupted('coordination layout needs attention',layout=layout)
  try:wiki_note,wiki_log=move_wiki()
  except (OSError,UnicodeError) as e:wiki_note,wiki_log=f'Axis could not finish moving the Wiki from Wiki/ to _Wiki/ ({type(e).__name__}). Check both folders before using the Wiki.',None
  try:inbox_notes,inbox_log=migrate_inbox()
@@ -344,6 +348,10 @@ try:
  if s.get('status')!='surveyed':interrupted('startup survey failed',survey=s)
 
  notices=[x for x in (s.get('notices') or []) if x!='cloud-synced-folder'];pending=[];later=[]
+ if merge_status.get('status')=='recovery':pending.append('Recover the incomplete merge under _Axis/Practices/Merging.md before unrelated work; never clear its state or repeat an import blindly.')
+ if layout['created']:
+     notices.append('Created missing coordination folders and summaries: '+', '.join(layout['created'])+'.')
+     later.append('record one Log Event naming the missing-only coordination layout additions: '+', '.join(layout['created']))
  if wiki_note:notices.append(wiki_note)
  if wiki_log:later.append(wiki_log)
  notices+=inbox_notes
@@ -445,6 +453,6 @@ try:
  print('Before any answer other than the greeting or a requested exact reply: read _Axis/Resources/Load-Starting-Context.md (core rules), _Axis/INSTRUCTIONS.md, _Axis/MINDSET.md, _Axis/DIRECTIVES.md, _Axis/PLAN.md, _Axis/TASKS.md, the newest Snapshots and the Notes index'+('; and: '+'; '.join(later) if later else '')+'.')
  print(f'On every later turn, first run: python3 _Axis/Resources/turn.py --session {sid}')
  print('Reply frame, required on every reply that hands the turn back to the user, this one included (exceptions: _Axis/Rules/Speaking.md > Final response boundary): this reply opens with the banner instead of the header; every later reply starts with the header, with nothing before it, not even a sentence; every reply ends with the closing; progress notes during a turn get neither. A later reply looks like this (the fence only marks the example; never print the fence itself):')
- print(f'```text\n{bar}\n A X I S   W O R K F L O W\n{bar}\n\n{{the answer, leading with the outcome}}\n\n{bar}\n\nREADY FOR INPUT ({folder}):\n```')
+ print(f'```text\n{bar}\n A X I S   W O R K F L O W\n{bar}\n\n{{the answer, leading with the outcome}}\n\n> READY {folder}:\n```')
 except SystemExit:raise
 except BaseException as e:interrupted(type(e).__name__)

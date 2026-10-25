@@ -47,4 +47,4 @@ Resume, External readiness, role changes and startup failures remain compact not
 
 ## Final response
 
-Before each actual final application answer, apply [Rules > Speaking]: its Axis Workflow header and its `READY FOR INPUT ({Folder}):` closing, using this banner's Folder value. Do not use the lifecycle brand block for an ordinary answer. Progress and Subagent returns have no final-response decoration. Exact-output and machine-readable contracts retain their required shape.
+Before each actual final application answer, apply [Rules > Speaking]: its Axis Workflow header and its `> READY {Folder}:` closing, using this banner's Folder value. Do not use the lifecycle brand block for an ordinary answer. Progress and Subagent returns have no final-response decoration. Exact-output and machine-readable contracts retain their required shape.

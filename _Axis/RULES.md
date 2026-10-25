@@ -6,6 +6,9 @@
 - Never work a Practice from memory; load its detail file.
 - Load [Practices > Commands] before recognizing or running a User Command.
 - Checklist and rule files are one body of Rules; flag any apparent conflict.
+- Check [Practices > Merging] before admission, renewal and each write.
+- Source merge maintenance or retirement blocks writes.
+- Destination Main recovers unfinished merges before other work.
 - One Main Agent per project; every other Agent is an External Agent or Subagent.
 - Entry protocol fixes Main or External role once.
 - A validated prompt envelope fixes Subagent role.

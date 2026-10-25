@@ -1,6 +1,8 @@
 # ^save
 > **Purpose:** Sync workflow and save a Snapshot.
 
+When checked tools are in use, load `_Axis/Resources/Checked-Completion.md` for the corresponding mechanical steps; all save duties and refusal conditions below still apply.
+
 1. **Check for Subagents.** Follow [Start-Subagent > How to Track Subagents] to check whether Subagents are running (Markers with a `Subagent:` Subject - `Main: session` Markers do not block). If Yes: warn User and STOP unless explicitly told to continue. Refresh your own `Main: session` Marker and `_Axis/Flags/session-id` while here: update the Flag's Line 2 timestamp; Line 1 never changes.
 
 2. **Preflight Git receive.** Read `host-shell` under [Practices > Flags > Reading Flags]. When it is valid `yes` and an exact-root repository with upstream exists, read [Practices > GIT] and run the outgoing mode's early fetch/classification before changing save state. Integrate incoming work under its Take one action (a fast-forward, or a merge when the two sides changed different files) through Incoming Change Validation; if Workflow machinery changed, shut down for a fresh session and do not save under stale instructions. When a file changed on both sides, remember that this save can finish only as a local checkpoint. No repository, no remote, unavailable Git/authentication, or `host-shell` not valid `yes` never blocks the local Snapshot.

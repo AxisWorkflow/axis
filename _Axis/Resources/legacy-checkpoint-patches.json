@@ -1,0 +1,49 @@
+{
+  "schema": 1,
+  "path": "_Axis/Resources/record-check.py",
+  "scope": "Data-only exact legacy checkpoint repair; not a checker exemption or updater transaction. Apply only through the companion recovery procedure. Parent supervision references remain externally unverified.",
+  "patches": [
+    {
+      "version": "2.07",
+      "before_sha256": "0a5459fd5530b7a23be6f08805c3c36d5acda5cae26fd413f655385b0dd4f408",
+      "after_sha256": "42424d1cbaa5a47cb8bc8d264cdac05e5e004e49af1a656685c77b398ed44065",
+      "replacements": [
+        {
+          "before": "def write_once(root):\n",
+          "after": "def update_identity(path):\n    parts=path.split('/')\n    return parts[2] if len(parts)>3 and parts[:2]==['_Axis','Updates'] else None\n\ndef checkpoint_renames(entries):\n    out=[]\n    for status,path,new in entries:\n        if status.startswith('R') and update_identity(path) and update_identity(new) and update_identity(path)!=update_identity(new):\n            out.extend([('D',path,None),('A',new,None)])\n        else:out.append((status,path,new))\n    return out\n\ndef write_once(root):\n"
+        },
+        {
+          "before": "    exempt=update_exempt(root,[p for s,p,_ in entries if s=='A'])",
+          "after": "    entries=checkpoint_renames(entries)\n    exempt=update_exempt(root,[p for s,p,_ in entries if s=='A'])"
+        },
+        {
+          "before": "    deleted={p.rsplit('/',1)[-1]:p for s,p,_ in entries if s=='D'}\n    for status,path,_ in list(entries):\n        old=deleted.get(path.rsplit('/',1)[-1]) if status=='A' else None\n",
+          "after": "    deleted={}\n    for status,path,_ in entries:\n        if status=='D':deleted.setdefault(Path(path).name,[]).append(path)\n    for status,path,_ in list(entries):\n        candidates=deleted.get(Path(path).name,[]) if status=='A' and not update_identity(path) else []\n        candidates=[old for old in candidates if not update_identity(old) and (Path(old).parent==Path(path).parent or NAME.fullmatch(Path(path).name))]\n        old=candidates[0] if len(candidates)==1 else None\n"
+        }
+      ]
+    },
+    {
+      "version": "2.08",
+      "before_sha256": "3dac60868eca70f04b27233c5f9d5ce2b203f5fd7e7df4036da2b7a7922ab15b",
+      "after_sha256": "3e79f33ff16c926fa2e8275e40b6d6c7bf455e841d792308c571824528d33929",
+      "replacements": [
+        {
+          "before": "def write_once(root):\n",
+          "after": "def update_identity(path):\n    parts=path.split('/')\n    return parts[2] if len(parts)>3 and parts[:2]==['_Axis','Updates'] else None\n\ndef checkpoint_renames(entries):\n    out=[]\n    for status,path,new in entries:\n        if status.startswith('R') and update_identity(path) and update_identity(new) and update_identity(path)!=update_identity(new):\n            out.extend([('D',path,None),('A',new,None)])\n        else:out.append((status,path,new))\n    return out\n\ndef write_once(root):\n"
+        },
+        {
+          "before": "    exempt=update_exempt(root,[p for s,p,_ in entries if s=='A'])",
+          "after": "    entries=checkpoint_renames(entries)\n    exempt=update_exempt(root,[p for s,p,_ in entries if s=='A'])"
+        },
+        {
+          "before": "    deleted={p.rsplit('/',1)[-1]:p for s,p,_ in entries if s=='D'}\n    for status,path,_ in list(entries):\n        old=deleted.get(path.rsplit('/',1)[-1]) if status=='A' else None\n",
+          "after": "    deleted={}\n    for status,path,_ in entries:\n        if status=='D':deleted.setdefault(Path(path).name,[]).append(path)\n    for status,path,_ in list(entries):\n        candidates=deleted.get(Path(path).name,[]) if status=='A' and not update_identity(path) else []\n        candidates=[old for old in candidates if not update_identity(old) and (Path(old).parent==Path(path).parent or NAME.fullmatch(Path(path).name))]\n        old=candidates[0] if len(candidates)==1 else None\n"
+        },
+        {
+          "before": "        for m in NEAR.finditer(bare):\n",
+          "after": "        # External parent references and scratch components are not local record IDs.\n        # Preserve spans so adjacent local identifiers still receive normal checks.\n        bare=re.sub(r'parent:_Axis/Supervision/'+IDENT.pattern+r'\\.md(?=$|[\\s`<>\\](),;])',lambda m:' '*len(m[0]),bare)\n        bare=re.sub(r\"(?<![\\w])_Temp/[^\\s`<>\\[\\]()\\\"']+\",lambda m:' '*len(m[0]),bare)\n        for m in NEAR.finditer(bare):\n"
+        }
+      ]
+    }
+  ]
+}

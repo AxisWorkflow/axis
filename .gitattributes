@@ -14,3 +14,5 @@ _Axis/Resources/*.sh text eol=lf
 _Axis/Resources/*.py text eol=lf
 _Axis/Secrets/.capsule.age -text
 _Axis/Secrets/.identity.age -text
+# Preserved merge objects are exact bytes, including original line endings.
+_Axis/Merges/*/objects/* -text -diff

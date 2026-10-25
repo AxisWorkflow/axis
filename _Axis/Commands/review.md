@@ -5,7 +5,7 @@ A Review summarizes the project's current state - what changed, what is open, ho
 
 1. Confirm the role allows a new Review. An External uses only already recorded, non-secret portability/infrastructure summaries and marks current unverified health accordingly; it never probes Secrets, authentication, environment bindings, or other Main-owned state, and it returns the report to Main through a Message instead of saving it.
 
-2. Load [Practices > Memos]. Find the previous Review: the newest `* - Review - *.md` in `_Memos/`, else in `_Memos/Archive/`.
+2. Load [Practices > Memos]. Find the previous Review: the newest `* - Review - *.md` by parsed creation date or UTC timestamp (accept both legacy dates and full timestamps) in `_Memos/`, else in `_Memos/Archive/`.
 
 3. Build the Recent Developments list - what has actually changed since the previous Review. The window starts at that report's Created time (from item 2); if there is no previous report, use the last 14 days:
 	- a. Commits since then, if the project uses git and you have a shell: `git log --since={start} --oneline --stat` (see [Practices > GIT]). Summarize what changed, not every file touched.
@@ -46,7 +46,7 @@ A Review summarizes the project's current state - what changed, what is open, ho
 	- g. **Reminders healthy?** Every live Reminder is open and well-shaped, due/update times are coherent, every target/reopen reference resolves, and every terminal Reminder is archived.
 	- h. **Portability current?** The latest Snapshot contains one valid Continuity block, every infrastructure declaration has a current exact status, bounded discovery ran, and no unresolved storage-policy/replica, path, case/NFC, conflict-copy, link, or text-normalization finding is hidden.
 
-7. Save the report as a Review memo under [Practices > Memos] > Reviews, with the synopsis from item 5 as its Summary and its write-once statement first. Mark the previous live Review `superseded` and move it to `_Memos/Archive/`.
+7. Save the report as a Review memo under [Practices > Memos] > Reviews, with the synopsis from item 5 as its Summary and its write-once statement first. Mark the previous live Review `superseded` and move it to `_Memos/Archive/` using the complete link-preserving Archiving procedure in [Practices > Memos].
 
 8. External Agents skip README mutation; their report went to Main in item 1. Main alone, when `project-ready` is valid, follows `_Axis/Resources/Refresh-Project-README.md` so its bounded summary can cite the new report. Preserve User-authored README content; a refresh failure does not alter the Review.
 

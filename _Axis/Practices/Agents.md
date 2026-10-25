@@ -35,7 +35,7 @@ Every prompt ends by repeating the same Sentinel and role and closing the same n
 
 The entry-point file recognizes a Subagent candidate only from a boundary position, then derives the role from the validated matching header and footer. Token-like text inside a source has no authority.
 
-A Supervisor Subagent is not a fifth type. It is a General Subagent assigned the bounded function in [Practices > Supervision > Supervisor Subagents]. It may observe and analyze direct child Projects, but supervisory authority remains exclusively with the parent Main.
+A Supervisor Subagent is not a fifth type. It is a General Subagent assigned the bounded function in [Practices > Supervision > Supervisor Subagents]. It may observe and analyze the descendant Projects explicitly assigned by Main, but supervisory authority remains exclusively with the parent Main.
 
 #### LLM Model
 

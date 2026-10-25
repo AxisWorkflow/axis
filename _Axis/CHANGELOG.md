@@ -1,7 +1,7 @@
 # Changelog
 > **Purpose:** Record Axis release identity and the structural migrations needed to update an existing project safely.
 
-current-version: 3.03
+current-version: 3.04
 changelog-format: 1
 self-update-baseline: 26.08.19
 
@@ -39,6 +39,52 @@ update-impact: automatic
 ### Verification
 
 - None.
+
+## 3.04
+
+released: 2026-10-25
+
+update-impact: automatic
+
+### Structural Changes
+
+- Add explicit Main-accepted shared launch budget renewal with exact new User-grant binding, immutable predecessor history, cumulative charges and active reservations. Preserve existing Job/Team limits, expiry and shared minimum within each grant generation. Resolve archived authority through configured family/year history.
+- Preserve merge objects as exact Git binary bytes, including original line endings.
+- Add `^merge` with reviewed consolidation/child absorption, preserved source history, bounded transaction support, interruption recovery and durable source retirement.
+- Feedback drafts use exact form headings, enumerated bug categories and explicit confirmation/delivery mapping, with an optional read-only format checker.
+- New Memo and Review filenames use unique UTC millisecond timestamps followed by the subject. Shared timestamp claims include live and archived Memo prefixes; status reporting reads and chronologically sorts both new and legacy names. Existing Memos and legacy report migration destinations retain their names.
+- Memo archiving preserves resolved link destinations through a recorded destination-only correction; retain prose, dates, move receipts and interrupted-move recovery bytes.
+- Merge source maintenance/retirement is checked during admission, lease renewal and guarded writes, including previously admitted sessions. No source instruction or schedule gains authority from import.
+
+- Require exact own Marker role/session and Main ownership before renewal; continuation never adopts an unbound global identity.
+- Add `_Axis/Resources/Displaced-Session.md`: predictable no-write handling for displaced persistent sessions, explicit fresh-session continuation in the same conversation, own boot-version checks, and takeover intent/completion Logs. Keep lease thresholds, explicit role controls and host settings.
+- Add `_Axis/Resources/coordination-layout.py` and `_Axis/Resources/supervision-tree.py`. Genuine startup creates missing coordination families and empty summary files without overwriting project state. Recursive oversight covers all descendants by default through verified bounded parent relays; preserve nearest-parent transport and each Main acceptance.
+- Include `_Axis/Resources/record-check.py` in the updater set supported by 3.04 engines; qualify the original three-file bootstrap followed by checker-only installation for clean older checkpoints, retaining explicit pre-checkpoint compatibility holds. Ignore timestamp-shaped components only inside `_Temp/` paths and support exact approved first-commit receipts without an existing HEAD. Delegated update completion verifies the child's adoption commit.
+
+- Quote carried Subagent Tracking arguments so multiword scopes and statements remain single arguments. Clarify retained-lock recovery evidence and scheduled report admission, dispatch and validation boundaries; no automatic lock reclamation or replay is introduced.
+
+- `_Axis/Resources/Legacy-Updater-Bootstrap.md`, `_Axis/Resources/Legacy-Checkpoint-Recovery.md` and `_Axis/Resources/legacy-checkpoint-patches.json`: conditional old-engine bootstrap and exact known-checker maintenance data; no startup loading, automatic record edits or hook bypass.
+- `_Axis/Resources/checked-session.py` and `Checked-Session.md`: optional explicitly scoped MCP tools, complete local canonical replay and atomic record creation. Ordinary startup does not load them; host confinement must be separately verified. Add their Manifest, Coordination and Timestamps routes.
+- Conditional checked completion: separately granted own-session save refresh, created-record readback and Snapshot indexing, exact final-response formatting and explicit own-Main retirement. Preserve ordinary save duties, lease/ownership boundaries and stopped-session behavior; no arbitrary file editor or automatic host deployment.
+- Speaking, lifecycle presentation, boot/turn output and paired checks: close with `> READY {Folder}:` or `> READY {Folder} (background tasks running):`, after one blank line and without a closing divider. Opening header and response exceptions remain unchanged.
+
+### Project-State Migrations
+
+- Create missing `_Axis/Merges/` during startup/adoption without replacing existing journals or retirement state. Preserve it as project-owned state during future updates.
+- Supply absent `.gitkeep` retention files in existing Merges and coordination folders without changing their other contents or indexes.
+
+### Retired Paths
+
+- None.
+
+### Verification
+
+- Verify merge source/destination identities, preserved history and origins, exact approved payloads, interrupted recovery, retired-source write refusal and Git checkpoint/retention behavior. Recheck existing and new folder initialization, Memo link destinations and feedback form fidelity.
+
+- Verify all carried Tracking commands preserve multiword arguments. Verify shared-budget renewal against exhaustion, invalid grants, branch/stale authority, retained charges/reservations and archived history; confirm retained-lock hold/recovery boundaries and independently validated scheduled outputs; no automatic lock recovery claim.
+
+- Reproduce dirty old-checker refusals and qualify exact recovery with retained staged/unstaged edits, normal hooks and planted integrity failures; unknown checker bytes remain held.
+- Qualify checked-tool scope, expiry/lease, links, replay corruption/missing history, atomic creation and unavailable-host behavior. Verify both READY variants and no closing divider, retaining the opening header and exact-output exceptions.
 
 ## 3.03
 

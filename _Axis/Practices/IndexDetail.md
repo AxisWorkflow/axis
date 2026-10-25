@@ -18,6 +18,8 @@ This is not a formatting preference. The name is the record's identity: it sorts
 
 The name is also unique across the entire Project - no timestamp names two records, in any directory, live or archived - so a bare timestamp resolves in one `grep` from the project root. Mint every identifier per [Practices > Timestamps]; Subprojects are separate uniqueness domains.
 
+Memos share the timestamp uniqueness domain but remain outside the Index-Detail pattern: their names retain a subject after the timestamp under [Practices > Memos].
+
 Get the name right first, then write the content.
 
 ## How the Pattern Works

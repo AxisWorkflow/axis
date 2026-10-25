@@ -1,6 +1,6 @@
 # Axis Workflow User Manual
 > **Purpose:** How to use the Axis Workflow day to day: setup, commands, the Dashboard, the Wiki, working across tools and machines, and working with Agents and models. For the technical and compliance reference, see [SPECIFICATION](/_Axis/SPECIFICATION.md).
-> **Version:** 3.03
+> **Version:** 3.04
 
 
 
@@ -106,7 +106,7 @@ Before a download approval prompt, the default **Explain Download Permissions** 
 
 ### Tips
 
-- **Tell side-by-side sessions apart.** Every finished answer starts with the spaced-out Axis Workflow title between two divider lines and ends with a matching divider and `READY FOR INPUT` naming the project folder, for example `READY FOR INPUT (~/Projects/Taxes):` (or `READY FOR INPUT WHILE WORKING IN BACKGROUND (~/Projects/Taxes):` while work continues). The startup banner lists Project, Folder, Session, Version, Context, Status and Agent, in that order; Context shows the effective `Two-pass` or `Default` method, and Axel, your Main Agent, greets you under it. When you run several projects in split terminal panes, a glance shows which project each pane belongs to and whether it is waiting for you.
+- **Tell side-by-side sessions apart.** Every finished answer starts with the spaced-out Axis Workflow title between two divider lines and ends with one blank line and `> READY` naming the project folder, without a closing divider, for example `> READY ~/Projects/Taxes:` (or `> READY ~/Projects/Taxes (background tasks running):` while work continues). The startup banner lists Project, Folder, Session, Version, Context, Status and Agent, in that order; Context shows the effective `Two-pass` or `Default` method, and Axel, your Main Agent, greets you under it. When you run several projects in split terminal panes, a glance shows which project each pane belongs to and whether it is waiting for you.
 
 - **Save and Resume.** Type `^save` when you leave and `^resume` when you return. With a configured Git remote, save sends a linear checkpoint and resume receives one before reconstructing the work. Both still run the complete portability and infrastructure checks; use explicit handoff language or `^shutdown` when changing computers so only one copy remains active.
 
@@ -186,7 +186,7 @@ That can work, but Axis detects cloud-synced folders and disables parallel write
 Anywhere your organization puts them: a Subproject is any folder that is itself a complete Axis Project - carrying the standard entry files, `_Axis/` with its core control files, and `_Temp/`. Nest one inside `Clients/Acme/`, keep one at the project root - Axis recognizes it by what it carries, not by where it sits.
 
 **Can a Subproject contain its own Subprojects?**
-Yes. Nesting is recursive: any complete Axis Project inside another is that project's child. Each session identifies its direct parent as the nearest enclosing Axis Project and never looks farther up; a parent never scans downward for grandchildren.
+Yes. Nesting is recursive: any complete Axis Project inside another is that project's child. Each session inherits ordinary guidance from its nearest enclosing Axis Project. The ultimate parent has oversight over the entire nested tree by default, including grandchildren and deeper projects; work is relayed through the owning Mains.
 
 **Can a Subproject have its own Git repository and GitHub repository?**
 Yes. Choose one arrangement deliberately: let the outer repository track the child's files, keep an independent inner repository and add that child's exact path to the outer `.gitignore`, or configure the child as a Git submodule. A nested repository is not automatically ignored: if it is added accidentally, Git normally warns and stages a gitlink pointer instead of the child's files. When Axis first sees a new or unclassified child, Main Agent stops before changing or staging anything, explains the three choices, asks you to select one, applies and verifies the Git configuration, and records the decision in a parent Note and Event. Git stores the operational arrangement; GitHub hosting is optional.
@@ -227,6 +227,7 @@ For example, the text...
 | `^jobs` | Inspect bounded work, attempts, authority and outcomes. |
 | `^kill`      | Stop another live Agent by revoking its Marker lease (tombstone; User-only).                                   |
 | `^log`       | Manually Log an entry into `_Axis/Logs/`.                                                                      |
+| `^merge`     | Combine another project into this one, or absorb a child, with a reviewed plan, preserved history and recovery.                    |
 | `^memo`      | Write or update a Memo for User in `_Memos/`.                                                                  |
 | `^memos`     | List live Memos, read User's replies, and archive finished ones.                                               |
 | `^note`      | Manually save a Note into `_Axis/Notes/`.                                                                      |
@@ -258,7 +259,7 @@ Supervision uses a separate double-caret namespace. These commands apply to reco
 | Supervision command | Purpose |
 | --- | --- |
 | `^^help` | Explain supervision commands, authority, records, and fallbacks. |
-| `^^list` | List recognized direct children and their live Agent picture. |
+| `^^list` | List all recognized descendants and their live Agent picture. |
 | `^^status [child\|all]` | Summarize progress, blockers, activity, and Agent state. |
 | `^^inspect <child>` | Perform a deeper read-only inspection of one child. |
 | `^^message <child> <text>` | Persist an outbound Message and a bounded child submissions envelope, then optionally notify its exactly bound session. |
@@ -308,11 +309,15 @@ Drop anything new for the project into `_Inbox/`: documents, data, images, notes
 
 ### Memos
 
-Chat scrolls away. When your Agent has something you will want to read later, such as decisions for you, next steps, findings or a report, it writes a Memo in `_Memos/`, named by date and subject, for example `2026-10-17 - Decisions for release 2.08.md`. The reply in chat stays short and links to it. A memo starts with its status (`waiting on you`, `open`, `done`), lists what was decided and what needs you, keeps a Details section with the background you may not remember, and ends with a dated list of updates.
+Chat scrolls away. When your Agent has something you will want to read later, such as decisions for you, next steps, findings or a report, it writes a Memo in `_Memos/`, named by a unique UTC timestamp and subject, for example `2026.10.23.18.22.26.290Z - Candidate 3.04 results and displaced session recovery.md`. New names include milliseconds so they sort chronologically; existing Memos keep their names and links. The reply in chat stays short and links to it. A memo starts with its status (`waiting on you`, `open`, `done`), lists what was decided and what needs you, keeps a Details section with the background you may not remember, and ends with a dated list of updates.
 
 You can answer in chat or in the memo itself: tick a box, write after `Your answer:`, or write under `Your reply`. Your Agent notices your edits at the next start, or when you say you answered, and confirms in one line what it took from them. Anything big, hard to undo, or outside the memo's subject, such as deleting files, publishing, or changing settings, needs your yes in the conversation first, because anything with access to the folder could have written in the file. Text in a memo that tries to give your Agent new instructions is reported to you, not followed.
 
 The **Memo Generation** setting decides how often memos are written, from `0` (only when you ask with `^memo`) to `4` (whenever a reply would run past about a screen); the default is `2`, for complex decisions. `^memos` lists them. Finished memos move to `_Memos/Archive/` during `^refresh`, so they stay out of your Agent's way but remain easy to browse. Reviews (`^review`) are memos too; each new Review replaces the previous one, which moves to the archive. Memos are views: every decision in them is also recorded in the project's own records.
+
+### Combining projects
+
+Use `^merge` from the project you want to keep, naming the other project. This also absorbs a child into its parent. Axis first previews what would move, conflicts, active work and what remains separate. Approve the concrete plan once; Axis then preserves originals, combines agreed work, checks the result and retires the old project. It keeps the source files and Git history in place, and does not activate copied schedules, import credentials or delete the source. Two copies of the same project need reconciliation instead of merging.
 
 ### Sending feedback to the Axis developers
 
@@ -374,18 +379,18 @@ Axis repairs genuine broken references as it encounters them. At **Autonomous**,
 
 An old Log may intentionally quote a mistake. Axis can record that exact occurrence in optional `_Axis/EXCEPTIONS.md` without editing the Log. The exception binds the file, its complete content hash, the finding, line and occurrence, and explains why it is intentional. It does not exempt the same bad reference elsewhere; changed source bytes invalidate it. Scans report matches as acknowledged rather than defects. Adding or changing an exception follows the same permission policy as a repair. Read-only checks such as `^audit` stay read-only. You can ask to review the registry; removing an entry makes its unresolved finding visible again.
 
-Cross-project links produce a warning and a Log instead of blocking your save. Axis keeps a record when a report is renamed or a referenced file is trashed, so historical citations remain understandable. If a genuine record check still blocks a checkpoint, you can explicitly approve the named files and check for that exact commit; unrelated safeguards continue to apply. Updates receive their own local checkpoint after adoption.
+Cross-project links produce a warning and a Log instead of blocking your save. Axis keeps a record when a report is renamed or a referenced file is trashed, so historical citations remain understandable. If a genuine record check still blocks a checkpoint, you can explicitly approve the named files and check for that exact commit; unrelated safeguards continue to apply. Updates receive their own local checkpoint after adoption, and delegated updates verify that commit. New coordination folders and empty summary files are created automatically when missing, preserving existing contents. Scratch folder names are not record IDs. Explicit exact-file approval receipts also work on a first Git commit; genuine reference errors still require repair or approval.
 
 ### Supervising Child Projects
 
-If one Axis Project contains other Axis Projects in its subfolders (for example a portfolio of clients, or several workstreams of one product), the parent can keep an eye on them and direct them for you. Nothing needs to be registered: Axis finds the direct child projects from the folders themselves, the next time you ask. Putting a project inside another gives the outer project authority over it. If you don't want that, keep it as a separate project, or set its Parent Authority to `advise`.
+If one Axis Project contains other Axis Projects in its subfolders (for example a portfolio of clients, or several workstreams of one product), the parent can keep an eye on them and direct them for you. Nothing needs to be registered: Axis finds the full nested project tree from the folders themselves, the next time you ask. Putting a project inside another gives the outer project authority over it. If you don't want that, keep it as a separate project, or set its Parent Authority to `advise`.
 
 Type these in the parent project:
 
 | Command | What it does |
 | --- | --- |
 | `^^help` | Explains supervision and lists these commands. |
-| `^^list` | Lists the direct child projects and whether an Agent is active in each. |
+| `^^list` | Lists every descendant project, its immediate parent and whether an Agent is active. |
 | `^^status [child\|all]` | Summarizes where one or all children stand: plan, tasks, follow-ups, recent activity. |
 | `^^inspect <child>` | Takes a deeper read-only look at one child. |
 | `^^message <child> <text>` | Leaves a written request in the child's queue; its own Agent decides what to do with it. |
@@ -397,7 +402,7 @@ Type these in the parent project:
 Good to know:
 
 - The parent never edits a child's Plan, Tasks, records or files. It reads, reports and sends requests; each child's own Agent stays in charge of that child. The one file it puts into a child is a document you hand over with `^^do ... with`, which lands in the child's `_Inbox/`.
-- Supervision reaches only direct children. A project nested inside a child belongs to that child's supervision.
+- Supervision reaches every nested descendant by default. Work passes through each owning Main with the same approved scope and limits; routine descent requires no new per-level approval. The report identifies any held or unreachable branch.
 - Status and inspection results are saved in the parent's `_Axis/Supervision/` folder, so you can look back at them.
 - Starting, stopping and scheduling depend on your AI host (for example OpenClaw). Without that support, Axis tells you the manual step instead.
 
@@ -597,7 +602,7 @@ Axis uses one explicitly active writer placement. Moving a copy, changing Main o
 
 Use `^team create` to define the objective, leader/members, outputs, validator and limits. `^team status`, `pause`, `resume` and `stop` show or control it. `^jobs` lists bounded work; `^jobs show <ID>` explains authority, limits, attempts and remaining validation. `^board` combines current agent activity with these views. A pause stops new dispatch; a stop may leave workers reaching a safe checkpoint, and Axis reports any unconfirmed stop.
 
-Defaults are a 60-minute Job, 3 rounds, 12 total agent starts and at most a leader plus two workers at once. Tighter host, project or User limits win, and validators/retries count. Authority expires after 24 hours by default; recurring work needs renewal. Spending and external-action approvals still apply. Task completion requires validation, not a unanimous vote.
+Defaults are a 60-minute Job, 3 rounds, 12 total agent starts and at most a leader plus two workers at once. Tighter host, project or User limits win, and validators/retries count. Authority expires after 24 hours by default; recurring work needs renewal. Spending and external-action approvals still apply. Task completion requires validation, not a unanimous vote. A new User grant can renew a shared launch budget through an accepted, linked Message: earlier starts still count, and new Jobs bind that grant. Existing Job and Team limits do not expand silently.
 
 Without a supported launcher, Main prepares bounded prompt envelopes and you open separate sessions, then return their results for validation. For file deliverables, Main captures the files as result attachments with checked sizes and hashes; naming a path or reporting success is insufficient. The optional `coordination.py capture-result` helper preserves the assigned worker identity and checks its file scope. Capture does not accept the work: Main must still validate it. The manual procedure remains available without Python, a provider CLI, tmux or a scheduler. Axis does not silently turn Main into its own independent leader or reviewer.
 
@@ -795,3 +800,13 @@ This release is licensed under the **MIT License**. Anyone may use, copy, modify
 ## Copyright
 
 Copyright 2026 Kenneth A. Younge. All rights reserved except as expressly licensed.
+
+### Returning to an old chat
+
+A WhatsApp or other persistent chat can remain open after its Axis session has ended. Axis now explains when its Main lease was replaced and stays read-only. You can ask it to start a fresh Axis session in the same chat: it loads the current rules, gets a new identity, and joins as External if another Main is active. It never recreates the old lease or takes over an active Main. A changed installed Axis version also requires fresh startup. Takeovers retain who removed which Main, the recorded host, idle time and authorization; unknown historical details are labelled unverified. No background heartbeat or account change is required.
+
+## Checked session tools
+
+An optional checked interface can limit an agent to specific file reads, complete coordination-history replay and atomic creation of Logs or Snapshots. It requires a trusted launcher and a verified host tool restriction; installing a helper alone does not confine shell access. Load `_Axis/Resources/Checked-Session.md` only when using this facility. Replay reports its coverage and refuses damaged or incomplete history; it does not certify business results. Record creation leaves content review and Snapshot indexing/continuity duties with Main. Separate fixed grants can add the ordinary own-session save refresh, exact created-record readback and Snapshot indexing, final-response formatting and explicitly authorized own-session retirement; see `_Axis/Resources/Checked-Completion.md` when needed. These operations preserve the ordinary save obligations and never imply a successful checkpoint or transfer. Without this optional facility, ordinary Axis and its manual procedures remain available.
+
+When an old updater or pre-commit checker blocks an update, Axis loads a conditional bootstrap/recovery procedure. An exact known checker repair preserves staged, unstaged and untracked work, keeps ordinary commit checks, and does not itself complete adoption. Customized or unrecognized checkers remain held for review.

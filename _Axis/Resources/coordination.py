@@ -169,6 +169,12 @@ def _envelope(record):
     issuer = record.get('issuer')
     need(isinstance(issuer, dict) and issuer.get('role') in {'main', 'worker'}, 'issuer')
     identity(issuer.get('session'))
+    if 'budget_amendment' in record:
+        if record['family'] == 'Jobs': identity(record['budget_amendment'])
+        else:
+            need(record['family'] == 'Messages' and isinstance(record['budget_amendment'], dict), 'budget-amendment-shape')
+            key = record['budget_amendment'].get('budget_key')
+            need(isinstance(key, str) and 0 < len(key.encode()) <= 249 and '\n' not in key, 'budget-key')
     if record['family'] == 'Messages':
         need(record.get('kind') in MESSAGE_KINDS, 'message-kind')
         need(isinstance(record.get('body'), str) and len(record['body'].encode()) <= MAX_BODY, 'message-body')
@@ -934,7 +940,7 @@ class Store:
 
     def _archive_paths(self, family):
         """Only record directories: canonical families and flat legacy year folders."""
-        need(family in FAMILIES, 'family', family)
+        need(family in _START.FAMILIES, 'family', family)
         try:
             archive, external = _START.archive_root(self.io)
         except (OSError, _START.Fault):
@@ -1005,23 +1011,26 @@ class Store:
         need(len(matches) == 1, 'record-missing', ident)
         return matches[0]
 
+    def _authority_bytes(self, reference):
+        reference = relative(reference)
+        path = self.path(reference, missing=True)
+        if not path.exists() and _START.ID.fullmatch(Path(reference).stem):
+            family = Path(reference).parent.name
+            need(Path(reference).parent.as_posix() == '_Axis/' + family and family in _START.FAMILIES, 'authority-missing', reference)
+            self.require_history()
+            candidates = [p for p, _ in self._archive_paths(family) if p.name == Path(reference).name]
+            need(len(candidates) == 1, 'authority-missing-or-ambiguous', reference)
+            path = candidates[0]
+        fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
+        try: return _START.read_fd(fd, reference, MAX_RECORD)
+        finally: os.close(fd)
+
     def validate_authority(self, authority, live=True):
         need(isinstance(authority, dict), 'authority')
         value = copy.deepcopy(authority)
-        reference = relative(value.get('ref'))
         expires = timestamp(value.get('expires'))
-        path = self.path(reference, missing=True)
-        if not path.exists() and _START.ID.fullmatch(Path(reference).stem):
-            # Historic source links can move into the in-project Archive.
-            archive = self.path('_Axis/Archive', kind='directory')
-            candidates = list(archive.rglob(Path(reference).name))
-            need(len(candidates) == 1, 'authority-missing', reference)
-            reference = candidates[0].relative_to(self.root).as_posix(); path = self.path(reference)
-        fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
-        try: raw = _START.read_fd(fd, reference, MAX_RECORD)
-        finally: os.close(fd)
-        actual = digest(raw)
-        need(value.get('digest', actual) == actual, 'authority-changed', reference)
+        actual = digest(self._authority_bytes(value.get('ref')))
+        need(value.get('digest', actual) == actual, 'authority-changed', value.get('ref'))
         value['digest'] = actual
         if live: need(self.now() < expires, 'authority-expired')
         return value
@@ -1146,9 +1155,94 @@ class Store:
         elif action == 'round':
             need(rounds < team['limits']['rounds'], 'team-round-limit')
 
+    def budget_state(self, budget_key, jobs=None, messages=None):
+        """Replay accepted renewals without resetting any historical launch charge."""
+        need(isinstance(budget_key, str) and 0 < len(budget_key.encode()) <= 249 and '\n' not in budget_key, 'budget-key')
+        jobs = self.records('Jobs') if jobs is None else jobs
+        messages = self.records('Messages') if messages is None else messages
+        matching = [r for r in jobs if r.get('budget_key', r['authority']['digest']) == budget_key]
+        original = [r for r in matching if r.get('budget_amendment') is None]
+        caps = [r['limits']['aggregate_launches'] for r in original if 'aggregate_launches' in r['limits']]
+        amendments = [r for r in messages if isinstance(r.get('budget_amendment'), dict) and r['budget_amendment'].get('budget_key') == budget_key]
+        need(not amendments or caps, 'budget-baseline-missing')
+        limit = min(caps) if caps else None
+        head = None; chain = {}; used_authority = {r['authority']['digest'] for r in original}
+        remaining = list(amendments)
+        while remaining:
+            children = [r for r in remaining if r['budget_amendment'].get('predecessor') == head]
+            need(len(children) == 1, 'budget-branch-or-gap')
+            record = children[0]; _accepted(record)
+            value = record['budget_amendment']
+            need(set(value) == {'budget_key', 'predecessor', 'previous_limit', 'aggregate_launches'}, 'budget-amendment-shape')
+            need(record['kind'] == 'control' and record.get('event') is None and record.get('job') is None and record.get('team') is None and record['recipient'] == 'budget:' + budget_key and record['correlation'] == 'budget:' + budget_key, 'budget-amendment-shape')
+            cap = _integer(value['aggregate_launches'], 'aggregate_launches', 1)
+            need(value['previous_limit'] == limit and cap > limit, 'budget-amendment-limit')
+            authority = self.validate_authority(record.get('authority'), live=False)
+            need(authority['digest'] not in used_authority and record['expires'] == authority['expires'], 'budget-amendment-authority')
+            self._budget_approval(authority, budget_key, head, limit, cap)
+            used_authority.add(authority['digest']); head = record['id']; limit = cap
+            chain[head] = record; remaining.remove(record)
+        for record in matching:
+            ref = record.get('budget_amendment')
+            if ref is not None:
+                need(ref in chain and record['authority'] == chain[ref]['authority'], 'budget-amendment-binding')
+                need('aggregate_launches' in record['limits'] and record['limits']['aggregate_launches'] <= chain[ref]['budget_amendment']['aggregate_launches'], 'budget-amendment-limit')
+        return {'budget_key': budget_key, 'head': head, 'aggregate_launches': limit, 'amendments': chain}
+
+    def _budget_approval(self, authority, key, predecessor, previous, total):
+        reference = authority['ref']
+        need(Path(reference).parent.as_posix() == '_Axis/Logs' and _START.ID.fullmatch(Path(reference).stem) and reference.endswith('.md'), 'budget-authority-log')
+        data = self._authority_bytes(reference)
+        need(digest(data) == authority['digest'], 'authority-changed', reference)
+        raw = data.decode('utf-8')
+        fields = {'coordination-budget-key': key, 'coordination-budget-predecessor': predecessor or 'initial',
+                  'coordination-budget-previous-limit': str(previous), 'coordination-budget-total-limit': str(total),
+                  'coordination-budget-expires': authority['expires']}
+        for label, value in fields.items():
+            need([line for line in raw.splitlines() if line.startswith(label + ':')] == [label + ': ' + value], 'budget-approval-binding')
+
+    def amend_budget(self, budget_key, predecessor, aggregate_launches, authority):
+        with self.locked():
+            self.require_placement(); self.require_history()
+            state = self.budget_state(budget_key)
+            need(state['aggregate_launches'] is not None and predecessor == state['head'], 'budget-predecessor')
+            cap = _integer(aggregate_launches, 'aggregate_launches', 1)
+            need(cap > state['aggregate_launches'], 'budget-amendment-limit')
+            approval = self.validate_authority(authority)
+            self._budget_approval(approval, budget_key, predecessor, state['aggregate_launches'], cap)
+            prior = {r['authority']['digest'] for r in self.records('Jobs') if r.get('budget_key', r['authority']['digest']) == budget_key}
+            prior.update(r['authority']['digest'] for r in state['amendments'].values())
+            need(approval['digest'] not in prior, 'budget-amendment-authority')
+            payload = {'subject': 'Shared budget renewal: ' + budget_key[:50], 'kind': 'control', 'recipient': 'budget:' + budget_key,
+                       'body': 'Main accepted the bound User grant. Historical launches remain charged; Job and Team limits and expiry remain unchanged.',
+                       'team': None, 'job': None, 'correlation': 'budget:' + budget_key, 'epoch': 0, 'data': {},
+                       'expires': approval['expires'], 'authority': approval,
+                       'budget_amendment': {'budget_key': budget_key, 'predecessor': predecessor,
+                                            'previous_limit': state['aggregate_launches'], 'aggregate_launches': cap}}
+            return self._record('Messages', payload)
+
+    def _budget_caps(self, mandate, jobs, messages, admission=False):
+        budget = mandate.get('budget_key', mandate['authority']['digest'])
+        state = self.budget_state(budget, jobs, messages)
+        ref = mandate.get('budget_amendment')
+        if admission and state['head'] is not None:
+            need(ref == state['head'], 'budget-amendment-binding')
+        if ref is not None:
+            need(ref in state['amendments'] and (not admission or ref == state['head']), 'budget-amendment-binding')
+            record = state['amendments'][ref]
+            authority = self.validate_authority(record['authority'])
+            need(mandate['authority'] == authority, 'budget-amendment-binding')
+            cap = mandate['limits'].get('aggregate_launches')
+            need(type(cap) is int and cap <= record['budget_amendment']['aggregate_launches'], 'budget-amendment-limit')
+            return [cap] + [r['limits']['aggregate_launches'] for r in jobs
+                            if r.get('budget_key', r['authority']['digest']) == budget and r.get('budget_amendment') == ref]
+        # Existing mandates retain their old shared cap; renewal never silently extends them.
+        return [r['limits']['aggregate_launches'] for r in [mandate, *jobs]
+                if r.get('budget_key', r['authority']['digest']) == budget and r.get('budget_amendment') is None and 'aggregate_launches' in r['limits']]
+
     def _reserve_admission(self, mandate, jobs, messages):
         budget = mandate.get('budget_key', mandate['authority']['digest'])
-        caps = [mandate['limits']['aggregate_launches']] if 'aggregate_launches' in mandate['limits'] else []
+        caps = self._budget_caps(mandate, jobs, messages, admission=True)
         spent = reserved = 0
         teams = self.records('Teams')
         for record in jobs:
@@ -1158,7 +1252,6 @@ class Store:
             spent += view['launches']
             if view['state'] not in TERMINAL:
                 reserved += _remaining_reservation(record, view)
-            if 'aggregate_launches' in record['limits']: caps.append(record['limits']['aggregate_launches'])
         if caps:
             need(spent + reserved + mandate['reservation_launches'] <= min(caps), 'aggregate-reservation')
 
@@ -1376,8 +1469,8 @@ class Store:
         configured = self.io.setting('Max Concurrent Sessions')
         project_cap = int(configured) if isinstance(configured, str) and configured.isascii() and configured.isdigit() and 1 <= int(configured) <= 100 else 10
         concurrency_limits = [max(0, project_cap - 1), founding['limits'].get('aggregate_concurrency', founding['limits']['concurrency'])]
-        launch_limits = []
-        if 'aggregate_launches' in founding['limits']: launch_limits.append(founding['limits']['aggregate_launches'])
+        jobs = self.records('Jobs')
+        launch_limits = self._budget_caps(founding, jobs, messages)
         for record in self.records('Jobs'):
             state = project_records(record, messages)
             need(not state['held'], 'capacity-held')
@@ -1388,7 +1481,6 @@ class Store:
                 if state['state'] not in TERMINAL:
                     if record['id'] != founding['id']: reserved += _remaining_reservation(record, state)
                     elif dispatch.get('purpose') not in {'validation', 'checkpoint', 'report'}: reserved += _report_reserve(record, state)
-                if 'aggregate_launches' in record['limits']: launch_limits.append(record['limits']['aggregate_launches'])
             if state['state'] not in TERMINAL:
                 concurrency_limits.append(record['limits'].get('aggregate_concurrency', record['limits']['concurrency']))
         need(active < min(concurrency_limits), 'aggregate-concurrency')
@@ -1400,6 +1492,9 @@ class Store:
             all_records = {family: self.records(family) for family in FAMILIES}
             ids = [r['id'] for records in all_records.values() for r in records]
             need(len(ids) == len(set(ids)), 'record-collision')
+            budgets = {r.get('budget_key', r['authority']['digest']) for r in all_records['Jobs']}
+            budgets.update(r['budget_amendment'].get('budget_key') for r in all_records['Messages'] if isinstance(r.get('budget_amendment'), dict))
+            for budget in budgets: self.budget_state(budget, all_records['Jobs'], all_records['Messages'])
             for family in ('Teams', 'Jobs'):
                 for record in all_records[family]:
                     state = project_records(record, all_records['Messages'], all_records['Teams'])
@@ -1480,7 +1575,7 @@ def main(argv=None):
     activation.add_argument('--expires')
     listing = sub.add_parser('list'); listing.add_argument('family', choices=FAMILIES)
     projection = sub.add_parser('project'); projection.add_argument('family', choices=['Teams', 'Jobs']); projection.add_argument('id')
-    for name in ('team', 'admit', 'message', 'event', 'disposition', 'capture-result'):
+    for name in ('team', 'admit', 'message', 'event', 'disposition', 'capture-result', 'amend-budget'):
         command = sub.add_parser(name); command.add_argument('--input', default='-')
     args = parser.parse_args(argv)
     try:
@@ -1500,7 +1595,8 @@ def main(argv=None):
             need(len(raw.encode()) <= MAX_RECORD, 'input-size')
             value = json.loads(raw, object_pairs_hook=_unique_pairs)
             need(isinstance(value, dict), 'input-object')
-            if args.command == 'team': result = store.create_team(value)
+            if args.command == 'amend-budget': result = store.amend_budget(**value)
+            elif args.command == 'team': result = store.create_team(value)
             elif args.command == 'admit': result = store.admit_job(value['mandate'], value['operation_key'])
             elif args.command == 'message': result = store.message(**value)
             elif args.command == 'disposition': result = store.disposition(**value)

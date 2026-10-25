@@ -106,6 +106,7 @@ def rule(root,path):
     family=parts[1]
     if family=='Archive':return 'archived history is write-once'
     if family=='Updates':return None if parts[-1]=='operation.lck' else 'update evidence is write-once'
+    if family=='Merges':return 'merge history is write-once and retained'
     if family in WORM and (family not in ('Teams','Messages','Jobs') or len(parts)==3):return WORM[family]+' are write-once'
     if family in ('Tasks','Followups','Reminders') and len(parts)==3:
         data=git(root,'show','HEAD:'+path)
@@ -490,7 +491,7 @@ def approved_paths(root,check):
     return approved
 
 def approval_receipt(root,session,check,paths,reason,user_words):
-    if check not in ('write-once','links') or not exact_repo(root) or not has_head(root):raise ValueError('override requires an existing project repository and named record check')
+    if check not in ('write-once','links') or not exact_repo(root):raise ValueError('override requires a project repository and named record check')
     if not reason.strip() or not user_words.strip() or not paths:raise ValueError('record the reason and actual User approval words')
     bindings=[]
     for path in sorted(set(paths)):
@@ -498,7 +499,7 @@ def approval_receipt(root,session,check,paths,reason,user_words):
         before,after=blob_digest(root,'HEAD',path),blob_digest(root,'',path)
         if before==after:raise ValueError('override requires an exact changed staged file: '+path)
         bindings.append({'path':path,'before_sha256':before,'after_sha256':after})
-    return save_receipt(root,session,{'schema':1,'kind':'override','head':git(root,'rev-parse','HEAD').decode().strip(),'check':check,'paths':bindings,'reason':reason,'user_words':user_words})
+    return save_receipt(root,session,{'schema':1,'kind':'override','head':(git(root,'rev-parse','--verify','HEAD') or b'').decode().strip(),'check':check,'paths':bindings,'reason':reason,'user_words':user_words})
 
 def warning_receipt(root,session,lines):
     warnings=[line for line in lines if line.split(' ',1)[0] in WARNING_KINDS]
@@ -644,6 +645,9 @@ def scan(root,arch,known,names,f,text,rel,exists=None):
         for start,end,target in foreign:
             bare=bare[:start]+' '*(end-start)+bare[end:]
             if target not in emitted:out.append(('EXTERNAL-LINK',i,target,worm));emitted.add(target)
+        # Scratch path components are file names, not record references. Mask only that span;
+        # a bare identifier beside it and ordinary Markdown destination checks still apply.
+        bare=re.sub(r"(?<![\w])_Temp/[^\s`<>\[\]()\"']+",lambda m:' '*len(m[0]),bare)
         for m in NEAR.finditer(bare):
             tok=m.group(0).rstrip('.:');full=IDENT.match(tok)
             if not full:
@@ -807,7 +811,8 @@ def write_once(root):
         if old and git(root,'rev-parse','HEAD:'+old)!=git(root,'rev-parse',':'+path):entries.append(('R000',old,path))
     overrides=approved_paths(root,'write-once');refused=[]
     for status,path,new in entries:
-        if status[:1] in 'MT':why=rule(root,path);label=path
+        if path.startswith('_Axis/Merges/') and status[:1] in 'DR':why=rule(root,path);label=path+(' -> '+new if new else '')
+        elif status[:1] in 'MT':why=rule(root,path);label=path
         elif status[:1]=='R' and status!='R100':why=rule(root,path);label=path+' -> '+new;why=why and why+' (renamed with changes)'
         else:continue
         if why and path not in exempt and not (path in overrides and (new is None or new in overrides)):refused.append('WRITE-ONCE '+label+': '+why)

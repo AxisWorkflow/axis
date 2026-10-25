@@ -14,7 +14,7 @@ session: {Session ID}
 host: {nonempty host}
 ```
 
-Claim-Session exclusively creates and reads back this shape before Start-Session. It is never a lease-repair recipe.
+Claim-Session creates and verifies this shape before Start-Session; never use it for lease repair.
 
 ## Liveness
 
@@ -26,11 +26,11 @@ An ordinary host close leaves a Marker to age out. Successful `^shutdown` or ver
 
 READ your own Marker and check its tombstone at every turn start and immediately before every shared write or lock/identifier claim. Judge the read, THEN renew its `mtime` as a SEPARATE action. Never chain renewal to the read or use a bare `touch`: renewal never creates a Marker. The entry executes this for both Main's banner and External's minted boot record. Lock-File and Timestamps own their pre-write checks, including append-only records that take no file lock.
 
-- A tombstone means KILLED: Log one final Event, append final Tracking, tell User on your surface and stop permanently. Later messages receive one line, no further writes.
+- A tombstone means KILLED: make no file writes, tell User on your surface and stop this Axis identity permanently.
 - Idle is not lost: an own Marker that is stale but present, with no tombstone, no live foreign Main and (for Main) `session-id` still naming this session, is renewed on the next turn with a one-line notice. If another Main started meanwhile, the session is taken over: no shared writes; tell User.
-- A Marker missing WITHOUT a tombstone means lost lease: stop writing and ask User this turn; never recreate it on your own. On User's word re-register it, each time it happens; say so if it keeps disappearing.
+- A Marker missing WITHOUT a tombstone means lost lease: stop all writes and follow [Displaced-Session]. Never re-register the old ID; never recreate it to continue. User may request a fresh Axis session through full admission; the old identity stays retired.
 - A renewal refused by a read-only host (sandbox or file system) is not a lost lease: make no shared writes, never create or repair a Marker, and ask User to rerun with write access.
 - Inside a long turn, renew about every 30 minutes.
 - Only sender-verified User `^kill` writes tombstones. Graceful self-exit uses `^shutdown`. `^refresh` silently removes tombstones older than 1 hour.
 
-Only the qualified startup-state.py record operations may combine programmatic read/judgment with renewal of the validated existing file descriptor; `turn.py` renews only a checked, existing path. Check exact content, inode and tombstone before and after; this cannot create a missing pathname. Turn-start Agent renewal stays SEPARATE.
+The qualified startup-state.py record operations and `turn.py` may renew the validated existing file descriptor after programmatic read/judgment. Check exact content, inode and tombstone before and after; this cannot create a missing pathname. Turn-start Agent renewal stays SEPARATE.

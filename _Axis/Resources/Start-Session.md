@@ -1,5 +1,5 @@
 # Start Session
-> **Purpose:** Start a session. Called by Cowork / Claude Code / Cursor / etc. at the start of the root session. To be used by the Main Agent (and ONLY the Main Agent) to start a new session; NOT to be followed by Subagents of any form.
+> **Purpose:** Start a new Main Agent session after admission. Subagents never follow this file.
 
 Admission prerequisite: [Claim-Session] must have succeeded. Before every startup write, verify the retained admission `OWNER` token (or the still-exclusive confirmed maintenance window). On loss, STOP without another write or success output. Never reacquire a missing claim inside this boot.
 
@@ -20,7 +20,7 @@ Perform every step SILENTLY, except higher-priority host-required progress or lo
 Use the complete contracts already loaded in Step 1 for Logs, Tracking, Detect-Capabilities and Settings; read only missing, incomplete or no-longer-current instruction text before use. Their full contracts apply. This consumes the completed load, not a second read requirement. Use the exact shapes below and retain every minted Log path for exact Step3 readback.
 
 - Main Marker `_Axis/Agents/{Session ID}.md`: exactly [Practices > Markers > Main Marker Shape]. The owning record operation must never create, overwrite, or recreate it after admission. Immediately re-read the exact path and verify all four lines and no tombstone. Main Markers are refreshed on every served turn under The Lease.
-- Read Tracking from `_Axis/SETTINGS.md`. Unless it is `off`, append exactly `{current UTC timestamp} - {Session ID} - Session start` to `_Axis/Tracking/{Session ID}.md`. At `off`, no Tracking file is required.
+- Read Tracking from `_Axis/SETTINGS.md`. Unless it is `off`, append exactly `{current UTC timestamp} - {Session ID} - Session start` to `_Axis/Tracking/{Session ID}.md`, followed by `{current UTC timestamp} - {Session ID} - STATUS [session] Axis boot version: {verified installed current-version}`. At `off`, no Tracking file is required.
 - Startup Logs use the normal project-unique timestamp mint and WORM rules, with these exact contents:
 
 ```
@@ -35,6 +35,7 @@ Session Started
 
 by: Main Agent
 session: {Session ID}
+axis-version: {verified installed current-version}
 ```
 
 - Capability Flags are exactly `model`, `host-spawn`, `host-parallel`, `host-shell`, `host-local-llm`, `host-cloud-sync`, and `host-storage`. Line 1 is a nonblank value other than `cleared` for `model`; exactly `yes` or `no` for the five boolean `host-*` Flags; and exactly `atomic`, `serialized`, or `unknown` for `host-storage`. Line 2 is a valid UTC timestamp written during this boot (not earlier than the Session ID and not later than current UTC). All seven are rewritten this boot - an old well-shaped Flag does not count. `host-local-llm` has the probed working base URL on Line 3 only when Line 1 is `yes`; when `no`, it has exactly two lines. Every other Capability Flag has exactly two lines.
@@ -63,7 +64,7 @@ Before item 6, follow `_Axis/Resources/Check-Update-Handoff.md` in `consume` pha
 
 6. Quietly load [Practices > Portability > Optional Environment Signature]. Normalize the current harness class, OS class, interaction class (`interactive`, `headless`, `channel`, or `unknown`), and storage profile. When permitted, read `~/.axis/instance-id`; if absent, create its parent directory and write/read back one standard Axis timestamp once. Read the old project-local `_Axis/Flags/environment-binding` before changing it. Missing/malformed binding, an external-ID mismatch, or a changed normalized field triggers [Practices > Portability > Environment-Change Validation], including the bounded latest-Continuity delta and infrastructure revalidation; it never becomes a full `^resume`. After that validation completes without a hard safety failure, write/read back the current binding in its exact six-line shape. Never expose or copy the opaque ID into tracked state, Snapshots, Logs, Tracking, Dashboard, or output. If either local location is inaccessible, continue without rewriting the binding, classify the signature as unavailable, and queue one concise unverified notice; the signature never blocks startup.
 
-7. Quietly read [Manifest] and confirm no missing folders or files listed there. If a folder or file is missing, queue a one-line notice naming each missing item and deliver it with the greeting.
+7. Quietly, under owned admission, create missing plain `_Axis/Merges/` and empty `.gitkeep`; preserve existing state; hold spelling/link collisions. Follow [Practices > Merging], recovering incomplete destination transactions before unrelated work. Read [Manifest]; queue a greeting notice naming every missing listed file or folder.
 
 8. Quietly read `_Axis/PROJECT.md` for context; `{{` placeholders mean it remains a template for [Start-Project]. Read `_Axis/Flags/starting` and verify your admitted identity and owner before separately refreshing its `mtime`; missing state stops, never recreates it.
 

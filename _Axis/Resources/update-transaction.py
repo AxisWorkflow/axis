@@ -27,8 +27,8 @@ DECLARABLE=r'_Axis/[A-Z][A-Z0-9_-]*(?:\.md)?'
 DECLARABLE_DIR=r'_Axis/[A-Z][A-Za-z0-9_-]*/'
 # 2.01 two-step update: step one installs only these updater files (installed engine), so step two can be planned and
 # applied by the new release's updater in the same ^update. Step one changes no project state and no boot doctrine.
-UPDATER_FILES=('_Axis/Resources/update-transaction.py','_Axis/Commands/update.md','_Axis/Resources/Check-Update-Handoff.md')
-STATE_DIRS=('Agents','Archive','Audit','CX','Flags','Followups','Ideas','Logs','Notes','Reminders','Requests','Teams','Messages','Jobs','Schedules','Submissions','Reviews','Secrets','Snapshots','Status','Supervision','Tasks','Tracking','Updates','Wiki')
+UPDATER_FILES=('_Axis/Resources/update-transaction.py','_Axis/Commands/update.md','_Axis/Resources/Check-Update-Handoff.md','_Axis/Resources/record-check.py')
+STATE_DIRS=('Agents','Archive','Audit','CX','Flags','Followups','Ideas','Logs','Notes','Reminders','Requests','Teams','Messages','Jobs','Schedules','Submissions','Reviews','Secrets','Snapshots','Status','Supervision','Tasks','Tracking','Updates','Merges','Wiki')
 
 def require(v,m):
     if not v:raise ValueError(m)
@@ -402,6 +402,23 @@ def operation(root):
         yield
     finally:os.close(fd)
 
+def merge_clear(root):
+    # Inspect data only: updater-only bootstrap must not execute a target merge engine.
+    for name in ('_Axis/Flags/merge-pending','_Axis/Merges/retired.json'):
+        q=safe(root,name);require(not os.path.lexists(q),'finish the merge before updating; retired sources cannot update')
+    folder=safe(root,'_Axis/Merges')
+    if not folder.exists():return
+    require(folder.is_dir(),'invalid merge journal folder');entries=list(folder.iterdir());require(len(entries)<=1000,'merge journal bound')
+    for item in entries:
+        if item.name=='.gitkeep':continue
+        require(re.fullmatch(ID,item.name),'invalid merge journal identity');tx=safe(root,'_Axis/Merges/'+item.name);require(tx.is_dir(),'invalid merge journal')
+        terminal=0
+        for name,field in (('aborted.json','restored'),('retired.json','source_preserved')):
+            q=safe(root,'_Axis/Merges/'+item.name+'/'+name)
+            if q.exists():
+                require(q.stat().st_size<=4096,'oversized merge receipt');value=parse(read(q));require(value.get('schema')==1 and value.get('transaction')==item.name and value.get(field) is True,'invalid merge receipt');terminal+=1
+        require(terminal==1,'finish incomplete or conflicting merge before updating')
+
 def main():
     p=argparse.ArgumentParser();p.add_argument('action',choices=('classify','prepare','apply','inspect','rollback','release','finish-updater','begin-reconcile','consume','compact'));p.add_argument('--root',required=True);p.add_argument('--plan');p.add_argument('--session');p.add_argument('--transaction');p.add_argument('--token');p.add_argument('--fault');p.add_argument('--reconciliation');a=p.parse_args();root=Path(a.root).absolute();require(root==root.resolve() and root.is_dir(),'canonical root required')
     def localarg(name):
@@ -409,7 +426,7 @@ def main():
     if a.action in ('classify','prepare'):plan=parse(read(localarg(a.plan)))
     if a.action=='classify':print(json.dumps(classification(plan),sort_keys=True));return
     if a.action=='inspect':print(json.dumps(inspect(root),sort_keys=True));return
-    require(a.session and a.transaction,'session and transaction required');lease(root,a.session,a.action in ('begin-reconcile','consume'))
+    merge_clear(root);require(a.session and a.transaction,'session and transaction required');lease(root,a.session,a.action in ('begin-reconcile','consume'))
     with operation(root):
         lease(root,a.session,a.action in ('begin-reconcile','consume'))
         if a.action=='prepare':

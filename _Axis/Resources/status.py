@@ -179,12 +179,22 @@ def collect(root, detail):
     return data
 
 
-MEMO = re.compile(r'^(\d{4}-\d\d-\d\d) - (.+)\.md$')
+MEMO = re.compile(r'^(\d{4}-\d\d-\d\d|\d{4}(?:\.\d{2}){5}\.\d{3}Z) - (.+)\.md$')
 
 
 def memo_date(name):
     m = MEMO.match(name)
-    return dt.datetime.strptime(m.group(1), '%Y-%m-%d').astimezone() if m else None
+    if not m:return None
+    try:
+        value=m.group(1)
+        return (dt.datetime.strptime(value,'%Y.%m.%d.%H.%M.%S.%fZ').replace(tzinfo=dt.timezone.utc)
+                if value.endswith('Z') else dt.datetime.strptime(value,'%Y-%m-%d').astimezone())
+    except ValueError:return None
+
+
+def memo_order(path):
+    date=memo_date(path.name)
+    return (date.timestamp() if date else float('-inf'),path.name)
 
 
 def review_memos(root):
@@ -193,8 +203,8 @@ def review_memos(root):
     for d in ('_Memos', '_Memos/Archive'):
         p = root / d
         if p.is_dir() and not p.is_symlink():
-            out += sorted((f for f in p.iterdir() if f.is_file() and MEMO.match(f.name) and ' - Review - ' in f.name), key=lambda f: f.name, reverse=True)
-    return sorted(out, key=lambda f: f.name[:10], reverse=True)
+            out += sorted((f for f in p.iterdir() if f.is_file() and memo_date(f.name) is not None and ' - Review - ' in f.name), key=lambda f: f.name, reverse=True)
+    return sorted(out, key=memo_order, reverse=True)
 
 
 def waiting_memos(root):
@@ -203,8 +213,8 @@ def waiting_memos(root):
     if not p.is_dir() or p.is_symlink():
         return []
     out = []
-    for f in sorted(p.iterdir(), key=lambda f: f.name, reverse=True):
-        if f.is_file() and MEMO.match(f.name) and re.search(r'^- \*\*Status:\*\* waiting on you\s*$', read(f)[:2000], re.M):
+    for f in sorted(p.iterdir(), key=memo_order, reverse=True):
+        if f.is_file() and memo_date(f.name) is not None and re.search(r'^- \*\*Status:\*\* waiting on you\s*$', read(f)[:2000], re.M):
             out.append(f.name[:-3])
     return out
 

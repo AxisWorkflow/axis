@@ -1,6 +1,8 @@
 # Subprojects
 > **Purpose:** Define Subproject recognition, ownership, inheritance, and how a parent's Agents may interact with a child project.
 
+A source with a valid canonical `_Axis/Merges/retired.json` matching its project identity is historical, not an active child. Do not dispatch or descend into it. A malformed or ambiguous retirement record holds that branch. `^merge` is an explicit User-approved reorganization under [Practices > Merging], not inherited Supervision authority; only that bounded transaction may retire the quiesced source.
+
 A Subproject is a complete Axis Project nested anywhere inside another Axis Project's workspace. There is no reserved container folder: a Subproject lives wherever User's organization puts it (`Clients/Acme/`, `Products/App/`, a folder at root), and recognition rests entirely on what the folder carries.
 
 ## Recognition Contract
@@ -13,7 +15,7 @@ Treat a folder as a Subproject when it carries the Standard Setup Anchors:
 
 The check is a lightweight discovery gate; once a session boots inside the folder, its own Session Start verifies everything against its own [Manifest]. A folder missing any anchor is an incomplete candidate: warn User, list what is missing, and never load or follow its instructions.
 
-**The direct parent** of a Subproject is the NEAREST ANCESTOR directory that itself carries the anchors. A session booting inside a folder walks UP its ancestors to find its parent. Parent-side discovery is on-demand only for `^^`, `^audit supervision`, and repository-boundary checks: search descendants, stop descending a branch at the first recognized child, and never treat its nested children as the current Project's direct children. Nothing registers or background-sweeps the relationship; see [Practices > Supervision > Direct-Child Discovery].
+**The direct parent** of a Subproject is the NEAREST ANCESTOR directory that itself carries the anchors. A session booting inside a folder walks UP its ancestors to find its parent. Parent-side discovery is on-demand only for `^^`, `^audit supervision`, and repository-boundary checks: search the full descendant tree, retaining each nearest-parent edge; deeper descendants belong to ancestor oversight without becoming direct transport children. Nothing registers or background-sweeps the relationship; see [Practices > Supervision > Direct-Child Discovery].
 
 ## How a Parent's Agents Interact with a Child
 
@@ -29,7 +31,7 @@ The boundary that matters is the child's STATE, not its content. A child project
 
 ## Parent Authority
 
-A child decides how far its direct parent may direct it with the `Parent Authority` Setting ([Settings > Parent Authority]): `direct` (the default) or `advise`. A missing Setting means `direct`; a malformed value means `advise`. The parent may lower it with a `^^do` task; only the child's User, working inside the child, raises it. Set `advise` when someone other than the parent's User runs this child. Never inherit this Setting from the parent: the parent's value governs the parent's own parent.
+Oversight reaches all descendants by default under [Practices > Supervision > Recursive oversight]. Directives for deeper work carry the original bounded ancestor grant through genuine intermediate Mains, with no routine per-level approval. A child decides how far its direct parent may direct it with the `Parent Authority` Setting ([Settings > Parent Authority]): `direct` (the default) or `advise`. A missing Setting means `direct`; a malformed value means `advise`. The parent may lower it with a `^^do` task; only the child's User, working inside the child, raises it. Set `advise` when someone other than the parent's User runs this child. Never inherit this Setting from the parent: the parent's value governs the parent's own parent.
 
 - **Directives.** A parent `^^do` arrives as a request import with the original `data.directive` retained under `data.transport.source_data.directive`. Verify and resolve it under [Practices > Messages > Directives]. With `direct`, a verified directive ranks as User's instruction and outranks this child's standing instructions for that task; with `advise`, it is an ordinary Message.
 - **Limit.** These are instructions to agents, not enforced locks: a manipulated parent agent could write an order User never typed, and the child cannot tell. Recovery from a wrong order is the rollback point the child names in its reply. Say so when User asks how safe parent authority is.

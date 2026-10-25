@@ -19,6 +19,9 @@ Coordination details and new Submissions are bounded to 128 KiB of complete read
 
 ## Local activation
 
+For a complete executable history audit or explicitly confined host tools, load `_Axis/Resources/Checked-Session.md`. Its replay validates canonical chains and reports coverage; it does not validate business results or grant authority.
+
+
 Use `coordination.py --root PROJECT_PATH --session SID placement-status` to inspect. `activate --single-writer --previous-placement-inactive [--expires UTC_TIMESTAMP]` records an explicit serialized handoff; `deactivate` stops local canonical effects. Never assert these declarations without evidence that the other placement has stopped. A normal takeover can establish the old Main is fenced on the same physical root; a copied root cannot establish remote shutdown.
 
 The local `Flags/coordination-placement.json` binds Project UUID, physical root, host hint, current Main/Marker, storage profile, activation generation and expiry of at most 24 hours. It is ignored by Git. Canonical acceptance, transport effects and automatic starts recheck it; a missing, stale or copied binding holds those effects while read-only inspection and ordinary work remain available. Reactivation never resets retained budgets or unknown effects. It is a local fence, not a distributed lock or remote authentication.
@@ -33,6 +36,16 @@ A Job pins its objective, exact definition revision, authority, acceptance owner
 
 A launch is a dispatched Agent invocation, including a newly started or resumed model call. Tool calls and local commands within that same invocation do not consume additional Agent launches. The worker may complete its authorized steps within the same invocation until its time or usage bound; an incomplete local script is not by itself a new launch. This distinction does not authorize replaying an uncertain effect, extending a deadline, or bypassing a separate tool or effect limit.
 
+## Renewing a shared launch budget
+
+A later User grant can extend a shared budget without erasing earlier launches. Main records a new immutable approval Log, then calls `coordination.py amend-budget --input {JSON}` with `budget_key`, `predecessor` (null for the first renewal), `aggregate_launches` (the new cumulative total, not additional calls), and `authority` (Log ref, exact digest and expiry). The previous budget must already exist and have a finite aggregate limit. A new grant cannot reuse earlier authority bytes.
+
+The Log must record the actual User approval and these exact standalone bindings: `coordination-budget-key: {key}`, `coordination-budget-predecessor: {latest renewal Message ID or initial}`, `coordination-budget-previous-limit: {previous total}`, `coordination-budget-total-limit: {new total}`, and `coordination-budget-expires: {authority expiry}`. Main checks the intended grant before recording it; hashes and labels are provenance, not authentication. The accepted control Message forms an immutable predecessor chain. Conflicting branches, altered approval, missing history or stale predecessor hold the affected budget.
+
+New Jobs use the same `budget_key`, the accepted Message ID as `budget_amendment`, that Message's exact authority, and an aggregate limit no larger than its total. Admission must bind the latest renewal. Jobs bound to the same renewal retain the minimum shared aggregate limit across that cohort; a larger later Job does not override a smaller peer bound. Every earlier dispatch remains charged, even one reconciled as not performed; active reservations remain reserved. For example, 8 previously charged starts plus 12 new approved starts means a cumulative total of 20, never a reset to zero. Existing Jobs keep their former aggregate bound, local limits and deadlines; Teams keep their own limits. Dispose of old in-flight work explicitly and admit new bounded work under the renewed grant. A renewal does not authorize uncertain-effect replay, unrelated scope, spending, host changes or external actions.
+
+The no-helper procedure retains the same exact approval, predecessor chain, cumulative count and active reservations in readable Messages. If Main cannot establish complete history or enforce the bound, hold dispatch and report the missing capability.
+
 ## Dispatch and recovery
 
 1. Validate Main's existing lease, qualified storage, placement, authority, expiry and User control. On non-atomic storage serialize under one Main; workers return proposals for capture.
@@ -42,6 +55,14 @@ A launch is a dispatched Agent invocation, including a newly started or resumed 
 5. Replace a leader only through an accepted membership/binding event and a new epoch/session. Recover from charter, assignments, retained results and checkpoint, not private conversation. No automatic replacement unless explicitly authorized. Stop on exhausted finite limits and preserve partial work.
 
 Team states: draft, ready, running, paused, completed, failed, cancelled. Job states: proposed, admitted, running, blocked, pause-requested, paused, succeeded, failed, cancelled, expired. Only validated outputs and Main acceptance justify success.
+
+## Retained locks and uncertain effects
+
+A retained coordination, scheduler or transfer lock holds the affected writes; it does not establish whether its Job completed. Keep the lock, causal records, transfer receipts and exact output bytes. No age threshold, stale Marker or stopped process alone permits reclaiming it.
+
+Use [Resources > Lock-File > Quiescent Recovery] only when User or trusted host controls have stopped all possible writers and suspended new sessions, timers and spawns for the entire recovery. Record that exclusion and the selected lock's identity, OWNER bytes and directory contents before removal. Unexpected contents, changed ownership, partial records or an unverified remote writer keep the affected operation held. Remove only the verified abandoned lock, preserving its evidence and every target; then reacquire normally.
+
+After recovery, inspect immutable intent/results and output digests before projecting the Job and rebuilding indexes. Reconcile an effect only from sufficient evidence: a verified accepted output is retained, proven non-performance may permit an authorized retry, and an unknown outcome remains blocked. Lock removal never grants a retry, clears budget or proves success. Report safe hold, manual recovery and successful work separately; never claim generic automatic recovery.
 
 ## Session and transfer boundaries
 

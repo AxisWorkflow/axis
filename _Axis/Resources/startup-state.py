@@ -17,6 +17,7 @@ import secrets
 import stat
 import sys
 import time
+import unicodedata
 try:
     import fcntl
 except ImportError:
@@ -156,6 +157,19 @@ class Startup:
             if error.code=='missing_path':return False
             raise
 
+    def merge_access(self):
+        # Source-side maintenance retires all writing authority, including a previously booted session.
+        # Destination Main retains only the recovery lane under the Merging practice.
+        need(not self.exists('_Axis/Merges/retired.json'),'merge_retired','_Axis/Merges/retired.json')
+        raw=self.read('_Axis/Flags/merge-pending',optional=True,limit=4096)
+        if raw is None:return
+        try:value=json.loads(raw)
+        except (ValueError,TypeError):raise Fault('merge_state_invalid','_Axis/Flags/merge-pending') from None
+        need(isinstance(value,dict) and set(value)=={'schema','transaction','plan_sha256','destination_id','source_id'} and value.get('schema')==1 and re.fullmatch(r'\d{4}(?:\.\d{2}){5}\.\d{3}Z',str(value.get('transaction',''))) and re.fullmatch(r'[0-9a-f]{64}',str(value.get('plan_sha256',''))),'merge_state_invalid','_Axis/Flags/merge-pending')
+        project=self.read('_Axis/PROJECT.md');ids=re.findall(r'^project-id: (\S+)\s*$',project,re.M)
+        need(len(ids)==1 and isinstance(value.get('destination_id'),str) and isinstance(value.get('source_id'),str) and value['destination_id']!=value['source_id'] and ids[0] in (value['source_id'],value['destination_id']),'merge_state_invalid','_Axis/Flags/merge-pending')
+        need(ids[0]==value['destination_id'],'merge_source_held','_Axis/Flags/merge-pending')
+
     def owner_check(self):
         need(self.owner_fd is not None and self.state is not None,'owner_missing',self.owner_name)
         directory=self.path(self.claim_name,kind='directory')
@@ -243,15 +257,29 @@ class Startup:
             value=None
         return value if value in ('Restricted','Default','Autonomous') else 'Default'
 
-    def sweep(self, retire):
+    def sweep(self, retire, explicit=()):
         """After admission: delete retired Main Markers, other Markers over 24 hours old and tombstones over 1 hour old."""
         self.guard();now=time.time();cleared=0
         def remove(name, minimum):
             nonlocal cleared
             try:
                 path=self.path(name)
-                if now-path.stat().st_mtime<minimum:return
+                before=path.stat()
+                if now-before.st_mtime<minimum:return
+                raw=self.read(name);intent=None
+                if raw.startswith('Main: session\n'):
+                    old_host=next((line[6:] for line in raw.splitlines() if line.startswith('host: ')),'unverified')
+                    idle=int(max(0,now-self.last_activity(path.stem,path.stat().st_mtime)))
+                    basis='explicit User takeover' if path.stem in explicit else 'applicable Permissions takeover threshold or stale lifecycle sweep'
+                    detail=f'displaced-session: {path.stem}\nhost: {old_host}\nidle-seconds: {idle}\nauthorization: {basis}\n'
+                    intent,_=self.record('Logs',lambda _:f'Main displacement prepared\n\nby: Main Agent\nsession: {self.sid}\n'+detail+'Removal intent only; completion must be verified separately.\n')
+                    self.guard();need(self.read(name)==raw,'marker_changed',name)
+                current=path.stat()
+                need(identity(current)==identity(before) and current.st_mtime_ns==before.st_mtime_ns,'marker_changed',name)
                 os.unlink(path);cleared+=1
+                if intent:
+                    need(not path.exists(),'marker_removal_unverified',name)
+                    self.record('Logs',lambda _:f'Main displaced\n\nby: Main Agent\nsession: {self.sid}\n'+detail+f'prepared: {intent}\nVerified old Marker absent after removal. Persistent host conversation may still be open.\n')
             except FileNotFoundError:pass
             except (Fault,OSError):pass
         for path in sorted(self.path('_Axis/Agents',kind='directory').glob('*Z.kill')):
@@ -263,6 +291,7 @@ class Startup:
         return cleared
 
     def guard(self, starting=True, foreign=True):
+        self.merge_access()
         self.owner_check()
         if self.exists('_Axis/Agents/'+self.sid+'.kill'):raise Fault('lease_killed',self.marker_name)
         text=self.read(self.marker_name,optional=True)
@@ -334,6 +363,8 @@ class Startup:
                 current/=part;info=current.lstat()
                 need(stat.S_ISDIR(info.st_mode) and not stat.S_ISLNK(info.st_mode),'unsafe_path','Archive')
             roots.append((archive,'_Axis/Archive'))
+        if os.path.lexists(self.root/'_Memos'):
+            roots.append((self.path('_Memos',kind='directory'),'_Memos'))
         for base,label in roots:
             stack=[base]
             while stack:
@@ -345,7 +376,7 @@ class Startup:
                         if stat.S_ISDIR(info.st_mode):stack.append(Path(entry.path))
                         else:
                             regular(info,name)
-                            if entry.name==candidate+'.md':occupied=True
+                            if entry.name==candidate+'.md' or (label=='_Memos' and entry.name.startswith(candidate+' - ') and entry.name.endswith('.md')):occupied=True
         return occupied
 
     def release_timestamp(self, relative, body, expected_identity, deadline):
@@ -354,7 +385,7 @@ class Startup:
         need(self.read(relative+'/OWNER')==body,'timestamp_owner',relative)
         os.unlink(self.path(relative+'/OWNER'));os.rmdir(self.path(relative,kind='directory'))
 
-    def record(self, family, body, initial=None, bootstrap=False, renew_lease=True):
+    def record(self, family, body, initial=None, bootstrap=False, renew_lease=True, memo_subject=None):
         need(type(renew_lease) is bool,'renew_lease')
         candidate=initial or stamp();parse_stamp(candidate)
         for _ in range(1000):
@@ -378,7 +409,7 @@ class Startup:
                 need(not self.exists('_Axis/Agents/'+candidate+'.kill'),'lease_killed','_Axis/Agents/'+candidate+'.md');self.owner_check()
             else:self.guard()
             need(self.read(relative+'/OWNER')==owner,'timestamp_owner',relative)
-            name='_Axis/'+family+'/'+candidate+'.md';destination=self.path(name,missing=True)
+            name=('_Memos/'+candidate+' - '+memo_subject+'.md') if memo_subject is not None else ('_Axis/'+family+'/'+candidate+'.md');destination=self.path(name,missing=True)
             need(time.monotonic()-started<10,'claim_expired',relative)
             fd=os.open(destination,os.O_RDWR|os.O_CREAT|os.O_EXCL|os.O_NOFOLLOW,0o644)
             try:write_fd(fd,raw);need(read_fd(fd,name,record_limit)==raw,'record_readback',name)
@@ -392,6 +423,7 @@ class Startup:
         raise Fault('collision_limit')
 
     def claim(self, initial, host, take_over=()):
+        self.merge_access()
         parse_stamp(initial)
         need(parse_stamp(initial)<=dt.datetime.now(dt.timezone.utc),'timestamp_future')
         need(isinstance(host,str) and host.strip()==host and 0<len(host)<=120 and all(ord(c)>=32 for c in host),'host')
@@ -403,6 +435,9 @@ class Startup:
         fcntl.flock(self.owner_fd,fcntl.LOCK_EX|fcntl.LOCK_NB)
         self.state={'schema':1,'kind':'axis-startup-admission','token':token,'session':initial,'host':host,'phase':'claiming','starting_log':None,'started_log':None}
         write_fd(self.owner_fd,encoded(self.state));self.owner_check()
+        try:self.merge_access()
+        except Fault:
+            self.release_admission();raise
         prior=self.read('_Axis/Flags/starting',optional=True)
         if prior is not None and prior.splitlines() and prior.splitlines()[0].strip() not in ('','cleared'):
             self.release_admission();raise Fault('unfinished_starting','_Axis/Flags/starting')
@@ -419,7 +454,7 @@ class Startup:
         self.owner_update(session=final,phase='admitted')
         self.write_flag('starting',final+'\n'+stamp()+'\n',bootstrap=True)
         self.guard()
-        cleared=self.sweep({m['session'] for m in idle})
+        cleared=self.sweep({m['session'] for m in idle},take_over)
         return {'status':'admitted','session':final,'owner':token,'marker':name,'took_over':idle,'cleared':cleared,'permissions':level,'threshold_hours':limit}
 
     def load(self, session, token, readonly=False):
@@ -551,7 +586,11 @@ class Startup:
         tracking=self.tracking(False)
         if tracking is not None:
             name,old,opening=tracking;need(not opening,'already_initialized',name);self.guard()
-            line=stamp()+' - '+self.sid+' - Session start\n';fd=os.open(self.path(name,missing=True),os.O_WRONLY|os.O_APPEND|os.O_CREAT|os.O_NOFOLLOW,0o644)
+            line=stamp()+' - '+self.sid+' - Session start\n'
+            changelog=self.read('_Axis/CHANGELOG.md',optional=True,limit=4194304) or ''
+            versions=re.findall(r'^current-version: (\S+)$',changelog,re.M)
+            if len(versions)==1:line+=stamp()+' - '+self.sid+' - STATUS [session] Axis boot version: '+versions[0]+'\n'
+            fd=os.open(self.path(name,missing=True),os.O_WRONLY|os.O_APPEND|os.O_CREAT|os.O_NOFOLLOW,0o644)
             try:regular(os.fstat(fd),name);write_fd(fd,line.encode())
             finally:os.close(fd)
             need(self.read(name)==old+line,'tracking_readback',name)
@@ -615,7 +654,9 @@ class Startup:
         self.tracking(True);self.validate_capabilities()
         need(self.read(log)==f'Session Starting\n\nby: Main Agent\nsession: {self.sid}\n','starting_log',log)
         self.owner_update(phase='committing')
-        _,started=self.record('Logs',lambda _:f'Session Started\n\nby: Main Agent\nsession: {self.sid}\n')
+        versions=re.findall(r'^current-version: (\S+)$',self.read('_Axis/CHANGELOG.md',optional=True,limit=4194304) or '',re.M)
+        version_line=('axis-version: '+versions[0]+'\n') if len(versions)==1 else ''
+        _,started=self.record('Logs',lambda _:f'Session Started\n\nby: Main Agent\nsession: {self.sid}\n'+version_line)
         self.owner_update(started_log=started)
         self.clear_flag('project-overlay')
         self.write_flag('session-id',self.sid+'\n'+stamp()+'\n')
@@ -644,6 +685,7 @@ class Session(Startup):
     def marker_body(self):return self.lease[0]
 
     def guard(self, starting=True, foreign=True):
+        self.merge_access()
         if self.exists('_Axis/Agents/'+self.sid+'.kill'):raise Fault('lease_killed',self.marker_name)
         text=self.read(self.marker_name,optional=True)
         need(text is not None,'lease_missing',self.marker_name)
@@ -677,6 +719,16 @@ class Session(Startup):
             return {'status':'appended','path':relative,'timestamp':now,'type':kind}
         finally:os.close(fd)
 
+    def memo(self, subject, content):
+        need(isinstance(subject,str) and 0<len(subject)<=80 and subject.strip()==subject and not subject.endswith('.')
+             and unicodedata.normalize('NFC',subject)==subject
+             and not any(c in '/\\:*?"<>|' or unicodedata.category(c)=='Cc' for c in subject),'memo_subject')
+        need(0<len(content.encode('utf-8'))<=65536,'record_size')
+        self.guard();need(self.lease[2],'memo_main_only')
+        self.path('_Memos',kind='directory')
+        final,name=self.record('Memos',lambda _:content,memo_subject=subject)
+        return {'status':'created','id':final,'path':name}
+
     def create(self, family, content):
         need(family in FAMILIES and family!='Status','family',family)
         need(family!='Agents' or content.startswith('Subagent: '),'family',family)
@@ -709,12 +761,16 @@ def main():
             if name=='commit':command.add_argument('--starting-log',required=True)
             if name=='record-capabilities':command.add_argument('--observations',required=True)
         record=sub.add_parser('record');record.add_argument('--session',required=True);record.add_argument('--family',required=True);record.add_argument('--body-file')
+        memo=sub.add_parser('memo');memo.add_argument('--session',required=True);memo.add_argument('--subject',required=True);memo.add_argument('--body-file')
         track=sub.add_parser('track');track.add_argument('--session',required=True);track.add_argument('--type',choices=('INTENT','STATUS','ASK','REPLY','DONE'),required=True);track.add_argument('--scope',required=True);track.add_argument('--text',required=True)
         args=parser.parse_args()
         if fcntl is None or not hasattr(os,'O_NOFOLLOW') or os.utime not in os.supports_fd:
             print(json.dumps({'status':'unavailable','code':'platform'}));return 3
         if args.operation=='track':
             engine=Session(args.root,args.session);print(json.dumps(engine.track(args.type,args.scope,args.text),sort_keys=True));return 0
+        if args.operation=='memo':
+            content=body_input(args.body_file);engine=Session(args.root,args.session)
+            print(json.dumps(engine.memo(args.subject,content),sort_keys=True));return 0
         if args.operation=='record':
             content=body_input(args.body_file);engine=Session(args.root,args.session)
             print(json.dumps(engine.create(args.family,content),sort_keys=True));return 0

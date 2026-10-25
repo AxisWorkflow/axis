@@ -127,6 +127,7 @@ Optional project state: `EXCEPTIONS.md` in the Axis control folder, created on f
 - `_Axis/Practices/Reminders.md`
 - `_Axis/Practices/Settings.md`
 - `_Axis/Practices/Snapshots.md`
+- `_Axis/Practices/Merging.md`
 - `_Axis/Practices/Memos.md`
 - `_Axis/Practices/Status.md`
 - `_Axis/Practices/Subprojects.md`
@@ -161,6 +162,8 @@ Optional project state: `EXCEPTIONS.md` in the Axis control folder, created on f
 - `_Axis/Rules/UntrustedContent.md`
 - `_Axis/Rules/Wiki.md`
 
+- `_Axis/Merges/` - project-owned merge journals and preserved objects; `retired.json` marks a historical source. Created missing-only; never replaced by updates.
+
 ### Commands
 
 - `_Axis/Commands/archive.md`
@@ -184,6 +187,7 @@ Optional project state: `EXCEPTIONS.md` in the Axis control folder, created on f
 - `_Axis/Commands/install.md`
 - `_Axis/Commands/kill.md`
 - `_Axis/Commands/log.md`
+- `_Axis/Commands/merge.md`
 - `_Axis/Commands/memo.md`
 - `_Axis/Commands/memos.md`
 - `_Axis/Commands/note.md`
@@ -208,6 +212,9 @@ Optional project state: `EXCEPTIONS.md` in the Axis control folder, created on f
 
 ### Resources
 
+- `_Axis/Resources/coordination-layout.py` - Missing-only coordination state layout during owned Main startup.
+- `_Axis/Resources/supervision-tree.py` - Read-only recursive subproject coverage and ancestry.
+- `_Axis/Resources/Displaced-Session.md` - No-write displaced-session recovery and persistent-host restart boundary.
 - `_Axis/Resources/Check-Remote-Freshness.md`
 - `_Axis/Resources/remote-freshness.py` - optional bounded startup Git check.
 
@@ -226,6 +233,8 @@ Optional project state: `EXCEPTIONS.md` in the Axis control folder, created on f
 - `_Axis/Resources/agent-board.py` - optional read-only Tracking board for `^board` and the awareness pass; reading the files directly remains available.
 - `_Axis/Resources/Claim-Session.md`
 - `_Axis/Resources/Default-Directives.md` - the shipped default Directives; startup adds any missing from the project's `DIRECTIVES.md`.
+- `_Axis/Resources/merge-project.py` - optional local merge preview, preservation, approved apply/abort and durable retirement support.
+- `_Axis/Resources/feedback-format.py` - read-only bug/feature draft format checker; never sends or grants consent.
 - `_Axis/Resources/guardrails.py` - optional host hook (`^install guardrails`) that refuses an Agent's edit to a write-once record or a malformed new record name, and a helper's use of `_Axis/Secrets/` or writes outside its role's folders.
 - `_Axis/Resources/Helpers/axis-cx.claude-agent`, `axis-wiki.claude-agent`, `axis-general.claude-agent` - helper role definitions `^install guardrails` copies into `.claude/agents/` as `.md` files.
 - `_Axis/Resources/OpenClaw/axis-guardrails/openclaw.plugin.json` and `index.ts` - optional OpenClaw plugin (`^install guardrails`) that applies `guardrails.py --external` to agents configured as External Agents.
@@ -235,6 +244,8 @@ Optional project state: `EXCEPTIONS.md` in the Axis control folder, created on f
 - `_Axis/Resources/coordination-migrate.py`
 - `_Axis/Resources/coordination-transfer.py`
 - `_Axis/Resources/coordination-view.py`
+- `_Axis/Resources/checked-session.py`, `_Axis/Resources/Checked-Session.md`, `_Axis/Resources/checked-lifecycle.py` and `_Axis/Resources/Checked-Completion.md` - optional scoped session tools and complete canonical replay; load only for that consumer.
+- `_Axis/Resources/Legacy-Updater-Bootstrap.md`, `_Axis/Resources/Legacy-Checkpoint-Recovery.md` and `_Axis/Resources/legacy-checkpoint-patches.json` - conditional old-engine bootstrap and exact checker repair data.
 - `_Axis/Resources/scheduling.py`
 - `_Axis/Resources/session-adapters.py`
 - `_Axis/Resources/axis`
