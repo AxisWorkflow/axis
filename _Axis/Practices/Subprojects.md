@@ -3,6 +3,8 @@
 
 A source with a valid canonical `_Axis/Merges/retired.json` matching its project identity is historical, not an active child. Do not dispatch or descend into it. A malformed or ambiguous retirement record holds that branch. `^merge` is an explicit User-approved reorganization under [Practices > Merging], not inherited Supervision authority; only that bounded transaction may retire the quiesced source.
 
+New absorption keeps the child's folder in place, imports its full records and content into the parent, and removes its Axis infrastructure after verified preservation. The resulting folder is ordinary content and is no longer discovered as a Subproject. Older retirement markers retain their original historical meaning; do not automatically convert or delete them.
+
 A Subproject is a complete Axis Project nested anywhere inside another Axis Project's workspace. There is no reserved container folder: a Subproject lives wherever User's organization puts it (`Clients/Acme/`, `Products/App/`, a folder at root), and recognition rests entirely on what the folder carries.
 
 ## Recognition Contract

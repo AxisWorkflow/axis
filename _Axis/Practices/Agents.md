@@ -23,6 +23,8 @@ Main Agent requires a standard-capability model; the entry-point protocol fails 
 
 A Subagent is a subsidiary agent that is spawned to handle a specific task. Follow `_Axis/Resources/Start-Subagent.md` to spawn a Subagent. `Start-Subagent.md` contains specific instructions on how to draft an appropriate prompt for Subagents when using the Axis Workflow.
 
+A General Subagent assigned to an Axis Team of Agents may communicate directly with every teammate under its finite participation mandate, write its own Team workspace and read peer workspaces. It cannot edit peers or shared project files. Main reviews and integrates proposals; the leader coordinates discussion. Follow [Practices > Coordination > Direct collaboration] and carry these exact rights in the envelope.
+
 #### Types of Subagents
 
 There are four types of **Subagents:** CX Subagent, Wiki Subagent, Local Subagent, and General Subagent. Every prompt begins with this three-line boundary:

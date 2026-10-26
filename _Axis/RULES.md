@@ -39,7 +39,7 @@
 - Use secrets by path reference ([Rules > Secrets]); read values on need.
 - Git tracks no plaintext Secret; only the optional public recipient and ciphertext.
 - User may edit any file at any time - re-read a file before you overwrite it.
-- Never create or edit files in `_Wiki/_Inbox/`; inbox filing only moves files in.
+- Keep raw Wiki sources immutable; import only per [Rules > Wiki].
 - `_Temp/` holds only regenerable scratch; real work lives in Project Subfolders.
 - Move files to the trash only when safe to delete them, by moving into `_Trash/`.
 - A Subproject = any folder carrying the Setup Anchors ([Practices > Subprojects]).

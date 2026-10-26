@@ -11,6 +11,7 @@ Every record in an Index-Detail directory is named by its timestamp, and that na
 - Metadata stamps are values, not identities: Flag bodies and Line 2 refreshes, `reviewed:` and `completed:` field values, times quoted in prose. Mint them directly; never check or claim them.
 - Initial Main and External Markers use the narrow Bootstrap Markers exception below. Their identifiers still require a claim, a post-claim check, and exclusive creation; only the prior-Marker lease check is exempt.
 - A rename keeps identity: archiving a record, or repairing a malformed name under `^refresh`, moves an existing identity - it is not a new mint (the existence check still guards the repaired name's destination).
+- Approved project imports under [Practices > Merging] start from each original identifier, reserve free source identities first, and advance collisions by the smallest available millisecond. They still claim, recheck and exclusively create each new destination record; the import date belongs in its provenance, not a fabricated historical date.
 - Each Subproject is its own uniqueness domain. Never scan into a nested Subproject and never claim across the parent/child boundary - separate processes may be running against each side.
 
 ## Minting an Identifier

@@ -4,6 +4,7 @@
 
 - The format is `yyyy.mm.dd.hh.mm.ss.xxxZ` (ex: `2026.05.18.22.33.24.230Z`) - every field zero-padded, milliseconds always three digits, capital `Z` always present. There is no short form and no acceptable variant.
 - Identifier timestamps (record filenames) are unique across the entire Project: two records never share one, in any directory, live or archived. Mint every identifier per [Practices > Timestamps] - an atomic claim, post-claim existence check, and exclusive create, all unconditional. Initial Main and External Markers bypass only the prior-Marker lease check under Bootstrap Markers and each Subproject is its own uniqueness domain.
+- Approved project imports retain original identifiers under [Practices > Merging], with minimal collision increments and the same claim/no-overwrite checks.
 - New Memo filename prefixes share this identity domain and claim procedure; their format is `{timestamp} - {Subject}.md` under [Practices > Memos]. Existing date-prefixed Memos remain valid.
 - Metadata stamps (Flag bodies, `reviewed:`-style field values, times in prose) are values, not identities: mint them directly, never through the identifier procedure.
 - Teams, Messages, Jobs and Schedules belong to the Project-wide identity domain. Submission handles and preserved legacy Request handles are not canonical records; the receiving Main mints local Message identities.

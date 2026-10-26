@@ -3,6 +3,8 @@
 
 A source with a valid canonical `_Axis/Merges/retired.json` matching its project identity is historical, not an active child. Do not dispatch or descend into it. A malformed or ambiguous retirement record holds that branch. `^merge` is an explicit User-approved reorganization under [Practices > Merging], not inherited Supervision authority; only that bounded transaction may retire the quiesced source.
 
+Current absorption removes the child's Axis infrastructure after content and records are integrated, leaving its existing folder as ordinary parent content. Remove its active registration after verification; its imported history does not carry child authority into the parent. Prior retired sources remain historical under their original receipts.
+
 Supervision is a relational function of a parent Project's Main Agent. It is not a fourth Agent role, a Project type, a Setting, a Flag, or a registry. A Main Agent becomes a Supervisor only while it acts toward recognized descendant Projects through the `^^` namespace. The directory hierarchy is the index and remains the source of truth.
 
 ## Authority

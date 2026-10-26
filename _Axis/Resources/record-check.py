@@ -61,7 +61,16 @@ def names(root,since):
     if archive.is_dir() and not archive.is_symlink():
         for entry in sorted(archive.iterdir()):
             if entry.name in IGNORED:continue
-            if entry.is_dir() and not entry.is_symlink():folders.append('_Axis/Archive/'+entry.name)
+            if entry.name=='Imports' and entry.is_dir() and not entry.is_symlink():
+                for transaction in sorted(entry.iterdir()):
+                    if not transaction.is_dir() or transaction.is_symlink() or not valid(transaction.name+'.md'):
+                        malformed.append(transaction.relative_to(root).as_posix());continue
+                    for family in sorted(transaction.iterdir()):
+                        relative=family.relative_to(root).as_posix()
+                        if family.name not in ('Snapshots','Teams','Messages','Jobs','Schedules') or not family.is_dir() or family.is_symlink():
+                            malformed.append(relative)
+                        else:folders.append(relative)
+            elif entry.is_dir() and not entry.is_symlink():folders.append('_Axis/Archive/'+entry.name)
             else:malformed.append('_Axis/Archive/'+entry.name)
     found=[]
     for folder in folders:

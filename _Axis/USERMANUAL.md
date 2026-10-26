@@ -1,6 +1,6 @@
 # Axis Workflow User Manual
 > **Purpose:** How to use the Axis Workflow day to day: setup, commands, the Dashboard, the Wiki, working across tools and machines, and working with Agents and models. For the technical and compliance reference, see [SPECIFICATION](/_Axis/SPECIFICATION.md).
-> **Version:** 3.04
+> **Version:** 3.05
 
 
 
@@ -227,7 +227,7 @@ For example, the text...
 | `^jobs` | Inspect bounded work, attempts, authority and outcomes. |
 | `^kill`      | Stop another live Agent by revoking its Marker lease (tombstone; User-only).                                   |
 | `^log`       | Manually Log an entry into `_Axis/Logs/`.                                                                      |
-| `^merge`     | Combine another project into this one, or absorb a child, with a reviewed plan, preserved history and recovery.                    |
+| `^merge` | Absorb a project folder, combining its records, Memos and Wiki into one continuing project. |
 | `^memo`      | Write or update a Memo for User in `_Memos/`.                                                                  |
 | `^memos`     | List live Memos, read User's replies, and archive finished ones.                                               |
 | `^note`      | Manually save a Note into `_Axis/Notes/`.                                                                      |
@@ -317,7 +317,7 @@ The **Memo Generation** setting decides how often memos are written, from `0` (o
 
 ### Combining projects
 
-Use `^merge` from the project you want to keep, naming the other project. This also absorbs a child into its parent. Axis first previews what would move, conflicts, active work and what remains separate. Approve the concrete plan once; Axis then preserves originals, combines agreed work, checks the result and retires the old project. It keeps the source files and Git history in place, and does not activate copied schedules, import credentials or delete the source. Two copies of the same project need reconciliation instead of merging.
+Use `^merge` to combine projects. For separate projects, Axis asks which continues and moves the other project's folder under its root. A nested subproject stays in place and becomes ordinary parent content. Axis imports full records with their original timestamps, adjusts collisions by milliseconds, repairs links, combines Memos and reconciles the Wiki. After you approve the concrete plan, it preserves the content, removes the absorbed project's Axis infrastructure and abandons its old Git repository. The continuing repository tracks eligible resulting files. Existing instructions and permissions remain with the continuing project; copied history does not activate jobs or schedules. Two copies of the same project need reconciliation instead of merging.
 
 ### Sending feedback to the Axis developers
 
@@ -594,9 +594,9 @@ External is instructed to make only additive, attributable contributions. Option
 
 ### An Axis Team of Agents and its Jobs
 
-An Axis Team of Agents has a shared charter, a separate Team Leader and named workers. Your project Main accepts the final work. Teams organize collaboration; Messages retain its exchanges; Jobs record exactly what is authorized, its limits, attempts and outcome. A team can recover with a different leader or provider from these files.
+An Axis Team of Agents has a shared charter, a separate Team Leader and named workers. Every teammate can discuss, challenge and help any other teammate directly. Each has a folder for their own drafts and published revisions, and can read everyone else's work. Main reviews proposed changes, resolves conflicts and integrates them into the shared project. Teams organize collaboration; Messages retain its exchanges; Jobs record exactly what is authorized, its limits, attempts and outcome. A team can recover with a different leader or provider from these files.
 
-An [Assignment](/_Axis/GLOSSARY.md#assignment) is a type of [Message](/_Axis/GLOSSARY.md#message) giving an agent a specific part of a [Job](/_Axis/GLOSSARY.md#job). One landing-page review Job might have separate Assignments for mobile layout and accessibility. Assignments live in Messages; Jobs retain the overall authorized work and limits. The [Glossary](/_Axis/GLOSSARY.md) also defines Submissions, receipts, admission, attempts, schedule occurrences and the supporting-record terms.
+An [Assignment](/_Axis/GLOSSARY.md#messages-and-delivery) is a type of [Message](/_Axis/GLOSSARY.md#messages-and-delivery) giving an agent a specific part of a [Job](/_Axis/GLOSSARY.md#coordination-and-jobs). One landing-page review Job might have separate Assignments for mobile layout and accessibility. Assignments live in Messages; Jobs retain the overall authorized work and limits. The [Glossary](/_Axis/GLOSSARY.md) also defines Submissions, receipts, admission, attempts, schedule occurrences and the supporting-record terms.
 
 Axis uses one explicitly active writer placement. Moving a copy, changing Main or letting activation expire requires reactivation after the previous placement stops; this does not reset Job budgets.
 
@@ -618,7 +618,7 @@ Scheduled child-project supervision initially reports status/inspection only. Re
 
 The baseline adapter supports on-demand startup. Warm or managed residency requires a separately supported host integration and explicit opt-in; the baseline does not provide persistent residency. The optional `axis` launcher shows exact project/session bindings and uses verified adapter operations. A surviving terminal, PID or provider conversation cannot restore an expired Axis lease. Unsupported attach/notify/stop operations keep the manual route available.
 
-A [Submission](/_Axis/GLOSSARY.md#submission) presents information to your Main for consideration. `_Axis/Submissions/` is the only incoming submission queue; only receiving Main processes it. Messages is the communication and audit trail for teams, other agents and projects. Authorized local agents can record Messages directly. A child project's Result can arrive as a Submission and retain its Result meaning; receiving it does not validate the work.
+A [Submission](/_Axis/GLOSSARY.md#messages-and-delivery) presents information to your Main for consideration. `_Axis/Submissions/` is the only incoming submission queue; only receiving Main processes it. Messages is the communication and audit trail for teams, other agents and projects. Authorized local agents can record Messages directly. A child project's Result can arrive as a Submission and retain its Result meaning; receiving it does not validate the work.
 
 Coordination records and Submissions begin with an ordinary Subject and readable Markdown. A labelled JSON payload and checksum at the end support validation; the system checks that readable content and payload agree. Original submissions remain visible under `Submissions/_received/`, linked to the receiving Message. Subject-first indexes and details continue to work without YAML frontmatter or Obsidian metadata ingestion.
 

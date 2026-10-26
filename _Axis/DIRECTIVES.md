@@ -1,5 +1,5 @@
 # Directives
-> **Purpose:** Define conditional Directives to follow when a **Trigger** applies.
+> **Purpose:** Define conditional Directives to follow when a Trigger applies.
 
 ## Explain Download Permissions
 

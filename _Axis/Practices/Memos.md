@@ -15,7 +15,7 @@ Every decision, task or open ask in a memo also lives in its canonical record (a
 - Existing date-prefixed Memos keep their names and links. The legacy Review/Status migration retains its historical date-prefixed destination format; it moves old reports rather than minting new Memos. Sort mixed old/new lists by the parsed creation date or UTC timestamp, not raw filename text.
 - Subject: plain words, at most 80 characters. Leave out `/ \ : * ? " < > |` and control characters, end with neither a dot nor a space, use Unicode NFC, and never create a name that differs from an existing one only in letter case.
 - On the same day, a memo about the same subject is updated, not duplicated. A separate new memo gets a fresh unique timestamp, even for the same subject. Updating a memo preserves its original filename and timestamp. Determine its creation day in [Settings > Project Time Zone] (or the host zone when `Unknown`) from its Created header or parsed filename, never by matching today against a UTC prefix.
-- Rename a memo only at User's request; links point to it.
+- Rename a memo only at User's request; links point to it. An approved project merge follows [Practices > Merging] for imported Memo identity/name collisions and reference repair, preserving the full text, historical dates and status.
 
 ## Shape
 

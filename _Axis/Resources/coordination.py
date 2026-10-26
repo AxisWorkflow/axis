@@ -2,11 +2,12 @@
 """Portable coordination records and bounded, Main-owned orchestration. Standard library only.
 
 No provider is called here. Issuer/lease snapshots and hashes are provenance, not authentication;
-this protocol assumes the existing single writer and ordinary project-file integrity. Indexes are
+this protocol assumes one Main control authority, cooperating scoped writers and ordinary file integrity. Indexes are
 rebuildable views. Control decisions are immutable Messages with an explicit causal predecessor.
 """
 from __future__ import annotations
 import argparse
+import base64
 import contextlib
 from collections import OrderedDict
 import copy
@@ -45,6 +46,24 @@ SAFE_OPERATIONS = {'inspect', 'read', 'report', 'write', 'validate', 'coordinate
 MAX_BODY = 16 * 1024
 MAX_RECORD = 131072
 MAX_ATTACHMENT = 64 * 1024 * 1024
+MAX_WORK_FILE = 65536
+COLLABORATION = {'version': 1, 'poll_seconds': 5, 'max_messages_per_member': 200}
+
+
+def workspace_token(value):
+    need(isinstance(value, str) and re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._-]{0,63}', value) is not None
+         and not value.endswith('.'), 'workspace-name')
+    reserved = {'con', 'prn', 'aux', 'nul'} | {'com'+str(n) for n in range(1,10)} | {'lpt'+str(n) for n in range(1,10)}
+    need(value.split('.')[0].casefold() not in reserved, 'workspace-name')
+    return value
+
+
+def collaboration(value):
+    need(isinstance(value, dict) and set(value) == set(COLLABORATION), 'collaboration-policy')
+    need(type(value['version']) is int and value['version'] == 1, 'collaboration-version')
+    _integer(value['poll_seconds'], 'poll-seconds', 1, 60)
+    _integer(value['max_messages_per_member'], 'message-limit', 1, 10000)
+    return value
 
 
 class CoordinationError(Exception):
@@ -312,15 +331,18 @@ def _initial(record):
     need(timestamp(limits['deadline']) <= timestamp(authority['expires']), 'mandate-deadline')
     common = {'id': record['id'], 'family': record['family'], 'head': record['id'], 'epoch': 0, 'held': False, 'holds': [], 'history': [], 'limits': limits, 'authority': copy.deepcopy(authority), 'completed_at': None}
     if record['family'] == 'Teams':
+        if 'collaboration' in record: collaboration(record['collaboration'])
         members = copy.deepcopy(record.get('members', []))
         need(isinstance(members, list), 'members')
         slots = [m.get('slot') for m in members if isinstance(m, dict)]
         need(len(slots) == len(members) and len(set(slots)) == len(slots) and 'leader' in slots, 'leader-slot')
         for member in members:
             _attempt_token(member.get('slot'))
+            if 'collaboration' in record: workspace_token(member['slot'])
             if member.get('session') is not None:
                 identity(member['session'])
                 need(member['session'] != record['issuer']['session'], 'dedicated-leader')
+        if 'collaboration' in record: need(len({s.casefold() for s in slots}) == len(slots), 'member-path-alias')
         common.update(state='ready', members={m['slot']: m for m in members}, leader=next(m.get('session') for m in members if m['slot'] == 'leader'))
     else:
         common.update(state='admitted', attempts={}, active=[], launches=0, rounds=0, retry_count=0, validations=[], results=[], late_results=[], stop_unconfirmed=[], classification=None, idempotent=False)
@@ -626,22 +648,28 @@ class Store:
         return self.session
 
     @contextlib.contextmanager
-    def locked(self):
-        self.require_main()
+    def locked(self, worker=False):
+        if worker:
+            self.guard()
+            need(not self.io.lease[2] and self.storage_profile() == 'atomic', 'direct-storage-unavailable')
+        else: self.require_main()
         need(self._lock is None, 'nested-lock')
         name = '_Axis/coordination.lock'
         lock = self.path(name, missing=True, kind='directory')
         owner = canonical({'session': self.session, 'nonce': secrets.token_hex(16)}) + b'\n'
-        try:
-            os.mkdir(lock)
-        except FileExistsError:
-            raise CoordinationError('locked', name) from None
+        until = time.monotonic() + (2 if worker else 0)
+        while True:
+            try:
+                os.mkdir(lock); break
+            except FileExistsError:
+                if time.monotonic() >= until: raise CoordinationError('locked', name) from None
+                time.sleep(0.02)
         start = time.monotonic(); owner_path = lock / 'OWNER'
         try:
             fd = os.open(owner_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
             try: _START.write_fd(fd, owner)
             finally: os.close(fd)
-            self._lock = (lock, owner, start, (lock.stat().st_dev, lock.stat().st_ino))
+            self._lock = (lock, owner, start, (lock.stat().st_dev, lock.stat().st_ino), worker)
             self._check_lock(); yield
         finally:
             if self._lock is not None:
@@ -656,11 +684,14 @@ class Store:
 
     def _check_lock(self):
         need(self._lock is not None, 'lock-required')
-        lock, owner, start, ident = self._lock
+        lock, owner, start, ident, worker = self._lock
         need(time.monotonic() - start < 10, 'lock-expired')
         safe = self.path('_Axis/coordination.lock', kind='directory'); info = safe.stat()
         need((info.st_dev, info.st_ino) == ident and self.io.read('_Axis/coordination.lock/OWNER') == owner.decode(), 'lock-owner')
-        self.require_main()
+        if worker:
+            self.guard()
+            need(not self.io.lease[2] and self.storage_profile() == 'atomic', 'direct-storage-unavailable')
+        else: self.require_main()
 
     def _acceptance(self):
         placement = self.require_placement()
@@ -996,7 +1027,18 @@ class Store:
                     continue
                 need(path.suffix == '.md', 'unexpected-record-file', path.name)
                 identity(path.stem)
-                record = read_record(path)
+                # A cooperating publisher owns its timestamp claim until the
+                # exclusive record write/readback finishes. Never treat an
+                # in-flight partial frame as a corrupt permanent record.
+                until = time.monotonic() + 2
+                while True:
+                    try:
+                        record = read_record(path); break
+                    except CoordinationError as exc:
+                        claim = self.path('_Temp/' + path.stem + '.tsclaim', missing=True, kind='directory')
+                        if exc.code not in {'record-integrity', 'record-encoding'} or not claim.exists() or time.monotonic() >= until:
+                            raise
+                        time.sleep(0.02)
                 need(record['family'] == family and record['id'] == path.stem and record['project'] == self.project_id(), 'record-identity', path)
                 result.append(record)
         for record in self._archive_records(family):
@@ -1075,10 +1117,15 @@ class Store:
         with self.locked():
             self.require_placement()
             value = self._founding(charter)
+            # Only newly admitted charters gain this contract. Historical bytes stay unchanged.
+            value.setdefault('collaboration', copy.deepcopy(COLLABORATION))
+            collaboration(value['collaboration'])
             members = value.get('members')
             need(isinstance(members, list) and members, 'members')
             slots = [m.get('slot') for m in members if isinstance(m, dict)]
             need(len(slots) == len(members) and len(set(slots)) == len(slots) and slots.count('leader') == 1, 'leader-slot')
+            for slot in slots: workspace_token(slot)
+            need(len({s.casefold() for s in slots}) == len(slots), 'member-path-alias')
             sessions = []
             for member in members:
                 _attempt_token(member.get('slot'))
@@ -1088,7 +1135,9 @@ class Store:
                     self._scope(member['scope'])
                     need(all(any(p == base or p.startswith(base + '/') for base in value['scope']) for p in member['scope']), 'write-scope')
             need(len(sessions) == len(set(sessions)), 'duplicate-member-session')
-            return self._record('Teams', value)
+            result = self._record('Teams', value)
+            self._init_workspaces(result['id'])
+            return result
 
     def _worker_session(self, sid):
         identity(sid)
@@ -1281,11 +1330,332 @@ class Store:
             result.append(actual)
         return result
 
+    def _direct_context(self, team, job, attempt, epoch, *, writing=False):
+        """Finite participation survives a submitted artifact, never a revoked mandate."""
+        _attempt_token(attempt)
+        need(type(epoch) is int and epoch >= 0, 'epoch')
+        self.guard()
+        need(not self.io.lease[2], 'worker-required')
+        need(self.storage_profile() == 'atomic', 'direct-storage-unavailable')
+        placement = self._read_placement()
+        Store(self.root, placement['session']).require_placement(expected=placement['activation'])
+        charter = self.read('Teams', identity(team))
+        collaboration(charter.get('collaboration'))
+        view = self.project('Teams', team)
+        founding = self.read('Jobs', identity(job)); state = self.project('Jobs', job)
+        need(not view['held'] and view['state'] in {'ready', 'running'}, 'team-unavailable')
+        need(not state['held'] and state['state'] in {'admitted', 'running'}, 'participation-ended')
+        need(founding.get('team') == team and founding['acceptance_owner'] == placement['session'], 'worker-message-scope')
+        self.validate_authority(charter['authority']); self.validate_authority(founding['authority'])
+        need(self.now() < min(timestamp(view['limits']['deadline']), timestamp(state['limits']['deadline'])), 'participation-expired')
+        item = state['attempts'].get(attempt, {})
+        need(item.get('session') == self.session and item.get('epoch') == epoch == state['epoch'], 'worker-message-scope')
+        need(item.get('team_epoch') == view['epoch'], 'stale-epoch')
+        need(item.get('status') in {'dispatch-intent', 'received', 'result', 'validated'}, 'participation-ended')
+        slot = item.get('slot'); member = view['members'].get(slot, {})
+        need(member.get('session') == self.session, 'member-binding')
+        need('coordinate' in founding['actions'] or 'report' in founding['actions'], 'discussion-scope')
+        if writing: need('write' in founding['actions'] and item.get('operation') in {'write', 'coordinate'}, 'workspace-write-scope')
+        return charter, view, founding, state, item
+
+    def _route(self, team, recipient):
+        charter = self.read('Teams', team); view = self.project('Teams', team)
+        collaboration(charter.get('collaboration'))
+        need(not view['held'], 'team-unavailable')
+        if recipient in {'main', charter['acceptance_owner']}:
+            targets = [{'slot': 'main', 'session': charter['acceptance_owner']}]
+        else:
+            need(view['state'] in {'ready', 'running'}, 'team-unavailable')
+            slot = recipient[7:] if recipient.startswith('member:') else recipient
+            slots = sorted(view['members']) if slot == 'team' else [slot]
+            need(all(s in view['members'] for s in slots), 'worker-recipient')
+            targets = [{'slot': s, 'session': view['members'][s].get('session')} for s in slots]
+            need(all(t['session'] is not None for t in targets), 'recipient-unbound')
+        return {'team_epoch': view['epoch'], 'recipients': targets}
+
+    def _direct_message(self, payload):
+        with self.locked(worker=True):
+            charter, view, founding, state, item = self._direct_context(payload['team'], payload['job'], payload['data'].get('attempt'), payload['epoch'])
+            need(payload['kind'] in PROPOSALS, 'worker-message-scope')
+            expiry = min(timestamp(charter['limits']['deadline']), timestamp(founding['limits']['deadline']), timestamp(charter['authority']['expires']), timestamp(founding['authority']['expires']))
+            need(self.now() < timestamp(payload['expires']) <= expiry, 'message-expiry')
+            history = [m for m in self.records('Messages') if m.get('team') == payload['team']]
+            observed = payload['data'].get('observed_message')
+            if observed is not None:
+                for prior in history:
+                    if prior['issuer']['session'] == self.session and prior.get('data', {}).get('observed_message') == observed:
+                        return {'status': 'duplicate', 'id': prior['id']}
+            count = sum(m['issuer']['session'] == self.session for m in history)
+            need(count < charter['collaboration']['max_messages_per_member'], 'message-budget')
+            route = self._route(payload['team'], payload['recipient'])
+            route['sender_slot'] = item['slot']
+            payload['delivery'] = route
+            reply = payload['data'].get('reply_to')
+            if reply is not None:
+                original = next((m for m in history if m['id'] == identity(reply)), None)
+                need(original is not None, 'reply-scope')
+                need(payload['kind'] != 'receipt' or original['kind'] != 'receipt', 'no-receipt-loop')
+                need(payload['correlation'] in (None, original['correlation']), 'reply-correlation')
+                payload['correlation'] = original['correlation']
+            root = '_Axis/Teams/' + payload['team'] + '/members/'
+            need(isinstance(payload['attachments'], list), 'attachments')
+            for attachment in payload['attachments']:
+                need(isinstance(attachment, dict) and isinstance(attachment.get('path'), str) and attachment['path'].startswith(root), 'attachment-scope')
+                parts = attachment['path'][len(root):].split('/')
+                need(len(parts) >= 4 and parts[0] in view['members'] and parts[1] == 'artifacts', 'published-artifact-required')
+                self.artifact_check(payload['team'], parts[0], parts[2], _view=view)
+            payload['attachments'] = self.validate_attachments(payload['attachments'])
+            self._check_lock()
+            result = self._record('Messages', payload, worker=True)
+            result['published_at'] = self.now().isoformat()
+            return result
+
+    def team_inbox(self, team, job, attempt, epoch, *, after=None, limit=20, history=False):
+        _, view, _, _, item = self._direct_context(team, job, attempt, epoch)
+        _integer(limit, 'inbox-limit', 1, 100)
+        need(type(history) is bool, 'inbox-history')
+        if after is not None: identity(after)
+        rows = []; size = 0; more = False
+        for message in self.records('Messages'):
+            if message.get('team') != team or (after is not None and message['id'] <= after): continue
+            delivery = message.get('delivery', {})
+            addressed = {'slot': item['slot'], 'session': self.session} in delivery.get('recipients', [])
+            if not history and not addressed: continue
+            state = 'available'
+            if delivery and delivery.get('team_epoch') != view['epoch']: state = 'stale-epoch'
+            elif timestamp(message['expires']) <= self.now(): state = 'expired'
+            row = {'state': state, 'message': message}
+            weight = len(canonical(row))
+            if rows and (len(rows) >= limit or size + weight > MAX_RECORD): more = True; break
+            rows.append(row); size += weight
+        self.guard()
+        return {'messages': rows, 'next': rows[-1]['message']['id'] if rows else after,
+                'more': more, 'available_at': self.now().isoformat(), 'poll_seconds': self.read('Teams', team)['collaboration']['poll_seconds']}
+
+    def observe_message(self, team, job, attempt, epoch, message_id):
+        _, view, _, _, item = self._direct_context(team, job, attempt, epoch)
+        original = self.read('Messages', identity(message_id))
+        need(original.get('team') == team and original.get('delivery', {}).get('team_epoch') == view['epoch'], 'observation-scope')
+        need({'slot': item['slot'], 'session': self.session} in original['delivery']['recipients'], 'observation-recipient')
+        need(original['kind'] != 'receipt', 'no-receipt-loop')
+        for record in self.records('Messages'):
+            if record['issuer']['session'] == self.session and record.get('data', {}).get('observed_message') == message_id:
+                return {'status': 'duplicate', 'id': record['id']}
+        sender = original.get('delivery', {}).get('sender_slot', 'main')
+        return self.message('receipt', sender, 'Observed addressed Message.', team=team, job=job, epoch=epoch,
+                            data={'attempt': attempt, 'reply_to': message_id, 'observed_message': message_id, 'observed_at': self.now().isoformat()})
+
+    def _workspace_root(self, team, slot):
+        identity(team); workspace_token(slot)
+        return '_Axis/Teams/' + team + '/members/' + slot
+
+    def _mkdirs(self, name):
+        relative(name)
+        current = ''
+        for part in name.split('/'):
+            current = current + '/' + part if current else part
+            path = self.path(current, missing=True, kind='directory')
+            if not path.exists(): os.mkdir(path, 0o755)
+            self.path(current, kind='directory')
+
+    def _init_workspaces(self, team):
+        self._check_lock()
+        charter = self.read('Teams', team); collaboration(charter.get('collaboration'))
+        for member in charter['members']:
+            base = self._workspace_root(team, member['slot'])
+            for folder in ('work', 'artifacts'): self._mkdirs(base + '/' + folder)
+        self._mkdirs('_Axis/Teams/' + team + '/shared')
+
+    def workspace_init(self, team):
+        with self.locked():
+            self.require_placement(); self._init_workspaces(team)
+            return {'status': 'ready', 'team': team}
+
+    def _work_name(self, team, slot, name, area='work'):
+        relative(name)
+        need(all(not p.endswith(('_U', '_X')) and p.casefold() not in {'.git', '.codex', '.claude', '.gemini', '.openclaw'} for p in name.split('/')), 'protected-path')
+        return self._workspace_root(team, slot) + '/' + area + '/' + name
+
+    def _file_bytes(self, name, missing=False):
+        path = self.path(name, missing=missing)
+        if missing and not path.exists(): return None
+        fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+        try:
+            before = os.fstat(fd)
+            need(stat.S_ISREG(before.st_mode) and before.st_nlink == 1 and before.st_size <= MAX_WORK_FILE, 'workspace-file')
+            raw = _START.read_fd(fd, name, MAX_WORK_FILE)
+            after = os.fstat(fd)
+            need((before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns, before.st_ctime_ns) ==
+                 (after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns, after.st_ctime_ns), 'workspace-changed')
+        finally: os.close(fd)
+        self.path(name)
+        return raw
+
+    def _write_bytes(self, name, raw, expected_sha256, *, create_parents=False):
+        need(isinstance(raw, bytes) and len(raw) <= MAX_WORK_FILE, 'workspace-size')
+        if create_parents: self._mkdirs(str(Path(name).parent))
+        before = self._file_bytes(name, missing=True)
+        need((digest(before) if before is not None else None) == expected_sha256, 'workspace-changed')
+        destination = self.path(name, missing=True)
+        temporary = self.path(name + '.' + secrets.token_hex(16) + '.tmp', missing=True)
+        fd = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o644)
+        try: _START.write_fd(fd, raw); os.fsync(fd)
+        finally: os.close(fd)
+        try:
+            self._check_lock()
+            need(self._file_bytes(name, missing=True) == before, 'workspace-changed')
+            self.path(name, missing=True)
+            if before is None:
+                os.link(temporary, destination, follow_symlinks=False); os.unlink(temporary)
+            else: os.replace(temporary, destination)
+            need(self._file_bytes(name) == raw, 'workspace-readback')
+        finally:
+            if temporary.exists(): temporary.unlink()
+        return {'path': name, 'size': len(raw), 'sha256': digest(raw)}
+
+    def workspace_write(self, team, job, attempt, epoch, path, content_base64, expected_sha256):
+        with self.locked(worker=True):
+            *_, item = self._direct_context(team, job, attempt, epoch, writing=True)
+            name = self._work_name(team, item['slot'], path)
+            try: raw = base64.b64decode(content_base64, validate=True)
+            except (ValueError, TypeError): raise CoordinationError('workspace-content') from None
+            return self._write_bytes(name, raw, expected_sha256, create_parents=True)
+
+    def workspace_delete(self, team, job, attempt, epoch, path, expected_sha256):
+        with self.locked(worker=True):
+            *_, item = self._direct_context(team, job, attempt, epoch, writing=True)
+            name = self._work_name(team, item['slot'], path)
+            need(isinstance(expected_sha256, str) and digest(self._file_bytes(name)) == expected_sha256, 'workspace-changed')
+            self._check_lock(); os.unlink(self.path(name))
+            return {'status': 'deleted', 'path': name}
+
+    def workspace_read(self, team, job, attempt, epoch, slot, path, revision=None):
+        _, view, _, _, _ = self._direct_context(team, job, attempt, epoch)
+        need(slot in view['members'], 'member-slot')
+        if revision is not None:
+            workspace_token(revision); self.artifact_check(team, slot, revision, _view=view)
+        name = self._work_name(team, slot, path, 'work' if revision is None else 'artifacts/' + revision)
+        raw = self._file_bytes(name)
+        return {'path': name, 'bytes': len(raw), 'sha256': digest(raw), 'content_base64': base64.b64encode(raw).decode()}
+
+    def artifact_publish(self, team, job, attempt, epoch, revision, paths, *, supersedes=None):
+        with self.locked(worker=True):
+            charter, view, founding, _, item = self._direct_context(team, job, attempt, epoch, writing=True)
+            need(sum(m['issuer']['session'] == self.session and m.get('team') == team for m in self.records('Messages')) < charter['collaboration']['max_messages_per_member'], 'message-budget')
+            workspace_token(revision)
+            # One of the Message's sixteen attachment slots pins the manifest.
+            need(isinstance(paths, list) and 0 < len(paths) <= 15 and len(set(paths)) == len(paths), 'artifact-files')
+            if supersedes is not None: self.artifact_check(team, item['slot'], supersedes, _view=view)
+            files = {}
+            for path in paths:
+                need(path != '_artifact.json', 'artifact-reserved')
+                files[path] = self._file_bytes(self._work_name(team, item['slot'], path))
+            base = self._workspace_root(team, item['slot']) + '/artifacts/' + revision
+            target = self.path(base, missing=True, kind='directory')
+            need(not target.exists(), 'artifact-exists')
+            os.mkdir(target)
+            entries = []
+            for path, raw in files.items(): entries.append(self._write_bytes(base + '/' + path, raw, None, create_parents=True))
+            manifest = {'schema': 1, 'team': team, 'slot': item['slot'], 'session': self.session, 'job': job,
+                        'attempt': attempt, 'epoch': epoch, 'team_epoch': view['epoch'], 'revision': revision,
+                        'supersedes': supersedes, 'files': entries}
+            meta = self._write_bytes(base + '/_artifact.json', canonical(manifest) + b'\n', None)
+            route = self._route(team, 'team'); route['sender_slot'] = item['slot']
+            publication = self._record('Messages', {'subject': 'Artifact: ' + item['slot'] + ' ' + revision,
+                'kind': 'offer', 'recipient': 'team', 'body': 'Published an immutable artifact revision for peer review.',
+                'team': team, 'job': job, 'epoch': epoch, 'correlation': None, 'authority': None,
+                'expires': min(charter['limits']['deadline'], founding['limits']['deadline']),
+                'data': {'attempt': attempt}, 'delivery': route, 'artifact_publication': meta,
+                'attachments': [meta] + entries}, worker=True)
+            return {'status': 'published', 'revision': revision, 'manifest': meta, 'attachments': [meta] + entries,
+                    'message': publication['id'], 'published_at': self.now().isoformat()}
+
+    def artifact_check(self, team, slot, revision, *, _view=None):
+        if _view is None:
+            self.require_main(); self.require_placement()
+            _view = self.project('Teams', team)
+            need(not _view['held'], 'team-held')
+        need(slot in _view['members'], 'member-slot'); workspace_token(revision)
+        base = self._workspace_root(team, slot) + '/artifacts/' + revision
+        raw = self._file_bytes(base + '/_artifact.json')
+        try: manifest = json.loads(raw, object_pairs_hook=_unique_pairs)
+        except (ValueError, UnicodeError): raise CoordinationError('artifact-manifest') from None
+        need(manifest.get('schema') == 1 and manifest.get('team') == team and manifest.get('slot') == slot and manifest.get('revision') == revision, 'artifact-manifest')
+        reference = {'path': base+'/_artifact.json', 'size': len(raw), 'sha256': digest(raw)}
+        publications = [m for m in self.records('Messages') if m.get('team') == team and m.get('artifact_publication', {}).get('path') == reference['path']]
+        need(len(publications) == 1 and publications[0]['artifact_publication'] == reference
+             and publications[0]['issuer']['session'] == manifest.get('session')
+             and publications[0].get('job') == manifest.get('job'), 'artifact-publication')
+        entries = manifest.get('files')
+        need(isinstance(entries, list) and 0 < len(entries) <= 15, 'artifact-files')
+        names = {base + '/_artifact.json'}
+        for entry in entries:
+            name = entry.get('path')
+            need(isinstance(name, str) and name.startswith(base + '/') and name not in names, 'artifact-path')
+            data = self._file_bytes(name)
+            need(entry == {'path': name, 'size': len(data), 'sha256': digest(data)}, 'artifact-changed')
+            names.add(name)
+        actual = set()
+        for directory, dirs, files in os.walk(self.path(base, kind='directory'), followlinks=False):
+            for name in dirs:
+                self.path(str((Path(directory)/name).relative_to(self.root)), kind='directory')
+            for name in files: actual.add(str((Path(directory)/name).relative_to(self.root)))
+        need(actual == names, 'artifact-membership')
+        return {'status': 'verified', 'manifest': manifest, 'attachment': reference, 'publication': publications[0]['id']}
+
+    def review_changes(self, team, proposals):
+        """Read-only preflight. Main reviews and applies under ordinary project rules."""
+        self.require_main(); self.require_placement()
+        view = self.project('Teams', team); need(not view['held'], 'team-held')
+        need(isinstance(proposals, list) and 0 < len(proposals) <= 32, 'integration-proposals')
+        destinations = {}; changes = []; overlaps = set()
+        for proposal in proposals:
+            message = self.read('Messages', proposal['message'])
+            need(message.get('team') == team and message['kind'] == 'result', 'integration-result')
+            route = message.get('delivery', {})
+            need(route.get('team_epoch') == view['epoch'], 'stale-epoch')
+            slot = route.get('sender_slot'); revision = proposal['revision']
+            artifact = self.artifact_check(team, slot, revision)
+            need(message['issuer']['session'] == artifact['manifest']['session'] == view['members'][slot].get('session'), 'integration-writer')
+            need(artifact['attachment'] in message['attachments'], 'integration-artifact-reference')
+            self.validate_attachments(message['attachments'])
+            job = self.read('Jobs', message['job'])
+            state = self.project('Jobs', message['job'])
+            attempt = state.get('attempts', {}).get(message.get('data', {}).get('attempt'), {})
+            manifest = artifact['manifest']
+            need(not state['held'] and message['job'] == manifest['job'] and message['epoch'] == manifest['epoch'] == state['epoch']
+                 and message['data'].get('attempt') == manifest['attempt']
+                 and manifest['team_epoch'] == view['epoch']
+                 and attempt.get('session') == message['issuer']['session'] and attempt.get('slot') == slot,
+                 'integration-attempt')
+            need('write' in job['actions'], 'integration-scope')
+            available = {entry['path']: entry for entry in artifact['manifest']['files']}
+            need(isinstance(proposal['changes'], list) and 0 < len(proposal['changes']) <= 32, 'integration-changes')
+            for change in proposal['changes']:
+                source = self._work_name(team, slot, change['source'], 'artifacts/' + revision)
+                destination = relative(change['destination'])
+                need(source in available, 'integration-source')
+                need(any(destination == base or destination.startswith(base+'/') for base in job['scope']), 'integration-scope')
+                need(any(destination == base or destination.startswith(base+'/') for base in attempt.get('scope', [])), 'integration-scope')
+                need(all(not p.endswith(('_U','_X')) and p.casefold() not in {'.git', '.codex', '.claude', '.gemini', '.openclaw'} for p in destination.split('/')), 'integration-protected')
+                before = self._file_bytes(destination, missing=True)
+                need((digest(before) if before is not None else None) == change['expected_sha256'], 'integration-base-changed')
+                if destination in destinations: overlaps.add(destination)
+                destinations[destination] = proposal['message']
+                changes.append({'message': proposal['message'], 'source': source, 'destination': destination,
+                                'expected_sha256': change['expected_sha256'], 'sha256': available[source]['sha256'], 'bytes': available[source]['size']})
+        return {'status': 'conflict' if overlaps else 'reviewable', 'conflicts': sorted(overlaps), 'changes': changes,
+                'notice': 'No project file changed. Main must review authority/content, resolve conflicts, recheck destination digests and record integration.'}
+
     def message(self, kind, recipient, body, *, team=None, job=None, correlation=None, epoch=0, data=None, expires=None, authority=None, attachments=None):
         need(kind in MESSAGE_KINDS and isinstance(recipient, str) and 0 < len(recipient) <= 256, 'message-kind')
         need(isinstance(body, str) and len(body.encode()) <= MAX_BODY, 'message-body')
         need(type(epoch) is int and epoch >= 0 and (data is None or isinstance(data, dict)), 'message-data')
         self.guard()
+        if expires is None and team is not None and job is not None and not self.io.lease[2]:
+            charter = self.read('Teams', team)
+            if charter.get('collaboration'):
+                expires = min(charter['limits']['deadline'], self.read('Jobs', job)['limits']['deadline'])
         expires = expires or stamp(self.now() + dt.timedelta(hours=24))
         timestamp(expires)
         need(self.io.lease[2] or authority is None, 'worker-message-authority')
@@ -1301,6 +1671,16 @@ class Store:
             need(authority is None, 'worker-message-authority')
             founding = self.read('Jobs', job); state = self.project('Jobs', job)
             need(not state['held'] and team == founding.get('team'), 'worker-message-scope')
+            if team is not None and self.read('Teams', team).get('collaboration'):
+                # Retain late Main-directed Results under the prior capture contract,
+                # without granting further discussion, workspace writes or completion.
+                team_state = self.project('Teams', team)
+                attempt = state['attempts'].get(payload['data'].get('attempt'), {})
+                late_result = kind == 'result' and recipient in {'main', founding['acceptance_owner']} and (
+                    state['state'] not in {'admitted', 'running'} or team_state['state'] not in {'ready', 'running'}
+                    or attempt.get('team_epoch') != team_state['epoch']
+                    or self.now() >= min(timestamp(founding['limits']['deadline']), timestamp(team_state['limits']['deadline'])))
+                if not late_result: return self._direct_message(payload)
             attempt = state['attempts'].get(payload['data'].get('attempt'), {})
             need(attempt.get('session') == self.session and attempt.get('epoch') == epoch, 'worker-message-scope')
             need(recipient in {founding['acceptance_owner'], 'main', 'leader'}, 'worker-recipient')
@@ -1308,14 +1688,38 @@ class Store:
                 team_state = self.project('Teams', team)
                 need(not team_state['held'] and (kind == 'result' or attempt.get('team_epoch') == team_state['epoch']), 'stale-epoch')
             need(isinstance(attachments, list), 'attachments')
-            allowed_scope = attempt.get('scope', founding['scope'])
-            for attachment in attachments:
-                need(isinstance(attachment, dict) and isinstance(attachment.get('path'), str) and any(attachment['path'] == base or attachment['path'].startswith(base + '/') for base in allowed_scope), 'attachment-scope')
-            payload['attachments'] = self.validate_attachments(attachments)
+            payload['attachments'] = self._result_attachments(founding, payload['data'].get('attempt'), attempt, attachments)
             # A late result is retained after cancellation/expiry; it has no control effect.
+            if team is not None and self.read('Teams', team).get('collaboration'):
+                with self.locked(worker=True):
+                    cap = self.read('Teams', team)['collaboration']['max_messages_per_member']
+                    need(sum(m['issuer']['session'] == self.session and m.get('team') == team for m in self.records('Messages')) < cap, 'message-budget')
+                    return self._record('Messages', payload, worker=True)
             return self._record('Messages', payload, worker=True)
         payload['attachments'] = self.validate_attachments(attachments)
-        with self.locked(): return self._record('Messages', payload)
+        with self.locked():
+            if team is not None and self.read('Teams', team).get('collaboration'):
+                payload['delivery'] = self._route(team, recipient)
+                payload['delivery']['sender_slot'] = 'main'
+            return self._record('Messages', payload)
+
+    def _result_attachments(self, founding, attempt_id, item, attachments):
+        """Existing Job outputs or this attempt's pinned Team artifact, including late evidence."""
+        need(isinstance(attachments, list), 'attachments')
+        scope = item.get('scope', founding['scope']); team = founding.get('team')
+        charter = self.read('Teams', team) if team is not None else {}
+        for attachment in attachments:
+            need(isinstance(attachment, dict) and isinstance(attachment.get('path'), str), 'attachment-scope')
+            path = attachment['path']
+            if any(path == base or path.startswith(base + '/') for base in scope): continue
+            need(bool(charter.get('collaboration')), 'attachment-scope')
+            base = self._workspace_root(team, item['slot']) + '/artifacts/'
+            need(path.startswith(base) and '/' in path[len(base):], 'attachment-scope')
+            view = self.project('Teams', team); need(not view['held'], 'team-held')
+            artifact = self.artifact_check(team, item['slot'], path[len(base):].split('/')[0], _view=view)
+            manifest = artifact['manifest']
+            need(manifest['job'] == founding['id'] and manifest['attempt'] == attempt_id and manifest['session'] == item['session'], 'attachment-attempt')
+        return self.validate_attachments(attachments)
 
     def capture_result(self, job, attempt, body, *, attachments=None):
         self.require_main()
@@ -1323,10 +1727,7 @@ class Store:
         item = state.get('attempts', {}).get(attempt)
         need(not state['held'] and item is not None, 'unknown-attempt')
         attachments = copy.deepcopy(attachments if attachments is not None else [])
-        need(isinstance(attachments, list), 'attachments')
-        allowed_scope = item.get('scope', founding['scope'])
-        for attachment in attachments:
-            need(isinstance(attachment, dict) and isinstance(attachment.get('path'), str) and any(attachment['path'] == base or attachment['path'].startswith(base + '/') for base in allowed_scope), 'attachment-scope')
+        attachments = self._result_attachments(founding, attempt, item, attachments)
         return self.message('result', 'main', body, team=founding.get('team'), job=job,
                             correlation=founding['operation_key'], epoch=item['epoch'],
                             data={'attempt': attempt, 'manual_capture': True, 'reported_session': item['session']},
@@ -1426,6 +1827,13 @@ class Store:
                 need(now >= timestamp(last['event']['at']), 'clock-rollback')
             if family == 'Teams' and action in {'replace_leader', 'bind_member'}:
                 self._worker_session(payload_data.get('session'))
+                if founding.get('collaboration'):
+                    slot = 'leader' if action == 'replace_leader' else payload_data.get('slot')
+                    previous = state['members'].get(slot, {}).get('session')
+                    if previous is not None and previous != payload_data.get('session'):
+                        marker = self.path('_Axis/Agents/' + previous + '.md', missing=True)
+                        tombstone = self.path('_Axis/Agents/' + previous + '.kill', missing=True)
+                        need(not marker.exists() or tombstone.exists(), 'previous-member-unfenced')
             if family == 'Jobs' and action in {'dispatch', 'round', 'retry'}:self.require_history()
             if family == 'Jobs' and founding.get('team') and action in {'dispatch', 'round'}:
                 self._team_budget(founding, self.records('Jobs'), messages, action=action, data=payload_data)
@@ -1575,7 +1983,7 @@ def main(argv=None):
     activation.add_argument('--expires')
     listing = sub.add_parser('list'); listing.add_argument('family', choices=FAMILIES)
     projection = sub.add_parser('project'); projection.add_argument('family', choices=['Teams', 'Jobs']); projection.add_argument('id')
-    for name in ('team', 'admit', 'message', 'event', 'disposition', 'capture-result', 'amend-budget'):
+    for name in ('team', 'admit', 'message', 'event', 'disposition', 'capture-result', 'amend-budget', 'team-inbox', 'observe-message', 'workspace-init', 'workspace-read', 'workspace-write', 'workspace-delete', 'artifact-publish', 'artifact-check', 'review-changes'):
         command = sub.add_parser(name); command.add_argument('--input', default='-')
     args = parser.parse_args(argv)
     try:
@@ -1595,7 +2003,10 @@ def main(argv=None):
             need(len(raw.encode()) <= MAX_RECORD, 'input-size')
             value = json.loads(raw, object_pairs_hook=_unique_pairs)
             need(isinstance(value, dict), 'input-object')
-            if args.command == 'amend-budget': result = store.amend_budget(**value)
+            need(not any(key.startswith('_') for key in value), 'private-argument')
+            if args.command in {'team-inbox', 'observe-message', 'workspace-init', 'workspace-read', 'workspace-write', 'workspace-delete', 'artifact-publish', 'artifact-check', 'review-changes'}:
+                result = getattr(store, args.command.replace('-', '_'))(**value)
+            elif args.command == 'amend-budget': result = store.amend_budget(**value)
             elif args.command == 'team': result = store.create_team(value)
             elif args.command == 'admit': result = store.admit_job(value['mandate'], value['operation_key'])
             elif args.command == 'message': result = store.message(**value)

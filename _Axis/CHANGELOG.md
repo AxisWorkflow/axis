@@ -1,7 +1,7 @@
 # Changelog
 > **Purpose:** Record Axis release identity and the structural migrations needed to update an existing project safely.
 
-current-version: 3.04
+current-version: 3.05
 changelog-format: 1
 self-update-baseline: 26.08.19
 
@@ -39,6 +39,35 @@ update-impact: automatic
 ### Verification
 
 - None.
+
+## 3.05
+
+released: 2026-10-26
+
+update-impact: automatic
+
+### Structural Changes
+
+- Refine `^merge` and `_Axis/Resources/merge-project.py` to absorb project folders using schema-2 journals, full record imports with preserved timestamp IDs, combined Memos/Wiki, repaired links and checked source-infrastructure removal. `_Axis/Resources/record-check.py` validates the typed archived import namespace. Abandon independent source Git repositories without merging histories.
+
+- Add direct teammate/broadcast Messages, bounded canonical inboxes and optional checked Team tools in `_Axis/Resources/coordination.py` and `checked-session.py`. New charters create `_Axis/Teams/{ID}/members/{slot}/work/`, immutable `artifacts/{revision}/` and Main-owned `shared/`. Main retains project integration and control.
+- Restore concise grouped bullets in `_Axis/GLOSSARY.md`; update its User Manual and Specification links.
+
+### Project-State Migrations
+
+- No project is merged or moved by update. Existing schema-1 merge journals, pinned engines, retired-source markers and history keep their original behavior; finish or abort an unfinished transaction before starting a new absorption. New imported Snapshot/coordination history uses the configured `Archive/Imports/{transaction}/` namespace and grants no active authority.
+
+- Preserve existing Team/Job/Message records, outputs and scopes unchanged. New collaboration rights require a newly admitted version-1 collaboration charter and explicit disposition of earlier attempts; no automatic widening or relocation. Fence a former member session before rebinding its workspace. Preserve all published revisions and causal review/acceptance records across updates and archival.
+
+### Retired Paths
+
+- None.
+
+### Verification
+
+- Qualify unrelated-folder placement and unchanged child-folder placement, full record/status/date preservation, minimal timestamp collision mapping, repaired references, combined Memo/Wiki content and raw-source immutability. Verify source Git abandonment, exact destination checkpoint, all pre-acceptance rollback boundaries and accepted cleanup that preserves unexpected content; retain legacy journal/startup/update guards.
+
+- Verify direct routing, own-write/peer-read tools, immutable revisions, stale/expired and unsafe-path refusals, Main overlap/base checks and legacy charter behavior before release.
 
 ## 3.04
 
