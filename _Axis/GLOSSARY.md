@@ -123,6 +123,13 @@
 ### Coordination and Jobs
 
 - **Team** - An Axis Team of Agents working toward a shared objective under a Charter - see [Practices > Coordination].
+- **Team Infrastructure** - Common identity, authority, lifecycle, communication, workspace and recovery mechanisms used by Teams.
+- **Collaboration Pattern** - A reusable starting method for how members work together. It grants no permissions.
+- **Collaboration Plan** - A specific versioned method with assignments, exchanges, participation, synthesis and acceptance.
+- **Team Setup** - Turning an objective and constraints into a feasible charter and collaboration plan.
+- **Participation Period** - When a member must remain available for its assigned work and exchanges.
+- **Team Artifact** - An attributable, immutable revision of a member's work, distinct from a release Artifact.
+
 - **Charter** - A Team's founding record defining its purpose, members, scope, outputs, limits and completion checks.
 - **Job** - A bounded unit of work with an agreed objective, scope, limits and completion checks. Tasks track project commitments; Jobs organize execution.
 - **Mandate** - The objective, authority, scope, limits and completion conditions agreed when a Job is admitted.

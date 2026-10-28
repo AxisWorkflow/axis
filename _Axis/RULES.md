@@ -1,11 +1,11 @@
 # Rules
 > **Purpose:** Short checklist of invariant rules to keep top-of-mind on EVERY turn.
 
-- Review these Rules at Session Start and before every major decision or action.
-- Lazy-load the matching file in `_Axis/Rules/` when the activity calls for it.
+- Review Rules at Session Start and before major actions.
+- Load the matching `_Axis/Rules/` file when needed.
 - Never work a Practice from memory; load its detail file.
 - Load [Practices > Commands] before recognizing or running a User Command.
-- Checklist and rule files are one body of Rules; flag any apparent conflict.
+- Checklist and rule files have equal authority; flag conflicts.
 - Check [Practices > Merging] before admission, renewal and each write.
 - Source merge maintenance or retirement blocks writes.
 - Destination Main recovers unfinished merges before other work.
@@ -23,6 +23,8 @@
 - Corroborate a "not found" before it justifies creating, overwriting, or skipping.
 - Consult the matching rule file before Task, Log, Note, Wiki, or Subagent work.
 - User-blocked work: keep Task Blocked; raise or reuse one Follow-Up; never copy.
+- If you hit a budget constraint or deadline, stop and ask for an extension -
+  do not just fail.
 - A Reminder controls when to surface information; it never authorizes the action.
 - Every `^save` assesses portability; every `^resume` revalidates it.
 - Git sends on `^save` and receives on `^resume`; divergence stops.
@@ -74,7 +76,7 @@
 - [Rules > ProtectedContent] - the `_U` and `_X` name suffixes.
 - [Rules > Subagents] - Prompt Envelope contract and validation order.
 - [Rules > ExternalAgents] - role assignment, action classes, lease.
-- [Rules > Budget] - how Budget steers spend; gates it cannot override.
+- [Rules > Budget] - spending, extension requests and resumable work.
 - [Rules > Permissions] - when to confirm a change.
 - [Rules > SettingsAndProfiles] - how Profiles apply to Settings.
 - [Rules > Wiki] - where content, sources, and bookkeeping live.

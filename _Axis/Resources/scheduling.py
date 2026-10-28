@@ -287,10 +287,13 @@ def occurrence_key(project, schedule, revision, occurrence):
 
 
 def retry_decision(*, classification, idempotent, retries, failed_at, now, deadline,
-                   maximum=2, base_seconds=30, cap_seconds=300):
+                   maximum=2, base_seconds=30, cap_seconds=300, native_budget=False):
     """Offer a retry of the same Job/attempt, never revive a terminal Job."""
-    integer(retries, 0, 1000, "retry-count")
-    integer(maximum, 0, 2, "retry-limit")
+    need(type(native_budget) is bool, "native-budget-mode")
+    if native_budget: need(type(retries) is int and retries >= 0, "invalid-retry-count")
+    else:
+        integer(retries, 0, 1000, "retry-count")
+        integer(maximum, 0, 2, "retry-limit")
     integer(base_seconds, 1, 3600, "retry-base")
     integer(cap_seconds, base_seconds, 3600, "retry-cap")
     now, deadline, failed_at = instant(now), instant(deadline), instant(failed_at)
@@ -298,9 +301,9 @@ def retry_decision(*, classification, idempotent, retries, failed_at, now, deadl
         return {"decision": "hold", "reason": "failure-not-retryable"}
     if idempotent is not True:
         return {"decision": "hold", "reason": "idempotence-unproven"}
-    if retries >= maximum:
+    if not native_budget and retries >= maximum:
         return {"decision": "hold", "reason": "retry-limit"}
-    retry_at = failed_at + dt.timedelta(seconds=min(cap_seconds, base_seconds * 2 ** retries))
+    retry_at = failed_at + dt.timedelta(seconds=min(cap_seconds, base_seconds * 2 ** min(retries, cap_seconds.bit_length())))
     if max(now, retry_at) >= deadline:
         return {"decision": "hold", "reason": "retry-deadline"}
     return {"decision": "retry" if now >= retry_at else "wait", "retry_at": iso(retry_at), "retry_number": retries + 1}
@@ -345,7 +348,9 @@ def validate_definition(value, now):
     integer(policies["max_age_seconds"], 1, 86400 * 366, "missed-age")
     integer(policies["catch_up_limit"], 1, MAX_CANDIDATES, "catch-up-limit")
     integer(policies["queue_limit"], 1, MAX_CANDIDATES, "queue-limit")
-    integer(policies["max_retries"], 0, 2, "retry-limit")
+    native = isinstance(value.get("limits"), dict) and "budget" in value["limits"]
+    if native: need(type(policies["max_retries"]) is int and policies["max_retries"] >= 0, "invalid-retry-estimate")
+    else: integer(policies["max_retries"], 0, 2, "retry-limit")
     integer(policies["retry_base_seconds"], 1, 3600, "retry-base")
     integer(policies["retry_cap_seconds"], policies["retry_base_seconds"], 3600, "retry-cap")
     integer(policies["clock_jump_seconds"], 1, 86400 * 366, "clock-jump")
@@ -354,14 +359,22 @@ def validate_definition(value, now):
     value["policies"] = policies
     limits = {"duration_seconds": 3600, "rounds": 3, "launches": 12, "concurrency": 3, "reserve_launches": 1,
               "usage_policy": "included allowance only; metering unavailable"}
-    need(isinstance(value.get("limits", {}), dict) and value.get("limits", {}).keys() <= limits.keys(), "invalid-limits")
+    need(isinstance(value.get("limits", {}), dict) and value.get("limits", {}).keys() <= limits.keys() | {"budget", "aggregate_concurrency"}, "invalid-limits")
     limits.update(value.get("limits", {}))
-    integer(limits["duration_seconds"], 1, 86400, "duration")
-    integer(limits["rounds"], 1, 100, "rounds")
-    integer(limits["launches"], 1, 1000, "launches")
-    integer(limits["concurrency"], 1, limits["launches"], "concurrency")
-    integer(limits["reserve_launches"], 1, limits["launches"], "reserve")
-    need(limits["reserve_launches"] < limits["launches"], "invalid-reserve")
+    if "aggregate_concurrency" in limits: integer(limits["aggregate_concurrency"], 1, 100000, "aggregate-concurrency")
+    if native:
+        try: limits["budget"] = load_core()._native_policy(limits["budget"], instant(now))
+        except Exception as error: raise ScheduleError(getattr(error, "code", "native-budget-invalid")) from None
+        for key in ("duration_seconds", "rounds", "launches", "reserve_launches"):
+            need(type(limits[key]) is int and limits[key] >= 0, "invalid-estimate-" + key)
+        integer(limits["concurrency"], 1, 100000, "concurrency")
+    else:
+        integer(limits["duration_seconds"], 1, 86400, "duration")
+        integer(limits["rounds"], 1, 100, "rounds")
+        integer(limits["launches"], 1, 1000, "launches")
+        integer(limits["concurrency"], 1, limits["launches"], "concurrency")
+        integer(limits["reserve_launches"], 1, limits["launches"], "reserve")
+        need(limits["reserve_launches"] < limits["launches"], "invalid-reserve")
     need(isinstance(limits["usage_policy"], str) and limits["usage_policy"], "invalid-usage-policy")
     value["limits"] = limits
     return value
@@ -799,7 +812,7 @@ class Scheduler:
         with self._locked():
             record = self._record(schedule_id)
             result = {"schedule": schedule_id, "revision": record["revision"], "admitted": [],
-                      "duplicates": [], "notices": [], "queued": [], "retry_offers": []}
+                      "duplicates": [], "notices": [], "queued": [], "retry_offers": [], "budget_holds": []}
             if record["status"] != "active":
                 result["status"] = record["status"]
                 return result
@@ -849,10 +862,20 @@ class Scheduler:
                 retry_policy = pinned_data["definition"]["policies"]
                 for attempt_id, attempt in state.get("attempts", {}).items():
                     if attempt.get("status") == "failed" and not attempt.get("retry_authorized"):
+                        native = "budget" in job["limits"]
+                        deadline = instant(job["limits"]["deadline"])
+                        if native:
+                            budget = self.core.native_budget_state(job["limits"]["budget"]["key"])
+                            if budget["reasons"]:
+                                result["retry_offers"].append({"decision": "hold", "reason": "native-budget-held", "job": job["id"], "attempt": attempt_id})
+                                continue
+                            remaining = budget["remaining_seconds"]
+                            if remaining is not None:
+                                deadline = now + dt.timedelta(seconds=min(remaining, max(0, (deadline - now).total_seconds())))
                         decision = retry_decision(classification=attempt.get("classification", state.get("classification")),
                             idempotent=attempt.get("idempotent", state.get("idempotent")), retries=attempt.get("retry_count", state.get("retry_count", 0)),
                             failed_at=attempt["failed_at"], now=now,
-                            deadline=job["limits"]["deadline"], maximum=min(retry_policy["max_retries"], job["limits"].get("retries", 2)),
+                            deadline=deadline, maximum=min(retry_policy["max_retries"], job["limits"].get("retries", 2)), native_budget=native,
                             base_seconds=retry_policy["retry_base_seconds"], cap_seconds=retry_policy["retry_cap_seconds"])
                         result["retry_offers"].append(dict(decision, job=job["id"], attempt=attempt_id))
             if active and definition["trigger"].get("mode") == "completion-relative":
@@ -931,7 +954,11 @@ class Scheduler:
                         result["notices"].append({"reason": "event-debounced", "planned": candidate["planned"]})
                         continue
                 limits = copy.deepcopy(definition["limits"])
-                limits["deadline"] = stamp(min(now + dt.timedelta(seconds=limits.pop("duration_seconds")), instant(definition["authority"]["expires"])))
+                if "budget" in limits:
+                    limits.pop("duration_seconds")
+                    limits["deadline"] = definition["authority"]["expires"]
+                else:
+                    limits["deadline"] = stamp(min(now + dt.timedelta(seconds=limits.pop("duration_seconds")), instant(definition["authority"]["expires"])))
                 limits["usage"] = limits.pop("usage_policy")
                 limits["retries"] = policy["max_retries"]
                 mandate = {"subject": definition["subject"], "objective": definition.get("description", definition["subject"]),
@@ -949,8 +976,11 @@ class Scheduler:
                         result["notices"].append({"reason": "overlap-raced"})
                         continue
                     raise
-                result["duplicates" if admitted["status"] == "duplicate" else "admitted"].append(admitted["id"])
-                active.append((admitted["record"], {"state": "admitted"}))
+                if admitted["status"] == "budget-held":
+                    result["budget_holds"].append({k: admitted[k] for k in ("status", "id", "reasons", "extension_required")})
+                else:
+                    result["duplicates" if admitted["status"] == "duplicate" else "admitted"].append(admitted["id"])
+                active.append((admitted["record"], {"state": "paused" if admitted["status"] == "budget-held" else "admitted"}))
                 if definition["trigger"]["type"] == "event":
                     runtime["last_event"] = candidate["planned"]
             runtime.update(cursor=stamp(now), last_observed=stamp(now), clock_generation=PROCESS_TOKEN,

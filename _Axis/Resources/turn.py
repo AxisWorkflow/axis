@@ -166,8 +166,14 @@ if first=='Main: session':
     index=root/'_Axis/MESSAGES.md'
     try:
         if index.is_symlink() or index.stat().st_size>65536:raise ValueError('unsafe index')
-        text=index.read_text(); pending=re.search(r'^pending-count: ([0-9]+)$',text,re.M)
-        if pending and int(pending[1]):items.append(f'{pending[1]} pending Message(s); validate the cached view under _Axis/Practices/Messages.md before acting')
+        text=index.read_text(); pending=re.search(r'^main-pending-count: ([0-9]+)$',text,re.M)
+        uncertain=re.search(r'^main-uncertain-count: ([0-9]+)$',text,re.M)
+        if pending and uncertain and 'main-view: recipient-lifecycle/v1' in text:
+            if int(pending[1]):items.append(f'{pending[1]} pending Main Message(s); validate the cached view under _Axis/Practices/Messages.md before acting')
+            if int(uncertain[1]):items.append(f'{uncertain[1]} Message classification(s) uncertain; inspect canonical routing and lifecycle')
+        else:
+            global_pending=re.search(r'^pending-count: ([0-9]+)$',text,re.M)
+            if global_pending and int(global_pending[1]):items.append('Message view lacks Main classification; rebuild the cached view before treating global pending records as Main work')
     except FileNotFoundError:pass
     except (OSError,ValueError):items.append('Message view unverified; inspect canonical records before acting')
     legacy=root/'_Axis/Requests'

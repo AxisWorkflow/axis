@@ -28,6 +28,12 @@ Missing, blank or unrecognized values mean `Default`.
 - **Routine records never need confirmation.** Logs, Tracking lines, index updates, Marker renewals and the other records that accompany work the level already allows are part of that work at every level, including `Restricted`.
 - When unsure which side of a line a change falls on, treat it as the more cautious case for the current level.
 
+## Continuing approved work
+
+An existing grant continues across routine preparation, corrections, relevant checks, saving and finalization within its scope and agreed budget. Do not request the same permission again because a step failed, a procedure ended, or work crossed an internal phase. A procedure's STOP ends that procedure; it does not abandon the authorized Task. Preserve the checkpoint, resolve the affected condition and continue independent authorized work.
+
+Ask only for a genuinely missing decision, changed scope or risk, a separately gated action not already authorized, or an extension under [Rules > Budget]. An actual failed check remains evidence and must be resolved before the action it protects; it is not by itself a new approval requirement. Do not bypass an unsafe precondition or turn an estimate into a new gate.
+
 ## Confirmation words
 
 Some Commands ask for a literal word before acting (`ARCHIVE`, `TRASH`). At `Restricted` only User supplies it. At `Default` and `Autonomous`, when the level lets the underlying action proceed, the Agent may supply the word itself: state that it did, and record it in the Command's Log Event. The gates below keep their own confirmation at every level.

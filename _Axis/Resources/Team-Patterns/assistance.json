@@ -1,0 +1,62 @@
+{
+  "schema": "axis.team-plan/v1",
+  "objective": "Help a work owner resolve two specific specialist questions.",
+  "pattern": "assistance",
+  "leader": "leader",
+  "workers": [
+    "domain-helper",
+    "evidence-helper"
+  ],
+  "participation": {
+    "mode": "concurrent",
+    "declared_capacity": 3,
+    "route_observed_capacity": null,
+    "required_through": {
+      "leader": "integration",
+      "domain-helper": "integration",
+      "evidence-helper": "integration"
+    },
+    "available_through": {
+      "leader": "integration",
+      "domain-helper": "integration",
+      "evidence-helper": "integration"
+    }
+  },
+  "phases": [
+    "assistance",
+    "integration"
+  ],
+  "review": {
+    "coverage": "targeted",
+    "assignments": {
+      "domain-helper": [
+        "leader"
+      ],
+      "evidence-helper": [
+        "leader"
+      ]
+    },
+    "responses_required": true
+  },
+  "synthesis": {
+    "member_review": false,
+    "acceptance_owner": "main",
+    "owner": "leader"
+  },
+  "authority_status": "proposed",
+  "budget": {
+    "max_spend_usd": 0,
+    "spend_basis": "incremental-charges",
+    "max_runtime_minutes": 60
+  },
+  "estimates": {
+    "invocations": 6,
+    "team_minutes": 45,
+    "review_minutes": 15
+  },
+  "revision": "initial",
+  "deliverables": [
+    "Reviewed integrated result with retained dissent"
+  ],
+  "acceptance": "Main verifies the result against the objective and retained evidence."
+}

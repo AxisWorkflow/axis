@@ -1,0 +1,67 @@
+{
+  "schema": "axis.team-plan/v1",
+  "objective": "Prepare four sections of a shared report.",
+  "pattern": "delegated-contributions",
+  "leader": "leader",
+  "workers": [
+    "research",
+    "examples",
+    "methods",
+    "editing"
+  ],
+  "participation": {
+    "mode": "concurrent",
+    "declared_capacity": 5,
+    "route_observed_capacity": null,
+    "required_through": {
+      "leader": "integration",
+      "research": "integration",
+      "examples": "integration",
+      "methods": "integration",
+      "editing": "integration"
+    },
+    "available_through": {
+      "leader": "integration",
+      "research": "integration",
+      "examples": "integration",
+      "methods": "integration",
+      "editing": "integration"
+    }
+  },
+  "phases": [
+    "delegated-contributions",
+    "integration"
+  ],
+  "review": {
+    "coverage": "targeted",
+    "assignments": {
+      "editing": [
+        "research",
+        "examples",
+        "methods"
+      ]
+    },
+    "responses_required": true
+  },
+  "synthesis": {
+    "owner": "leader",
+    "member_review": false,
+    "acceptance_owner": "main"
+  },
+  "authority_status": "proposed",
+  "budget": {
+    "max_spend_usd": 0,
+    "spend_basis": "incremental-charges",
+    "max_runtime_minutes": 80
+  },
+  "estimates": {
+    "invocations": 10,
+    "team_minutes": 60,
+    "review_minutes": 20
+  },
+  "revision": "initial",
+  "deliverables": [
+    "Reviewed integrated result with retained dissent"
+  ],
+  "acceptance": "Main verifies the result against the objective and retained evidence."
+}

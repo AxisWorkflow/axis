@@ -1,0 +1,69 @@
+{
+  "schema": "axis.team-plan/v1",
+  "objective": "Assess and improve the Team bootstrap using one shared infrastructure and adaptable collaboration.",
+  "pattern": "deliberative-panel",
+  "leader": "leader",
+  "workers": [
+    "infrastructure-astra",
+    "infrastructure-opus",
+    "collaboration-astra",
+    "collaboration-opus",
+    "setup-astra",
+    "setup-opus"
+  ],
+  "participation": {
+    "mode": "concurrent",
+    "declared_capacity": 7,
+    "route_observed_capacity": null,
+    "required_through": {
+      "leader": "final-review",
+      "infrastructure-astra": "final-review",
+      "infrastructure-opus": "final-review",
+      "collaboration-astra": "final-review",
+      "collaboration-opus": "final-review",
+      "setup-astra": "final-review",
+      "setup-opus": "final-review"
+    },
+    "available_through": {
+      "leader": "final-review",
+      "infrastructure-astra": "final-review",
+      "infrastructure-opus": "final-review",
+      "collaboration-astra": "final-review",
+      "collaboration-opus": "final-review",
+      "setup-astra": "final-review",
+      "setup-opus": "final-review"
+    }
+  },
+  "phases": [
+    "independent-assessment",
+    "deliberative-panel",
+    "assistance",
+    "final-review"
+  ],
+  "review": {
+    "coverage": "all-workers",
+    "peers_per_worker": 5,
+    "responses_required": true
+  },
+  "synthesis": {
+    "owner": "leader",
+    "member_review": true,
+    "acceptance_owner": "main"
+  },
+  "authority_status": "proposed",
+  "budget": {
+    "max_spend_usd": 0,
+    "spend_basis": "incremental-charges",
+    "max_runtime_minutes": 120
+  },
+  "estimates": {
+    "invocations": 14,
+    "team_minutes": 90,
+    "review_minutes": 30
+  },
+  "revision": "initial",
+  "deliverables": [
+    "Reviewed integrated result with retained dissent"
+  ],
+  "acceptance": "Main verifies the result against the objective and retained evidence."
+}

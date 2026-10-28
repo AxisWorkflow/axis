@@ -123,6 +123,8 @@ Optional project state: `EXCEPTIONS.md` in the Axis control folder, created on f
 - `_Axis/Practices/Submissions.md`
 - `_Axis/Practices/Messages.md`
 - `_Axis/Practices/Coordination.md`
+- `_Axis/Practices/Teams.md`
+- `_Axis/Practices/Collaboration.md`
 - `_Axis/Practices/Scheduling.md`
 - `_Axis/Practices/Reminders.md`
 - `_Axis/Practices/Settings.md`
@@ -238,6 +240,8 @@ Optional project state: `EXCEPTIONS.md` in the Axis control folder, created on f
 - `_Axis/Resources/guardrails.py` - optional host hook (`^install guardrails`) that refuses an Agent's edit to a write-once record or a malformed new record name, and a helper's use of `_Axis/Secrets/` or writes outside its role's folders.
 - `_Axis/Resources/Helpers/axis-cx.claude-agent`, `axis-wiki.claude-agent`, `axis-general.claude-agent` - helper role definitions `^install guardrails` copies into `.claude/agents/` as `.md` files.
 - `_Axis/Resources/OpenClaw/axis-guardrails/openclaw.plugin.json` and `index.ts` - optional OpenClaw plugin (`^install guardrails`) that applies `guardrails.py --external` to agents configured as External Agents.
+- `_Axis/Resources/team-plan.py` - optional structural plan validator.
+- `_Axis/Resources/Team-Patterns/meta-team.json`, `assistance.json`, `delegated-report.json` - editable examples, never execution authority.
 - `_Axis/Resources/coordination.py`
 - `_Axis/Resources/coordination-record.py`
 - `_Axis/Resources/coordination-submissions.py`
@@ -248,6 +252,9 @@ Optional project state: `EXCEPTIONS.md` in the Axis control folder, created on f
 - `_Axis/Resources/Legacy-Updater-Bootstrap.md`, `_Axis/Resources/Legacy-Checkpoint-Recovery.md` and `_Axis/Resources/legacy-checkpoint-patches.json` - conditional old-engine bootstrap and exact checker repair data.
 - `_Axis/Resources/scheduling.py`
 - `_Axis/Resources/session-adapters.py`
+- `_Axis/Resources/team-route.py` - optional native included-route runner with an explicit trusted Host verifier; direct Host/manual execution remains available.
+- `_Axis/Resources/team-route-observation.py` - optional process and usage observation; missing telemetry stays unavailable, never inferred billing or completion.
+- `_Axis/Resources/team-closing.py` - optional selected canonical closing contract; unselected Teams keep their existing procedure.
 - `_Axis/Resources/axis`
 - `_Axis/Resources/Coordination-Manual.md`
 - `_Axis/Resources/Detect-Capabilities.md`

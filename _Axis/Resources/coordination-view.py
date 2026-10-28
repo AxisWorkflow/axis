@@ -37,6 +37,12 @@ def summary(root):
    result['indexes'][family]={'rows':rows[:100],'total_rows':len(rows),'total_records':total_records,'truncated':total_records>len(rows),'verification':'cached-unverified'}
    if family=='Messages':
     m=re.search(r'^pending-count: ([0-9]+)$',text,re.M);result['pending_messages']=int(m[1]) if m else len(rows)
+    main=re.search(r'^main-pending-count: ([0-9]+)$',text,re.M);uncertain=re.search(r'^main-uncertain-count: ([0-9]+)$',text,re.M)
+    classified=bool(main and uncertain and 'main-view: recipient-lifecycle/v1' in text)
+    result['main_pending_messages']=int(main[1]) if classified else None
+    result['main_uncertain_messages']=int(uncertain[1]) if classified else None
+    result['main_message_classification']='cached-unverified' if classified else 'unclassified'
+    if not classified and result['pending_messages']:result['warnings'].append('Messages lack Main recipient/lifecycle classification')
   except FileNotFoundError:result['indexes'][family]={'rows':[],'total_rows':0,'verification':'absent'}
   except (OSError,ValueError,UnicodeError):result['warnings'].append(family+' index unavailable')
  for family,key in [('Submissions','submissions'),('Requests','legacy_requests')]:

@@ -24,3 +24,7 @@ Stop at any failed check, tell the user which step failed, and leave everything 
 ## Migration and update checkpoints
 
 Before moving a Review or Status report to its descriptive archived memo name, retain a `Reference move` Log under [Practices > LinkMaintenance > Project boundaries and recorded moves]; preserve its exact source identity, destination and SHA-256, then verify unchanged moved bytes. This alias keeps old citations resolvable. Without the helper, record the same structured receipt manually under ordinary Main record guards. After adopted updates and startup migrations, complete [Practices > GIT > Update checkpoints] before ordinary work; report unavailable or blocked checkpoints explicitly, including delegated updates.
+
+### Pending communication classification
+
+When inspecting Messages, distinguish the global pending-history count from actual Main-recipient obligations. Validate recipients, dispositions and referenced Team/Job lifecycle under [Practices > Messages]. Retain uncertain routing for review and peer history unchanged; a global count alone does not require Main to answer every peer exchange. Derived counts are cached prompts, not authority.

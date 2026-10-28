@@ -131,6 +131,10 @@ def survey(self, model, harness, interaction, spawn, parallel):
         if len(message_view.encode())<=65536:
             pending=re.search(r'^pending-count: ([0-9]+)$',message_view,re.M)
             if pending:report['pending_messages']=int(pending[1])
+            main=re.search(r'^main-pending-count: ([0-9]+)$',message_view,re.M)
+            uncertain=re.search(r'^main-uncertain-count: ([0-9]+)$',message_view,re.M)
+            if main and uncertain and 'main-view: recipient-lifecycle/v1' in message_view:
+                report['main_pending_messages']=int(main[1]);report['main_uncertain_messages']=int(uncertain[1])
     except (OSError,ValueError,Fault):pass
     report['coordination_indexes']=[n for n in ('TEAMS.md','MESSAGES.md','JOBS.md','SCHEDULES.md') if (self.root/'_Axis'/n).is_file()]
     report['trash']=inventory(self,'_Trash')

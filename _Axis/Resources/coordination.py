@@ -40,8 +40,8 @@ FAMILIES = ('Teams', 'Messages', 'Jobs', 'Schedules')
 MESSAGE_KINDS = {'request', 'offer', 'assignment', 'question', 'answer', 'receipt', 'result', 'validation', 'decision', 'control', 'transfer'}
 PROPOSALS = {'offer', 'question', 'answer', 'receipt', 'result'}
 TERMINAL = {'succeeded', 'completed', 'failed', 'cancelled', 'expired'}
-JOB_ACTIONS = {'dispatch', 'receipt', 'result', 'validate', 'attempt_failed', 'retry', 'uncertain', 'reconcile', 'round', 'pause', 'boundary', 'resume', 'cancel', 'checkpoint', 'succeed', 'fail', 'expire'}
-TEAM_ACTIONS = {'start', 'bind_member', 'replace_leader', 'amend', 'pause', 'resume', 'cancel', 'complete', 'fail', 'checkpoint'}
+JOB_ACTIONS = {'dispatch', 'receipt', 'result', 'validate', 'attempt_failed', 'retry', 'uncertain', 'reconcile', 'round', 'pause', 'boundary', 'resume', 'cancel', 'checkpoint', 'succeed', 'fail', 'expire', 'charge', 'budget_hold', 'route_boundary'}
+TEAM_ACTIONS = {'start', 'bind_member', 'replace_leader', 'amend', 'pause', 'resume', 'cancel', 'complete', 'fail', 'checkpoint', 'budget_hold'}
 SAFE_OPERATIONS = {'inspect', 'read', 'report', 'write', 'validate', 'coordinate', 'dispatch'}
 MAX_BODY = 16 * 1024
 MAX_RECORD = 131072
@@ -279,22 +279,94 @@ def _integer(value, name, low=0, high=100000):
     return value
 
 
+def _native(record):
+    """An explicit versioned policy selects new semantics; absence means legacy."""
+    return 'budget' in record.get('limits', {})
+
+
+def _native_policy(value, now=None):
+    required = {'version', 'key', 'clock_start', 'accounting_owner', 'scope', 'routes'}
+    need(isinstance(value, dict) and required <= value.keys() and value.keys() <= required | {'money', 'runtime_seconds'}, 'native-budget-shape')
+    need(type(value['version']) is int and value['version'] == 1, 'native-budget-version')
+    need(isinstance(value['key'], str) and re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._:-]{0,127}', value['key']), 'native-budget-key')
+    start = timestamp(value['clock_start']); identity(value['accounting_owner'])
+    if now is not None: need(start <= now, 'budget-clock-future')
+    need(isinstance(value['scope'], str) and 0 < len(value['scope'].encode()) <= 4096, 'budget-scope')
+    routes = value['routes']
+    need(isinstance(routes, dict) and set(routes) == {'included', 'incremental'}, 'budget-routes')
+    for names in routes.values():
+        need(isinstance(names, list) and all(isinstance(n, str) and re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._:-]{0,127}', n) for n in names), 'budget-routes')
+        need(len(names) == len(set(names)), 'budget-routes')
+    need(routes['included'] or routes['incremental'], 'budget-routes')
+    need(not set(routes['included']).intersection(routes['incremental']), 'budget-routes')
+    need('money' in value or 'runtime_seconds' in value, 'native-budget-empty')
+    if 'money' in value:
+        money = value['money']
+        need(isinstance(money, dict) and set(money) == {'currency', 'ceiling_minor', 'cost_basis'}, 'budget-money')
+        need(isinstance(money['currency'], str) and re.fullmatch(r'[A-Z]{3}', money['currency']), 'budget-currency')
+        _integer(money['ceiling_minor'], 'money-minor', 0, 10**18)
+        need(isinstance(money['cost_basis'], str) and 0 < len(money['cost_basis'].encode()) <= 4096, 'budget-cost-basis')
+    if 'runtime_seconds' in value: _integer(value['runtime_seconds'], 'runtime-seconds', 1, 10**12)
+    return copy.deepcopy(value)
+
+
+def _native_charge(policy, value):
+    need(isinstance(value, dict) and set(value) == {'basis', 'route', 'reserve_minor', 'evidence'}, 'budget-charge-shape')
+    basis = value['basis']
+    need(isinstance(basis, str) and basis in {'included', 'incremental'} and isinstance(value['route'], str) and value['route'] in policy['routes'][basis], 'budget-route-unauthorized')
+    unpriced = value['reserve_minor'] is None
+    if unpriced:
+        need('money' not in policy and basis == 'incremental', 'budget-reservation-required')
+        reserve = 0
+    else:
+        reserve = _integer(value['reserve_minor'], 'reserve-minor', 0, 10**18)
+        need(reserve == 0 if basis == 'included' else reserve > 0, 'budget-reservation-required')
+    need(isinstance(value['evidence'], str) and value['evidence'].strip(), 'budget-charge-evidence')
+    return {'known_minor': 0, 'reserved_minor': reserve, 'uncertain_minor': 0, 'final': basis == 'included', 'unpriced': unpriced, 'reports': {}}
+
+
+def _native_report(item, data, event):
+    required = {'attempt', 'report_id', 'known_minor', 'reserved_minor', 'uncertain_minor', 'final', 'evidence'}
+    need(set(data) == required, 'budget-report-shape')
+    token = _attempt_token(data['report_id'])
+    charge = item['charge_state']
+    need(token not in charge['reports'], 'budget-report-duplicate')
+    for name in ('known_minor', 'reserved_minor', 'uncertain_minor'): _integer(data[name], name, 0, 10**18)
+    need(type(data['final']) is bool and isinstance(data['evidence'], str) and data['evidence'].strip(), 'budget-report-evidence')
+    need(data['known_minor'] >= charge['known_minor'], 'budget-known-regression')
+    need(not data['final'] or data['reserved_minor'] == data['uncertain_minor'] == 0, 'budget-final-unsettled')
+    if charge['final']:
+        need(data['final'] and data['reserved_minor'] == data['uncertain_minor'] == 0, 'budget-already-final')
+    elif not data['final']:
+        need(sum(data[k] for k in ('known_minor', 'reserved_minor', 'uncertain_minor')) >= sum(charge[k] for k in ('known_minor', 'reserved_minor', 'uncertain_minor')), 'budget-liability-regression')
+    for name in ('known_minor', 'reserved_minor', 'uncertain_minor', 'final'): charge[name] = data[name]
+    if data['final']: charge['unpriced'] = False
+    charge['reports'][token] = {'event': event['id'], 'data': copy.deepcopy(data)}
+
+
 def _limits(limits, now=None):
     need(isinstance(limits, dict), 'limits')
     limits = copy.deepcopy(limits)
     defaults = {'rounds': 3, 'launches': 12, 'concurrency': 3, 'reserve_launches': 1, 'retries': 2}
     for key, default in defaults.items():
         limits.setdefault(key, default)
-        _integer(limits[key], key, 0 if key in {'reserve_launches', 'retries'} else 1)
-    need(limits['reserve_launches'] < limits['launches'], 'report-reserve')
-    need(limits['retries'] <= 2, 'retry-limit')
+        if 'budget' in limits and key != 'concurrency':
+            need(type(limits[key]) is int and limits[key] >= 0, 'budget-estimate-' + key)
+        else:
+            _integer(limits[key], key, 0 if key in {'reserve_launches', 'retries'} else 1)
+    if 'budget' in limits:
+        limits['budget'] = _native_policy(limits['budget'], now)
+    else:
+        need(limits['reserve_launches'] < limits['launches'], 'report-reserve')
+        need(limits['retries'] <= 2, 'retry-limit')
     deadline = timestamp(limits.get('deadline'))
     if now is not None:
         need(now < deadline, 'deadline')
     if 'aggregate_concurrency' in limits:
         _integer(limits['aggregate_concurrency'], 'aggregate_concurrency', 1)
     if 'aggregate_launches' in limits:
-        _integer(limits['aggregate_launches'], 'aggregate_launches', 1)
+        if 'budget' in limits: need(type(limits['aggregate_launches']) is int and limits['aggregate_launches'] >= 0, 'budget-estimate-aggregate-launches')
+        else: _integer(limits['aggregate_launches'], 'aggregate_launches', 1)
     limits.setdefault('usage', 'unmetered; launch/time bounds only, no hard currency cap')
     need(isinstance(limits['usage'], str) and limits['usage'].strip(), 'usage-policy')
     return limits
@@ -312,6 +384,24 @@ def _remaining_reservation(record, state):
 def _attempt_token(value):
     need(isinstance(value, str) and re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._:-]{0,127}', value) is not None, 'attempt')
     return value
+
+
+def _bound_plan(record, *, verify=True):
+    """Optional method validation; no plan is loaded on the legacy path."""
+    if 'collaboration_plan' not in record:
+        need('collaboration_plan_sha256' not in record, 'plan-without-content')
+        return None
+    spec = importlib.util.spec_from_file_location('axis_team_plan', Path(__file__).with_name('team-plan.py'))
+    try:
+        module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
+    except (OSError, ImportError, AttributeError) as error:
+        raise CoordinationError('plan-validator-unavailable') from error
+    slots = [m.get('slot') for m in record.get('members', []) if isinstance(m, dict)]
+    result = module.bind(record['collaboration_plan'], slots, record['limits']['concurrency'], record['limits'].get('budget'))
+    need(result['consistent'], 'collaboration-plan:' + ','.join(result['issues']))
+    if verify:
+        need(record.get('collaboration_plan_sha256') == result['plan_sha256'], 'plan-digest')
+    return result
 
 
 def _initial(record):
@@ -344,6 +434,8 @@ def _initial(record):
                 need(member['session'] != record['issuer']['session'], 'dedicated-leader')
         if 'collaboration' in record: need(len({s.casefold() for s in slots}) == len(slots), 'member-path-alias')
         common.update(state='ready', members={m['slot']: m for m in members}, leader=next(m.get('session') for m in members if m['slot'] == 'leader'))
+        plan = _bound_plan(record)
+        if plan: common.update(collaboration_plan=copy.deepcopy(record['collaboration_plan']), collaboration_plan_sha256=plan['plan_sha256'])
     else:
         common.update(state='admitted', attempts={}, active=[], launches=0, rounds=0, retry_count=0, validations=[], results=[], late_results=[], stop_unconfirmed=[], classification=None, idempotent=False)
     return common
@@ -354,6 +446,8 @@ def _job_transition(state, event, record, proposals):
     now = timestamp(event['at'])
     limits = state['limits']
     active = state['active']
+    pending = {key for key, value in state['attempts'].items() if value.get('route_pending') is True}
+    occupied = set(active) | pending
     if action == 'dispatch':
         need(state['state'] in {'admitted', 'running'}, 'dispatch-state')
         need(now < timestamp(limits['deadline']) and now < timestamp(state['authority']['expires']), 'deadline')
@@ -363,11 +457,11 @@ def _job_transition(state, event, record, proposals):
         need(data['session'] != record['issuer']['session'], 'main-worker')
         slot = _attempt_token(data.get('slot'))
         need(data.get('operation') in record['actions'], 'operation-scope')
-        need(not any(state['attempts'][a]['session'] == data['session'] for a in active), 'session-busy')
-        need(len(active) < limits['concurrency'], 'concurrency')
+        need(not any(state['attempts'][a]['session'] == data['session'] for a in occupied), 'session-busy')
+        need(len(occupied) < limits['concurrency'], 'concurrency')
         reporting = data.get('purpose') in {'validation', 'checkpoint', 'report'}
         ceiling = limits['launches'] if reporting else limits['launches'] - limits['reserve_launches']
-        need(state['launches'] < ceiling, 'launches')
+        if not _native(record): need(state['launches'] < ceiling, 'launches')
         if data.get('retry_of'):
             prior = state['attempts'].get(data['retry_of'], {})
             need(prior.get('retry_authorized') is True and prior.get('retry_used') is not True, 'retry-not-authorized')
@@ -378,7 +472,55 @@ def _job_transition(state, event, record, proposals):
             for path in data['scope']:
                 relative(path)
         state['attempts'][attempt] = dict(data, status='dispatch-intent', event=event['id'], epoch=event['epoch'], dispatched_at=event['at'])
+        if _native(record):
+            state['attempts'][attempt]['charge_state'] = _native_charge(limits['budget'], data.get('charge'))
+            if 'route_request_sha256' in data:
+                need(isinstance(data['route_request_sha256'], str) and re.fullmatch(r'[0-9a-f]{64}', data['route_request_sha256']), 'route-request-digest')
+                state['attempts'][attempt].update(route_pending=True, route_uncertain=False)
         active.append(attempt); state['launches'] += 1; state['state'] = 'running'
+    elif action == 'route_boundary':
+        need(_native(record), 'native-route-required')
+        attempt = data.get('attempt'); item = state['attempts'].get(attempt)
+        need(item is not None and isinstance(item.get('route_request_sha256'), str), 'route-attempt')
+        need(type(data.get('confirmed')) is bool and data.get('request_sha256') == item['route_request_sha256'], 'route-boundary-binding')
+        need(isinstance(data.get('evidence'), str) and data['evidence'].strip(), 'route-boundary-evidence')
+        def route_record(ident, stage, kind):
+            value = proposals.get(ident); need(isinstance(value, dict), 'route-record')
+            _envelope(value); _accepted(value)
+            detail = value.get('data', {})
+            need(value['kind'] == kind and value.get('project') == record['project'] and value.get('team') == record.get('team') and value.get('job') == record['id'] and value.get('epoch') == item['epoch'], 'route-record-binding')
+            need(detail.get('protocol') == 'axis.team-route/v1' and detail.get('stage') == stage and detail.get('job') == record['id'] and detail.get('attempt') == attempt and detail.get('request_sha256') == item['route_request_sha256'], 'route-record-binding')
+            return value, detail
+        intent, _ = route_record(data.get('intent'), 'intent', 'control')
+        result, detail = route_record(data.get('result'), 'terminal-observation' if data['confirmed'] else 'result', 'result')
+        need(detail.get('intent') == intent['id'], 'route-intent-binding')
+        if data['confirmed']:
+            original, original_data = route_record(detail.get('route_result'), 'result', 'result')
+            need(original_data.get('intent') == intent['id'], 'route-original-binding')
+            boundary = detail.get('boundary', {})
+            need(boundary.get('verified') is True and boundary.get('group_terminal') is True and isinstance(boundary.get('evidence'), str) and boundary['evidence'].strip(), 'route-terminal-proof')
+            need(detail.get('ended_at') == original_data.get('ended_at'), 'route-return-time')
+            need(boundary.get('intent') == intent['id'] and boundary.get('request_sha256') == item['route_request_sha256'], 'route-boundary-identity')
+            if original_data.get('recovery_observation') is True:
+                need(original_data.get('ended_at') is None and detail.get('requested_result') is None and boundary.get('result') is None, 'route-interrupted-proof')
+            else:
+                need(boundary.get('result') == original['id'] and detail.get('requested_result', original['id']) == original['id'], 'route-boundary-identity')
+        if item.get('route_boundary') == data:
+            return
+        need(item.get('route_pending') is True, 'route-already-terminal')
+        item['route_boundary'] = copy.deepcopy(data)
+        item['route_boundary_event'] = event['id']
+        item['route_uncertain'] = not data['confirmed']
+        if data['confirmed']:
+            item['route_pending'] = False
+            if attempt in active: active.remove(attempt)
+            if attempt in state['stop_unconfirmed']: state['stop_unconfirmed'].remove(attempt)
+            if state['state'] == 'pause-requested' and not active and not any(a.get('route_pending') for a in state['attempts'].values()): state['state'] = 'paused'
+    elif action == 'charge':
+        need(_native(record), 'native-budget-required')
+        item = state['attempts'].get(data.get('attempt'))
+        need(item is not None, 'unknown-attempt')
+        _native_report(item, data, event)
     elif action in {'receipt', 'result', 'validate', 'attempt_failed', 'uncertain', 'reconcile', 'retry'}:
         attempt = data.get('attempt')
         need(attempt in state['attempts'], 'unknown-attempt')
@@ -401,6 +543,7 @@ def _job_transition(state, event, record, proposals):
             need(result.get('team') == record.get('team'), 'result-team')
             item.update(status='result', result=result['id']); state['results'].append(result['id'])
             if attempt in active: active.remove(attempt)
+            if _native(record) and not active and not pending and state['state'] == 'pause-requested': state['state'] = 'paused'
         elif action == 'validate':
             need(item['status'] == 'result' and data.get('message') == item['result'], 'validation-result')
             need(data.get('accepted') in {True, False} and type(data.get('accepted')) is bool, 'validation-decision')
@@ -417,13 +560,15 @@ def _job_transition(state, event, record, proposals):
             state.update(classification=data['classification'], idempotent=data['idempotent'])
         elif action == 'retry':
             need(item['status'] == 'failed' and item.get('classification') in {'transient', 'capacity', 'transport'} and item.get('idempotent') is True, 'unsafe-retry')
-            need(not item.get('retry_authorized') and state['retry_count'] < limits['retries'], 'retry-limit')
+            need(not item.get('retry_authorized') and (_native(record) or state['retry_count'] < limits['retries']), 'retry-limit')
             retry_after = timestamp(data.get('after'))
             need(now <= retry_after < timestamp(limits['deadline']), 'retry-backoff')
             item.update(retry_authorized=True, retry_after=data['after']); state['retry_count'] += 1
         elif action == 'uncertain':
             need(item['status'] in {'dispatch-intent', 'received'}, 'uncertain-state')
             item['status'] = 'needs-reconciliation'; state['state'] = 'blocked'; state['classification'] = 'unknown-external-outcome'
+            if _native(record):
+                charge = item['charge_state']; charge['uncertain_minor'] += charge['reserved_minor']; charge['reserved_minor'] = 0
         else:
             prior_state = state['state']
             need(item['status'] == 'needs-reconciliation' and data.get('outcome') in {'not-performed', 'performed', 'failed'}, 'reconcile-state')
@@ -432,11 +577,14 @@ def _job_transition(state, event, record, proposals):
             if attempt in active: active.remove(attempt)
             if attempt in state['stop_unconfirmed']: state['stop_unconfirmed'].remove(attempt)
             if prior_state not in TERMINAL and not any(a['status'] == 'needs-reconciliation' for a in state['attempts'].values()):
-                state['state'] = ('pause-requested' if active else 'paused') if prior_state in {'paused', 'pause-requested'} else ('running' if active else 'admitted')
+                state['state'] = ('pause-requested' if active or any(a.get('route_pending') for a in state['attempts'].values()) else 'paused') if prior_state in {'paused', 'pause-requested'} else ('running' if active else 'admitted')
     elif action == 'round':
-        need(state['state'] in {'admitted', 'running'} and state['rounds'] < limits['rounds'], 'rounds')
+        need(state['state'] in {'admitted', 'running'} and (_native(record) or state['rounds'] < limits['rounds']), 'rounds')
         need(isinstance(data.get('progress'), str) and data['progress'].strip(), 'progress')
         state['rounds'] += 1
+    elif action == 'budget_hold':
+        need(_native(record) and isinstance(data.get('summary'), str) and data['summary'].strip(), 'budget-hold')
+        state['checkpoint'] = dict(data); state['state'] = 'pause-requested' if active else 'paused'
     elif action == 'pause':
         need(state['state'] not in {'pause-requested', 'paused'}, 'pause-state')
         state['state'] = 'pause-requested' if active else 'paused'
@@ -448,21 +596,21 @@ def _job_transition(state, event, record, proposals):
         state['attempts'][attempt]['status'] = 'stopped'
         if attempt in active: active.remove(attempt)
         if attempt in state['stop_unconfirmed']: state['stop_unconfirmed'].remove(attempt)
-        if not active and state['state'] == 'pause-requested': state['state'] = 'paused'
+        if not active and not any(a.get('route_pending') for a in state['attempts'].values()) and state['state'] == 'pause-requested': state['state'] = 'paused'
     elif action == 'resume':
-        need(state['state'] == 'paused' and not active, 'resume-state')
+        need(state['state'] == 'paused' and not occupied, 'resume-state')
         state['state'] = 'admitted'
     elif action == 'cancel':
-        state['state'] = 'cancelled'; state['stop_unconfirmed'] = list(active); state['completed_at'] = event['at']
+        state['state'] = 'cancelled'; state['stop_unconfirmed'] = sorted(occupied); state['completed_at'] = event['at']
     elif action in {'succeed', 'fail', 'expire'}:
         if action == 'succeed':
-            need(not active and state['attempts'] and all(a['status'] in {'validated', 'stopped'} or (a['status'] == 'failed' and a.get('retry_used') is True) or (a['status'] == 'reconciled' and a.get('outcome') == 'not-performed') for a in state['attempts'].values()), 'unvalidated-output')
+            need(not occupied and state['attempts'] and all(a['status'] in {'validated', 'stopped'} or (a['status'] == 'failed' and a.get('retry_used') is True) or (a['status'] == 'reconciled' and a.get('outcome') == 'not-performed') for a in state['attempts'].values()), 'unvalidated-output')
             need(any(a['status'] == 'validated' for a in state['attempts'].values()), 'unvalidated-output')
             need(all(isinstance(data.get(k), str) and data[k].strip() for k in ('summary', 'dissent', 'usage')), 'completion-evidence')
         if action == 'expire':
-            need(now >= min(timestamp(limits['deadline']), timestamp(state['authority']['expires'])), 'not-expired')
+            need(now >= (timestamp(state['authority']['expires']) if _native(record) else min(timestamp(limits['deadline']), timestamp(state['authority']['expires']))), 'not-expired')
         state['state'] = {'succeed': 'succeeded', 'fail': 'failed', 'expire': 'expired'}[action]
-        state['completed_at'] = event['at']; state['stop_unconfirmed'] = list(active)
+        state['completed_at'] = event['at']; state['stop_unconfirmed'] = sorted(occupied)
         state['classification'] = data.get('classification', state['classification'])
     elif action == 'checkpoint':
         need(isinstance(data.get('summary'), str) and data['summary'].strip(), 'checkpoint-summary')
@@ -491,8 +639,16 @@ def _team_transition(state, event, record):
     elif action == 'amend':
         need(data.get('inflight') in {'finish-pinned', 'cancel', 'pause'}, 'inflight-disposition')
         need(isinstance(data.get('summary'), str) and data['summary'].strip(), 'amendment')
+        if 'collaboration_plan' in data:
+            value = dict(record, members=list(state['members'].values()), collaboration_plan=data['collaboration_plan'],
+                         collaboration_plan_sha256=data.get('collaboration_plan_sha256'))
+            result = _bound_plan(value)
+            state.update(collaboration_plan=copy.deepcopy(data['collaboration_plan']), collaboration_plan_sha256=result['plan_sha256'])
         # Scope/limits cannot expand through an amendment; that requires a new founding charter.
         state['epoch'] += 1; state['amendment'] = dict(data)
+    elif action == 'budget_hold':
+        need(_native(record) and isinstance(data.get('summary'), str) and data['summary'].strip(), 'budget-hold')
+        state['checkpoint'] = dict(data); state['state'] = 'paused'
     elif action == 'pause':
         need(state['state'] in {'ready', 'running'}, 'pause-state'); state['state'] = 'paused'
     elif action == 'resume':
@@ -547,10 +703,13 @@ def project_records(founding, messages, teams=None):
         try:
             need(event['epoch'] == state['epoch'], 'stale-epoch')
             # Stop acknowledgments may clear uncertainty after cancellation, never reopen it.
-            need(state['state'] not in TERMINAL or (state['state'] in {'cancelled', 'failed', 'expired'} and event['action'] in {'boundary', 'checkpoint', 'reconcile'}), 'terminal-immutable')
-            if event['action'] not in {'cancel', 'pause', 'boundary', 'checkpoint', 'expire', 'reconcile'}:
+            need(state['state'] not in TERMINAL or (_native(founding) and event['action'] in {'charge', 'route_boundary'}) or (state['state'] in {'cancelled', 'failed', 'expired'} and event['action'] in {'boundary', 'checkpoint', 'reconcile'}), 'terminal-immutable')
+            if event['action'] not in {'cancel', 'pause', 'boundary', 'checkpoint', 'expire', 'reconcile', 'charge', 'budget_hold', 'route_boundary'}:
                 need(timestamp(event['at']) < timestamp(state['authority']['expires']), 'authority-expired')
-                need(timestamp(event['at']) < timestamp(state['limits']['deadline']), 'deadline')
+                # Execution cutoff does not revoke Main's still-valid authority to
+                # accept retained output and close it. No dispatch or new work here.
+                if event['action'] not in {'result', 'validate', 'succeed', 'complete'}:
+                    need(timestamp(event['at']) < timestamp(state['limits']['deadline']), 'deadline')
             changed = copy.deepcopy(state)
             if founding['family'] == 'Jobs': _job_transition(changed, event, founding, proposals)
             else: _team_transition(changed, event, founding)
@@ -585,6 +744,8 @@ def _team_context(founding, messages, teams, job_state):
             allowed = set(history[:history.index(head) + 1])
             cache[head] = project_records(team, [m for m in messages if m['id'] in allowed])
         return cache[head]
+    need(_native(founding) == _native(team), 'team-budget-semantics')
+    if _native(founding): need(founding['limits']['budget'] == team['limits']['budget'], 'team-budget-binding')
     admitted = snapshot(founding.get('team_head'))
     need(admitted['epoch'] == founding.get('team_epoch'), 'team-epoch')
     need(set(founding['actions']) <= set(team['actions']) and all(any(p == base or p.startswith(base + '/') for base in team['scope']) for p in founding['scope']), 'team-scope')
@@ -1106,11 +1267,16 @@ class Store:
         now = self.now()
         value.setdefault('limits', {})
         need(isinstance(value['limits'], dict), 'limits')
-        value['limits'].setdefault('deadline', stamp(min(now + dt.timedelta(minutes=60), timestamp(value['authority']['expires']))))
+        if 'budget' in value['limits']:
+            # Authority lifetime fences work; runtime budget has its own cumulative clock.
+            value['limits']['deadline'] = value['authority']['expires']
+        else:
+            value['limits'].setdefault('deadline', stamp(min(now + dt.timedelta(minutes=60), timestamp(value['authority']['expires']))))
         value['limits'] = _limits(value['limits'], now)
         need(timestamp(value['limits']['deadline']) <= timestamp(value['authority']['expires']), 'mandate-deadline')
         value['acceptance_owner'] = self.session
-        value['reservation_launches'] = min(value['limits']['launches'], 1 + value['limits']['reserve_launches'])
+        value['reservation_launches'] = 0 if _native(value) else min(value['limits']['launches'], 1 + value['limits']['reserve_launches'])
+        if _native(value): self._native_binding(value)
         return value
 
     def create_team(self, charter):
@@ -1135,6 +1301,9 @@ class Store:
                     self._scope(member['scope'])
                     need(all(any(p == base or p.startswith(base + '/') for base in value['scope']) for p in member['scope']), 'write-scope')
             need(len(sessions) == len(set(sessions)), 'duplicate-member-session')
+            need('collaboration_plan_sha256' not in value, 'reserved-plan-digest')
+            plan = _bound_plan(value, verify=False)
+            if plan: value['collaboration_plan_sha256'] = plan['plan_sha256']
             result = self._record('Teams', value)
             self._init_workspaces(result['id'])
             return result
@@ -1170,7 +1339,9 @@ class Store:
                 need(not team['held'] and team['state'] in {'ready', 'running'} and team['leader'], 'team-unavailable')
                 charter = self.read('Teams', value['team'])
                 need(set(value['actions']) <= set(charter['actions']) and all(any(p == base or p.startswith(base + '/') for base in charter['scope']) for p in value['scope']), 'team-scope')
-                for limit in ('rounds', 'launches', 'concurrency'):
+                need(_native(value) == _native(charter), 'team-budget-semantics')
+                if _native(value): need(value['limits']['budget'] == charter['limits']['budget'], 'team-budget-binding')
+                for limit in (('concurrency',) if _native(value) else ('rounds', 'launches', 'concurrency')):
                     need(value['limits'][limit] <= team['limits'][limit], 'team-limit')
                 need(timestamp(value['limits']['deadline']) <= timestamp(team['limits']['deadline']), 'team-limit')
                 value['team_epoch'] = team['epoch']; value['team_head'] = team['head']
@@ -1182,9 +1353,16 @@ class Store:
                         need(not state['held'] and state['state'] in TERMINAL and not state['active'] and not state['stop_unconfirmed'], 'overlap')
             if value.get('team'):self._team_budget(value, jobs, messages, admission=True)
             self._reserve_admission(value, jobs, messages)
-            return self._record('Jobs', value)
+            result = self._record('Jobs', value)
+            if _native(value):
+                budget = self.native_budget_state(value['limits']['budget']['key'])
+                if budget['reasons']:
+                    state = project_records(result['record'], messages, self.records('Teams'))
+                    result.update(self._persist_native_hold('Jobs', result['record'], state, messages, budget['reasons'], 'dispatch'))
+            return result
 
     def _team_budget(self, mandate, jobs, messages, *, admission=False, action=None, data=None):
+        if _native(mandate): return
         team = self.project('Teams', mandate['team'])
         need(not team['held'], 'team-held')
         spent = reserved = rounds = 0
@@ -1204,12 +1382,160 @@ class Store:
         elif action == 'round':
             need(rounds < team['limits']['rounds'], 'team-round-limit')
 
+    def _native_binding(self, mandate):
+        policy = _native_policy(mandate['limits']['budget'], self.now())
+        need('budget_key' not in mandate and 'budget_amendment' not in mandate, 'budget-semantics-mixed')
+        matching = []
+        for record in self.records('Teams') + self.records('Jobs'):
+            if _native(record) and record['authority']['digest'] == mandate['authority']['digest']:
+                need(record['limits']['budget'].get('key') == policy['key'], 'budget-authority-key-reuse')
+            if _native(record) and record['limits']['budget'].get('key') == policy['key']:
+                _accepted(record)
+                need(_native_policy(record['limits']['budget']) == policy, 'budget-baseline-conflict')
+                matching.append(record)
+            elif not _native(record):
+                need(record.get('budget_key', record['authority']['digest']) != policy['key'], 'budget-semantics-mixed')
+        if not matching:
+            need(policy['accounting_owner'] == self.session, 'budget-accounting-owner')
+        else:
+            self.native_budget_state(policy['key'])
+
+    def native_budget_state(self, budget_key):
+        """Cumulative append-only money/runtime ledger; no provider charge is inferred."""
+        self.require_history()
+        jobs = self.records('Jobs'); teams = self.records('Teams'); messages = self.records('Messages')
+        records = [r for r in teams + jobs if _native(r) and r['limits']['budget'].get('key') == budget_key]
+        need(records, 'native-budget-missing')
+        policy = _native_policy(records[0]['limits']['budget'])
+        for record in records:
+            _accepted(record)
+            need(_native_policy(record['limits']['budget']) == policy, 'budget-baseline-conflict')
+            self.validate_authority(record['authority'], live=False)
+        ceilings = {'money_minor': policy.get('money', {}).get('ceiling_minor'), 'runtime_seconds': policy.get('runtime_seconds')}
+        head = None; chain = {}; grants = {r['authority']['digest'] for r in records}
+        remaining = [m for m in messages if isinstance(m.get('native_budget_extension'), dict) and m['native_budget_extension'].get('key') == budget_key]
+        while remaining:
+            children = [m for m in remaining if m['native_budget_extension'].get('predecessor') == head]
+            need(len(children) == 1, 'budget-branch-or-gap')
+            message = children[0]; _accepted(message); value = message['native_budget_extension']
+            need(set(value) == {'key', 'predecessor', 'previous', 'total', 'at'}, 'native-extension-shape')
+            need(message['kind'] == 'control' and message.get('event') is None and message.get('job') is None and message.get('team') is None
+                 and message['recipient'] == 'budget:' + budget_key and message['correlation'] == 'budget:' + budget_key, 'native-extension-shape')
+            need(value['previous'] == ceilings, 'budget-extension-previous')
+            need(timestamp(value['at']) <= self.now(), 'budget-clock-rollback')
+            total = self._native_extension_limits(ceilings, value['total'])
+            authority = self.validate_authority(message.get('authority'), live=False)
+            need(authority['digest'] not in grants and message['expires'] == authority['expires'], 'budget-extension-authority')
+            self._native_approval(authority, budget_key, head, ceilings, total)
+            grants.add(authority['digest']); head = message['id']; chain[head] = message
+            ceilings = total; remaining.remove(message)
+        totals = {'known_minor': 0, 'reserved_minor': 0, 'uncertain_minor': 0}
+        attempts = unpriced = 0
+        observed = timestamp(policy['clock_start'])
+        for record in records:
+            view = project_records(record, messages, teams)
+            need(not view['held'], 'native-budget-history-held')
+            for message in messages:
+                if message['id'] in view['history']: observed = max(observed, timestamp(message['event']['at']))
+            if record['family'] == 'Jobs':
+                for item in view['attempts'].values():
+                    attempts += 1; unpriced += int(item['charge_state'].get('unpriced', False))
+                    for name in totals: totals[name] += item['charge_state'][name]
+        need(self.now() >= observed, 'budget-clock-rollback')
+        elapsed = (self.now() - timestamp(policy['clock_start'])).total_seconds()
+        need(elapsed >= 0, 'budget-clock-rollback')
+        liability = sum(totals.values())
+        result = dict(totals, key=budget_key, policy=policy, ceilings=ceilings, head=head, extensions=chain,
+                      elapsed_seconds=elapsed, attempts=attempts, unpriced_attempts=unpriced, liability_minor=liability,
+                      remaining_minor=None if ceilings['money_minor'] is None else max(0, ceilings['money_minor'] - liability),
+                      remaining_seconds=None if ceilings['runtime_seconds'] is None else max(0, ceilings['runtime_seconds'] - elapsed))
+        result['reasons'] = self._native_reasons(result)
+        result['status'] = 'budget-held' if result['reasons'] else 'available'
+        return result
+
+    @staticmethod
+    def _native_extension_limits(previous, total):
+        need(isinstance(total, dict) and set(total) == {'money_minor', 'runtime_seconds'}, 'native-extension-limits')
+        changed = False
+        for name, old in previous.items():
+            if old is None: need(total[name] is None, 'budget-extension-dimension')
+            else:
+                _integer(total[name], name, 0 if name == 'money_minor' else 1, 10**18 if name == 'money_minor' else 10**12)
+                need(total[name] >= old, 'budget-extension-reduction')
+                changed = changed or total[name] > old
+        need(changed, 'budget-extension-increase')
+        return copy.deepcopy(total)
+
+    def _native_approval(self, authority, key, predecessor, previous, total):
+        reference = authority['ref']
+        need(Path(reference).parent.as_posix() == '_Axis/Logs' and _START.ID.fullmatch(Path(reference).stem) and reference.endswith('.md'), 'budget-authority-log')
+        raw = self._authority_bytes(reference)
+        need(digest(raw) == authority['digest'], 'authority-changed')
+        fields = {'coordination-native-budget-key': key, 'coordination-native-budget-predecessor': predecessor or 'initial',
+                  'coordination-native-budget-previous': canonical(previous).decode(), 'coordination-native-budget-total': canonical(total).decode(),
+                  'coordination-native-budget-expires': authority['expires']}
+        for label, value in fields.items():
+            need([line for line in raw.decode('utf-8').splitlines() if line.startswith(label + ':')] == [label + ': ' + value], 'budget-approval-binding')
+
+    def extend_native_budget(self, budget_key, predecessor, authority, *, money_minor=None, runtime_seconds=None):
+        """Accept a separately approved increase without changing any Job's authority."""
+        with self.locked():
+            self.require_placement(); self.require_history()
+            state = self.native_budget_state(budget_key)
+            need(state['head'] == predecessor, 'budget-predecessor')
+            total = dict(state['ceilings'])
+            if money_minor is not None: total['money_minor'] = money_minor
+            if runtime_seconds is not None: total['runtime_seconds'] = runtime_seconds
+            self._native_extension_limits(state['ceilings'], total)
+            approval = self.validate_authority(authority)
+            self._native_approval(approval, budget_key, predecessor, state['ceilings'], total)
+            grants = {r['authority']['digest'] for r in self.records('Teams') + self.records('Jobs') if _native(r) and r['limits']['budget']['key'] == budget_key}
+            grants.update(m['authority']['digest'] for m in state['extensions'].values())
+            need(approval['digest'] not in grants, 'budget-extension-authority')
+            payload = {'subject': 'Cumulative budget extension: ' + budget_key[:48], 'kind': 'control', 'recipient': 'budget:' + budget_key,
+                       'body': 'Main accepted the exact User extension. Prior usage, reservations, clock, work and authority remain unchanged.',
+                       'team': None, 'job': None, 'correlation': 'budget:' + budget_key, 'epoch': 0, 'data': {},
+                       'authority': approval, 'expires': approval['expires'],
+                       'native_budget_extension': {'key': budget_key, 'predecessor': predecessor, 'previous': state['ceilings'], 'total': total, 'at': stamp(self.now())}}
+            return self._record('Messages', payload)
+
+    @staticmethod
+    def _native_reasons(state, additional=0):
+        reasons = []
+        money = state['ceilings']['money_minor']; runtime = state['ceilings']['runtime_seconds']
+        if money is not None:
+            # A zero incremental ceiling permits explicitly included access.
+            if (money > 0 and state['known_minor'] >= money) or state['liability_minor'] + additional > money:
+                reasons.append('money-exhausted' if state['known_minor'] >= money else 'money-reserved')
+        if runtime is not None and state['elapsed_seconds'] >= runtime: reasons.append('runtime-exhausted')
+        return reasons
+
+    def _persist_native_hold(self, family, founding, state, messages, reasons, resume_action):
+        extension_required = any(r in {'money-exhausted', 'runtime-exhausted'} for r in reasons)
+        if state['state'] not in {'paused', 'pause-requested'}:
+            data = {'summary': ('Budget exhausted; retain work and request the required User extension once.' if extension_required else 'Budget reservation hold; retain work and reconcile charges or obtain an explicit extension.'),
+                    'budget_key': founding['limits']['budget']['key'], 'reasons': reasons, 'resume_action': resume_action}
+            event = {'family': family, 'target': founding['id'], 'action': 'budget_hold', 'predecessor': state['head'],
+                     'epoch': state['epoch'], 'at': stamp(self.now()), 'data': data}
+            payload = {'subject': 'Budget hold: ' + founding['id'], 'kind': 'control', 'recipient': founding['id'], 'body': data['summary'],
+                       'team': founding['id'] if family == 'Teams' else founding.get('team'), 'job': founding['id'] if family == 'Jobs' else None,
+                       'correlation': founding.get('operation_key', founding['id']), 'epoch': state['epoch'], 'data': {},
+                       'authority': founding['authority'], 'expires': founding['authority']['expires'], 'event': event}
+            candidate = dict(payload, schema=SCHEMA, family='Messages', id='9999.12.31.23.59.59.999Z', created='9999.12.31.23.59.59.999Z',
+                             project=self.project_id(), issuer={'session': self.session, 'role': 'main'}, acceptance=self._acceptance())
+            projected = project_records(founding, messages + [candidate], self.records('Teams'))
+            need(not projected['held'], 'budget-hold-transition')
+            result = self._record('Messages', payload); head = result['id']
+        else: head = state['head']
+        return {'status': 'budget-held', 'id': founding['id'], 'head': head, 'reasons': reasons, 'resume_action': resume_action,
+                'budget_key': founding['limits']['budget']['key'], 'extension_required': extension_required}
+
     def budget_state(self, budget_key, jobs=None, messages=None):
         """Replay accepted renewals without resetting any historical launch charge."""
         need(isinstance(budget_key, str) and 0 < len(budget_key.encode()) <= 249 and '\n' not in budget_key, 'budget-key')
         jobs = self.records('Jobs') if jobs is None else jobs
         messages = self.records('Messages') if messages is None else messages
-        matching = [r for r in jobs if r.get('budget_key', r['authority']['digest']) == budget_key]
+        matching = [r for r in jobs if not _native(r) and r.get('budget_key', r['authority']['digest']) == budget_key]
         original = [r for r in matching if r.get('budget_amendment') is None]
         caps = [r['limits']['aggregate_launches'] for r in original if 'aggregate_launches' in r['limits']]
         amendments = [r for r in messages if isinstance(r.get('budget_amendment'), dict) and r['budget_amendment'].get('budget_key') == budget_key]
@@ -1259,7 +1585,7 @@ class Store:
             need(cap > state['aggregate_launches'], 'budget-amendment-limit')
             approval = self.validate_authority(authority)
             self._budget_approval(approval, budget_key, predecessor, state['aggregate_launches'], cap)
-            prior = {r['authority']['digest'] for r in self.records('Jobs') if r.get('budget_key', r['authority']['digest']) == budget_key}
+            prior = {r['authority']['digest'] for r in self.records('Jobs') if not _native(r) and r.get('budget_key', r['authority']['digest']) == budget_key}
             prior.update(r['authority']['digest'] for r in state['amendments'].values())
             need(approval['digest'] not in prior, 'budget-amendment-authority')
             payload = {'subject': 'Shared budget renewal: ' + budget_key[:50], 'kind': 'control', 'recipient': 'budget:' + budget_key,
@@ -1271,6 +1597,7 @@ class Store:
             return self._record('Messages', payload)
 
     def _budget_caps(self, mandate, jobs, messages, admission=False):
+        if _native(mandate): return []
         budget = mandate.get('budget_key', mandate['authority']['digest'])
         state = self.budget_state(budget, jobs, messages)
         ref = mandate.get('budget_amendment')
@@ -1284,18 +1611,19 @@ class Store:
             cap = mandate['limits'].get('aggregate_launches')
             need(type(cap) is int and cap <= record['budget_amendment']['aggregate_launches'], 'budget-amendment-limit')
             return [cap] + [r['limits']['aggregate_launches'] for r in jobs
-                            if r.get('budget_key', r['authority']['digest']) == budget and r.get('budget_amendment') == ref]
+                            if not _native(r) and r.get('budget_key', r['authority']['digest']) == budget and r.get('budget_amendment') == ref]
         # Existing mandates retain their old shared cap; renewal never silently extends them.
         return [r['limits']['aggregate_launches'] for r in [mandate, *jobs]
-                if r.get('budget_key', r['authority']['digest']) == budget and r.get('budget_amendment') is None and 'aggregate_launches' in r['limits']]
+                if not _native(r) and r.get('budget_key', r['authority']['digest']) == budget and r.get('budget_amendment') is None and 'aggregate_launches' in r['limits']]
 
     def _reserve_admission(self, mandate, jobs, messages):
+        if _native(mandate): return
         budget = mandate.get('budget_key', mandate['authority']['digest'])
         caps = self._budget_caps(mandate, jobs, messages, admission=True)
         spent = reserved = 0
         teams = self.records('Teams')
         for record in jobs:
-            if record.get('budget_key', record['authority']['digest']) != budget: continue
+            if _native(record) or record.get('budget_key', record['authority']['digest']) != budget: continue
             view = project_records(record, messages, teams)
             need(not view['held'], 'budget-held')
             spent += view['launches']
@@ -1356,6 +1684,7 @@ class Store:
         need(member.get('session') == self.session, 'member-binding')
         need('coordinate' in founding['actions'] or 'report' in founding['actions'], 'discussion-scope')
         if writing: need('write' in founding['actions'] and item.get('operation') in {'write', 'coordinate'}, 'workspace-write-scope')
+        if _native(founding): need(not self.native_budget_state(founding['limits']['budget']['key'])['reasons'], 'native-budget-held')
         return charter, view, founding, state, item
 
     def _route(self, team, recipient):
@@ -1386,7 +1715,7 @@ class Store:
                     if prior['issuer']['session'] == self.session and prior.get('data', {}).get('observed_message') == observed:
                         return {'status': 'duplicate', 'id': prior['id']}
             count = sum(m['issuer']['session'] == self.session for m in history)
-            need(count < charter['collaboration']['max_messages_per_member'], 'message-budget')
+            need(_native(charter) or count < charter['collaboration']['max_messages_per_member'], 'message-budget')
             route = self._route(payload['team'], payload['recipient'])
             route['sender_slot'] = item['slot']
             payload['delivery'] = route
@@ -1410,11 +1739,25 @@ class Store:
             result['published_at'] = self.now().isoformat()
             return result
 
-    def team_inbox(self, team, job, attempt, epoch, *, after=None, limit=20, history=False):
+    def team_message(self, team, job, attempt, epoch, message_id):
+        """Targeted full canonical read under the same Team-history access as inbox."""
+        self._direct_context(team, job, attempt, epoch)
+        message = self.read('Messages', identity(message_id))
+        need(message.get('team') == team, 'message-team-scope')
+        self.guard()
+        return message
+
+    def team_inbox(self, team, job, attempt, epoch, *, after=None, limit=20, history=False,
+                   wait_for='all', reply_to=None, compact=False):
         _, view, _, _, item = self._direct_context(team, job, attempt, epoch)
         _integer(limit, 'inbox-limit', 1, 100)
-        need(type(history) is bool, 'inbox-history')
+        need(type(history) is bool and type(compact) is bool, 'inbox-view')
+        need(isinstance(wait_for, str) and wait_for in {'all', 'answer', 'observation'}, 'inbox-wait-purpose')
         if after is not None: identity(after)
+        original = None
+        if reply_to is not None:
+            original = self.team_message(team, job, attempt, epoch, reply_to)
+            need(original.get('job') in (None, job), 'inbox-reply-assignment')
         rows = []; size = 0; more = False
         for message in self.records('Messages'):
             if message.get('team') != team or (after is not None and message['id'] <= after): continue
@@ -1424,13 +1767,37 @@ class Store:
             state = 'available'
             if delivery and delivery.get('team_epoch') != view['epoch']: state = 'stale-epoch'
             elif timestamp(message['expires']) <= self.now(): state = 'expired'
-            row = {'state': state, 'message': message}
+            if wait_for != 'all' or original is not None:
+                if state != 'available' or message.get('job') not in (None, job): continue
+                closing = message.get('data', {}).get('closing')
+                release_notice = isinstance(closing, dict) and closing.get('protocol') == 'axis.closing/v1' and closing.get('action') == 'release'
+                # Wake on a typed release notice; its authority must still be verified by the recipient.
+                control = message['kind'] in {'control', 'decision', 'validation', 'assignment'} or 'event' in message or release_notice
+                if not control:
+                    if wait_for == 'answer' and message['kind'] == 'receipt': continue
+                    if wait_for == 'observation' and message['kind'] != 'receipt': continue
+                    if original is not None:
+                        data = message.get('data', {})
+                        matched = data.get('reply_to') == reply_to or data.get('observed_message') == reply_to
+                        if not matched: continue
+            projected = message
+            if compact:
+                projected = {key: message[key] for key in ('id', 'kind', 'subject', 'issuer', 'team', 'job', 'correlation', 'epoch', 'expires') if key in message}
+                projected['body_preview'] = message['body'][:240]
+                projected['content_omitted'] = True
+                projected['attachment_count'] = len(message.get('attachments', []))
+                projected['reply_to'] = message.get('data', {}).get('reply_to')
+                projected['observed_message'] = message.get('data', {}).get('observed_message')
+            row = {'state': state, 'message': projected}
             weight = len(canonical(row))
             if rows and (len(rows) >= limit or size + weight > MAX_RECORD): more = True; break
             rows.append(row); size += weight
         self.guard()
-        return {'messages': rows, 'next': rows[-1]['message']['id'] if rows else after,
-                'more': more, 'available_at': self.now().isoformat(), 'poll_seconds': self.read('Teams', team)['collaboration']['poll_seconds']}
+        result = {'messages': rows, 'next': rows[-1]['message']['id'] if rows else after,
+                  'more': more, 'available_at': self.now().isoformat(), 'poll_seconds': self.read('Teams', team)['collaboration']['poll_seconds']}
+        if wait_for != 'all' or reply_to is not None or compact:
+            result['selection'] = {'wait_for': wait_for, 'reply_to': reply_to, 'compact': compact, 'job': job, 'history': history}
+        return result
 
     def observe_message(self, team, job, attempt, epoch, message_id):
         _, view, _, _, item = self._direct_context(team, job, attempt, epoch)
@@ -1541,7 +1908,7 @@ class Store:
     def artifact_publish(self, team, job, attempt, epoch, revision, paths, *, supersedes=None):
         with self.locked(worker=True):
             charter, view, founding, _, item = self._direct_context(team, job, attempt, epoch, writing=True)
-            need(sum(m['issuer']['session'] == self.session and m.get('team') == team for m in self.records('Messages')) < charter['collaboration']['max_messages_per_member'], 'message-budget')
+            need(_native(charter) or sum(m['issuer']['session'] == self.session and m.get('team') == team for m in self.records('Messages')) < charter['collaboration']['max_messages_per_member'], 'message-budget')
             workspace_token(revision)
             # One of the Message's sixteen attachment slots pins the manifest.
             need(isinstance(paths, list) and 0 < len(paths) <= 15 and len(set(paths)) == len(paths), 'artifact-files')
@@ -1664,7 +2031,11 @@ class Store:
         if team is not None: identity(team)
         if job is not None: identity(job)
         if correlation is not None: need(isinstance(correlation, str) and len(correlation.encode()) <= 256, 'correlation')
-        payload = {'subject': (kind.capitalize() + ': ' + ((body.splitlines()[0].strip() if body else '') or recipient))[:80].strip(), 'kind': kind, 'recipient': recipient, 'body': body, 'team': team, 'job': job, 'correlation': correlation, 'epoch': epoch, 'data': copy.deepcopy(data or {}), 'expires': expires, 'authority': authority, 'attachments': attachments}
+        subject = kind.capitalize() + ': ' + ((body.splitlines()[0].strip() if body else '') or recipient)
+        if len(subject) > 80:
+            # Display shortening must not manufacture a partial record identifier.
+            subject = re.sub(r'\s+\S*$', '', subject[:77]).rstrip() + '...'
+        payload = {'subject': subject, 'kind': kind, 'recipient': recipient, 'body': body, 'team': team, 'job': job, 'correlation': correlation, 'epoch': epoch, 'data': copy.deepcopy(data or {}), 'expires': expires, 'authority': authority, 'attachments': attachments}
         if not self.io.lease[2]:
             need(self.storage_profile() == 'atomic', 'main-mediated-capture')
             need(kind in PROPOSALS and job is not None, 'worker-message-scope')
@@ -1693,7 +2064,7 @@ class Store:
             if team is not None and self.read('Teams', team).get('collaboration'):
                 with self.locked(worker=True):
                     cap = self.read('Teams', team)['collaboration']['max_messages_per_member']
-                    need(sum(m['issuer']['session'] == self.session and m.get('team') == team for m in self.records('Messages')) < cap, 'message-budget')
+                    need(_native(self.read('Teams', team)) or sum(m['issuer']['session'] == self.session and m.get('team') == team for m in self.records('Messages')) < cap, 'message-budget')
                     return self._record('Messages', payload, worker=True)
             return self._record('Messages', payload, worker=True)
         payload['attachments'] = self.validate_attachments(attachments)
@@ -1803,6 +2174,79 @@ class Store:
                 result.append({'id': message['id'], 'subject': message['subject'], 'state': 'held' if held else state, 'head': head, 'kind': message['kind']})
         return result
 
+    def main_messages(self):
+        """Classify pending communication for Main; never resolve or alter history.
+
+        A terminal/expired mandate cannot erase an unanswered Main obligation.
+        Ambiguous routing or lifecycle remains visible for reconciliation.
+        """
+        messages = self.records('Messages')
+        records = {m['id']: m for m in messages}
+        teams = {r['id']: r for r in self.records('Teams')}
+        jobs = {r['id']: r for r in self.records('Jobs')}
+        owners = {r['acceptance_owner'] for r in list(teams.values()) + list(jobs.values()) if isinstance(r.get('acceptance_owner'), str)}
+        owners.update(m['issuer']['session'] for m in messages if m['issuer']['role'] == 'main')
+        views = {}
+        result = {'actionable': [], 'uncertain': [], 'other': [], 'pending_count': 0}
+        for pending in self.pending_messages():
+            message = records[pending['id']]
+            row = dict(pending, recipient=message['recipient'], team=message.get('team'), job=message.get('job'))
+            issues = []; lifecycle = []
+            if pending['state'] == 'held': issues.append('disposition-held')
+            for family, collection in (('team', teams), ('job', jobs)):
+                ident = message.get(family)
+                if ident is None: continue
+                if ident not in collection:
+                    issues.append(family + '-missing'); continue
+                key = (family, ident)
+                if key not in views: views[key] = project_records(collection[ident], messages, list(teams.values()))
+                view = views[key]
+                if view['held']: issues.append(family + '-held')
+                lifecycle.append(family + ':' + view['state'])
+            recipient = message['recipient']
+            main = recipient == 'main' or recipient in owners
+            peer = False
+            delivery = message.get('delivery')
+            team = teams.get(message.get('team'))
+            if delivery is not None:
+                targets = delivery.get('recipients') if isinstance(delivery, dict) else None
+                valid = (team is not None and isinstance(targets, list) and bool(targets)
+                         and all(isinstance(t, dict) and isinstance(t.get('slot'), str)
+                                 and isinstance(t.get('session'), str) for t in targets))
+                if valid:
+                    team_view = views.get(('team', team['id']), {})
+                    valid = (type(delivery.get('team_epoch')) is int and 0 <= delivery['team_epoch'] <= team_view.get('epoch', -1)
+                             and all(t['slot'] == 'main' or t['slot'] in team_view.get('members', {}) for t in targets))
+                if valid:
+                    slots = {t['slot'] for t in targets}
+                    routed_main = 'main' in slots or any(t['session'] in owners for t in targets)
+                    expected = recipient[7:] if recipient.startswith('member:') else recipient
+                    valid = ((main and slots == {'main'} and routed_main and all(t['session'] == team.get('acceptance_owner') for t in targets))
+                             or (not main and not routed_main and 'main' not in slots
+                                 and (expected == 'team' or slots == {expected})))
+                    if valid: peer = not main
+                if not valid: issues.append('routing-unverified')
+            elif not main and team is not None:
+                slot = recipient[7:] if recipient.startswith('member:') else recipient
+                view = views.get(('team', team['id']), {})
+                peer = slot == 'team' or slot in view.get('members', {})
+            if not main and not peer: issues.append('recipient-unclassified')
+            expired = bool(message.get('expires') and self.now() >= timestamp(message['expires']))
+            if expired: lifecycle.append('message:expired')
+            stale = bool(team and isinstance(delivery, dict) and type(delivery.get('team_epoch')) is int
+                         and delivery['team_epoch'] < views.get(('team', team['id']), {}).get('epoch', 0))
+            if stale: lifecycle.append('message:prior-epoch')
+            row['lifecycle'] = lifecycle or ['unscoped']
+            if issues:
+                row['reason'] = ','.join(sorted(set(issues))); result['uncertain'].append(row)
+            elif main:
+                row['reason'] = 'main-recipient'; result['actionable'].append(row)
+            else:
+                closed = stale or any(v.split(':', 1)[-1] in TERMINAL for v in lifecycle)
+                row['reason'] = 'peer-history' if closed else 'peer-recipient'; result['other'].append(row)
+            result['pending_count'] += 1
+        return result
+
     def project(self, family, ident):
         need(family in {'Teams', 'Jobs'}, 'projection-family')
         return project_records(self.read(family, ident), self.records('Messages'), self.records('Teams'))
@@ -1818,13 +2262,34 @@ class Store:
             need(not state['held'], 'projection-held')
             if expected is not None: need(expected == state['head'], 'stale-predecessor')
             if epoch is not None: need(epoch == state['epoch'], 'stale-epoch')
-            live = action not in {'cancel', 'pause', 'boundary', 'checkpoint', 'expire', 'reconcile'}
+            live = action not in {'cancel', 'pause', 'boundary', 'checkpoint', 'expire', 'reconcile', 'charge', 'budget_hold', 'route_boundary'}
             self.validate_authority(founding['authority'], live=live)
             payload_data = copy.deepcopy(data or {})
+            if family == 'Teams' and action == 'amend' and 'collaboration_plan' in payload_data:
+                need('collaboration_plan_sha256' not in payload_data, 'reserved-plan-digest')
+                value = dict(founding, members=list(state['members'].values()), collaboration_plan=payload_data['collaboration_plan'])
+                result = _bound_plan(value, verify=False)
+                payload_data['collaboration_plan_sha256'] = result['plan_sha256']
             now = self.now()
             if state['history']:
                 last = next(m for m in messages if m['id'] == state['head'])
                 need(now >= timestamp(last['event']['at']), 'clock-rollback')
+            if _native(founding):
+                if action == 'route_boundary':
+                    item = state.get('attempts', {}).get(payload_data.get('attempt'), {})
+                    if item.get('route_boundary') == payload_data:
+                        return {'status': 'duplicate', 'id': item['route_boundary_event']}
+                if action == 'charge':
+                    prior = state.get('attempts', {}).get(payload_data.get('attempt'), {}).get('charge_state', {}).get('reports', {}).get(payload_data.get('report_id'))
+                    if prior is not None:
+                        need(prior['data'] == payload_data, 'budget-report-conflict')
+                        return {'status': 'duplicate', 'id': prior['event']}
+                safe = {'cancel', 'pause', 'boundary', 'checkpoint', 'expire', 'reconcile', 'charge', 'budget_hold', 'receipt', 'result', 'attempt_failed', 'uncertain', 'route_boundary'}
+                if action not in safe:
+                    budget = self.native_budget_state(founding['limits']['budget']['key'])
+                    additional = _native_charge(budget['policy'], payload_data.get('charge'))['reserved_minor'] if action == 'dispatch' else 0
+                    reasons = self._native_reasons(budget, additional)
+                    if reasons: return self._persist_native_hold(family, founding, state, messages, reasons, action)
             if family == 'Teams' and action in {'replace_leader', 'bind_member'}:
                 self._worker_session(payload_data.get('session'))
                 if founding.get('collaboration'):
@@ -1871,27 +2336,82 @@ class Store:
             need(not projected['held'], 'transition:' + ';'.join(projected['holds']))
             return self._record('Messages', payload)
 
-    def _capacity(self, founding, messages, dispatch):
-        active = launches = reserved = 0
-        budget = founding.get('budget_key', founding['authority']['digest'])
+    def _capacity_view(self, founding, messages, session=None, slot=None):
+        """Explain recorded occupancy and policy; no host process capacity is inferred."""
+        founding_state = project_records(founding, messages, self.records('Teams'))
+        if founding_state['held']:
+            return {'job': founding['id'], 'status': 'held', 'blockers': ['capacity-held'],
+                    'held_jobs': [founding['id']], 'occupied': None, 'holders': [],
+                    'notice': 'Founding projection held; occupancy cannot be established.'}
         configured = self.io.setting('Max Concurrent Sessions')
-        project_cap = int(configured) if isinstance(configured, str) and configured.isascii() and configured.isdigit() and 1 <= int(configured) <= 100 else 10
-        concurrency_limits = [max(0, project_cap - 1), founding['limits'].get('aggregate_concurrency', founding['limits']['concurrency'])]
+        valid = isinstance(configured, str) and configured.isascii() and configured.isdigit() and 1 <= int(configured) <= 100
+        project_cap = int(configured) if valid else 10
+        policies = [{'source': 'Max Concurrent Sessions' if valid else 'default Max Concurrent Sessions',
+                     'scope': 'project', 'limit': max(0, project_cap - 1), 'main_reserved': 1}]
+        if 'aggregate_concurrency' in founding['limits']:
+            policies.append({'source': founding['id'], 'scope': 'project', 'limit': founding['limits']['aggregate_concurrency']})
+        holders = []; held = []; dormant = []
+        teams = self.records('Teams')
+        for record in self.records('Jobs'):
+            state = project_records(record, messages, teams)
+            if state['held']: held.append(record['id'])
+            occupied = set(state.get('active', [])) | set(state.get('stop_unconfirmed', [])) | {a for a, item in state['attempts'].items() if item.get('route_pending') is True}
+            for attempt in sorted(occupied):
+                item = state['attempts'][attempt]
+                category = ('uncertain' if attempt in state['stop_unconfirmed'] or item['status'] == 'needs-reconciliation' or item.get('route_uncertain') is True
+                            else 'reserved' if item['status'] == 'dispatch-intent' else 'active')
+                holders.append({'job': record['id'], 'attempt': attempt, 'session': item['session'],
+                                'slot': item['slot'], 'team': record.get('team'), 'category': category,
+                                'status': item['status'], 'job_state': state['state']})
+            if record['id'] != founding['id']:
+                if occupied and 'aggregate_concurrency' in state['limits']:
+                    policies.append({'source': record['id'], 'scope': 'project', 'limit': state['limits']['aggregate_concurrency']})
+                elif not occupied and not state['held'] and state['state'] not in TERMINAL:
+                    dormant.append({'job': record['id'], 'state': state['state'], 'reason': 'no-capacity-holder'})
+        own = [h for h in holders if h['job'] == founding['id']]
+        policies.append({'source': founding['id'], 'scope': 'job', 'limit': founding['limits']['concurrency']})
+        blockers = ['capacity-held'] if held else []
+        if session is not None and any(h['session'] == session for h in holders): blockers.append('session-busy')
+        if any(len(holders) >= p['limit'] for p in policies if p['scope'] == 'project'): blockers.append('aggregate-concurrency')
+        if len(own) >= founding['limits']['concurrency']: blockers.append('concurrency')
+        team_reservation = None
+        if founding.get('team'):
+            team = self.project('Teams', founding['team'])
+            members = [h for h in holders if h['team'] == founding['team']]
+            if team['held']: blockers.append('team-held')
+            if len(members) >= team['limits']['concurrency']: blockers.append('team-concurrency')
+            if slot is not None and slot != 'leader' and sum(h['slot'] != 'leader' for h in members) >= max(0, team['limits']['concurrency'] - 1): blockers.append('leader-slot-reserved')
+            team_reservation = {'team': founding['team'], 'limit': team['limits']['concurrency'],
+                                'holders': len(members), 'leader_reserved': int(not any(h['slot'] == 'leader' for h in members)),
+                                'scope': 'team-only; included when occupied, never added to project holders'}
+        return {'job': founding['id'], 'host_capacity': {'status': 'unverified', 'reason': 'core has no host-route capacity observation'},
+                'policies': policies, 'holders': holders, 'occupied': len(holders),
+                'active': sum(h['category'] == 'active' for h in holders),
+                'reserved': sum(h['category'] == 'reserved' for h in holders),
+                'uncertain': sum(h['category'] == 'uncertain' for h in holders),
+                'team_reservation': team_reservation, 'dormant_policies': dormant, 'held_jobs': held,
+                'blockers': blockers, 'status': 'held' if blockers else 'incomplete' if team_reservation and slot is None else 'available',
+                'notice': 'Recorded admission occupancy, not a live-process census or execution authority.'}
+
+    def capacity_view(self, job, session=None, slot=None):
+        if session is not None: identity(session)
+        if slot is not None: _attempt_token(slot)
+        return self._capacity_view(self.read('Jobs', identity(job)), self.records('Messages'), session, slot)
+
+    def _capacity(self, founding, messages, dispatch):
+        view = self._capacity_view(founding, messages, dispatch.get('session'), dispatch.get('slot'))
+        for blocker in view['blockers']: need(False, blocker)
+        launches = reserved = 0
+        budget = founding.get('budget_key', founding['authority']['digest'])
         jobs = self.records('Jobs')
         launch_limits = self._budget_caps(founding, jobs, messages)
-        for record in self.records('Jobs'):
-            state = project_records(record, messages)
-            need(not state['held'], 'capacity-held')
-            active += len(state['active'])
-            need(not any(state['attempts'][a]['session'] == dispatch.get('session') for a in state['active']), 'session-busy')
-            if record.get('budget_key', record['authority']['digest']) == budget:
+        for record in jobs:
+            state = project_records(record, messages, self.records('Teams'))
+            if not _native(founding) and not _native(record) and record.get('budget_key', record['authority']['digest']) == budget:
                 launches += state['launches']
                 if state['state'] not in TERMINAL:
                     if record['id'] != founding['id']: reserved += _remaining_reservation(record, state)
                     elif dispatch.get('purpose') not in {'validation', 'checkpoint', 'report'}: reserved += _report_reserve(record, state)
-            if state['state'] not in TERMINAL:
-                concurrency_limits.append(record['limits'].get('aggregate_concurrency', record['limits']['concurrency']))
-        need(active < min(concurrency_limits), 'aggregate-concurrency')
         if launch_limits: need(launches + reserved < min(launch_limits), 'aggregate-launches')
 
     def check(self):
@@ -1903,6 +2423,8 @@ class Store:
             budgets = {r.get('budget_key', r['authority']['digest']) for r in all_records['Jobs']}
             budgets.update(r['budget_amendment'].get('budget_key') for r in all_records['Messages'] if isinstance(r.get('budget_amendment'), dict))
             for budget in budgets: self.budget_state(budget, all_records['Jobs'], all_records['Messages'])
+            for key in {r['limits']['budget']['key'] for r in all_records['Jobs'] + all_records['Teams'] if _native(r)}:
+                self.native_budget_state(key)
             for family in ('Teams', 'Jobs'):
                 for record in all_records[family]:
                     state = project_records(record, all_records['Messages'], all_records['Teams'])
@@ -1938,19 +2460,30 @@ class Store:
             all_records = {family: self.records(family) for family in FAMILIES}
             result = {}
             pending = {m['id']: m for m in self.pending_messages()}
+            main_view = self.main_messages()
+            actionable = {m['id'] for m in main_view['actionable']}
+            uncertain = {m['id'] for m in main_view['uncertain']}
+            other = {m['id']: m for m in main_view['other']}
             source_digest = digest({family: [digest(r) for r in records] for family, records in all_records.items()})
             verified = stamp(self.now())
             for family, index in (('Teams', 'TEAMS'), ('Jobs', 'JOBS'), ('Messages', 'MESSAGES'), ('Schedules', 'SCHEDULES')):
                 lines = ['# ' + family, '> **Purpose:** Show cached coordination state; records and accepted events are authoritative.', '', 'schema: axis.coordination-index/v1', 'verified: ' + verified, 'source-digest: ' + source_digest, 'pending-count: ' + str(len(pending) if family == 'Messages' else sum((r.get('status') not in {'retired'} if family == 'Schedules' else project_records(r, all_records['Messages'], all_records['Teams'])['state'] not in TERMINAL) for r in all_records[family])), '', '| ID | Subject | State | Head |', '| --- | --- | --- | --- |']
                 rows = all_records[family]
                 if family == 'Messages':
-                    rows = [item for item in rows if item['id'] in pending] + list(reversed([item for item in rows if item['id'] not in pending]))
+                    lines[7:7] = ['main-view: recipient-lifecycle/v1', 'main-pending-count: ' + str(len(actionable)), 'main-uncertain-count: ' + str(len(uncertain))]
+                    rows = ([item for item in rows if item['id'] in actionable]
+                            + [item for item in rows if item['id'] in uncertain]
+                            + [item for item in rows if item['id'] in other]
+                            + list(reversed([item for item in rows if item['id'] not in pending])))
                 shown = 0
                 byte_count = len(('\n'.join(lines)+'\n').encode())
                 for record in rows:
                     if shown >= 100: break
                     if family == 'Messages':
                         state, head = (pending[record['id']]['state'], pending[record['id']]['head']) if record['id'] in pending else ('recorded', record['id'])
+                        if record['id'] in actionable: state = 'main-' + state
+                        elif record['id'] in uncertain: state = 'main-uncertain'
+                        elif record['id'] in other: state = other[record['id']]['reason']
                     elif family == 'Schedules':
                         state, head = record.get('status', 'held'), record.get('revision') or 'incomplete'
                     else:
@@ -1964,7 +2497,7 @@ class Store:
                 if shown < len(rows):
                     lines.extend(['', 'Showing ' + str(shown) + ' of ' + str(len(rows)) + ' records. Complete details remain in ' + family + '/ and the configured Archive.'])
                 if family == 'Messages':
-                    lines.extend(['', 'Pending items appear first. Recorded history includes receipts, decisions and validated work; recorded does not mean approved.', ''])
+                    lines.extend(['', 'Main obligations and uncertain classifications appear first; peer pending/history remains canonical. Counts are cached hints, never authority. Recorded does not mean approved.', ''])
                 text = '\n'.join(lines) + '\n'; name = '_Axis/' + index + '.md'; old = self.io.read(name, optional=True)
                 self._replace(name, text, digest(old) if old is not None else None)
                 result[index] = digest(text)
@@ -1976,14 +2509,15 @@ def main(argv=None):
     parser.add_argument('--root', default='.')
     parser.add_argument('--session')
     sub = parser.add_subparsers(dest='command', required=True)
-    for name in ('initialize', 'identity', 'check', 'indexes', 'pending', 'placement-status', 'deactivate'): sub.add_parser(name)
+    for name in ('initialize', 'identity', 'check', 'indexes', 'pending', 'main-pending', 'placement-status', 'deactivate'): sub.add_parser(name)
     activation = sub.add_parser('activate')
     activation.add_argument('--single-writer', action='store_true')
     activation.add_argument('--previous-placement-inactive', action='store_true')
     activation.add_argument('--expires')
     listing = sub.add_parser('list'); listing.add_argument('family', choices=FAMILIES)
+    capacity = sub.add_parser('capacity'); capacity.add_argument('job'); capacity.add_argument('--worker-session'); capacity.add_argument('--slot')
     projection = sub.add_parser('project'); projection.add_argument('family', choices=['Teams', 'Jobs']); projection.add_argument('id')
-    for name in ('team', 'admit', 'message', 'event', 'disposition', 'capture-result', 'amend-budget', 'team-inbox', 'observe-message', 'workspace-init', 'workspace-read', 'workspace-write', 'workspace-delete', 'artifact-publish', 'artifact-check', 'review-changes'):
+    for name in ('team', 'admit', 'message', 'event', 'disposition', 'capture-result', 'amend-budget', 'extend-native-budget', 'native-budget-state', 'team-inbox', 'team-message', 'observe-message', 'workspace-init', 'workspace-read', 'workspace-write', 'workspace-delete', 'artifact-publish', 'artifact-check', 'review-changes'):
         command = sub.add_parser(name); command.add_argument('--input', default='-')
     args = parser.parse_args(argv)
     try:
@@ -1996,6 +2530,8 @@ def main(argv=None):
         elif args.command == 'check': result = store.check()
         elif args.command == 'indexes': result = store.rebuild_indexes()
         elif args.command == 'pending': result = store.pending_messages()
+        elif args.command == 'main-pending': result = store.main_messages()
+        elif args.command == 'capacity': result = store.capacity_view(args.job, args.worker_session, args.slot)
         elif args.command == 'list': result = store.records(args.family)
         elif args.command == 'project': result = store.project(args.family, args.id)
         else:
@@ -2004,9 +2540,11 @@ def main(argv=None):
             value = json.loads(raw, object_pairs_hook=_unique_pairs)
             need(isinstance(value, dict), 'input-object')
             need(not any(key.startswith('_') for key in value), 'private-argument')
-            if args.command in {'team-inbox', 'observe-message', 'workspace-init', 'workspace-read', 'workspace-write', 'workspace-delete', 'artifact-publish', 'artifact-check', 'review-changes'}:
+            if args.command in {'team-inbox', 'team-message', 'observe-message', 'workspace-init', 'workspace-read', 'workspace-write', 'workspace-delete', 'artifact-publish', 'artifact-check', 'review-changes'}:
                 result = getattr(store, args.command.replace('-', '_'))(**value)
             elif args.command == 'amend-budget': result = store.amend_budget(**value)
+            elif args.command == 'extend-native-budget': result = store.extend_native_budget(**value)
+            elif args.command == 'native-budget-state': result = store.native_budget_state(**value)
             elif args.command == 'team': result = store.create_team(value)
             elif args.command == 'admit': result = store.admit_job(value['mandate'], value['operation_key'])
             elif args.command == 'message': result = store.message(**value)
@@ -2014,6 +2552,7 @@ def main(argv=None):
             elif args.command == 'capture-result': result = store.capture_result(**value)
             else: result = store.event(**value)
         print(json.dumps(result, ensure_ascii=False, sort_keys=True))
+        if isinstance(result, dict) and result.get('status') == 'budget-held': return 3
         return 1 if isinstance(result, dict) and result.get('status') == 'held' else 0
     except (CoordinationError, _START.Fault, OSError, ValueError, KeyError, TypeError) as exc:
         print(json.dumps({'status': 'error', 'code': getattr(exc, 'code', 'input-or-io'), 'path': getattr(exc, 'path', '')}, sort_keys=True))

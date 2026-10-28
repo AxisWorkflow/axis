@@ -404,7 +404,7 @@ def _native_identity(adapter, raw, argv):
     return native
 
 
-def _bounded_process(argv, cwd, prompt, seconds, max_output, check, *, launch_state=None):
+def _bounded_process(argv, cwd, prompt, seconds, max_output, check, *, launch_state=None, truncate_output=False, output_sink=None, on_launch=None):
     """Own one fresh process group; keep post-spawn failures as bounded evidence.
 
     PID and cleanup observations are diagnostics, never authority to signal a
@@ -418,6 +418,8 @@ def _bounded_process(argv, cwd, prompt, seconds, max_output, check, *, launch_st
         raise ValueError('cleanup requires default SIGCHLD disposition and sole child reaping ownership')
     check()
     streams = [bytearray(), bytearray()]
+    output_truncated = False
+    input_error = None
     reason = None
     sel = None
     cleanup_errors = []
@@ -430,44 +432,75 @@ def _bounded_process(argv, cwd, prompt, seconds, max_output, check, *, launch_st
     if launch_state is not None:
         launch_state.update(spawned=True, pid=proc.pid, leader_reaped=False, diagnostic_only=True)
     try:
+        if on_launch is not None:
+            on_launch({'pid': proc.pid, 'launched': True, 'diagnostic_only': True})
         # All fallible setup after successful Popen belongs inside this boundary.
         sel = selectors.DefaultSelector()
-        proc.stdin.write(prompt.encode('utf-8'))
-        proc.stdin.close()
+        if seconds is None:
+            # Native total-budget checks must also run while a child ignores input.
+            pending_input = memoryview(prompt.encode('utf-8'))
+            os.set_blocking(proc.stdin.fileno(), False)
+            if pending_input:
+                sel.register(proc.stdin, selectors.EVENT_WRITE, 2)
+            else:
+                proc.stdin.close()
+        else:
+            proc.stdin.write(prompt.encode('utf-8'))
+            proc.stdin.close()
         for index, stream in enumerate((proc.stdout, proc.stderr)):
             os.set_blocking(stream.fileno(), False)
             sel.register(stream, selectors.EVENT_READ, index)
         while sel.get_map() or proc.poll() is None:
             try:
                 check()
-            except Exception:
-                reason = 'authority-or-lease-lost'
+            except Exception as exc:
+                reason = getattr(exc, 'process_reason', 'authority-or-lease-lost')
                 break
-            if time.monotonic() - started >= seconds:
+            if seconds is not None and time.monotonic() - started >= seconds:
                 reason = 'deadline-exceeded'
                 break
             if not sel.get_map():
-                time.sleep(min(.05, max(.001, seconds - (time.monotonic() - started))))
-            for key, _ in sel.select(min(.1, max(.001, seconds - (time.monotonic() - started)))):
+                time.sleep(.05 if seconds is None else min(.05, max(.001, seconds - (time.monotonic() - started))))
+            for key, _ in sel.select(.1 if seconds is None else min(.1, max(.001, seconds - (time.monotonic() - started)))):
+                if key.data == 2:
+                    try:
+                        sent = os.write(key.fileobj.fileno(), pending_input[:65536])
+                    except BrokenPipeError:
+                        # A rejected input stream must not discard available diagnostics.
+                        sel.unregister(key.fileobj); proc.stdin.close()
+                        pending_input = memoryview(b''); input_error = 'input-closed'
+                        continue
+                    pending_input = pending_input[sent:]
+                    if not pending_input:
+                        sel.unregister(key.fileobj)
+                        proc.stdin.close()
+                    continue
                 chunk = os.read(key.fileobj.fileno(), 65536)
                 if not chunk:
                     sel.unregister(key.fileobj)
                     continue
                 room = max_output - sum(map(len, streams))
-                streams[key.data].extend(chunk[:max(0, room)])
+                captured = chunk[:max(0, room)]
+                streams[key.data].extend(captured)
+                if captured and output_sink is not None:
+                    output_sink(('stdout', 'stderr')[key.data], captured)
                 if len(chunk) > room:
-                    reason = 'output-limit-exceeded'
-                    break
+                    output_truncated = True
+                    if not truncate_output:
+                        reason = 'output-limit-exceeded'
+                        break
             if reason:
                 break
         if reason is None:
-            remaining = seconds - (time.monotonic() - started)
+            remaining = None if seconds is None else seconds - (time.monotonic() - started)
             try:
-                proc.wait(timeout=max(.001, remaining))
+                proc.wait(timeout=None if remaining is None else max(.001, remaining))
                 try: check()
                 except Exception: reason = 'authority-or-lease-lost'
             except subprocess.TimeoutExpired:
                 reason = 'deadline-exceeded'
+        if reason is None and input_error is not None:
+            reason = input_error
     except Exception as exc:
         reason = 'process-error:' + type(exc).__name__
     finally:
@@ -520,7 +553,7 @@ def _bounded_process(argv, cwd, prompt, seconds, max_output, check, *, launch_st
         launch_state.update(leader_reaped=reaped, process=process)
     return {'returncode': proc.returncode, 'reason': reason, 'stdout': bytes(streams[0]),
             'stderr': bytes(streams[1]), 'elapsed_seconds': time.monotonic() - started,
-            'pid': proc.pid, 'process': process}
+            'pid': proc.pid, 'process': process, 'output_truncated': output_truncated}
 
 
 def execute_start(adapter, plan, *, store, authority, access, operation, explicit=False):

@@ -1,7 +1,7 @@
 # Changelog
 > **Purpose:** Record Axis release identity and the structural migrations needed to update an existing project safely.
 
-current-version: 3.05
+current-version: 3.06
 changelog-format: 1
 self-update-baseline: 26.08.19
 
@@ -39,6 +39,38 @@ update-impact: automatic
 ### Verification
 
 - None.
+
+## 3.06
+
+released: 2026-10-28
+
+update-impact: automatic
+
+### Structural Changes
+
+- Add optional `_Axis/Resources/team-route.py`, `team-route-observation.py` and `team-closing.py`. Native included-route execution requires a trusted Host verifier and exact dispatch binding; bounded private output is retained during execution. A selected canonical closing contract tracks ready/release/ack/result/DONE without certifying process termination, content acceptance or billing.
+- Checked Team tools add compact inbox/closing status, targeted canonical Message reads, and purpose-specific waits. Positive waits default to answers rather than receipts; explicit observation/all modes remain available. An explicitly selected closing contract survives broker restart and ends ordinary tool participation after canonical DONE.
+
+- Add `_Axis/Practices/Teams.md`, `Collaboration.md`, `_Axis/Resources/team-plan.py` and `Team-Patterns/` examples. Separate reusable infrastructure from selected working methods; optional charters bind a structural plan and canonical digest. Existing prose charters remain valid.
+- Add opt-in cumulative money/runtime budgets to coordination and scheduling. Retain reservations, uncertain effects, usage and clock across explicit extensions; preserve legacy charter semantics. Budget holds remain resumable, and estimates do not independently terminate native-budget work.
+- Derive actionable Main Messages by recipient and lifecycle while retaining canonical peer history. Explain project, Job and Team capacity separately; dormant unrelated Job limits do not reserve capacity, and uncertain holders remain occupied.
+
+- Generated Message subjects shorten at word boundaries, preserving complete record identifiers and the full body. Existing immutable Messages and checksums remain unchanged.
+- `_Axis/Resources/coordination.py` permits Main acceptance and closing of retained results after the execution cutoff within still-valid authority. New execution, expired authority, stale epochs and invalid output still refuse. Preserve original timestamps and prior failed-attempt evidence.
+- `_Axis/RULES.md`, `Rules/Budget.md`, Coordination practice/manual and generated starting context require preserving work and requesting an extension at a budget or deadline boundary. Complete already-authorized acceptance; distinguish a resumable hold from failed work. No record schema change or automatic replay.
+
+### Project-State Migrations
+
+- Preserve all Team/Job/Message histories, artifact revisions, prior usage and existing charters. No new record family or automatic closing contract is created. New route captures remain in the owning Message support folder; never overwrite, delete or automatically replay an interrupted capture. Selected closing is bound explicitly by the launcher; missing optional helpers leave unselected ordinary/manual workflows available.
+
+### Retired Paths
+
+- None.
+
+### Verification
+
+- Verify purpose-specific cursor/history preservation, exact selected closing replay and post-DONE restrictions, optional-helper absence, durable prefixes across interruption, output bounds independent of execution, stale writers, exact route requests, missing usage and unreleased uncertain holders. Frozen oracles remain unchanged; local fake-process tests do not qualify a real provider, billing or multi-user storage.
+- Verify unchanged legacy replay, native budget/recovery, direct peer communication, Main-only projections, capacity occupancy, plan create/amend/replay and compiled startup. Existing canonical records are not migrated or rewritten.
 
 ## 3.05
 
