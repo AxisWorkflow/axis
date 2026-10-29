@@ -1,20 +1,12 @@
 # ^archive
-> **Purpose:** Move selected inactive history into reversible, low-context Archive storage.
+> **Purpose:** Run the saved archiving policy, optionally changing it for future rounds.
 
-1. Read [Practices > Archiving].
+Usage: `^archive [Never|Default|Aggressive] [--dry-run]`. Accept case-insensitive levels and normalize `Agressive` to `Aggressive`. Reject unknown, duplicate or conflicting options before any mutation.
 
-2. Inventory live and archived records by family, filename, Line-1 Subject, structured fields, count, and size. Do not load full bodies merely to build the inventory.
+1. Read [Practices > Archiving]. With no level, use [Settings > Archiving], defaulting to Default only when absent. An explicit valid level is saved before the round. With `--dry-run`, preview the proposed level without saving it or changing any files.
+2. At Never, report disabled policy moves. Completed operational recovery still follows its separate lifecycle. Do not ask User to pick families again: the command authorizes the routine reversible policy batch under Default/Autonomous Permissions. Apply [Rules > Permissions] to the exact actions it governs, including Restricted approval requirements.
+3. Recover eligible Message closures through [Practices > Messages > Directory discovery and retention], using the saved level and preserving missing-integration holds. Then inventory eligible local history and cold candidates, classify dependencies, and resolve exact paths. Use the optional `archive-storage.py plan|run` accelerator for simple records; follow the complete Practice for related support, link corrections, overflow and legacy migration. A helper hold is work to review, never permission to force a move.
+4. Complete verified local moves and active-index pruning. Cold export requires an approved available destination, exact reviewed selection, copy/hash verification, durable catalogs, then checkpoint and checked source retirement. When unavailable, keep the source and finish unrelated local moves. Resume existing bundle IDs instead of duplicating them.
+5. Verify names, links, identities and required accounting. Log one concise round Event. Report local moves, cold copies/retirement, bytes actually freed, holds and failures. A saved level persists even if some archive work is deferred. No history rewrite, force-push, new service purchase or cold-history deletion is part of this command.
 
-3. Ask User:
-	- a. Which eligible record families to include.
-	- b. How much back-history to leave active: a UTC cutoff, newest N per family, named records, or all eligible inactive history.
-
-4. Resolve an exact proposal. Supervision is an eligible family; preserve the newest 30 active records unless User explicitly selects a smaller active window. Exclude Active and Blocked Tasks, all live or archived Follow-Ups and Reminders (both self-archive; reopening mints a new record), and every Marker, Flag, lock, temp file, Wiki file, current project file, Project Subfolder, and everything inside a nested Subproject. Parent archive operations never enter a Subproject. Show the source and destination paths, count, total size, exclusions, and every Task or Snapshot index-link edit.
-
-5. Require the literal confirmation `ARCHIVE`. Any other response leaves the project unchanged. Under [Rules > Permissions] at `Default` or `Autonomous`, when User's intent covers the exact proposal, the Agent may supply `ARCHIVE` itself; say so and record it in the Event.
-
-6. Follow [Practices > Archiving > Safe Move and Restore]. Stop without partial overwrite if a collision or unsafe link state is found. If the Host cannot delete a Marker discovered during cleanup, use [Rules > HostAndMeta > Deletion Fallback]; never move it into the Archive.
-
-7. Verify that each source is absent, each destination has identical content, all indexed links resolve, every archived Task is terminal, and no Marker exists anywhere under `_Axis/Archive/`.
-
-8. Log one Event after the move with the requested boundary, moved paths, exclusions, index edits, verification result, and any restoration instructions. Report the result to User. STOP.
+STOP.

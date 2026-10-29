@@ -17,6 +17,10 @@
 
    **Network folders (2.04).** Also set `serialized` under `auto` when the project root is on a network mount, meaning `mount` reports `smbfs`, `cifs`, `nfs`, `afpfs` or `webdav` for the longest matching mount point. Folder locks proved unreliable on Apple's SMB server ([Lock-File > Shared Network Folders]).
 
+## Model access
+
+Record `model-access` as `subscription` or `api-key` only when this running process has a verified selection; otherwise use `unverified`. The launch helper exports `AXIS_MODEL_ACCESS` after selecting credentials, and the startup survey records its value without reading credentials. A present API-key environment selector can establish API mode; absence alone cannot establish a subscription. This Flag is informational, never spending authority. Preserve the selected preference in [Settings > Model Access]; do not convert uncertain access into a paid fallback.
+
 ## Step 3: Record Flags
 
 1. Main still performs every observation/probe above. Only under an initialized helper admission, optionally record those seven observed string values with `python3 _Axis/Resources/startup-state.py --root . record-capabilities --session {Session-ID} --owner {nonce} --observations '{JSON object}'`. The object must contain exactly `model`, `host-spawn`, `host-parallel`, `host-shell`, `host-local-llm`, `host-cloud-sync`, and `host-storage`; preserve the model name and observed domains above. A local `yes` means the exact supported URL was probed. The helper records supplied facts; it neither probes nor grants authority. Only `capabilities-recorded` completes recording. Malformed input, unsafe paths, changed ownership or partial/error results stop for review; never infer success or silently retry. Missing support before writes retains the manual steps. External and manual admissions always use them. No generated import or helper source read is required.

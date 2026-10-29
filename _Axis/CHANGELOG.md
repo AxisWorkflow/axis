@@ -1,7 +1,7 @@
 # Changelog
 > **Purpose:** Record Axis release identity and the structural migrations needed to update an existing project safely.
 
-current-version: 3.07
+current-version: 3.08
 changelog-format: 1
 self-update-baseline: 26.08.19
 
@@ -39,6 +39,47 @@ update-impact: automatic
 ### Verification
 
 - None.
+
+## 3.08
+
+released: 2026-10-29
+
+update-impact: automatic
+
+### Structural Changes
+
+- Add `_Axis/Resources/archive-storage.py` and revise `^archive` for persistent Never/Default/Aggressive policy, family-local tracked Archive folders and verified external cold storage. `_Axis/ColdStorage/` is optional project-owned locator/support history, created on demand and never shipped populated. Family catalogs are `Archive/COLD.md`; original IDs remain reserved offline.
+- New update recovery lives under `_Temp/Update-{ID}/`, new merge journals/rollback objects under `_Temp/Merge-{ID}/`. Durable `_Axis/Updates/{ID}/recovery.json` and `_Axis/Merges/{ID}/recovery.json` pointers protect pending work. Exact Git checkpoint blobs replace matching preimage copies; dirty/untracked/non-Git changes retain minimal temporary copies.
+
+- Add optional `_Axis/Resources/axis-launch.py` and shared `model-access.py`; the POSIX `axis` entry supports deterministic tmux create/reattach and bounded project discovery. Installation is opt-in. API credentials enter only the selected child environment under explicit paid authority.
+- Add `_Axis/Resources/message-paths.py`, `message-archive.py` and `team-allocation.py`. Messages use `_Axis/Messages/Individual/`, `_Axis/Messages/Teams/{Team ID}/` and corresponding `Archive/` paths. Main reserves separate Team budgets and slots; ordinary Team mutations use their own workspace lock. Main serializes allocations, member bindings and shared admission. Global maintenance requires actual quiescence.
+- Add `_Axis/Resources/adoption-harmonize.py`, frozen and hash-bound by the update transaction. It scans all present `_Axis/`, `_Memos/`, `_Wiki/` and `_Dev/` trees once at adoption, with resumable metadata chunks, scoped WORM repair, minimum temporary recovery and a compact completion report.
+
+### Project-State Migrations
+
+- Add Archiving (Default) and Cold Storage Location (unconfigured) to `_Axis/SETTINGS.md` only when absent, using the template descriptions/ranges. Preserve existing valid values and explicit archiving opt-outs as Never. Do not infer an opt-out from Archive in Git: that setting controls old payload tracking. Retain legacy Archive Location and Archive in Git values and their resolver; never silently bind a new cold destination or recommit ignored external history.
+- New archives use family-local tracked folders. Migrate old in-project history only with exact move receipts, reference repairs and dependency review; catalogue existing external history in place after an approved binding, without downloading its bodies. Unavailable or unclassified legacy history remains held. Keep active Task/Snapshot indexes focused on active records after verified moves; archived details remain discoverable by family listing.
+- Preserve unfinished legacy update and merge journals in their original layout. Never age-delete their recovery. After valid fresh update consumption, updater-only completion or released rollback, retain compact completion provenance and retire new temporary payload to dated Trash. Compact accepted legacy journals using their original verified manifests, including the newest accepted transaction. A completed new merge retires recovery only after a fresh combined-project startup validates it. Ordinary Trash grace still applies.
+
+- Add Model Access (`subscription`) and optional Model Access Claude/Codex overrides only when absent. Preserve valid choices. `either` prefers included access and never grants paid fallback. The new per-session `model-access` Flag is local/ignored and appears in status and Dashboard without account or credential values.
+- Quiesce every old coordination writer before installing the v2 placement protocol. Keep historical events, spent budgets and unresolved attempts. Do not infer that a maintenance marker alone stops old processes. New native Teams receive independent reservations; old Teams retain exact accounting until Main explicitly reconciles them.
+- Adoption repairs corroborated legacy Message and family locations, record names, missing Task metadata/index links, orphan support and real cross-root links. Leave uncertain content in place with warnings and continue Ready; later startup does not repeat the pass. Missing optional index observations are unverified, not a new admission gate. Never rewrite historical facts or silently claim a repaired test/signature.
+- Main integration plus proven terminal/physical/accounting settlement permits immediate local Team Message archiving at Default/Aggressive. Never disables policy archiving. Late results retain their original Team identity in Individual without reopening the archived folder. Legacy identity/support aliases remain available.
+
+### Retired Paths
+
+- No existing project-state path is unconditionally deleted. New payload creation moves from permanent Updates/Merges journals to exact protected Temp directories; legacy readers remain until their verified migration/retirement completes.
+
+### Verification
+
+- Qualify launcher create/reattach and both-provider subscription/API startup, child and Team routes; pre-call paid refusal, effective-authentication checks and credential-free output. Live tests require their own bounded spending authority.
+- Qualify grant conservation, source-release-before-destination transfers, exclusive worker bindings, independent Team progress, stale ownership/old-writer barriers, closed-message retention and exact identity lookup.
+- Qualify ordinary/RSI adoption, skipped-version/updater-first compatibility, exact WORM scope and negative forgeries, interrupted writes, third-value preservation, real READY with unresolved content, repeated startup and native/Linux/package behavior.
+- Publish exact ZIP/checksum assets with keyless Sigstore bundles from the production signing workflow; verify exact issuer/workflow identity, tamper and wrong-identity negatives. Historical assets are not re-signed.
+
+- Qualify Never/Default/Aggressive persistence and dry-run, terminal retention and active/dependency holds, warm moves/index/reference handling, offline cold identity lookup, interrupted copy/retirement/retrieval and existing external history catalogue migration. Preserve ordinary naming, WORM and staged Git checks.
+- Qualify Git and non-Git recovery, unavailable checkpoint and third-value refusal, interrupted apply/release/consumption, compact completion receipts and legacy compaction. Preserve all lifecycle ownership/authorization controls. Verify fresh merged-startup disposal, content-drift holds, and pointer protection during cleanup.
+- Preserve active coordination accounting and budget dependencies locally. Validate new settings/defaults in the normal reviewed update plan, repeat-idempotence and legitimate upgraded Git commits; populated old history and settings must survive.
 
 ## 3.07
 

@@ -16,7 +16,7 @@ Four-digit year, two digits for each of month, day, hour, minute and second, thr
 
 This is not a formatting preference. The name is the record's identity: it sorts the project's history, it is the join between an index entry and its detail file, and it is how an Agent on a different model or a different platform finds what an earlier Agent wrote. A file named any other way is not a stylistic variation - it is a record that later Agents will not find, and the damage compounds silently because nothing errors at the time.
 
-The name is also unique across the entire Project - no timestamp names two records, in any directory, live or archived - so a bare timestamp resolves in one `grep` from the project root. Mint every identifier per [Practices > Timestamps]; Subprojects are separate uniqueness domains.
+The name is also unique across the entire Project - no timestamp names two records, in any directory, live or archived - so a bare timestamp resolves through active/family-local history or a locally retained cold locator. Mint every identifier per [Practices > Timestamps]; Subprojects are separate uniqueness domains.
 
 Memos share the timestamp uniqueness domain but remain outside the Index-Detail pattern: their names retain a subject after the timestamp under [Practices > Memos].
 
@@ -76,7 +76,7 @@ Implementation notes:
 - On a filename collision - anywhere in the Project, not just the target directory - increment `xxx` (milliseconds) to prevent merge/overwrite (see [Practices > Timestamps]).
 - `xxx` (milliseconds) is always the real millisecond time - mint it with the command in [Practices > Timestamps] step 1, which falls back past BSD/macOS `date` (no `%N`) to an interpreter that has them. Never fill `xxx` with `000` because `date` would not produce it.
 - Reserve manual increment of milliseconds for when two mints collide.
-- Archived records retain this same identity under a family directory in `_Axis/Archive/` (the folder in [Settings > Archive Location]); Archive itself is not an additional active Index-Detail directory.
+- Archived records retain their identity in `_Axis/{Family}/Archive/`; legacy Archive Location remains readable during migration. Reserved `COLD.md` catalogs index timestamped `_Axis/ColdStorage/` retrieval details. Original cold record IDs stay reserved offline and do not create duplicate canonical Tasks.
 
 Implementation recipes for working with Follow-Ups, Reminders, Ideas, Logs, Notes, Snapshots, Supervision, and Tasks:
 

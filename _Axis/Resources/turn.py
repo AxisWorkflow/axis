@@ -29,6 +29,12 @@ def safe_file(path):
 for directory in (root/'_Axis',agents,root/'_Axis/Flags',root/'_Axis/Tracking',root/'_Axis/Logs'):
     if directory.is_symlink() or (directory.exists() and not directory.is_dir()):
         print('LOST LEASE: control directory is linked or malformed. Make no writes; follow _Axis/Resources/Displaced-Session.md.');sys.exit(4)
+# Completed new merges require a fresh validation pass before ordinary edits can drift the acceptance result.
+try:
+    for pointer in (root/'_Axis/Merges').glob('*/recovery.json'):
+        if (pointer.parent/'retired.json').exists() and not (pointer.parent/'validated.json').exists():
+            print('MERGE HELD: finish this session and start a fresh combined-project session to validate the merge; preserve temporary recovery.');sys.exit(9)
+except OSError:print('MERGE HELD: merge recovery state cannot be verified.');sys.exit(9)
 # Merge state is checked before lease renewal, without running any source-project code.
 if any(os.path.lexists(root/p) for p in ('_Axis/Flags/merge-pending','_Axis/Merges/retired.json')):
     try:
@@ -155,10 +161,22 @@ try:
     for e in (d.iterdir() if d.is_dir() else []):
         if e.name in ('.gitkeep','operation.lck','.DS_Store') and e.is_file() and not e.is_symlink():continue
         if not e.is_dir() or e.is_symlink():items.append('unexpected entry in _Axis/Updates/: follow _Axis/Resources/Check-Update-Handoff.md before ordinary work');break
+        if (e/'completed.json').exists():
+            value=json.loads((e/'completed.json').read_text());auth=value.get('authorization',{})
+            if value.get('schema')!=2 or value.get('transaction')!=e.name or value.get('outcome') not in ('consumed','rolled-back') or not re.fullmatch(r'_Axis/Logs/\d{4}(?:\.\d{2}){5}\.\d{3}Z\.md',auth.get('record','')):raise ValueError('invalid completed update')
+            import hashlib
+            path=root/auth['record']
+            if path.is_symlink() or path.resolve()!=path or hashlib.sha256(path.read_bytes()).hexdigest()!=auth.get('sha256'):raise ValueError('changed completed authority')
+            continue
+        if (e/'recovery.json').exists():
+            value=json.loads((e/'recovery.json').read_text())
+            if value!={'schema':2,'transaction':e.name,'path':'_Temp/Update-'+e.name}:raise ValueError('invalid recovery pointer')
+            e=root/value['path']
+            if e.is_symlink() or e.resolve()!=e:raise ValueError('unsafe recovery')
         names={x.name for x in e.iterdir()}
         if 'consumed.json' in names or {'rollback.json','released.json'}<=names:continue
         items.append('an update handoff needs attention: follow _Axis/Resources/Check-Update-Handoff.md before ordinary work');break
-except OSError:items.append('update handoff state unverified: inspect _Axis/Updates/ under _Axis/Resources/Check-Update-Handoff.md')
+except (OSError,ValueError,KeyError,TypeError):items.append('update handoff state unverified: inspect _Axis/Updates/ under _Axis/Resources/Check-Update-Handoff.md')
 if first=='Main: session':
     incoming=root/'_Axis/Submissions'
     if incoming.is_symlink():items.append('unsafe Submissions queue; hold import')

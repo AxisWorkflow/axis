@@ -346,6 +346,7 @@ const DIRS = { Agents:"../Agents/", Tasks:"../Tasks/", Ideas:"../Ideas/", Notes:
                Snapshots:"../Snapshots/", CX:"../CX/", Audit:"../Audit/" };   // metrics render in this order - keep the card order first
 /* BEGIN GENERATED: flag-domains */
 const FLAG_DOMAINS = {
+  "model-access": ["subscription","api-key","unverified"],
   "host-spawn": ["yes","no"],
   "host-parallel": ["yes","no"],
   "host-shell": ["yes","no"],
@@ -599,6 +600,7 @@ async function renderConfiguration(partial){       // Settings and validated Hos
   catch(e){ el("projpath").textContent = ""; }         // older servers do not offer the folder path
   const profile = Object.keys(vals).length ? detectProfile(vals) : "Unknown";
   const model = (await readFlag("model", partial)) || "Unknown";
+  const accessMode = (await readFlag("model-access", partial)) || "unverified";
   const hs = await readFlag("host-spawn", partial), hp = await readFlag("host-parallel", partial), hsh = await readFlag("host-shell", partial);
   const ll = await readFlag("host-local-llm", partial), cs = await readFlag("host-cloud-sync", partial), storage = await readFlag("host-storage", partial);
   let snap = "Unknown";
@@ -676,6 +678,7 @@ async function renderConfiguration(partial){       // Settings and validated Hos
     row("Version", version),
     row("Profile", profile),
     row("Main Model", model),
+    row("Model access", ({subscription:"Subscription","api-key":"API key",unverified:"Unverified"})[accessMode] || "Unverified"),
     row("Local Model", selected),
     row("CX Model", cxm),
     row("CX Frequency", CX_GLOSS[cxf] ?? cxf),

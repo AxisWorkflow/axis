@@ -3,12 +3,12 @@
 
 Python 3/POSIX is optional update acceleration, not an Axis core dependency.
 Official-release verification and literal User authority are caller attestations.
-This tool never fetches, executes target code, infers consent or rewrites project
-planning records. Check-Update-Handoff.md owns the equivalent file-only contract.
+This tool never fetches or infers consent. Full adoption may run only the exact
+verified, plan-bound harmonizer frozen alongside this engine. Check-Update-Handoff.md owns the equivalent file-only contract.
 """
 from pathlib import Path
 from contextlib import contextmanager
-import argparse,datetime,hashlib,json,os,re,secrets,stat,sys,tempfile,time
+import argparse,datetime,hashlib,json,os,re,secrets,stat,sys,tempfile,time,subprocess,importlib.util
 try:
     import fcntl
 except ImportError:
@@ -28,7 +28,7 @@ DECLARABLE_DIR=r'_Axis/[A-Z][A-Za-z0-9_-]*/'
 # 2.01 two-step update: step one installs only these updater files (installed engine), so step two can be planned and
 # applied by the new release's updater in the same ^update. Step one changes no project state and no boot doctrine.
 UPDATER_FILES=('_Axis/Resources/update-transaction.py','_Axis/Commands/update.md','_Axis/Resources/Check-Update-Handoff.md','_Axis/Resources/record-check.py')
-STATE_DIRS=('Agents','Archive','Audit','CX','Flags','Followups','Ideas','Logs','Notes','Reminders','Requests','Teams','Messages','Jobs','Schedules','Submissions','Reviews','Secrets','Snapshots','Status','Supervision','Tasks','Tracking','Updates','Merges','Splits','Repairs','Wiki')
+STATE_DIRS=('Agents','Archive','Audit','CX','Flags','Followups','Ideas','Logs','Notes','Reminders','Requests','Teams','Messages','Jobs','Schedules','Submissions','Reviews','Secrets','Snapshots','Status','Supervision','Tasks','Tracking','Updates','Merges','Splits','Repairs','ColdStorage','Wiki')
 
 def require(v,m):
     if not v:raise ValueError(m)
@@ -183,12 +183,18 @@ def validate_plan(root,p):
         require(re.search(r'### Storage Policy\n(?:(?!\n### ).)*?\*\*Value:\*\* auto(?:\n|$)',proposed('_Axis/SETTINGS.md').decode(),re.S),'storage-policy transition requires reviewed manual migration')
     require(bool(p['source_checks']),'source identity checks required')
     require(p['source']['archive_sha256'] in [v['sha256'] for v in p['source_checks'].values() if v],'archive not pinned')
+    h=p.get('harmonization')
+    if not p.get('updater_only') and version(p['to_version'])>=version('3.08'):require(h is not None,'target adoption requires best-effort harmonization')
+    if h is not None:
+        require(not p.get('updater_only') and isinstance(h,dict) and set(h)=={'schema','helper','sha256'} and h['schema']==1,'invalid harmonization contract')
+        require(h['helper'].startswith('_Temp/') and h['helper'] in p['source_checks'] and p['source_checks'][h['helper']]['sha256']==h['sha256'],'harmonizer not bound to verified target source')
+        require(digest(read(safe(root,h['helper'])))==h['sha256'],'harmonizer source changed')
     require(isinstance(p['reconciliation'],dict),'invalid reconciliation set')
     for n,rules in p['reconciliation'].items():
         require(n in MUTABLE or n.startswith(('_Axis/Tasks/','_Axis/Followups/')) and n.endswith('.md'),'invalid reconciliation path')
         safe(root,n);require(not any(v['path']==n for v in p['changes']),'managed changes cannot also require reconciliation');require(set(rules) in ({'contains','absent'},{'contains','absent','archive_to'}) and all(isinstance(rules[k],list) and all(isinstance(x,str) and x for x in rules[k]) for k in ('contains','absent')),'invalid reconciliation conditions')
         if 'archive_to' in rules:
-            target=rules['archive_to'];require(n.startswith('_Axis/Followups/') and target=='_Axis/Archive/Followups/'+Path(n).name,'invalid reconciliation archive');safe(root,target);require(target not in p['preserved'] and not any(v['path']==target for v in p['changes']),'archive destination has conflicting ownership')
+            target=rules['archive_to'];require(n.startswith('_Axis/Followups/') and target in ('_Axis/Archive/Followups/'+Path(n).name,'_Axis/Followups/Archive/'+Path(n).name),'invalid reconciliation archive');safe(root,target);require(target not in p['preserved'] and not any(v['path']==target for v in p['changes']),'archive destination has conflicting ownership')
 
 def ordered(p):return sorted(p['changes'],key=lambda v:(2 if v['path']=='_Axis/CHANGELOG.md' else 1 if v['path'] in ENTRIES else 0,v['path']))
 def live(root,p,which):return all(identity(safe(root,v['path']))==v[which] for v in p['changes'])
@@ -210,8 +216,72 @@ def after(root,p,reconciling=False):
     require(len({read(safe(root,n)) for n in ENTRIES})==1,'entry parity failed')
     require(p.get('updater_only') or re.search(r'^current-version: '+re.escape(p['to_version'])+r'$',read(safe(root,'_Axis/CHANGELOG.md')).decode(),re.M),'installed version mismatch')
 
+def recovery_directory(root,tx):
+    U=safe(root,'_Axis/Updates/'+tx)
+    pointer=U/'recovery.json'
+    if not pointer.exists():return U
+    r=parse(read(pointer));require(set(r)=={'schema','transaction','path'} and r['schema']==2 and r['transaction']==tx and r['path']=='_Temp/Update-'+tx,'invalid update recovery pointer')
+    return safe(root,r['path'])
+
+def git_before(root,p):
+    """Use only an exact project checkpoint and exact blobs, never Git's working index."""
+    try:
+        top=subprocess.run(['git','-C',str(root),'rev-parse','--show-toplevel'],capture_output=True,timeout=10)
+        if top.returncode or Path(top.stdout.decode().strip()).resolve()!=root.resolve():return {}
+        head=subprocess.check_output(['git','-C',str(root),'rev-parse','--verify','HEAD^{commit}'],timeout=10).decode().strip()
+        out={}
+        for i,v in enumerate(ordered(p),1):
+            if v['before'] is None:continue
+            q=subprocess.run(['git','-C',str(root),'show',head+':'+v['path']],capture_output=True,timeout=10)
+            if q.returncode==0 and digest(q.stdout)==v['before']['sha256'] and len(q.stdout)==v['before']['bytes']:out[str(i)]=head
+        return out
+    except (OSError,ValueError,subprocess.SubprocessError):return {}
+
+def before_data(root,E,s,i,v):
+    checkpoint=s.get('git_before',{}).get(str(i))
+    if checkpoint:
+        require(re.fullmatch('[0-9a-f]{40,64}',checkpoint),'invalid recovery checkpoint')
+        q=subprocess.run(['git','-C',str(root),'show',checkpoint+':'+v['path']],capture_output=True,timeout=30)
+        require(q.returncode==0,'Git recovery checkpoint unavailable; restore Git or backup before recovery')
+        b=q.stdout
+    else:b=read(E/f'before-{i:04d}.bin')
+    require(digest(b)==v['before']['sha256'] and len(b)==v['before']['bytes'],'recovery preimage mismatch');return b
+
+def completed_temporary(root,U):
+    require(all(q.name in ('completed.json','recovery.json','harmonization.json') or finder(q) for q in U.iterdir()),'unknown transaction evidence')
+    r=parse(read(safe(U,'completed.json')))
+    require(set(r)-{'harmonization_sha256'}=={'schema','transaction','session','from_version','to_version','target_commit','plan_sha256','authorization','engine_sha256','git_checkpoints','unrelated_changes','outcome','completed','trash'} and r['schema']==2 and r['transaction']==U.name and re.fullmatch(ID,r['session']) and r['outcome'] in ('consumed','rolled-back'),'invalid completed update receipt')
+    require(isinstance(r['unrelated_changes'],list) and all(isinstance(v,str) and safe(root,v) for v in r['unrelated_changes']),'invalid unrelated-change summary')
+    version(r['from_version']);version(r['to_version']);datetime.datetime.fromisoformat(r['completed'])
+    require(re.fullmatch('[0-9a-f]{40,64}',r['target_commit']) and isinstance(r['git_checkpoints'],list) and all(re.fullmatch('[0-9a-f]{40,64}',v) for v in r['git_checkpoints']),'invalid checkpoint receipt')
+    for k in ('plan_sha256','engine_sha256'):require(re.fullmatch('[0-9a-f]{64}',r[k]),'invalid receipt digest')
+    a=r['authorization'];require(set(a)=={'record','sha256'} and a['record']=='_Axis/Logs/'+U.name+'.md','invalid receipt authority')
+    auth=read(safe(root,a['record']));require(digest(auth)==a['sha256'],'completed update authority changed')
+    require([line for line in auth.decode().splitlines() if line.startswith('engine_sha256:')]==['engine_sha256: '+r['engine_sha256']],'completed engine authority differs')
+    require(re.fullmatch(r'_Trash/\d{4}-\d{2}-\d{2}--Update-'+re.escape(U.name),r['trash']),'invalid update Trash path')
+    if 'harmonization_sha256' in r:require(digest(read(safe(U,'harmonization.json')))==r['harmonization_sha256'],'harmonization result changed')
+    return r
+
+def retire_temporary(root,sid,tx):
+    U=safe(root,'_Axis/Updates/'+tx)
+    if not (U/'recovery.json').exists():return None
+    E=recovery_directory(root,tx)
+    if (U/'completed.json').exists():r=completed_temporary(root,U)
+    else:
+        E,s,p=load(root,tx);require(state(root,E,s,p)=='closed','unfinished update recovery is protected')
+        r={'schema':2,'transaction':tx,'session':sid,'from_version':p['from_version'],'to_version':p['to_version'],'target_commit':p['source']['commit'],'plan_sha256':s['plan_sha256'],'authorization':{k:p['authorization'][k] for k in ('record','sha256')},'engine_sha256':s['engine_sha256'],'git_checkpoints':sorted(set(s.get('git_before',{}).values())),'unrelated_changes':parse(read(E/'consumed.json')).get('unrelated_changes',[]) if (E/'consumed.json').exists() else [],'outcome':'consumed' if (E/'consumed.json').exists() else 'rolled-back','completed':datetime.datetime.now(datetime.timezone.utc).isoformat(),'trash':'_Trash/'+datetime.datetime.now(datetime.timezone.utc).date().isoformat()+'--Update-'+tx}
+        if (E/'harmonization.json').exists():
+            raw=read(E/'harmonization.json');once(U/'harmonization.json',raw);r['harmonization_sha256']=digest(raw)
+        once(U/'completed.json',r)
+    dest=safe(root,r['trash'])
+    if E.exists():
+        E,start,plan=load(root,tx);require(state(root,E,start,plan)=='closed' and start['plan_sha256']==r['plan_sha256'],'recovery is unfinished or differs from completion receipt')
+        require(not dest.exists(),'update retirement destination occupied');dest.parent.mkdir(exist_ok=True);os.rename(E,dest);syncdir(dest.parent)
+    # A swept Trash directory is allowed only after the durable completion receipt.
+    require(not E.exists(),'update recovery retirement incomplete');return {'transaction':tx,'trash':r['trash'],'outcome':r['outcome']}
+
 def load(root,tx):
-    require(re.fullmatch(ID,tx),'invalid transaction ID');E=safe(root,'_Axis/Updates/'+tx);s=parse(read(safe(E,'start.json')));p=s['plan'];require(s['schema']==1 and s['transaction']==tx and digest(encode(p))==s['plan_sha256'],'invalid transaction start');evidence(root,E,s,p);return E,s,p
+    require(re.fullmatch(ID,tx),'invalid transaction ID');E=recovery_directory(root,tx);s=parse(read(safe(E,'start.json')));p=s['plan'];require(s['schema']==1 and s['transaction']==tx and digest(encode(p))==s['plan_sha256'],'invalid transaction start');evidence(root,E,s,p);return E,s,p
 
 def evidence(root,E,s,p):
     require(re.fullmatch(ID,s['session']) and re.fullmatch('[0-9a-f]{48}',s['token']),'invalid transaction owner')
@@ -219,18 +289,33 @@ def evidence(root,E,s,p):
     authorization(root,p,read(safe(E,'authorization.md')) if closed else None,s['engine_sha256'])
     require(digest(read(safe(E,'authorization.md')))==p['authorization']['sha256'],'frozen authorization changed')
     require(digest(read(safe(E,'engine.py')))==s['engine_sha256'],'frozen engine changed')
-    allowed={'start.json','engine.py','authorization.md','prepared.json','barrier-intent.json','barrier-result.json','rollback-intent.json','rollback.json','complete.json','ready.json','release-intent.json','released.json','consumed.json','reconciliation-start.json'}
+    allowed={'start.json','engine.py','authorization.md','prepared.json','barrier-intent.json','barrier-result.json','rollback-intent.json','rollback.json','complete.json','ready.json','release-intent.json','released.json','consumed.json','reconciliation-start.json','harmonizer.py','harmonization.json'}
     ready=(E/'prepared.json').exists()
     if ready:require(parse(read(safe(E,'prepared.json')))=={'plan_sha256':s['plan_sha256']},'prepared receipt changed')
     for i,v in enumerate(ordered(p),1):
         for side in ('before','after'):
             n=f'{side}-{i:04d}.bin';expected=v[side]
             if expected is not None:
+                if side=='before' and str(i) in s.get('git_before',{}):
+                    before_data(root,E,s,i,v);continue
                 allowed.add(n);q=safe(E,n)
                 if ready or q.exists():
                     data=read(q);require(digest(data)==expected['sha256'] and len(data)==expected['bytes'],'durable '+side+' evidence changed')
         allowed.update((f'{i:04d}-intent.json',f'{i:04d}-result.json'))
-    for q in E.iterdir():require(finder(q) or q.name in allowed and safe(E,q.name).is_file(),'unknown transaction evidence')
+    if p.get('harmonization'):
+        require(digest(read(safe(E,'harmonizer.py')))==p['harmonization']['sha256'],'frozen harmonizer changed')
+    for q in E.iterdir():
+        if q.name=='harmonization' and p.get('harmonization'):
+            require(q.is_dir() and not q.is_symlink(),'unsafe harmonization journal')
+            for child in q.iterdir():
+                require(child.name in {'plan.json','result.json','scan.pending'} or re.fullmatch(r'scan-[0-9a-f]{64}\.json',child.name) or re.fullmatch(r'[0-9]+\.(before|after|pending|done|restore)',child.name),'unknown harmonization evidence')
+                if child.name.endswith('.pending') and child.lstat().st_nlink==2:
+                    unit=parse(read(q/'plan.json'));op=next((v for v in unit['operations'] if str(v['index'])+'.pending'==child.name),None)
+                    require(op is not None and not child.is_symlink() and child.is_file(),'unsafe pending publication')
+                    target=root/op['target'];require(not target.is_symlink() and target.is_file() and child.samefile(target) and digest(child.read_bytes())==op['after']['sha256'],'unowned pending publication link')
+                else:read(child)
+            continue
+        require(finder(q) or q.name in allowed and safe(E,q.name).is_file(),'unknown transaction evidence')
 
 def barrier(root,E,s,create=False):
     d=safe(root,'_Axis/Flags/starting.lock');flag=safe(root,'_Axis/Flags/starting');owner=encode({'kind':'update','transaction':s['transaction'],'session':s['session'],'token':s['token']})
@@ -294,13 +379,44 @@ def journal(E,s,p):
             valid_identity(value);require(value is not None,'missing pre-reconciliation identity')
             if n in p['preserved']:require(value==p['preserved'][n],'preservation phase binding changed')
     if (E/'consumed.json').exists():
-        r=parse(read(E/'consumed.json'));require(set(r)-{'unrelated_changes','updater_only'}=={'schema','transaction','session','plan_sha256','target_commit','reconciliation','consumed'} and r.get('updater_only',False)==bool(p.get('updater_only')) and isinstance(r.get('unrelated_changes',[]),list) and r['schema']==1 and r['transaction']==s['transaction'] and r['plan_sha256']==pin and r['target_commit']==p['source']['commit'] and re.fullmatch(ID,r['session']) and (r['session']!=s['session'] or p.get('updater_only') is True) and ready and released and not rolled,'invalid consumption chain')
+        r=parse(read(E/'consumed.json'));require(set(r)-{'unrelated_changes','updater_only','harmonization'}=={'schema','transaction','session','plan_sha256','target_commit','reconciliation','consumed'} and r.get('updater_only',False)==bool(p.get('updater_only')) and isinstance(r.get('unrelated_changes',[]),list) and r['schema']==1 and r['transaction']==s['transaction'] and r['plan_sha256']==pin and r['target_commit']==p['source']['commit'] and re.fullmatch(ID,r['session']) and (r['session']!=s['session'] or p.get('updater_only') is True) and ready and released and not rolled,'invalid consumption chain')
         datetime.datetime.fromisoformat(r['consumed']);rec=r['reconciliation'];require(set(rec)=={'schema','transaction','target_commit','records'} and rec['schema']==1 and rec['transaction']==s['transaction'] and rec['target_commit']==p['source']['commit'] and set(rec['records'])==set(p['reconciliation']),'invalid consumed reconciliation')
         for n,value in rec['records'].items():
             if 'archive_to' in p['reconciliation'][n]:
                 require(isinstance(value,dict) and set(value)=={'path','identity'} and value['path']==p['reconciliation'][n]['archive_to'],'invalid consumed archive identity');value=value['identity']
             valid_identity(value);require(value is not None,'missing consumed record identity')
         if set(p['preserved'])&set(p['reconciliation']) or any('archive_to' in r for r in p['reconciliation'].values()):require((E/'reconciliation-start.json').exists(),'consumption lacks preservation transition')
+
+def harmonization_view(root,E,p):
+    h=p.get('harmonization')
+    if not h or not (E/'harmonization/result.json').exists():return p
+    result=parse(read(E/'harmonization/result.json'))
+    require(result.get('status')=='best-effort-complete','unfinished optional repair')
+    if result.get('outcome') in ('skipped','restored'):return p
+    unit=parse(read(E/'harmonization/plan.json'));effective=parse(encode(p))
+    blocked={v['path'] for v in p['changes']}|set(p['reconciliation'])|{p['authorization']['record']}
+    for op in unit['operations']:
+        n=op['source'];target=op['target']
+        require(n not in blocked and target not in blocked and n.split('/')[0] in ('_Axis','_Memos','_Wiki','_Dev') and target.split('/')[0] in ('_Axis','_Memos','_Wiki','_Dev'),'repair exceeds reconciliation scope')
+        valid_identity(op['before']);valid_identity(op['after'])
+        require((E/'harmonization'/(str(op['index'])+'.done')).is_file(),'repair lacks completion')
+        require(identity(safe(root,target))==op['after'] and (n==target or not safe(root,n).exists()),'harmonized record changed')
+        if n in effective['preserved']:effective['preserved'][n]=op['after'] if n==target else None
+        if target in effective['preserved'] and target!=n:require(effective['preserved'][target] in (None,op.get('target_before')),'repair overwrote preserved destination')
+    return effective
+
+def harmonize_adoption(root,E,s,p,sid):
+    if not p.get('harmonization'):return None
+    require(digest(read(E/'harmonizer.py'))==p['harmonization']['sha256'],'frozen harmonizer changed')
+    spec=importlib.util.spec_from_file_location('axis_frozen_adoption_harmonizer',E/'harmonizer.py')
+    module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+    exclude={v['path'] for v in p['changes']}|set(p['reconciliation'])|{p['authorization']['record']}
+    def guard():lease(root,sid,True)
+    result=module.run(root,E/'harmonization',guard,exclude)
+    result=dict(result,transaction=s['transaction'],target_version=p['to_version'],target_commit=p['source']['commit'],plan_sha256=s['plan_sha256'],plan_scope_sha256=plan_scope(p),engine_sha256=s['engine_sha256'],helper_sha256=p['harmonization']['sha256'])
+    if not (E/'harmonization.json').exists():once(E/'harmonization.json',result)
+    require(parse(read(E/'harmonization.json'))==result,'harmonization result changed')
+    return result
 
 def state(root,E,s,p):
     journal(E,s,p)
@@ -313,15 +429,14 @@ def state(root,E,s,p):
     if (E/'complete.json').exists():
         require(parse(read(E/'complete.json'))=={'schema':1,'plan_sha256':s['plan_sha256'],'target_commit':p['source']['commit'],'writes':len(p['changes'])},'invalid completion')
         require(all((E/f'{i:04d}-result.json').is_file() for i in range(1,len(p['changes'])+1)),'incomplete journal')
-        if (E/'released.json').exists():adopted(root,p,(E/'reconciliation-start.json').exists())
+        if (E/'released.json').exists():adopted(root,harmonization_view(root,E,p),(E/'reconciliation-start.json').exists())
         else:after(root,p,(E/'reconciliation-start.json').exists())
         return 'ready' if (E/'ready.json').exists() and (E/'released.json').exists() else 'complete'
     if (E/'barrier-intent.json').exists() or list(E.glob('*-intent.json')):return 'interrupted'
     return 'prepared' if (E/'prepared.json').exists() else 'preparing'
 
-# 2.03: compaction. Once a newer release is adopted, an older consumed transaction keeps only its small receipts and
-# authorization copy; compacted.json lists every removed file with its SHA-256 and bytes and pins that list's digest.
-# Every transaction of the newest adopted release (both steps of a two-step update) stays whole for a manual revert.
+# Legacy accepted transactions retain only small receipts, including the newest release.
+# New transactions retire their protected temporary payload after verified completion.
 KEPT=('authorization.md','complete.json','ready.json','released.json','consumed.json','reconciliation-start.json')
 def compacted(E):
     c=parse(read(safe(E,'compacted.json')))
@@ -357,7 +472,7 @@ def compact(root,sid,tx):
     require(inspect(root)['state']=='none','an unconsumed update exists; compact only when every update is closed')
     done=history(root);require(done,'no consumed transaction');newest=done[-1][1]
     mine=[h for h in done if h[0]==tx];require(mine,'only a consumed transaction can be compacted')
-    require(mine[0][1]!=newest,'the newest adopted release stays whole')
+    # User-approved 3.08: accepted updates no longer retain historical rollback payload.
     if (E/'compacted.json').exists():
         c=compacted(E);left=[v['name'] for v in c['removed'] if (E/v['name']).exists()]
         if not left:return None
@@ -374,7 +489,7 @@ def compact(root,sid,tx):
 def compact_older(root,sid):
     done=history(root);newest=done[-1][1] if done else None
     # Also finishes an interrupted compaction (receipt written, some recorded files still present).
-    return [r for r in (compact(root,sid,tx) for tx,to,packed in done if to!=newest) if r]
+    return [r for r in (compact(root,sid,tx) for tx,to,packed in done) if r]
 
 def inspect(root):
     U=safe(root,'_Axis/Updates')
@@ -384,8 +499,9 @@ def inspect(root):
         if E.name in ('.gitkeep','operation.lck') or finder(E):continue
         require(E.is_dir() and re.fullmatch(ID,E.name),'unknown update evidence')
         if (E/'compacted.json').exists():compacted(E);continue
-        E,s,p=load(root,E.name);value=state(root,E,s,p)
-        if value!='closed':pending.append((E.name,value))
+        if (E/'completed.json').exists():completed_temporary(root,E);continue
+        tx=E.name;E,s,p=load(root,tx);value=state(root,E,s,p)
+        if value!='closed':pending.append((tx,value))
     require(len(pending)<=1,'multiple unconsumed updates')
     if not pending:return {'state':'none','next_action':'ordinary startup'}
     tx,value=pending[0];actions={'preparing':'owner aborts before apply','prepared':'owner applies or rolls back','interrupted':'owner or quiescent recovery restores exact preimages','rolled-back':'owner releases admission','complete':'owner verifies and finishes shutdown','ready':'fresh admitted Main reconciles and consumes before ordinary context'}
@@ -412,6 +528,7 @@ def merge_clear(root):
     for item in entries:
         if item.name=='.gitkeep':continue
         require(re.fullmatch(ID,item.name),'invalid merge journal identity');tx=safe(root,'_Axis/Merges/'+item.name);require(tx.is_dir(),'invalid merge journal')
+        require(not (tx/'recovery.json').exists() or (tx/'validated.json').exists() or (tx/'aborted.json').exists(),'first combined startup must validate the merge before updating')
         terminal=0
         for name,field in (('aborted.json','restored'),('retired.json','source_preserved')):
             q=safe(root,'_Axis/Merges/'+item.name+'/'+name)
@@ -420,22 +537,28 @@ def merge_clear(root):
         require(terminal==1,'finish incomplete or conflicting merge before updating')
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('action',choices=('classify','prepare','apply','inspect','rollback','release','finish-updater','begin-reconcile','consume','compact'));p.add_argument('--root',required=True);p.add_argument('--plan');p.add_argument('--session');p.add_argument('--transaction');p.add_argument('--token');p.add_argument('--fault');p.add_argument('--reconciliation');a=p.parse_args();root=Path(a.root).absolute();require(root==root.resolve() and root.is_dir(),'canonical root required')
+    p=argparse.ArgumentParser();p.add_argument('action',choices=('classify','prepare','apply','inspect','rollback','release','finish-updater','begin-reconcile','consume','compact','retire'));p.add_argument('--root',required=True);p.add_argument('--plan');p.add_argument('--session');p.add_argument('--transaction');p.add_argument('--token');p.add_argument('--fault');p.add_argument('--reconciliation');a=p.parse_args();root=Path(a.root).absolute();require(root==root.resolve() and root.is_dir(),'canonical root required')
     def localarg(name):
         q=Path(name).absolute();require(q.is_relative_to(root),'input outside project');return safe(root,q.relative_to(root).as_posix())
     if a.action in ('classify','prepare'):plan=parse(read(localarg(a.plan)))
     if a.action=='classify':print(json.dumps(classification(plan),sort_keys=True));return
     if a.action=='inspect':print(json.dumps(inspect(root),sort_keys=True));return
-    merge_clear(root);require(a.session and a.transaction,'session and transaction required');lease(root,a.session,a.action in ('begin-reconcile','consume'))
+    merge_clear(root);require(a.session and a.transaction,'session and transaction required');lease(root,a.session,a.action in ('begin-reconcile','consume','retire'))
     with operation(root):
-        lease(root,a.session,a.action in ('begin-reconcile','consume'))
+        lease(root,a.session,a.action in ('begin-reconcile','consume','retire'))
         if a.action=='prepare':
-            validate_plan(root,plan);require(live(root,plan,'before'),'local state changed');require(inspect(root)['state']=='none','unconsumed update exists');require(re.fullmatch(ID,a.transaction) and a.transaction==Path(plan['authorization']['record']).stem,'transaction must use scoped authorization Event identity');E=safe(root,'_Axis/Updates/'+a.transaction);require(not E.exists(),'transaction exists');E.mkdir();token=secrets.token_hex(24);s={'schema':1,'transaction':a.transaction,'session':a.session,'token':token,'plan':plan,'plan_sha256':digest(encode(plan)),'engine_sha256':digest(Path(__file__).read_bytes()),'started':datetime.datetime.now(datetime.timezone.utc).isoformat()};once(E/'start.json',s);once(E/'engine.py',Path(__file__).read_bytes());once(E/'authorization.md',authorization(root,plan))
+            validate_plan(root,plan);require(live(root,plan,'before'),'local state changed');require(inspect(root)['state']=='none','unconsumed update exists');require(re.fullmatch(ID,a.transaction) and a.transaction==Path(plan['authorization']['record']).stem,'transaction must use scoped authorization Event identity');U=safe(root,'_Axis/Updates/'+a.transaction);require(not U.exists(),'transaction exists');U.mkdir();E=safe(root,'_Temp/Update-'+a.transaction);require(not E.exists(),'temporary recovery collision');once(U/'recovery.json',{'schema':2,'transaction':a.transaction,'path':'_Temp/Update-'+a.transaction});E.mkdir();token=secrets.token_hex(24);s={'schema':1,'git_before':git_before(root,plan),'transaction':a.transaction,'session':a.session,'token':token,'plan':plan,'plan_sha256':digest(encode(plan)),'engine_sha256':digest(Path(__file__).read_bytes()),'started':datetime.datetime.now(datetime.timezone.utc).isoformat()};once(E/'start.json',s);once(E/'engine.py',Path(__file__).read_bytes());once(E/'authorization.md',authorization(root,plan))
+            if plan.get('harmonization'):once(E/'harmonizer.py',read(safe(root,plan['harmonization']['helper'])))
             for i,v in enumerate(ordered(plan),1):
-                if v['before'] is not None:once(E/f'before-{i:04d}.bin',read(safe(root,v['path'])))
+                if v['before'] is not None and str(i) not in s['git_before']:once(E/f'before-{i:04d}.bin',read(safe(root,v['path'])))
                 if v['after'] is not None:once(E/f'after-{i:04d}.bin',read(safe(root,v['staged'])))
             require(live(root,plan,'before') and preserved(root,plan),'state changed while preparing');once(E/'prepared.json',{'plan_sha256':s['plan_sha256']});print(json.dumps({'transaction':a.transaction,'token':token,'state':'prepared','engine':str(E/'engine.py')}));return
         if a.action=='compact':r=compact(root,a.session,a.transaction);print(json.dumps({'state':'compacted',**(r or {'already_compacted':True})}));return
+        if a.action=='retire':
+            result=retire_temporary(root,a.session,a.transaction);print(json.dumps({'state':'retired','result':result}));return
+        U=safe(root,'_Axis/Updates/'+a.transaction)
+        if (U/'completed.json').exists():
+            r=completed_temporary(root,U);retire_temporary(root,a.session,a.transaction);require(a.action in ('consume','finish-updater','release'),'completed update has no recovery action');print(json.dumps({'state':r['outcome'],'already_consumed':r['outcome']=='consumed'}));return
         E,s,plan=load(root,a.transaction);journal(E,s,plan)
         if a.action not in ('begin-reconcile','consume'):
             require(s['session']==a.session and s['token']==a.token,'not the transaction owner');require(digest(Path(__file__).read_bytes())==s['engine_sha256'],'use the verified frozen transaction engine')
@@ -456,13 +579,13 @@ def main():
             for i,v in enumerate(ordered(plan),1):
                 current=identity(safe(root,v['path']));require(current in (v['before'],v['after']),'third-value source; no recovery writes')
                 if current!=v['before'] and v['before'] is not None:
-                    b=read(E/f'before-{i:04d}.bin');require(digest(b)==v['before']['sha256'] and len(b)==v['before']['bytes'],'rollback evidence mismatch')
+                    b=before_data(root,E,s,i,v)
             if (E/'rollback.json').exists():require(live(root,plan,'before'),'recovered state drift');print(json.dumps({'state':'rolled-back'}));return
             if (E/'barrier-result.json').exists():barrier(root,E,s)
             if not (E/'rollback-intent.json').exists():once(E/'rollback-intent.json',{'plan_sha256':s['plan_sha256']})
             for i,v in reversed(list(enumerate(ordered(plan),1))):
                 lease(root,a.session);q=safe(root,v['path']);current=identity(q);require(current in (v['before'],v['after']),'third-value during recovery')
-                if current!=v['before']:replace(q,read(E/f'before-{i:04d}.bin') if v['before'] else None,v['before']['mode'] if v['before'] else 0)
+                if current!=v['before']:replace(q,before_data(root,E,s,i,v) if v['before'] else None,v['before']['mode'] if v['before'] else 0)
             require(live(root,plan,'before') and preserved(root,plan),'rollback verification failed');once(E/'rollback.json',{'schema':1,'plan_sha256':s['plan_sha256'],'outcome':'restored'});print(json.dumps({'state':'rolled-back'}));return
         if a.action=='release':
             value=state(root,E,s,plan);require(value in ('complete','ready','rolled-back','closed'),'transaction not ready to release')
@@ -473,23 +596,29 @@ def main():
                 if not (E/'ready.json').exists():once(E/'ready.json',{'plan_sha256':s['plan_sha256'],'target_commit':plan['source']['commit'],'shutdown_required':not plan.get('updater_only')})
             release_barrier(root,E,s,fault)
             if not (E/'released.json').exists():once(E/'released.json',{'plan_sha256':s['plan_sha256'],'outcome':'admission released'})
-            print(json.dumps({'state':'rolled-back' if (E/'rollback.json').exists() else 'ready','shutdown_required':not (E/'rollback.json').exists()}));return
+            rolled=(E/'rollback.json').exists()
+            if rolled:retire_temporary(root,a.session,a.transaction)
+            print(json.dumps({'state':'rolled-back' if rolled else 'ready','shutdown_required':not rolled}));return
         if a.action=='begin-reconcile':
+            if (E/'harmonization').exists():harmonize_adoption(root,E,s,plan,a.session)
             require(a.session!=s['session'],'fresh Main required for reconciliation');value=state(root,E,s,plan);require(value=='ready','ready handoff required')
             if (E/'reconciliation-start.json').exists():print(json.dumps({'state':'reconciling','already_started':True}));return
-            adopted(root,plan);records={n:identity(safe(root,n)) for n in plan['reconciliation']};require(all(v is not None for v in records.values()),'missing pre-reconciliation record')
+            adopted(root,harmonization_view(root,E,plan));records={n:identity(safe(root,n)) for n in plan['reconciliation']};require(all(v is not None for v in records.values()),'missing pre-reconciliation record')
             for rules in plan['reconciliation'].values():
                 if 'archive_to' in rules:require(not safe(root,rules['archive_to']).exists(),'archive destination occupied')
             once(E/'reconciliation-start.json',{'schema':1,'transaction':s['transaction'],'session':a.session,'plan_sha256':s['plan_sha256'],'records':records});print(json.dumps({'state':'reconciling','already_started':False}));return
         if a.action=='finish-updater':
             # The owner closes its own updater-only step: nothing was reconciled because no project record changed.
             require(plan.get('updater_only') is True,'finish-updater applies only to an updater-only step');value=state(root,E,s,plan)
-            if (E/'consumed.json').exists():print(json.dumps({'state':'consumed','already_consumed':True}));return
+            if (E/'consumed.json').exists():retire_temporary(root,a.session,a.transaction);print(json.dumps({'state':'consumed','already_consumed':True}));return
             require(value=='ready','released updater step required')
             once(E/'consumed.json',{'schema':1,'transaction':a.transaction,'session':a.session,'plan_sha256':s['plan_sha256'],'target_commit':plan['source']['commit'],'reconciliation':{'schema':1,'transaction':a.transaction,'target_commit':plan['source']['commit'],'records':{}},'updater_only':True,'consumed':datetime.datetime.now(datetime.timezone.utc).isoformat()})
+            retire_temporary(root,a.session,a.transaction)
             print(json.dumps({'state':'consumed','already_consumed':False,'updater_only':True,'next':'plan the rest of the update with the updater now installed'}));return
-        require(a.action=='consume','unknown action');value=state(root,E,s,plan)
-        if (E/'consumed.json').exists():print(json.dumps({'state':'consumed','already_consumed':True}));return
+        require(a.action=='consume','unknown action')
+        if (E/'harmonization').exists() and not (E/'consumed.json').exists():harmonize_adoption(root,E,s,plan,a.session)
+        value=state(root,E,s,plan)
+        if (E/'consumed.json').exists():retire_temporary(root,a.session,a.transaction);print(json.dumps({'state':'consumed','already_consumed':True}));return
         require(value=='ready' and a.session!=s['session'],'fresh ready transaction required');rec=parse(read(localarg(a.reconciliation)));require(set(rec)=={'schema','transaction','target_commit','records'} and rec['schema']==1 and rec['transaction']==a.transaction and rec['target_commit']==plan['source']['commit'] and set(rec['records'])==set(plan['reconciliation']),'inexact reconciliation')
         for n,rules in plan['reconciliation'].items():
             q=safe(root,n);expected=rec['records'][n]
@@ -497,10 +626,13 @@ def main():
                 require((E/'reconciliation-start.json').exists() and not q.exists(),'archived Follow-Up must be absent from live records');require(isinstance(expected,dict) and set(expected)=={'path','identity'} and expected['path']==rules['archive_to'],'wrong archive destination');q=safe(root,expected['path']);expected=expected['identity']
             require(identity(q)==expected,'reconciliation record changed');text=read(q).decode();require(all(v in text for v in rules['contains']) and not any(v in text for v in rules['absent']),'project reconciliation incomplete')
         if set(plan['preserved'])&set(plan['reconciliation']):require((E/'reconciliation-start.json').exists(),'begin reconciliation before changing preserved records')
-        unrelated=adopted(root,plan,(E/'reconciliation-start.json').exists());fault('before-consumed');once(E/'consumed.json',{'schema':1,'transaction':a.transaction,'session':a.session,'plan_sha256':s['plan_sha256'],'target_commit':plan['source']['commit'],'reconciliation':rec,'unrelated_changes':unrelated,'consumed':datetime.datetime.now(datetime.timezone.utc).isoformat()});fault('after-consumed')
-        try:packed={'compacted':compact_older(root,a.session)}
+        unrelated=adopted(root,harmonization_view(root,E,plan),(E/'reconciliation-start.json').exists())
+        harmonization=harmonize_adoption(root,E,s,plan,a.session)
+        adopted(root,harmonization_view(root,E,plan),(E/'reconciliation-start.json').exists())
+        fault('before-consumed');once(E/'consumed.json',{'schema':1,'transaction':a.transaction,'session':a.session,'plan_sha256':s['plan_sha256'],'target_commit':plan['source']['commit'],'reconciliation':rec,'unrelated_changes':unrelated,'harmonization':harmonization,'consumed':datetime.datetime.now(datetime.timezone.utc).isoformat()});fault('after-consumed')
+        try:packed={'temporary_recovery':retire_temporary(root,a.session,a.transaction),'compacted':compact_older(root,a.session)}
         except (ValueError,OSError,KeyError,TypeError) as e:packed={'compaction_error':str(e)}
-        print(json.dumps({'state':'consumed','already_consumed':False,'unrelated_changes':unrelated,**packed}))
+        print(json.dumps({'state':'consumed','already_consumed':False,'unrelated_changes':unrelated,'harmonization':harmonization,**packed}))
 
 if __name__=='__main__':
     try:main()

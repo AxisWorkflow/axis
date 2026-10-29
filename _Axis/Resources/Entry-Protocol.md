@@ -63,4 +63,8 @@ Role is fixed once: Main commits under Claim-Session; External and Subagent rout
 
 **WARNING:** DO NOT ADD ANYTHING AFTER THE ENTRY-PROTOCOL END TAG. USE `_Axis/INSTRUCTIONS.md` INSTEAD.
 
+
+
+New recovery layout: inspect exact `_Axis/Updates/{ID}/recovery.json` and `_Axis/Merges/{ID}/recovery.json` pointers as data before deciding a transaction is absent. Resolve only the declared `_Temp/Update-{ID}` or `_Temp/Merge-{ID}` ordinary directory. Update completion requires the checked completed receipt; merge completion requires a fresh-startup validated receipt. Before ordinary context, resume any closed-but-unretired update via its independently authorized frozen engine and validate completed merge contents using its plan-authorized frozen engine. Retire only after those checks. Missing pending recovery or malformed/contradictory metadata stops startup. Preserve legacy consumed/compacted journals and their original verification rules.
+
 <!-- axis:entry-protocol:end -->

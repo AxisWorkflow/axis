@@ -1,5 +1,8 @@
-#!/usr/bin/env python3
-"""Optional local Axis launcher: exact-path inventory and reviewed startup plans."""
-import runpy
-from pathlib import Path
-runpy.run_path(str(Path(__file__).with_name('session-adapters.py')), run_name='__main__')
+#!/bin/sh
+# Optional POSIX launcher for macOS, Linux and WSL. Python and tmux are enhancements.
+if ! command -v python3 >/dev/null 2>&1; then
+    echo 'axis: Python 3 is unavailable; open your project in an agent normally.' >&2
+    exit 2
+fi
+AXIS_LAUNCH_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd) || exit 2
+exec python3 "$AXIS_LAUNCH_DIR/axis-launch.py" "$@"

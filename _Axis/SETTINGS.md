@@ -79,17 +79,41 @@
 
 **Value:** 250
 
+### Model Access
+
+**Description:** Choose subscription sign-in or an explicitly authorized API key at launch. Either prefers verified subscription access; it never grants paid fallback. Optional Model Access Claude and Model Access Codex sections use the same values. Credentials stay in the host secret store or private provider files in Secrets; workers never read them.
+
+**Range:** subscription, api-key, either
+
+**Value:** subscription
+
+### Archiving
+
+**Description:** How readily inactive history moves into tracked family-local Archive folders and external cold storage. Never suppresses history moves, including overflow/self-archiving, but does not retain completed recovery or regenerable scratch output. See [Practices > Archiving] for ages and holds.
+
+**Range:** Never, Default, Aggressive
+
+**Value:** Default
+
+### Cold Storage Location
+
+**Description:** Logical name of an approved external cold destination. Host paths bind locally in Flags; an unavailable device holds cold copying, not local archiving. Cloud sync alone is not verified remote upload.
+
+**Range:** unconfigured or a logical name containing letters, digits, underscore or hyphen
+
+**Value:** unconfigured
+
 ### Archive Location
 
-**Description:** Where archived history is stored. The default `_Axis/Archive/` keeps the Archive inside the project. Any other value redirects archiving to that folder - for example an external drive, a mounted NAS share, or a cloud-synced folder - keeping the same family layout beneath it. A folder outside the project is available only on machines where it is mounted; when it is unavailable, work that needs the Archive waits and says so, and nothing else in Axis is blocked. Change it only through [Practices > Archiving > Archive Location], which moves existing archived records with you.
+**Description:** Legacy history lookup and migration location. Preserve this binding until existing archived records have verified mappings. New local archives use fixed tracked family-local Archive folders; this legacy value does not redirect new writes. Missing external history remains unavailable, never empty.
 
-**Range:** `_Axis/Archive/`, or any absolute, home-relative (`~/...`) or project-relative folder path. A home-relative path names the same folder on every computer that has it.
+**Range:** `_Axis/Archive/` or an existing absolute, home-relative or project-relative folder path.
 
 **Value:** _Axis/Archive/
 
 ### Archive in Git
 
-**Description:** Whether Archive contents are included in the project's Git commits. `true` keeps an in-project Archive tracked like other records; `false` keeps the Archive out of Git (it is ignored when inside the project, and a location outside the project is never committed).
+**Description:** Legacy payload preference, preserved during migration. An existing false value never silently stages old ignored history. New family-local archives are tracked; cold payload remains external regardless of this legacy value.
 
 **Range:** `true` or `false`
 

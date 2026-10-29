@@ -8,6 +8,7 @@ import html
 import ipaddress
 import mimetypes
 import os
+import re
 import socket
 from email.utils import formatdate
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -61,6 +62,7 @@ DASHBOARD_FILES = {
 }
 FLAG_FILES = {
     "model",
+    "model-access",
     "host-spawn",
     "host-parallel",
     "host-shell",
@@ -122,7 +124,15 @@ def normalize_request_path(target: str) -> tuple[tuple[str, ...], bool]:
 MEMO_DIRECTORIES = {("_Memos",), ("_Memos", "Archive")}
 
 
+def message_record_directory(parts):
+    if parts[:2] != ('_Axis','Messages'):return False
+    rest=parts[2:]
+    if rest[:1]==('Archive',):rest=rest[1:]
+    return rest==('Individual',) or len(rest)==2 and rest[0]=='Teams' and re.fullmatch(r'\d{4}(?:\.\d{2}){5}\.\d{3}Z',rest[1]) is not None
+
+
 def is_allowed_file(parts: tuple[str, ...]) -> bool:
+    if message_record_directory(parts[:-1]) and re.fullmatch(r'\d{4}(?:\.\d{2}){5}\.\d{3}Z\.md',parts[-1]):return True
     if len(parts) >= 2 and parts[:-1] in MEMO_DIRECTORIES and parts[-1].endswith(".md"):
         return True
     if len(parts) == 2 and parts[0] == "_Axis" and parts[1] in AXIS_ROOT_FILES:
@@ -161,6 +171,7 @@ def is_lock_directory(parts: tuple[str, ...]) -> bool:
 
 
 def is_browsable_directory(parts: tuple[str, ...]) -> bool:
+    if message_record_directory(parts) or parts in {('_Axis','Messages','Teams'),('_Axis','Messages','Archive'),('_Axis','Messages','Archive','Teams')}:return True
     if parts in {(), ("_Axis",)} or is_record_directory(parts):
         return True
     if parts == ("_Axis", "Dashboard"):
@@ -216,7 +227,7 @@ def visible_directory_entries(root: Path, parts: tuple[str, ...]) -> list[tuple[
             if child.is_dir():
                 if is_lock_directory(child_parts):
                     entries.append((name, True))
-                elif is_record_directory(parts):
+                elif is_record_directory(parts) and not is_browsable_directory(child_parts):
                     continue
                 elif is_browsable_directory(child_parts):
                     entries.append((name, True))

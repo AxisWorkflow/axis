@@ -28,7 +28,7 @@ When User asks for the detail - or is working ON the Workflow rather than with i
 
 ## Routine confirmations
 
-State the concrete action and required answer or exact token concisely, for example: "Archive the listed inactive records? Type `ARCHIVE`." Do not add boilerplate explaining which Axis file requires confirmation. Preserve the gate, decision inputs and any explanation explicitly required by higher-priority host instructions.
+State the concrete action and required answer or exact token concisely, for example: "Empty the listed Trash items? Type `TRASH`." Do not add boilerplate explaining which Axis file requires confirmation. Preserve the gate, decision inputs and any explanation explicitly required by higher-priority host instructions.
 
 ## Final response boundary
 

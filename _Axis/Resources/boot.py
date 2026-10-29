@@ -6,7 +6,7 @@ startup-state.py claim/initialize/commit and startup-survey.py survey), records 
 binding on a project's first session, and prints the Ready banner followed by the items the Agent
 still owes. It never answers for the Agent and never guesses: anything it cannot finish prints
 STOP with the guide to follow (Boot-Manual.md, or Entry-Protocol.md for a pending update)."""
-import argparse,datetime,json,os,re,subprocess,sys
+import argparse,datetime,hashlib,json,os,re,subprocess,sys
 from pathlib import Path
 
 a=argparse.ArgumentParser(description='Axis one-command boot')
@@ -27,11 +27,84 @@ def run(*args,timeout=120):
 def stop(why,guide='_Axis/Resources/Boot-Manual.md',**k):
     print(json.dumps({'axis_boot':'STOP','reason':why,'guide':guide,**k}));print(f'STOP: {why}. Follow {guide} instead.');sys.exit(2)
 
+def read_control(path):
+    if path.resolve()!=path or not path.is_file() or path.stat().st_nlink!=1 or path.stat().st_size>16*1024*1024:raise ValueError('unsafe recovery control file')
+    return path.read_bytes()
+
+def recovery_view(e):
+    pointer=e/'recovery.json'
+    if not pointer.exists():return e
+    value=json.loads(read_control(pointer).decode())
+    expected='_Temp/Update-'+e.name
+    if value!={'schema':2,'transaction':e.name,'path':expected}:stop('invalid update recovery pointer','_Axis/Resources/Entry-Protocol.md')
+    path=root/expected
+    if path.is_symlink() or path.resolve()!=path or not path.is_dir():stop('protected update recovery is missing','_Axis/Resources/Entry-Protocol.md')
+    return path
+
+def completed_receipt(e):
+    if any(p.name not in ('completed.json','recovery.json','harmonization.json') and not (p.name=='.DS_Store' and p.is_file() and not p.is_symlink()) for p in e.iterdir()):raise ValueError('unknown completed update evidence')
+    value=json.loads(read_control(e/'completed.json'))
+    keys={'schema','transaction','session','from_version','to_version','target_commit','plan_sha256','authorization','engine_sha256','git_checkpoints','unrelated_changes','outcome','completed','trash'}
+    if set(value)-{'harmonization_sha256'}!=keys or value['schema']!=2 or value['transaction']!=e.name or value['outcome'] not in ('consumed','rolled-back'):raise ValueError('invalid completed update receipt')
+    ident=r'\d{4}(?:\.\d{2}){5}\.\d{3}Z'
+    if not re.fullmatch(ident,value['session']) or not re.fullmatch(r'_Trash/\d{4}-\d{2}-\d{2}--Update-'+re.escape(e.name),value['trash']):raise ValueError('invalid completion identity')
+    for k in ('plan_sha256','engine_sha256'):
+        if not re.fullmatch('[0-9a-f]{64}',value[k]):raise ValueError('invalid completion digest')
+    if not isinstance(value['unrelated_changes'],list) or any(not isinstance(v,str) or v.startswith('/') or '..' in v.split('/') for v in value['unrelated_changes']):raise ValueError('invalid unrelated-change summary')
+    for k in ('from_version','to_version'):
+        if not re.fullmatch(r'(?:[0-9]+\.[0-9]{2}|[0-9]{2}\.[0-9]{2}\.[0-9]{2})',value[k]):raise ValueError('invalid completion version')
+    if not re.fullmatch('[0-9a-f]{40,64}',value['target_commit']) or not isinstance(value['git_checkpoints'],list) or any(not re.fullmatch('[0-9a-f]{40,64}',v) for v in value['git_checkpoints']):raise ValueError('invalid completion checkpoint')
+    auth=value['authorization']
+    if set(auth)!={'record','sha256'} or auth['record']!='_Axis/Logs/'+e.name+'.md':raise ValueError('invalid completion authority')
+    p=root/auth['record']
+    data=read_control(p)
+    if hashlib.sha256(data).hexdigest()!=auth['sha256']:raise ValueError('completed update authority changed')
+    if [line for line in data.decode().splitlines() if line.startswith('engine_sha256:')]!=['engine_sha256: '+value['engine_sha256']]:raise ValueError('completed engine authority differs')
+    if 'harmonization_sha256' in value and hashlib.sha256(read_control(e/'harmonization.json')).hexdigest()!=value['harmonization_sha256']:raise ValueError('completed harmonization report changed')
+    return value
+
+def retire_closed_updates(sid):
+    folder=root/'_Axis/Updates'
+    for entry in sorted(folder.iterdir()) if folder.is_dir() else []:
+        if not entry.is_dir() or not (entry/'recovery.json').exists():continue
+        pointer=json.loads(read_control(entry/'recovery.json').decode())
+        if pointer!={'schema':2,'transaction':entry.name,'path':'_Temp/Update-'+entry.name}:interrupted('invalid update recovery pointer')
+        temporary=root/pointer['path']
+        if not temporary.exists():continue
+        E=recovery_view(entry)
+        if not ((E/'consumed.json').exists() or (E/'rollback.json').exists() and (E/'released.json').exists()):
+            if (entry/'completed.json').exists():interrupted('completion receipt conflicts with unfinished recovery')
+            continue
+        start=json.loads(read_control(E/'start.json').decode());auth=root/start['plan']['authorization']['record']
+        if auth.resolve()!=auth or not auth.is_relative_to(root/'_Axis/Logs'):interrupted('invalid update authorization path')
+        expected=[line.split(':',1)[1].strip() for line in read_control(auth).decode().splitlines() if line.startswith('engine_sha256:')]
+        if expected!=[hashlib.sha256(read_control(E/'engine.py')).hexdigest()]:interrupted('update retirement engine differs from independent authorization')
+        result=run(E/'engine.py','retire','--root',root,'--session',sid,'--transaction',entry.name)
+        if result.get('state')!='retired':interrupted('closed update recovery retirement needs repair',result=result)
+
+def validate_merged_startup(sid):
+    folder=root/'_Axis/Merges'
+    for entry in sorted(folder.iterdir()) if folder.is_dir() else []:
+        if not entry.is_dir() or not (entry/'recovery.json').exists():continue
+        value=json.loads(read_control(entry/'recovery.json').decode())
+        if value!={'schema':1,'transaction':entry.name,'path':'_Temp/Merge-'+entry.name}:interrupted('invalid merge recovery pointer')
+        temporary=root/value['path']
+        if not temporary.exists():
+            if not (entry/'validated.json').exists():interrupted('protected merge recovery missing')
+            continue
+        if temporary.is_symlink() or temporary.resolve()!=temporary:interrupted('unsafe merge recovery')
+        plan=read_control(temporary/'plan.json');parsed=json.loads(plan)
+        auth=(entry.parent.parent/'Logs'/(entry.name+'.md')).read_text()
+        if '\nmerge-plan-sha256: '+hashlib.sha256(plan).hexdigest()+'\n' not in auth or parsed['engine_sha256']!=hashlib.sha256(read_control(temporary/'engine.py')).hexdigest():interrupted('merge engine differs from independent authorization')
+        result=run(temporary/'engine.py','--root',root,'validate-startup','--session',sid,'--transaction',entry.name)
+        if result.get('status')!='validated':interrupted('first combined startup validation held; recovery retained',result=result)
+
 def ready_transaction():
     d=root/'_Axis/Updates'
     for e in sorted(d.iterdir()) if d.is_dir() else []:
         if e.is_dir() and not e.is_symlink():
-            names={x.name for x in e.iterdir()}
+            if (e/'completed.json').exists():continue
+            e=recovery_view(e);names={x.name for x in e.iterdir()}
             if 'consumed.json' not in names and {'ready.json','released.json'}<=names and 'rollback.json' not in names:return e
     return None
 
@@ -42,10 +115,10 @@ def adopt(sid):
     import hashlib
     E=ready_transaction()
     if E is None:return None
-    tx=E.name;start=json.loads((E/'start.json').read_text());plan=start['plan']
-    auth=(root/plan['authorization']['record']).read_text()
+    start=json.loads(read_control(E/'start.json').decode());tx=start['transaction'];plan=start['plan']
+    auth=read_control(root/plan['authorization']['record']).decode()
     want=[l.split(':',1)[1].strip() for l in auth.splitlines() if l.startswith('engine_sha256:')]
-    if want!=[hashlib.sha256((E/'engine.py').read_bytes()).hexdigest()]:interrupted('the update engine does not match its authorization; follow _Axis/Resources/Entry-Protocol.md',transaction=tx)
+    if want!=[hashlib.sha256(read_control(E/'engine.py')).hexdigest()]:interrupted('the update engine does not match its authorization; follow _Axis/Resources/Entry-Protocol.md',transaction=tx)
     b=run(E/'engine.py','begin-reconcile','--root',root,'--session',sid,'--transaction',tx)
     if b.get('state')!='reconciling':interrupted('update reconciliation could not start',transaction=tx,result=b)
     edits=[]
@@ -67,7 +140,7 @@ def adopt(sid):
         try:inp.unlink()
         except OSError:pass
     if c.get('state')!='consumed':interrupted('update consumption failed',transaction=tx,result=c)
-    return {'from':plan['from_version'],'to':plan['to_version'],'transaction':tx,'unrelated_changes':c.get('unrelated_changes') or []}
+    return {'from':plan['from_version'],'to':plan['to_version'],'transaction':tx,'unrelated_changes':c.get('unrelated_changes') or [],'harmonization':c.get('harmonization')}
 
 def update_state():
     # File-only read of _Axis/Updates/: this boot never executes an update helper that an unconsumed
@@ -78,7 +151,11 @@ def update_state():
     for e in d.iterdir():
         if e.name in ('.gitkeep','operation.lck','.DS_Store') and e.is_file() and not e.is_symlink():continue
         if not e.is_dir() or e.is_symlink():return 'unexpected'
-        names={x.name for x in e.iterdir()}
+        if (e/'completed.json').exists():
+            try:completed_receipt(e)
+            except (ValueError,OSError,KeyError,TypeError):return 'unexpected'
+            continue
+        e=recovery_view(e);names={x.name for x in e.iterdir()}
         if 'consumed.json' in names or {'rollback.json','released.json'}<=names:continue
         state='ready' if {'ready.json','released.json'}<=names else 'pending'
         if state=='pending':return state
@@ -332,9 +409,23 @@ try:
  if o.finish_adoption:i={'status':'initialized','starting_log':resume_log}
  else:i=run(R/'startup-state.py','--root',root,'initialize','--session',sid,'--owner',owner)
  if i.get('status')!='initialized':interrupted('initialize failed',initialize=i)
+ retire_closed_updates(sid)
+ validate_merged_startup(sid)
  adopted=adopt(sid) if us=='ready' else None
  layout=run(R/'coordination-layout.py','--root',root,'--session',sid,'--owner',owner)
- if layout.get('status')!='harmonized':interrupted('coordination layout needs attention',layout=layout)
+ if layout.get('status')!='harmonized':
+  # An optional adoption repair cannot turn preserved malformed legacy content
+  # into a new startup gate. Retain it and report the incomplete layout.
+  reports=list((root/'_Axis/Updates').glob('*/completed.json'))
+  harmonized=False
+  for receipt in reports:
+   try:
+    value=json.loads(receipt.read_text());report=receipt.with_name('harmonization.json')
+    harmonized=harmonized or value.get('schema')==2 and value.get('outcome')=='consumed' and report.is_file() and not report.is_symlink() and hashlib.sha256(report.read_bytes()).hexdigest()==value.get('harmonization_sha256')
+   except (OSError,ValueError):pass
+  if adopted or harmonized:
+   layout={'status':'harmonized','created':[],'warning':'Coordination layout remains incomplete; retained content needs review before coordination use.'}
+  else:interrupted('coordination layout needs attention',layout=layout)
  try:wiki_note,wiki_log=move_wiki()
  except (OSError,UnicodeError) as e:wiki_note,wiki_log=f'Axis could not finish moving the Wiki from Wiki/ to _Wiki/ ({type(e).__name__}). Check both folders before using the Wiki.',None
  try:inbox_notes,inbox_log=migrate_inbox()
@@ -352,6 +443,7 @@ try:
  if layout['created']:
      notices.append('Created missing coordination folders and summaries: '+', '.join(layout['created'])+'.')
      later.append('record one Log Event naming the missing-only coordination layout additions: '+', '.join(layout['created']))
+ if layout.get('warning'):later.append(layout['warning'])
  if wiki_note:notices.append(wiki_note)
  if wiki_log:later.append(wiki_log)
  notices+=inbox_notes
@@ -373,6 +465,8 @@ try:
      pending.insert(0,'complete the post-update checkpoint under _Axis/Practices/GIT.md > Update checkpoints before ordinary work, including compaction, migration receipts and warning Logs; report checkpoint blocked with exact causes if unavailable')
      notices.append(f"Axis was updated from {adopted['from']} to {adopted['to']} and the update is now adopted.")
      if adopted['unrelated_changes']:notices.append('Project files changed after the update was applied (reported, not blocking): '+', '.join(adopted['unrelated_changes'][:5]))
+     h=adopted.get('harmonization')
+     if h:notices.append(f"Adoption scan: {h.get('repairs',0)} repairs; {len(h.get('residual',[]))} unresolved findings retained. Report: _Axis/Updates/{adopted['transaction']}/harmonization.json")
  if s.get('manifest_missing'):notices.append('Missing Workflow files: '+', '.join(s['manifest_missing']))
  env=s.get('environment') or {};bind=root/'_Axis/Flags/environment-binding'
  if env.get('state')=='changed' and env.get('fields')=='binding-missing-or-malformed' and not bind.exists() and not any((root/'_Axis/Snapshots').glob('*Z.md')):

@@ -36,6 +36,8 @@ _FORMAT_SPEC = importlib.util.spec_from_file_location('axis_coordination_record'
 _FORMAT = importlib.util.module_from_spec(_FORMAT_SPEC)
 _FORMAT_SPEC.loader.exec_module(_FORMAT)
 SCHEMA = 'axis.coordination/v1'
+RUNTIME_SHA256 = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
+COORDINATION_PROTOCOL = 2
 FAMILIES = ('Teams', 'Messages', 'Jobs', 'Schedules')
 MESSAGE_KINDS = {'request', 'offer', 'assignment', 'question', 'answer', 'receipt', 'result', 'validation', 'decision', 'control', 'transfer'}
 PROPOSALS = {'offer', 'question', 'answer', 'receipt', 'result'}
@@ -790,6 +792,18 @@ def _team_context(founding, messages, teams, job_state):
                 need(attempt.get('scope') == ['_Axis/Teams/' + team['id'] + '/members/' + attempt['slot']], 'proposal-dispatch-scope')
 
 
+def allocation_module():
+    spec = importlib.util.spec_from_file_location('axis_team_allocation', Path(__file__).with_name('team-allocation.py'))
+    module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
+    return module
+
+
+def message_paths():
+    spec = importlib.util.spec_from_file_location('axis_message_paths', Path(__file__).with_name('message-paths.py'))
+    module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
+    return module
+
+
 class Store:
     def __init__(self, root, session=None, clock=None):
         try:
@@ -1051,6 +1065,9 @@ class Store:
     def path(self, name, missing=False, kind='file'):
         relative(name)
         try:
+            if not missing and name.startswith('_Axis/Messages/') and not os.path.lexists(self.root/name):
+                mapped = message_paths().alias(self.root,name)
+                if mapped: name = mapped
             return self.io.path(name, missing=missing, kind=kind)
         except _START.Fault as exc:
             raise CoordinationError(exc.code, exc.path) from None
@@ -1078,7 +1095,7 @@ class Store:
         return self.session
 
     @contextlib.contextmanager
-    def locked(self, worker=False, *, proposal=False):
+    def locked(self, worker=False, *, proposal=False, team=None):
         need(not (worker and proposal), 'lock-mode')
         if proposal:
             need(self._proposal_control is not None, 'proposal-context-required')
@@ -1088,10 +1105,20 @@ class Store:
             need(not self.io.lease[2] and self.storage_profile() == 'atomic', 'direct-storage-unavailable')
         else: self.require_main()
         need(self._lock is None, 'nested-lock')
-        name = '_Axis/coordination.lock'
+        # Main's own control file serializes shared admission; it does not exclude Teams.
+        # The old global lock is a migration barrier, never silently reclaimed.
+        need(not os.path.lexists(self.root/'_Axis/coordination.lock'), 'locked:legacy-writer-maintenance-required')
+        need(not os.path.lexists(self.root/'_Axis/Flags/coordination-maintenance'), 'coordination-maintenance')
+        if team is None and proposal: team = self._proposal_control.get('team')
+        if worker: need(team is not None, 'worker-team-lock-required')
+        if team is not None:
+            identity(team)
+            self.path('_Axis/Teams/'+team, kind='directory')
+        name = '_Axis/Teams/'+team+'/control.lock' if team else '_Axis/Flags/main-control.lock'
         lock = self.path(name, missing=True, kind='directory')
         owner = canonical({'session': self.session, 'nonce': secrets.token_hex(16)}) + b'\n'
-        until = time.monotonic() + (2 if worker or proposal else 0)
+        waiting=time.monotonic()
+        until = waiting + (2 if worker or proposal else 0)
         while True:
             try:
                 os.mkdir(lock); break
@@ -1104,8 +1131,12 @@ class Store:
             try: _START.write_fd(fd, owner)
             finally: os.close(fd)
             self._lock = (lock, owner, start, (lock.stat().st_dev, lock.stat().st_ino), 'proposal' if proposal else worker)
+            self._operation_records={}
+            self._record_read_count=0;self._record_read_seconds=0.0
             self._check_lock(); yield
         finally:
+            self.last_lock_metrics={'scope':name,'wait_seconds':start-waiting,'hold_seconds':time.monotonic()-start,'record_scans':getattr(self,'_record_read_count',0),'record_read_seconds':getattr(self,'_record_read_seconds',0)}
+            self._operation_records=None
             if self._lock is not None:
                 current = self._lock; self._lock = None
                 # Never remove another owner's claim, including on exceptions or expired holds.
@@ -1116,12 +1147,29 @@ class Store:
                 except (OSError, _START.Fault):
                     pass
 
+    @contextlib.contextmanager
+    def control_locked(self,team=None,shared=False):
+        """Main admission may guard a Team while serializing its shared decision."""
+        if not shared or not team or self._proposal_control is not None:
+            with self.locked(proposal=self._proposal_control is not None,team=team):yield
+            return
+        with self.locked():
+            peer=Store(self.root,self.session,clock=self.clock)
+            with peer.locked(team=team):
+                self._peer_lock=peer
+                try:yield
+                finally:self._peer_lock=None
+
     def _check_lock(self):
         need(self._lock is not None, 'lock-required')
+        need(hashlib.sha256(Path(__file__).read_bytes()).hexdigest()==RUNTIME_SHA256,'coordination-runtime-changed')
         lock, owner, start, ident, worker = self._lock
+        if getattr(self,'_peer_lock',None) is not None:self._peer_lock._check_lock()
         need(time.monotonic() - start < 10, 'lock-expired')
-        safe = self.path('_Axis/coordination.lock', kind='directory'); info = safe.stat()
-        need((info.st_dev, info.st_ino) == ident and self.io.read('_Axis/coordination.lock/OWNER') == owner.decode(), 'lock-owner')
+        name = lock.relative_to(self.root).as_posix()
+        need(not os.path.lexists(self.root/'_Axis/Flags/coordination-maintenance'), 'coordination-maintenance')
+        safe = self.path(name, kind='directory'); info = safe.stat()
+        need((info.st_dev, info.st_ino) == ident and self.io.read(name+'/OWNER') == owner.decode(), 'lock-owner')
         if worker == 'proposal': self._control_guard()
         elif worker:
             self.guard()
@@ -1186,7 +1234,7 @@ class Store:
                 'control_epoch', 'marker_sha256', 'marker_identity', 'storage', 'issued',
                 'expires', 'activation', 'file_identity', 'declaration'}
         need(isinstance(value, dict) and set(value) == keys
-             and value['schema'] == 'axis.coordination-placement/v1'
+             and value['schema'] in {'axis.coordination-placement/v1','axis.coordination-placement/v2'}
              and type(value['active']) is bool, 'placement-malformed')
         need(isinstance(value['activation'], str) and re.fullmatch(r'[0-9a-f]{32}', value['activation']), 'placement-malformed')
         need(isinstance(value['declaration'], str) and value['declaration'] in {'first placement of newly minted project UUID',
@@ -1212,6 +1260,7 @@ class Store:
     def _require_placement(self, expected):
         self.require_main()
         value = self._read_placement()
+        need(value['schema']=='axis.coordination-placement/v2','coordination-protocol-upgrade-required')
         need(value['active'], 'placement-inactive')
         need(value['project'] == self.project_id() and value['root'] == str(self.root)
              and value['physical'] == self._physical_placement()
@@ -1248,7 +1297,7 @@ class Store:
         fd = os.open(temporary, os.O_RDWR | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
         try:
             now = dt.datetime.now(dt.timezone.utc)
-            value = {'schema': 'axis.coordination-placement/v1', 'active': active,
+            value = {'schema': 'axis.coordination-placement/v2', 'active': active,
                      'project': self.project_id(), 'root': str(self.root),
                      'physical': self._physical_placement(), 'host_hint': self._host_hint(),
                      'session': self.session, 'control_epoch': self.session,
@@ -1346,6 +1395,7 @@ class Store:
             else:
                 os.replace(temporary, destination)
             need(self.io.read(name, limit=limit) == text, 'write-readback', name)
+            if getattr(self,'_operation_records',None) is not None:self._operation_records.clear()
             self._check_lock()
         finally:
             if temporary.exists(): temporary.unlink()
@@ -1392,7 +1442,11 @@ class Store:
                 _controlled(result)
             return render_record(result)
         try:
-            ident, name = self.io.record(family, body, renew_lease=False)
+            options = {}
+            if family == 'Messages':
+                options['message_directory'] = message_paths().destination(self.root, payload.get('team'))
+            ident, name = self.io.record(family, body, renew_lease=False, **options)
+            if getattr(self,'_operation_records',None) is not None:self._operation_records.clear()
         except _START.Fault as exc:
             raise CoordinationError(exc.code, exc.path) from None
         return {'status': 'created', 'id': ident, 'path': name, 'record': self.read(family, ident)}
@@ -1438,7 +1492,7 @@ class Store:
         folder = self.path(archive, missing=True, kind='directory') if archive else external
         if folder is None or not folder.exists(): return
         self.require_history()
-        locations = [(folder / family, False)]
+        locations = [(self.root / '_Axis' / family / 'Archive', False), (folder / family, False)]
         with os.scandir(folder) as entries:
             locations.extend((Path(entry.path), True) for entry in entries if re.fullmatch(r'[0-9]{4}', entry.name))
         for location, legacy in locations:
@@ -1455,9 +1509,10 @@ class Store:
                     need(not getattr(info, 'st_flags', 0) & getattr(stat, 'SF_DATALESS', 0x40000000), 'history-unavailable', path)
                     yield path, legacy
 
-    def _archive_records(self, family):
+    def _archive_records(self, family, exclude=()):
         found = []
         for path, legacy in self._archive_paths(family):
+            if path in exclude: continue
             try:
                 record = read_record(path)
             except CoordinationError as exc:
@@ -1470,12 +1525,28 @@ class Store:
             found.append(record)
         return found
 
-    def records(self, family):
+    def _message_paths(self,team=None,archived=True):
+        try: yield from message_paths().paths(self.root,team=team,archived=archived)
+        except ValueError as exc: raise CoordinationError(str(exc)) from None
+
+    def records(self, family, team=None, archived=True):
+        cache=getattr(self,'_operation_records',None);key=(family,team,archived)
+        if cache is not None and key in cache:return copy.deepcopy(cache[key])
+        started=time.monotonic()
+        result=self._read_records(family,team,archived)
+        if cache is not None:
+            cache[key]=copy.deepcopy(result)
+            self._record_read_count+=1;self._record_read_seconds+=time.monotonic()-started
+        return result
+
+    def _read_records(self, family, team=None, archived=True):
         need(family in FAMILIES, 'family', family)
         folder = self.path('_Axis/' + family, missing=True, kind='directory')
         result = []
         if folder.exists():
-            for path in sorted(folder.iterdir()):
+            candidates = self._message_paths(team,archived) if family == 'Messages' else sorted(folder.iterdir())
+            for path in candidates:
+                if path.name == 'Archive' and path.is_dir(): continue
                 if path.name == '.gitkeep':
                     info = path.lstat()
                     need(stat.S_ISREG(info.st_mode) and info.st_nlink == 1 and info.st_size == 0, 'unexpected-record-file', path.name)
@@ -1508,16 +1579,29 @@ class Store:
                         time.sleep(0.02)
                 need(record['family'] == family and record['id'] == path.stem and record['project'] == self.project_id(), 'record-identity', path)
                 result.append(record)
-        for record in self._archive_records(family):
-            if record['family'] == family and record['project'] == self.project_id(): result.append(record)
+        local_message_paths = set(self._message_paths(team,archived)) if family == 'Messages' else set()
+        for record in self._archive_records(family, exclude=local_message_paths):
+            if record['family'] == family and record['project'] == self.project_id():
+                result.append(record)
         ids = [record['id'] for record in result]
         need(len(ids) == len(set(ids)), 'record-collision', family)
         return sorted(result, key=lambda r: r['id'])
 
     def read(self, family, ident):
-        identity(ident)
-        matches = [record for record in self.records(family) if record['id'] == ident]
-        need(len(matches) == 1, 'record-missing', ident)
+        identity(ident); need(family in FAMILIES, 'family')
+        # Inventory exact identity locations without replaying unrelated payloads.
+        if family == 'Messages':
+            paths = [folder/(ident+'.md') for folder in message_paths().folders(self.root)]
+        else:
+            paths = [self.root/'_Axis'/family/(ident+'.md'), self.root/'_Axis'/family/'Archive'/(ident+'.md')]
+        paths.extend(path for path,legacy in self._archive_paths(family) if path.stem == ident)
+        matches = []
+        for path in dict.fromkeys(paths):
+            if not os.path.lexists(path): continue
+            record = read_record(path)
+            if record.get('family') == family and record.get('project') == self.project_id():
+                need(record['id'] == ident, 'record-identity', path); matches.append(record)
+        need(len(matches) == 1, 'record-collision' if len(matches)>1 else 'record-missing', ident)
         return matches[0]
 
     def _authority_bytes(self, reference):
@@ -1580,6 +1664,8 @@ class Store:
             value['limits'].setdefault('deadline', stamp(min(now + dt.timedelta(minutes=60), timestamp(value['authority']['expires']))))
         value['limits'] = _limits(value['limits'], now)
         need(timestamp(value['limits']['deadline']) <= timestamp(value['authority']['expires']), 'mandate-deadline')
+        need(value.get('coordination_protocol',2)==2,'coordination-protocol')
+        value['coordination_protocol']=2
         value['acceptance_owner'] = self.session
         value['reservation_launches'] = 0 if _native(value) else min(value['limits']['launches'], 1 + value['limits']['reserve_launches'])
         if _native(value): self._native_binding(value)
@@ -1588,6 +1674,7 @@ class Store:
     def create_team(self, charter):
         with self.locked(proposal=self._proposal_control is not None):
             self._control_placement()
+            charter = allocation_module().admit(self, charter)
             value = self._founding(charter)
             # Only newly admitted charters gain this contract. Historical bytes stay unchanged.
             value.setdefault('collaboration', copy.deepcopy(COLLABORATION))
@@ -1607,12 +1694,39 @@ class Store:
                     self._scope(member['scope'])
                     need(all(any(p == base or p.startswith(base + '/') for base in value['scope']) for p in member['scope']), 'write-scope')
             need(len(sessions) == len(set(sessions)), 'duplicate-member-session')
+            for sid in sessions:self._available_team_member(sid,allocated=bool(value.get('resource_allocation')))
             need('collaboration_plan_sha256' not in value, 'reserved-plan-digest')
             plan = _bound_plan(value, verify=False)
             if plan: value['collaboration_plan_sha256'] = plan['plan_sha256']
             result = self._record('Teams', value)
             self._init_workspaces(result['id'])
             return result
+
+    def _available_team_member(self, sid, owner=None, allocated=False):
+        # Binding and Main dispatch serialize only through Main's control file.
+        # Team-local dispatch can then rely on an exclusive, stable binding.
+        for charter in self.records('Teams'):
+            if charter['id']==owner:continue
+            if not allocated and not charter.get('resource_allocation'):continue
+            view=self.project('Teams',charter['id'])
+            bound=any(m.get('session')==sid for m in view['members'].values())
+            if not bound:continue
+            if charter.get('resource_allocation'):
+                need(allocation_module().settled(self,charter) is not None,'session-reserved-to-Team')
+            else:
+                need(not view['held'] and view['state'] in TERMINAL,'session-reserved-to-Team')
+                for job in self.records('Jobs'):
+                    if job.get('team')!=charter['id']:continue
+                    state=self.project('Jobs',job['id'])
+                    need(not state['held'] and not state['active'] and not state['stop_unconfirmed'] and
+                         not any(a.get('route_pending') or a.get('route_uncertain') for a in state['attempts'].values()),'session-reserved-to-Team')
+        if allocated:
+            for job in self.records('Jobs'):
+                if job.get('team'):continue
+                state=self.project('Jobs',job['id'])
+                need(not state['held'],'capacity-held')
+                occupied=set(state['active'])|set(state['stop_unconfirmed'])|{a for a,v in state['attempts'].items() if v.get('route_pending') or v.get('route_uncertain')}
+                need(not any(state['attempts'][a]['session']==sid for a in occupied),'session-busy')
 
     def _worker_session(self, sid):
         identity(sid)
@@ -1625,9 +1739,15 @@ class Store:
 
     def admit_job(self, mandate, operation_key):
         need(isinstance(operation_key, str) and 0 < len(operation_key.encode()) <= 256 and '\n' not in operation_key, 'operation-key')
-        with self.locked(proposal=self._proposal_control is not None):
+        with self.control_locked(team=mandate.get('team'),shared=True):
             self._control_placement()
             self.require_history()
+            mandate = copy.deepcopy(mandate)
+            if mandate.get('team'):
+                charter = self.read('Teams', mandate['team'])
+                allocation = charter.get('resource_allocation')
+                if allocation and mandate.get('limits',{}).get('budget') == allocation['pool']:
+                    mandate['limits']['budget'] = copy.deepcopy(charter['limits']['budget'])
             value = self._founding(mandate)
             value['operation_key'] = operation_key
             jobs = self.records('Jobs'); messages = self.records('Messages')
@@ -1694,7 +1814,7 @@ class Store:
         matching = []
         for record in self.records('Teams') + self.records('Jobs'):
             if _native(record) and record['authority']['digest'] == mandate['authority']['digest']:
-                need(record['limits']['budget'].get('key') == policy['key'], 'budget-authority-key-reuse')
+                need(allocation_module().pool_key(self,record) == allocation_module().pool_key(self,mandate), 'budget-authority-key-reuse')
             if _native(record) and record['limits']['budget'].get('key') == policy['key']:
                 _controlled(record)
                 if self._proposal_control: need(record.get('proposal_only') and record['acceptance_owner'] == self.session, 'proposal-budget-owner')
@@ -1710,7 +1830,9 @@ class Store:
     def native_budget_state(self, budget_key):
         """Cumulative append-only money/runtime ledger; no provider charge is inferred."""
         self.require_history()
-        jobs = self.records('Jobs'); teams = self.records('Teams'); messages = self.records('Messages')
+        jobs = self.records('Jobs'); teams = self.records('Teams')
+        owners = [t['id'] for t in teams if _native(t) and t['limits']['budget'].get('key') == budget_key]
+        messages = self.records('Messages', team=owners[0] if len(owners)==1 else None)
         records = [r for r in teams + jobs if _native(r) and r['limits']['budget'].get('key') == budget_key]
         need(records, 'native-budget-missing')
         policy = _native_policy(records[0]['limits']['budget'])
@@ -1751,12 +1873,25 @@ class Store:
         need(self.now() >= observed, 'budget-clock-rollback')
         elapsed = (self.now() - timestamp(policy['clock_start'])).total_seconds()
         need(elapsed >= 0, 'budget-clock-rollback')
+        base_liability = sum(totals.values())
+        settled_team_cost,reserved_team_money=allocation_module().pool_totals(self,budget_key,teams)
+        allocated=settled_team_cost+reserved_team_money
+        totals['known_minor']+=settled_team_cost
+        totals['reserved_minor']+=reserved_team_money
         liability = sum(totals.values())
         result = dict(totals, key=budget_key, policy=policy, ceilings=ceilings, head=head, extensions=chain,
-                      elapsed_seconds=elapsed, attempts=attempts, unpriced_attempts=unpriced, liability_minor=liability,
+                      elapsed_seconds=elapsed, attempts=attempts, unpriced_attempts=unpriced, liability_minor=liability, base_liability_minor=base_liability, allocated_minor=allocated,
                       remaining_minor=None if ceilings['money_minor'] is None else max(0, ceilings['money_minor'] - liability),
                       remaining_seconds=None if ceilings['runtime_seconds'] is None else max(0, ceilings['runtime_seconds'] - elapsed))
+        if len(owners)==1:
+            team=self.read('Teams',owners[0])
+            if team.get('resource_allocation'):
+                allocation=allocation_module().effective(self,team)
+                result['ceilings']['money_minor']=allocation['money_minor']
+                result['remaining_minor']=max(0,allocation['money_minor']-liability)
+                result['allocation']=allocation
         result['reasons'] = self._native_reasons(result)
+        if result.get('allocation',{}).get('freeze') and 'allocation-frozen' not in result['reasons']:result['reasons'].append('allocation-frozen')
         result['status'] = 'budget-held' if result['reasons'] else 'available'
         return result
 
@@ -1789,6 +1924,7 @@ class Store:
         with self.locked():
             self.require_placement(); self.require_history()
             state = self.native_budget_state(budget_key)
+            need(not state.get('allocation'),'use-main-team-allocation-revision')
             need(state['head'] == predecessor, 'budget-predecessor')
             total = dict(state['ceilings'])
             if money_minor is not None: total['money_minor'] = money_minor
@@ -1808,7 +1944,7 @@ class Store:
 
     @staticmethod
     def _native_reasons(state, additional=0):
-        reasons = []
+        reasons = ['allocation-frozen'] if state.get('allocation',{}).get('freeze') else []
         money = state['ceilings']['money_minor']; runtime = state['ceilings']['runtime_seconds']
         if money is not None:
             # A zero incremental ceiling permits explicitly included access.
@@ -2020,7 +2156,7 @@ class Store:
         return {'team_epoch': view['epoch'], 'recipients': targets}
 
     def _direct_message(self, payload):
-        with self.locked(worker=True):
+        with self.locked(worker=True, team=payload['team']):
             charter, view, founding, state, item = self._direct_context(payload['team'], payload['job'], payload['data'].get('attempt'), payload['epoch'])
             need(payload['kind'] in PROPOSALS, 'worker-message-scope')
             expiry = min(timestamp(charter['limits']['deadline']), timestamp(founding['limits']['deadline']), timestamp(charter['authority']['expires']), timestamp(founding['authority']['expires']))
@@ -2198,7 +2334,7 @@ class Store:
         return {'path': name, 'size': len(raw), 'sha256': digest(raw)}
 
     def workspace_write(self, team, job, attempt, epoch, path, content_base64, expected_sha256):
-        with self.locked(worker=True):
+        with self.locked(worker=True, team=team):
             *_, item = self._direct_context(team, job, attempt, epoch, writing=True)
             name = self._work_name(team, item['slot'], path)
             try: raw = base64.b64decode(content_base64, validate=True)
@@ -2206,7 +2342,7 @@ class Store:
             return self._write_bytes(name, raw, expected_sha256, create_parents=True)
 
     def workspace_delete(self, team, job, attempt, epoch, path, expected_sha256):
-        with self.locked(worker=True):
+        with self.locked(worker=True, team=team):
             *_, item = self._direct_context(team, job, attempt, epoch, writing=True)
             name = self._work_name(team, item['slot'], path)
             need(isinstance(expected_sha256, str) and digest(self._file_bytes(name)) == expected_sha256, 'workspace-changed')
@@ -2223,7 +2359,7 @@ class Store:
         return {'path': name, 'bytes': len(raw), 'sha256': digest(raw), 'content_base64': base64.b64encode(raw).decode()}
 
     def artifact_publish(self, team, job, attempt, epoch, revision, paths, *, supersedes=None):
-        with self.locked(worker=True):
+        with self.locked(worker=True, team=team):
             charter, view, founding, _, item = self._direct_context(team, job, attempt, epoch, writing=True)
             need(_native(charter) or sum(m['issuer']['session'] == self.session and m.get('team') == team for m in self.records('Messages')) < charter['collaboration']['max_messages_per_member'], 'message-budget')
             workspace_token(revision)
@@ -2383,13 +2519,13 @@ class Store:
             payload['attachments'] = self._result_attachments(founding, payload['data'].get('attempt'), attempt, attachments)
             # A late result is retained after cancellation/expiry; it has no control effect.
             if team is not None and self.read('Teams', team).get('collaboration'):
-                with self.locked(worker=True):
+                with self.locked(worker=True, team=team):
                     cap = self.read('Teams', team)['collaboration']['max_messages_per_member']
                     need(_native(self.read('Teams', team)) or sum(m['issuer']['session'] == self.session and m.get('team') == team for m in self.records('Messages')) < cap, 'message-budget')
                     return self._record('Messages', payload, worker=True)
             return self._record('Messages', payload, worker=True)
         payload['attachments'] = self.validate_attachments(attachments)
-        with self.locked():
+        with self.locked(team=team):
             if team is not None and self.read('Teams', team).get('collaboration'):
                 payload['delivery'] = self._route(team, recipient)
                 payload['delivery']['sender_slot'] = 'main'
@@ -2427,10 +2563,11 @@ class Store:
 
     def disposition(self, message_id, outcome, reference=None):
         need(outcome in {'received', 'admitted', 'declined', 'referred', 'validated', 'rejected', 'closed'}, 'disposition')
-        with self.locked():
+        owner_team=self.read('Messages',message_id).get('team')
+        with self.locked(team=owner_team):
             original = self.read('Messages', message_id)
             need(original['kind'] not in {'receipt', 'decision', 'validation', 'control'} and 'event' not in original, 'no-receipt-loop')
-            decisions = [m for m in self.records('Messages') if m.get('data', {}).get('disposition_of') == message_id]
+            decisions = [m for m in self.records('Messages',team=owner_team) if m.get('data', {}).get('disposition_of') == message_id]
             for decision in decisions:
                 _accepted(decision)
             predecessor = message_id; previous = None; seen = set()
@@ -2574,15 +2711,21 @@ class Store:
 
     def project(self, family, ident):
         need(family in {'Teams', 'Jobs'}, 'projection-family')
-        return project_records(self.read(family, ident), self.records('Messages'), self.records('Teams'))
+        founding = self.read(family, ident)
+        team = ident if family == 'Teams' else founding.get('team')
+        return project_records(founding, self.records('Messages', team=team), [self.read('Teams',team)] if family=='Jobs' and team else [])
 
     def event(self, family, ident, action, data=None, expected=None, epoch=None):
         need(family in {'Teams', 'Jobs'}, 'projection-family')
         need(action in (JOB_ACTIONS if family == 'Jobs' else TEAM_ACTIONS), 'unknown-action')
         need(data is None or isinstance(data, dict), 'event-data')
-        with self.locked(proposal=self._proposal_control is not None):
+        owner_team = ident if family == 'Teams' else self.read(family, ident).get('team')
+        shared=bool(owner_team and (not self.read('Teams',owner_team).get('resource_allocation') or family=='Teams' and action in {'replace_leader','bind_member'}))
+        with self.control_locked(team=owner_team,shared=shared):
             self._control_placement()
-            founding = self.read(family, ident); messages = self.records('Messages')
+            founding = self.read(family, ident); messages = self.records('Messages', team=owner_team)
+            if owner_team:
+                need(not allocation_module().settled(self,self.read('Teams',owner_team)), 'allocation-already-settled')
             if self._proposal_control is not None:
                 self._proposal_owned(founding)
                 owner_team = ident if family == 'Teams' else founding.get('team')
@@ -2628,6 +2771,7 @@ class Store:
                     if reasons: return self._persist_native_hold(family, founding, state, messages, reasons, action)
             if family == 'Teams' and action in {'replace_leader', 'bind_member'}:
                 self._worker_session(payload_data.get('session'))
+                self._available_team_member(payload_data.get('session'),owner=ident,allocated=bool(founding.get('resource_allocation')))
                 if founding.get('collaboration'):
                     slot = 'leader' if action == 'replace_leader' else payload_data.get('slot')
                     previous = state['members'].get(slot, {}).get('session')
@@ -2640,6 +2784,7 @@ class Store:
                 self._team_budget(founding, self.records('Jobs'), messages, action=action, data=payload_data)
             if family == 'Jobs' and action == 'dispatch':
                 self._worker_session(payload_data.get('session'))
+                if not founding.get('team'):self._available_team_member(payload_data.get('session'))
                 if founding.get('team'):
                     team = self.project('Teams', founding['team'])
                     need(not team['held'] and team['state'] in {'ready', 'running'}, 'team-unavailable')
@@ -2688,9 +2833,21 @@ class Store:
                      'scope': 'project', 'limit': max(0, project_cap - 1), 'main_reserved': 1}]
         if 'aggregate_concurrency' in founding['limits']:
             policies.append({'source': founding['id'], 'scope': 'project', 'limit': founding['limits']['aggregate_concurrency']})
+        charter=self.read('Teams',founding['team']) if founding.get('team') else None
+        local_allocation=allocation_module().effective(self,charter) if charter and charter.get('resource_allocation') else None
+        if local_allocation: policies = [{'source':founding['team'],'scope':'team-allocation','limit':local_allocation['slots'],'main_reserved':0}]
         holders = []; held = []; dormant = []
         teams = self.records('Teams')
+        reserved_teams = {}
+        if not local_allocation:
+            for team in teams:
+                grant = team.get('resource_allocation')
+                if grant and not allocation_module().settled(self,team): reserved_teams[team['id']] = allocation_module().effective(self,team)['slots']
+            for team_id,count in reserved_teams.items():
+                holders.extend({'job':None,'attempt':None,'session':None,'slot':None,'team':team_id,'category':'allocated','status':'reserved-team-grant','job_state':'allocated'} for _ in range(count))
         for record in self.records('Jobs'):
+            if not local_allocation and record.get('team') in reserved_teams: continue
+            if local_allocation and record.get('team') != founding.get('team'): continue
             state = project_records(record, messages, teams)
             if state['held']: held.append(record['id'])
             occupied = set(state.get('active', [])) | set(state.get('stop_unconfirmed', [])) | {a for a, item in state['attempts'].items() if item.get('route_pending') is True}
@@ -2710,7 +2867,7 @@ class Store:
         policies.append({'source': founding['id'], 'scope': 'job', 'limit': founding['limits']['concurrency']})
         blockers = ['capacity-held'] if held else []
         if session is not None and any(h['session'] == session for h in holders): blockers.append('session-busy')
-        if any(len(holders) >= p['limit'] for p in policies if p['scope'] == 'project'): blockers.append('aggregate-concurrency')
+        if any(len(holders) >= p['limit'] for p in policies if p['scope'] in {'project','team-allocation'}): blockers.append('aggregate-concurrency')
         if len(own) >= founding['limits']['concurrency']: blockers.append('concurrency')
         team_reservation = None
         if founding.get('team'):
@@ -2725,11 +2882,55 @@ class Store:
         return {'job': founding['id'], 'host_capacity': {'status': 'unverified', 'reason': 'core has no host-route capacity observation'},
                 'policies': policies, 'holders': holders, 'occupied': len(holders),
                 'active': sum(h['category'] == 'active' for h in holders),
-                'reserved': sum(h['category'] == 'reserved' for h in holders),
+                'reserved': sum(h['category'] in {'reserved','allocated'} for h in holders),
                 'uncertain': sum(h['category'] == 'uncertain' for h in holders),
                 'team_reservation': team_reservation, 'dormant_policies': dormant, 'held_jobs': held,
                 'blockers': blockers, 'status': 'held' if blockers else 'incomplete' if team_reservation and slot is None else 'available',
                 'notice': 'Recorded admission occupancy, not a live-process census or execution authority.'}
+
+    def freeze_team_allocation(self,team,operation):
+        with self.locked(team=team):
+            self.require_placement()
+            return allocation_module().freeze(self,team,operation)
+
+    def revise_team_allocation(self,team,predecessor,money_minor,slots,operation,source_release=None):
+        # One Main dispatcher serializes pool changes; unrelated Teams keep working.
+        with self.locked():
+            peer=Store(self.root,self.session,clock=self.clock)
+            with peer.locked(team=team):
+                self.require_placement();peer._check_lock();self._peer_lock=peer
+                try:return allocation_module().revise(self,team,predecessor,money_minor,slots,operation,source_release)
+                finally:self._peer_lock=None
+
+    def settle_team_allocation(self, team, *, integrated=False):
+        with self.locked(team=team):
+            if self.read('Teams',team).get('resource_allocation'):result = allocation_module().settlement(self,team,integrated)
+            else:result=self._message_archive_module().close_legacy(self,team,integrated)
+        try: result['messages'] = self.archive_team_messages(team)
+        except (ValueError,CoordinationError) as exc: result['archive_hold'] = str(exc)
+        return result
+
+    @staticmethod
+    def _message_archive_module():
+        spec = importlib.util.spec_from_file_location('axis_message_archive', Path(__file__).with_name('message-archive.py'))
+        module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module);return module
+
+    def archive_team_messages(self, team):
+        identity(team);module=self._message_archive_module()
+        prepared=module.prepare(self,team)
+        with self.locked(team=team): result=module.archive(self,team,prepared)
+        if result['status']=='archived' and prepared['tree'] is not None:
+            need(module.tree(self.root/result['path'])==prepared['tree'],'archive-content-changed')
+        return result
+
+    def archive_closed_messages(self):
+        self.require_main();results=[];module=self._message_archive_module()
+        for team in self.records('Teams'):
+            if not module.integration(self,team['id']):continue
+            try:results.append(dict(team=team['id'],**self.archive_team_messages(team['id'])))
+            except (CoordinationError,ValueError,OSError) as exc:results.append({'team':team['id'],'status':'held','reason':str(exc)})
+        with self.locked():individual=module.individual(self)
+        return {'teams':results,'individual':individual}
 
     def capacity_view(self, job, session=None, slot=None):
         if session is not None: identity(session)
@@ -2776,6 +2977,9 @@ class Store:
         return {'status': 'ok' if not findings else 'held', 'findings': findings}
 
     def record_link(self, family, ident):
+        if family == 'Messages':
+            try: return quote(os.path.relpath(message_paths().resolve(self.root,ident),self.root/'_Axis').replace(os.sep,'/'),safe='/')
+            except ValueError: pass
         local = self.path('_Axis/' + family + '/' + ident + '.md', missing=True)
         if local.exists():
             return family + '/' + ident + '.md'
@@ -2848,7 +3052,7 @@ def main(argv=None):
     parser.add_argument('--root', default='.')
     parser.add_argument('--session')
     sub = parser.add_subparsers(dest='command', required=True)
-    for name in ('initialize', 'identity', 'check', 'indexes', 'pending', 'main-pending', 'placement-status', 'deactivate'): sub.add_parser(name)
+    for name in ('initialize', 'identity', 'check', 'indexes', 'pending', 'main-pending', 'placement-status', 'deactivate', 'archive-closed-messages'): sub.add_parser(name)
     activation = sub.add_parser('activate')
     activation.add_argument('--single-writer', action='store_true')
     activation.add_argument('--previous-placement-inactive', action='store_true')
@@ -2856,7 +3060,7 @@ def main(argv=None):
     listing = sub.add_parser('list'); listing.add_argument('family', choices=FAMILIES)
     capacity = sub.add_parser('capacity'); capacity.add_argument('job'); capacity.add_argument('--worker-session'); capacity.add_argument('--slot')
     projection = sub.add_parser('project'); projection.add_argument('family', choices=['Teams', 'Jobs']); projection.add_argument('id')
-    for name in ('team', 'admit', 'message', 'event', 'disposition', 'capture-result', 'amend-budget', 'extend-native-budget', 'native-budget-state', 'team-inbox', 'team-message', 'observe-message', 'workspace-init', 'workspace-read', 'workspace-write', 'workspace-delete', 'artifact-publish', 'artifact-check', 'review-changes'):
+    for name in ('team', 'admit', 'message', 'event', 'disposition', 'capture-result', 'amend-budget', 'extend-native-budget', 'native-budget-state', 'team-inbox', 'team-message', 'observe-message', 'workspace-init', 'workspace-read', 'workspace-write', 'workspace-delete', 'artifact-publish', 'artifact-check', 'review-changes', 'freeze-team-allocation', 'revise-team-allocation', 'settle-team-allocation', 'archive-team-messages'):
         command = sub.add_parser(name); command.add_argument('--input', default='-')
     args = parser.parse_args(argv)
     try:
@@ -2865,6 +3069,7 @@ def main(argv=None):
         elif args.command == 'activate': result = store.activate(single_writer=args.single_writer, previous_inactive=args.previous_placement_inactive, expires=args.expires)
         elif args.command == 'deactivate': result = store.deactivate()
         elif args.command == 'placement-status': result = store.placement_status()
+        elif args.command == 'archive-closed-messages':result=store.archive_closed_messages()
         elif args.command == 'identity': result = {'project': store.project_id()}
         elif args.command == 'check': result = store.check()
         elif args.command == 'indexes': result = store.rebuild_indexes()
@@ -2879,7 +3084,7 @@ def main(argv=None):
             value = json.loads(raw, object_pairs_hook=_unique_pairs)
             need(isinstance(value, dict), 'input-object')
             need(not any(key.startswith('_') for key in value), 'private-argument')
-            if args.command in {'team-inbox', 'team-message', 'observe-message', 'workspace-init', 'workspace-read', 'workspace-write', 'workspace-delete', 'artifact-publish', 'artifact-check', 'review-changes'}:
+            if args.command in {'team-inbox', 'team-message', 'observe-message', 'workspace-init', 'workspace-read', 'workspace-write', 'workspace-delete', 'artifact-publish', 'artifact-check', 'review-changes', 'freeze-team-allocation', 'revise-team-allocation', 'settle-team-allocation', 'archive-team-messages'}:
                 result = getattr(store, args.command.replace('-', '_'))(**value)
             elif args.command == 'amend-budget': result = store.amend_budget(**value)
             elif args.command == 'extend-native-budget': result = store.extend_native_budget(**value)

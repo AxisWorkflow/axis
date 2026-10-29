@@ -10,7 +10,7 @@ For an OpenClaw agent listed as an External Agent, the `axis-guardrails` plugin 
 no `_Axis/Secrets/`, no change to an existing file, and new files only in Project Subfolders, `_Axis/Submissions/` and
 `_Temp/`. The Claude Code hook reads JSON from stdin; both exit 2 with a reason to refuse, and 0 otherwise.
 Python 3 standard library only; reads paths and status lines, never prints file contents. It does not see what a
-shell command or helper script writes, and it never affects User's own editing.
+shell command or helper script writes. Adoption repairs run only through the verified, scope-bound update engine; they do not disable this hook for ordinary edits. It never affects User's own editing.
 
 Self-test without a host: python3 _Axis/Resources/guardrails.py --check {project-relative path} [--new] [--agent {type}]"""
 import importlib.util,json,os,re,sys
@@ -41,8 +41,14 @@ def write_once(root,rel,exists):
     parts=rel.split('/')
     if len(parts)<3 or parts[0]!='_Axis' or parts[-1] in IGNORED:return None
     family=parts[1]
+    if family=='ColdStorage':return 'cold locators are write-once' if exists else None
+    if len(parts)>3 and parts[2]=='Archive' and parts[-1]!='COLD.md':return 'archived history is write-once' if exists else None
     if family=='Archive':return 'archived history is write-once' if exists else None
     if family=='Updates':return None if parts[-1]=='operation.lck' or not exists else 'update evidence is write-once'
+    if family=='Messages' and len(parts)>3:
+        if exists:return 'a Message and its retained support are write-once; adoption repairs use the verified transaction engine'
+        if parts[-1].endswith('.md') and not NAME.fullmatch(parts[-1]):return 'a new Message requires a valid timestamp identity'
+        return None
     if family not in FAMILIES or len(parts)!=3:return None
     if not exists:
         return None if NAME.fullmatch(parts[2]) else f'a new record in _Axis/{family}/ must be named yyyy.mm.dd.hh.mm.ss.xxxZ.md (_Axis/Practices/Timestamps.md)'

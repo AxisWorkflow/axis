@@ -39,7 +39,7 @@ class OwnedCapture:
     """
     def __init__(self, store, intent, binding, activation):
         self.store, self.activation = store, activation
-        self.relative = '_Axis/Messages/' + intent
+        self.relative = _module('message-paths').resolve(store.root,intent).with_suffix('').relative_to(store.root).as_posix()
         self.directory = store.path(self.relative, missing=True, kind='directory')
         self.files = {}; self.dir_fd = None; self.failed = False; self.failure = None
         try:
@@ -142,7 +142,7 @@ def execute_native_attempt(store, job, attempt, *, request, verify_access, expli
     output_bytes (capture capacity, not a spending/token budget). verify_access is
     trusted host code returning the same request_sha256 plus authenticated/included/
     available True and nonempty evidence, based on current actual route observations.
-    No API or paid fallback is supported. Authoritative charge reports remain separate.
+    Paid routes require the exact incremental reservation, explicit authority and fresh route evidence. No automatic fallback. Authoritative charge reports remain separate.
     Optional closing_contract is a canonical Main-owned contract, validated before
     launch and observed at actual process return; caller booleans cannot certify it.
     """
@@ -161,7 +161,9 @@ def execute_native_attempt(store, job, attempt, *, request, verify_access, expli
         if not isinstance(policy,dict) or policy.get('version')!=1:raise ValueError('native Job required')
         state=store.project('Jobs',job);item=state.get('attempts',{}).get(attempt,{})
         if item.get('route_request_sha256')!=digest:raise ValueError('request differs from accepted dispatch')
-        if item.get('charge',{}).get('basis')!='included' or item['charge'].get('route')!=req['route']:raise ValueError('exact included charge route required')
+        if item.get('charge',{}).get('basis') not in {'included','incremental'} or item['charge'].get('route')!=req['route']:raise ValueError('exact authorized charge route required')
+        paid=item['charge']['basis']=='incremental'
+        if paid and ('money' not in policy or not item['charge'].get('reserve_minor')):raise ValueError('paid route requires bounded money reservation')
         relative=cwd.relative_to(store.root).as_posix()
         scope=item.get('scope',founding['scope'])
         if not any(relative==p or relative.startswith(p+'/') for p in scope):raise ValueError('working directory outside attempt scope')
@@ -192,8 +194,8 @@ def execute_native_attempt(store, job, attempt, *, request, verify_access, expli
             if budget['status']=='budget-held':raise RouteStop('native-budget-exhausted')
             if hashlib.sha256(executable.read_bytes()).hexdigest()!=req['executable_sha256']:raise RouteStop('executable-changed')
             observed=verify_access(json.loads(json.dumps(req)))
-            if not isinstance(observed,dict) or observed.get('request_sha256')!=digest or any(observed.get(k) is not True for k in ('authenticated','included','available')) or not isinstance(observed.get('evidence'),str) or not observed['evidence'].strip():raise RouteStop('route-access-unavailable')
-            if any(k in os.environ for k in ('OPENAI_API_KEY','CODEX_API_KEY','ANTHROPIC_API_KEY','ANTHROPIC_AUTH_TOKEN','CLAUDE_CODE_USE_BEDROCK','CLAUDE_CODE_USE_VERTEX','CLAUDE_CODE_USE_FOUNDRY')):raise RouteStop('paid-auth-selector-present')
+            if not isinstance(observed,dict) or observed.get('request_sha256')!=digest or any(observed.get(k) is not True for k in ('authenticated','available')) or observed.get('included') is not (not paid) or not isinstance(observed.get('evidence'),str) or not observed['evidence'].strip():raise RouteStop('route-access-unavailable')
+            if paid and observed.get('paid_authorized') is not True:raise RouteStop('paid-route-not-confirmed')
         def hold():
             b=store.native_budget_state(policy['key'])
             store.event('Jobs',job,'budget_hold',{'summary':'Native route budget hold; preserve attempt and reconcile process before resume.','budget_key':policy['key'],'reasons':b['reasons'],'resume_action':'route'})
@@ -202,7 +204,7 @@ def execute_native_attempt(store, job, attempt, *, request, verify_access, expli
         except RouteStop as exc:
             if exc.process_reason=='native-budget-exhausted':return hold()
             raise
-        with store.locked():
+        with store.locked(team=founding.get('team')):
             for row in store.records('Messages'):
                 if row.get('issuer',{}).get('role')!='main':continue
                 d=row.get('data',{})
@@ -216,7 +218,17 @@ def execute_native_attempt(store, job, attempt, *, request, verify_access, expli
         capture=OwnedCapture(store,intent['id'],{'job':job,'attempt':attempt,'request_sha256':digest,'capture_capacity_bytes':req['output_bytes']},activation)
         def launched_receipt(process):
             capture.write_metadata('launch.json',{'protocol':'axis.team-route-launch/v1','intent':intent['id'],'job':job,'attempt':attempt,'request_sha256':digest,'process':process,'notice':'Diagnostic identity only; saved PID absence or reuse is not verified process-group termination.'})
-        result=adapter._bounded_process(argv,str(cwd),req['prompt'],None,req['output_bytes'],check,launch_state=launched,truncate_output=True,output_sink=capture.append,on_launch=launched_receipt)
+        auth=_module('model-access')
+        mode=auth.selected(store.root,req['adapter'],{'included':not paid})
+        if mode!=('api-key' if paid else 'subscription'):raise ValueError('Model Access differs from reserved route')
+        # Custom checked Host transports retain their exact argument contract; the
+        # trusted verifier owns their authentication behavior. Native CLIs also
+        # receive provider-specific options. Both receive the same selected environment.
+        native_cli=Path(argv[0]).stem==req['adapter']
+        launch_argv,launch_env,access_metadata=auth.prepare(store.root,req['adapter'],argv,mode=mode,paid_authorized=paid,native_cli=native_cli)
+        if native_cli:auth.verify_cli(req['adapter'],launch_argv,launch_env,str(cwd))
+        secret_values=[launch_env[k] for k in auth.SELECTORS if k in launch_env]
+        result=adapter._bounded_process(launch_argv,str(cwd),req['prompt'],None,req['output_bytes'],check,launch_state=launched,truncate_output=True,output_sink=capture.append,on_launch=launched_receipt,env=launch_env,redact_values=secret_values)
         ended=store.now()
         ended_at=ended.strftime('%Y.%m.%d.%H.%M.%S.')+f'{ended.microsecond//1000:03d}Z'
         outputs=capture.outputs()
@@ -300,7 +312,7 @@ def reconcile_native_route(store, intent_id, result_id=None, *, verify_boundary,
                 return store._record('Messages',{'subject':body,'kind':'result','recipient':'main','body':body,
                     'team':founding.get('team'),'job':job,'epoch':item['epoch'],'correlation':founding['operation_key'],
                     'data':value,'authority':None,'expires':founding['authority']['expires'],'attachments':[]})
-            with store.locked():
+            with store.locked(team=founding.get('team')):
                 existing=prior(rows())
                 if existing is None:
                     if original is None:

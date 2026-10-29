@@ -80,6 +80,11 @@ def survey(self, model, harness, interaction, spawn, parallel):
                 except FileNotFoundError:pass
     caps={'model':model,'host-spawn':spawn,'host-parallel':parallel,'host-shell':shell,'host-local-llm':local,'host-cloud-sync':cloud,'host-storage':storage}
     self.record_capabilities(json.dumps(caps));report['capabilities']=caps
+    access_spec=importlib.util.spec_from_file_location('axis_model_access',Path(__file__).with_name('model-access.py'))
+    access=importlib.util.module_from_spec(access_spec);access_spec.loader.exec_module(access)
+    access_mode=access.observed_mode()
+    self.write_flag('model-access',access_mode+'\n'+stamp()+'\n')
+    report['model_access']=access_mode
     if shell=='no':report['notices'].append('non-posix-shell')
     report['cloud_reason']=reason
     if cloud=='yes':report['notices'].append('cloud-synced-folder')
@@ -142,7 +147,13 @@ def survey(self, model, harness, interaction, spawn, parallel):
     report['locks']={'lock_dirs':locks,'timestamp_claims':[q.name for q in self.path('_Temp',kind='directory').glob('*.tsclaim')]}
     notes=[q for q in self.path('_Axis/Notes',kind='directory').glob('*.md')]
     limit=self.setting('Max Notes');report['notes']={'count':len(notes),'over_limit':bool(limit and limit.replace(',','').isdigit() and len(notes)>int(limit.replace(',','')))}
-    report['indexes']=self.check_indexes()
+    try:report['indexes']=self.check_indexes()
+    except (OSError,UnicodeError,Fault) as error:
+        # Index inspection is an observation, not admission or update integrity.
+        # Malformed retained history must not veto an otherwise valid startup.
+        self.guard()
+        report['indexes']={'status':'unavailable','outcome':'unverified','reason':getattr(error,'code','io_or_record'),'path':getattr(error,'path','')}
+        report['notices'].append('index-inspection-unavailable')
     # Reminder checkpoint for a confirmed empty healthy queue only; a nonempty queue needs the Reminders Practice.
     if report['queues']['Reminders']['state']=='empty':
         self.write_flag('reminder-check',self.sid+'\n'+stamp()+'\n');report['reminder_checkpoint']='advanced'

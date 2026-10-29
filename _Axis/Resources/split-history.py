@@ -15,7 +15,7 @@ import sys
 from pathlib import Path
 
 ID = re.compile(r'\d{4}(?:\.\d{2}){5}\.\d{3}Z')
-FAMILIES = ('Audit', 'CX', 'Followups', 'Ideas', 'Logs', 'Notes', 'Reminders',
+FAMILIES = ('ColdStorage', 'Audit', 'CX', 'Followups', 'Ideas', 'Logs', 'Notes', 'Reminders',
             'Reviews', 'Snapshots', 'Supervision', 'Tasks', 'Teams', 'Messages', 'Jobs', 'Schedules')
 INERT = {'Teams', 'Messages', 'Jobs', 'Schedules', 'Snapshots'}
 LIMIT = 50000
@@ -142,7 +142,20 @@ def catalog(root, target):
             if not directory.exists():
                 continue
             safe(directory, directory=True)
+            if family == 'Messages' and base == root/'_Axis':
+                spec=importlib.util.spec_from_file_location('axis_split_messages',Path(__file__).with_name('message-paths.py'))
+                module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+                for path in module.paths(root):add(path,path.relative_to(root).as_posix(),family)
+                continue
             for path in sorted(directory.iterdir()):
+                if path.name == 'Archive' and path.is_dir():
+                    safe(path,directory=True)
+                    for entry in sorted(path.iterdir()):
+                        if entry.name in ('.gitkeep','COLD.md'):continue
+                        if entry.is_dir() and ID.fullmatch(entry.name):continue
+                        need(entry.suffix=='.md' and ID.fullmatch(entry.stem),'unexpected family archive member')
+                        add(entry,'_Axis/'+family+'/Archive/'+entry.name,family)
+                    continue
                 if path.name == '.gitkeep':
                     continue
                 if path.is_dir() and ID.fullmatch(path.name):
@@ -198,6 +211,12 @@ def selection(root, value):
             chosen[name] = current['records'][name]
     # Resolve references to other actual records; session/event timestamps alone are not records.
     known = {Path(name).stem: name for name in current['records']}
+    if (root/'_Axis/ColdStorage').exists():
+        spec=importlib.util.spec_from_file_location('split_cold_ids',Path(__file__).with_name('archive-storage.py'));archive_module=importlib.util.module_from_spec(spec);spec.loader.exec_module(archive_module)
+        for path,record in archive_module.locators(root):
+            need((path.with_suffix('')/'copied.json').is_file(),'finish pending cold copy before splitting history')
+            for item in record['files']:
+                if item['record_id']:known[item['record_id']]=path.relative_to(root).as_posix()
     missing = set()
     for name in chosen:
         data = read(origin(root, name)).decode('utf-8')
@@ -261,7 +280,7 @@ def stage(root, session, selection_file, child, transaction):
         need(read(path) == data, 'import readback')
         imports[target] = {'parent_path': original, 'sha256': sha(data), 'bytes': len(data)}
     # Copy Task index entries as historical status, without inventing new dates.
-    task_ids = {Path(name).stem for name in chosen if chosen[name]['family'] == 'Tasks'}
+    task_ids = {Path(name).stem for name in chosen if chosen[name]['family'] == 'Tasks' and '/Archive/' not in name}
     index_bytes = read(root / '_Axis/TASKS.md')
     need(sha(index_bytes) == current['task_index_sha256'], 'Task index changed')
     task_index = index_bytes.decode()
@@ -270,7 +289,7 @@ def stage(root, session, selection_file, child, transaction):
     for part in re.split(r'(?m)(?=^## )', task_index):
         if not part.startswith('## '):
             continue
-        links = re.findall(r'\[Details\.\.\.\]\(((?:Tasks|Archive/Tasks)/(' + ID.pattern + r')\.md)\)', part)
+        links = re.findall(r'\[Details\.\.\.\]\(((?:Tasks|Tasks/Archive|Archive/Tasks)/(' + ID.pattern + r')\.md)\)', part)
         if len(links) != 1:
             need(not task_ids.intersection(ID.findall(part)), 'ambiguous selected Task index identity')
             continue

@@ -76,7 +76,7 @@ def project(store, contract_id, *, historical=False):
     c=core(); need(not historical or store.io.lease[2], 'closing-history-main-only'); record, contract, team, job, tv, jv = _contract(store, contract_id, historical)
     members={slot:{'ready':None,'release':None,'ack':None,'result':None,'done':None,'state':'participating' if contract['actors'][slot]['attempt'] in jv['attempts'] else 'awaiting-dispatch'} for slot in contract['participants']}
     by_id={}; rows=[]
-    messages=store.records('Messages')
+    messages=store.records('Messages',team=team['id'])
     for message in messages:
         if message.get('data',{}).get('protocol') == 'axis.team-route/v1': continue
         data=tag(message)
@@ -219,7 +219,7 @@ def create_contract(store, *, team, job, participants, release_slot, final_slot,
     c=core();store.require_main();store.require_placement()
     need(isinstance(participants,list) and participants and all(isinstance(x,str) for x in participants) and len(set(participants))==len(participants),'closing-participants')
     need(type(require_ack) is bool and isinstance(phase,str) and 0<len(phase.strip())<=256,'closing-policy')
-    with store.locked():
+    with store.locked(team=team):
         store.require_history();t=store.read('Teams',team);j=store.read('Jobs',job);tv=store.project('Teams',team);jv=store.project('Jobs',job)
         need(j.get('team')==team and store.session==t['acceptance_owner']==j['acceptance_owner'],'closing-owner')
         need(not tv['held'] and not jv['held'] and tv['state'] in {'ready','running'} and jv['state'] in {'admitted','running'},'closing-unavailable')
@@ -245,7 +245,7 @@ def create_contract(store, *, team, job, participants, release_slot, final_slot,
 def step(store, *, contract_id, binding, action, body, targets=None, artifact=None, release_id=None):
     c=core();need(action in {'ready','release','ack','result','done'} and isinstance(body,str) and body.strip() and len(body.encode())<=c.MAX_BODY,'closing-step')
     need(targets is None or isinstance(targets,list),'closing-targets')
-    with store.locked(worker=True):
+    with store.locked(worker=True, team=binding['team']):
         charter,tv,job,jv,item=store._direct_context(**binding)
         view=validate_binding(store,contract_id,binding);slot=view['slot'];state=view['members'].get(slot)
         data={'protocol':PROTOCOL,'contract':contract_id,'action':action};attachments=[]

@@ -15,7 +15,7 @@ Record each Axis Task in `_Axis/TASKS.md` with the following shape:
 - **Delivers** - field; optional; names the Deliverable in `_Axis/PROJECT.md` this task aims at; `N/A` when the task serves no single Deliverable.
 - **Initiative** - optional `initiative:` field; one stable key from [Initiatives], or omitted/blank/`N/A` for a standalone Task. Keep it identical in the index and detail. Before working on a linked Task, load its matching Initiative section and check the reciprocal Task link under [Practices > Initiatives].
 - **Description** - short body paragraph of < 100 words (blank line before and after).
-- **Details** - A link for `[Details...](Tasks/{yyyy.mm.dd.hh.mm.ss.xxxZ}.md)`, or `Archive/Tasks/{timestamp}.md` after a terminal Task is archived.
+- **Details** - A link for `[Details...](Tasks/{yyyy.mm.dd.hh.mm.ss.xxxZ}.md)`, or `Tasks/Archive/{timestamp}.md` after a terminal Task is archived.
 
 Field keys in `_Axis/TASKS.md` are exactly `label:`, `status:`, `created:`, `updated:`, `completed:`, `cancelled:`, `delivers:`, and optional `initiative:` - lowercase, one per line, YAML-parseable (the Dashboard depends on these keys). Each value ends at its own line break; a key with no value reads as empty, never as the next line. Every material edit to an open Task advances `updated:`; terminal Tasks carry the terminal timestamp there. Do not use filesystem `mtime` as durable Task recency because copy, checkout, and sync operations rewrite it.
 

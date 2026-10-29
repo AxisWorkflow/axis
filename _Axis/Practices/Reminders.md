@@ -5,7 +5,7 @@ A Reminder says **when to surface** information. A Task is work Agent owns; a Fo
 
 ## Record Contract
 
-Open records live in `_Axis/Reminders/{created timestamp}.md`; terminal records live only in `_Axis/Archive/Reminders/{same timestamp}.md`. The creation timestamp is stable identity even when due time changes.
+Open records live in `_Axis/Reminders/{created timestamp}.md`; terminal records normally archive into `_Axis/Reminders/Archive/{same timestamp}.md`. The creation timestamp is stable identity even when due time changes.
 
 ```
 Reminder: Renew the domain registration
@@ -40,7 +40,7 @@ Due state is the lexical comparison of valid UTC Axis timestamps after obtaining
 
 ## Lifecycle
 
-The archive destination is intentionally created on demand. Before the first terminal move, create `_Axis/Archive/Reminders/` if it is absent, then verify it is an ordinary directory inside `_Axis/Archive/`. A symlink, non-directory collision, or destination collision is an unsafe-path failure: preserve the live Reminder and stop rather than guessing. `_Axis/Archive/` means the folder in [Settings > Archive Location]; when it is unavailable, follow [Practices > Archiving > Archive Location]: the terminal record stays live as closed, pending archive.
+The archive destination is intentionally created on demand. Before the first terminal move, create `_Axis/Reminders/Archive/` if it is absent, then verify it is an ordinary directory inside `_Axis/Reminders/`. A symlink, non-directory collision, or destination collision is an unsafe-path failure: preserve the live Reminder and stop rather than guessing. At Archiving Never, retain terminal fields in the live location. New local archives do not depend on the legacy external root.
 
 - **Add:** deduplicate by target, meaning, and materially equal due time; mint the ID per [Practices > Timestamps]; write, read back, and Log.
 - **Reschedule/snooze:** keep identity; change `due-at`, advance `updated`, verify, and Log.
@@ -68,3 +68,5 @@ New Reminders commit through [Practices > Timestamps] with exclusive creation; t
 Main Agent alone writes `_Axis/Flags/reminder-check`, which makes per-session deduplication durable: Line 1 is the current Session ID; Line 2 is the last trustworthy UTC check. Session Start writes it after its check. A later Command surfaces an open item when `due-at` is at or before now and either `due-at` or `updated` is after Line 2, then advances Line 2. This catches a newly crossed due time plus an already-due item created or rescheduled since the check. Creation/reschedule to an already-due time speaks in that mutation response before advancing the checkpoint. Missing, malformed, foreign-session, untrusted-time, or a Line 2 later than current trustworthy UTC causes a full check; after that full check, rewrite Line 2 with current UTC. Never preserve a future checkpoint or make a false advance.
 
 External Agents may read due metadata and deduplicate in their conversation, but never create, clear, rewrite, or advance `reminder-check`, even when it names another session. Main Agent alone mutates Reminders. Subagents return candidates to Main; External Agents use Messages.
+
+Storage policy: [Settings > Archiving] = Never suppresses archival moves, including overflow and terminal self-archiving. Preserve terminal fields and report pending placement; never reopen closed work. Otherwise new moves use this family’s local `Archive/`. Legacy Archive Location remains a lookup source only.

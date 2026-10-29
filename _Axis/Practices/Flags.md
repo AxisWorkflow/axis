@@ -17,6 +17,7 @@ A Flag is a persistent file that records durable workflow state. A Flag remains 
 | `project-overlay` | per-session | `{yyyy.mm.dd.hh.mm.ss.xxxZ}` | current Session ID on Line 1; schema 1 has four lines; schema 2 has six lines including Project and overlay SHA-256 |
 | `promote` | per-session | `{yyyy.mm.dd.hh.mm.ss.xxxZ}` | < 10 minutes while a promotion awaits its trusted-surface approval |
 | `model` | per-session | model name or `unknown` | - |
+| `model-access` | per-session | `subscription` or `api-key` or `unverified` | - |
 | `host-spawn` | per-session | `yes` or `no` | - |
 | `host-parallel` | per-session | `yes` or `no` | - |
 | `host-shell` | per-session | `yes` or `no` | - |
@@ -51,6 +52,8 @@ The lifetime decides whether a Flag is committed: per-project state is committed
 ## Structured local bindings
 
 `coordination-placement.json` and `scheduler-binding.json` are machine/session JSON bindings owned by [Practices > Coordination] and [Practices > Scheduling]. They are ignored by Git and validated by their owning schema, never the ordinary two-line Flag reader. They cannot travel as authority; missing or invalid binding holds the affected operation.
+
+`cold-storage-location` is a machine-local JSON binding owned by [Practices > Archiving], excluded from the ordinary two-line reader. It binds a logical name to an existing external directory and records verified-local/verified-remote durability; it grants no new destination or provider authority. It is Git-ignored and never travels as a host path in tracked catalogs.
 
 ## Reading Flags
 

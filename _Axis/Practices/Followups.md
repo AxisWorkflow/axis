@@ -42,7 +42,7 @@ The contract is exact:
 - A terminal record has the same current UTC timestamp in `updated:` and `resolved:`, and an `outcome:` of `answered`, `completed`, `withdrawn`, or `converted`. `resolution-ref:` must be a project-root-relative path or exact record timestamp for `answered`, `completed`, and `converted`; it may be `N/A` only for `withdrawn`.
 - Line 11 is blank. After it, write one short, self-contained paragraph stating exactly what User must answer or do and what it unblocks. Add concise context links as needed. Never include secrets.
 
-The live directory is the open queue: every file in `_Axis/Followups/` must carry the three open-state `N/A` values. Terminal records belong only in `_Axis/Archive/Followups/` and are WORM there.
+The live directory contains the open queue plus valid terminal records awaiting placement or retained by Archiving Never. Queue readers use terminal fields, not location. Terminal records are WORM wherever they reside; new archive moves use `_Axis/Followups/Archive/`.
 
 ## Ordering and Surfacing
 
@@ -59,10 +59,12 @@ Session Start is silent when the queue is empty. Otherwise it surfaces one compa
 1. Verify the admission rule and deduplicate against every open record.
 2. Mint the identifier, create the exact open shape, read it back, and Log the creation. When it blocks a User-owned Task, set or keep that Task **Blocked** in the same pass and point `blocks:` at its detail record.
 3. For a material edit while open, re-read the file, change only the needed mutable fields/body, advance `updated:`, verify the whole shape, and Log the edit.
-4. To resolve, apply User's answer or completed action to the canonical owning record first. Then set `updated:` and `resolved:` to the same current UTC timestamp, set `outcome:` and `resolution-ref:`, and move the unchanged terminal file to `_Axis/Archive/Followups/`. `_Axis/Archive/` means the folder in [Settings > Archive Location]; when it is unavailable, follow [Practices > Archiving > Archive Location]: the terminal record stays live as closed, pending archive.
+4. To resolve, apply User's answer or completed action to the canonical owning record first. Then set `updated:` and `resolved:` to the same current UTC timestamp, set `outcome:` and `resolution-ref:`, and move the unchanged terminal file to `_Axis/Followups/Archive/`. At Archiving Never, keep the valid terminal file where it is. New local moves do not depend on legacy Archive Location availability.
 5. Read open Reminders whose `target:` equals this exact Follow-Up path. Deterministically complete them when the Follow-Up was answered/completed/converted, or cancel them when withdrawn, under [Practices > Reminders]. Do not close a loosely related Reminder.
 6. Verify the live source is absent, the archived bytes match the just-written terminal record, and the referenced result exists; repoint links to it under [Practices > Archiving]. Then Log the terminal outcome. If a crash leaves a valid terminal record live, `^refresh` may finish only the move; it never invents an answer or result.
 
 Terminal Follow-Ups are WORM. To reopen one, mint a new Follow-Up whose body references the archived identifier. Never move or edit the old terminal record. References from Snapshots and other WORM records use the exact timestamp identity so they remain meaningful after the live path moves.
 
 When User plainly answers or completes a Follow-Up that has been surfaced, resolve it in that same turn under [Directives > Resolve a Follow-Up]. If the match or outcome is ambiguous, ask instead of guessing.
+
+Storage policy: [Settings > Archiving] = Never suppresses archival moves, including overflow and terminal self-archiving. Preserve terminal fields and report pending placement; never reopen closed work. Otherwise new moves use this family’s local `Archive/`. Legacy Archive Location remains a lookup source only.

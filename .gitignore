@@ -64,6 +64,7 @@ _Axis/Flags/session-id
 _Axis/Flags/project-overlay
 _Axis/Flags/promote
 _Axis/Flags/model
+_Axis/Flags/model-access
 _Axis/Flags/host-spawn
 _Axis/Flags/host-parallel
 _Axis/Flags/host-shell
@@ -80,3 +81,6 @@ _Axis/Flags/scheduler-binding.json
 
 # Local Coordination activation does not travel as authority.
 _Axis/Flags/coordination-placement.json
+
+# Host-local cold storage binding; catalogs remain tracked.
+_Axis/Flags/cold-storage-location

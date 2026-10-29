@@ -36,7 +36,7 @@ Ask only for a genuinely missing decision, changed scope or risk, a separately g
 
 ## Confirmation words
 
-Some Commands ask for a literal word before acting (`ARCHIVE`, `TRASH`). At `Restricted` only User supplies it. At `Default` and `Autonomous`, when the level lets the underlying action proceed, the Agent may supply the word itself: state that it did, and record it in the Command's Log Event. The gates below keep their own confirmation at every level.
+Some Commands ask for a literal word before acting (such as `TRASH`). At `Restricted` only User supplies it. At `Default` and `Autonomous`, when the level lets the underlying action proceed, the Agent may supply the word itself: state that it did, and record it in the Command's Log Event. The gates below keep their own confirmation at every level.
 
 ## Gates no level removes
 

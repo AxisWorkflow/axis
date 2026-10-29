@@ -79,7 +79,7 @@ Memos are never read at Session Start. List `_Memos/` (not `Archive/`) by name, 
 
 ## Archiving
 
-`^refresh` and `^memos archive` move a live memo into `_Memos/Archive/` when it is `done` or `superseded`, or when it has not been updated for 30 days and every record it links to is finished. A `waiting on you` memo is never archived without asking. Report what moved; a moved memo keeps its name and timestamp. An occupied destination for a timestamp-prefixed Memo is an identity conflict: preserve both files in place and report it, never overwrite or append a suffix. Legacy date-prefixed Memos retain the ` (2)` collision convention.
+`^refresh`, `^archive` and `^memos archive` apply Archiving: Never makes no policy move; Default requires done/superseded status and 30 days since closure or substantive update, Aggressive requires 7 days. A `waiting on you` memo is never archived without asking. Open and waiting-on-you memos remain held; age and finished links alone never close one. Report what moved; a moved memo keeps its name and timestamp. An occupied destination for a timestamp-prefixed Memo is an identity conflict: preserve both files in place and report it, never overwrite or append a suffix. Legacy date-prefixed Memos retain the ` (2)` collision convention.
 
 ### Preserve link destinations when moving
 
@@ -91,7 +91,7 @@ Verify every rewritten link resolves to its pre-move target and run the ordinary
 
 ## Reviews
 
-A Review (`^review`) is a memo with Type `review` and Status `record`, named `yyyy.mm.dd.hh.mm.ss.xxxZ - Review - {topic}.md`, with the sections `^review` sets, Recent Developments first. Its first line under the header says: `This review is a dated record: it is not edited after you have seen it, and the next review replaces it.` Only its Status and the proven link-destination tokens required by the Archiving procedure may change later; prose, findings and dates stay unchanged: a new Review marks the previous live one `superseded`, with a link to the new one, and moves it to `Archive/`.
+A Review (`^review`) is a memo with Type `review` and Status `record`, named `yyyy.mm.dd.hh.mm.ss.xxxZ - Review - {topic}.md`, with the sections `^review` sets, Recent Developments first. Its first line under the header says: `This review is a dated record: it is not edited after you have seen it, and the next review replaces it.` Only its Status and the proven link-destination tokens required by the Archiving procedure may change later; prose, findings and dates stay unchanged: a new Review marks the previous live one `superseded`, with a link to the new one, and makes it eligible for the saved archiving policy; Never retains it locally.
 
 ## Roles
 

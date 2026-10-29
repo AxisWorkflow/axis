@@ -144,3 +144,16 @@ Bind its returned Message ID to the member launcher with `--closing-contract`. M
 Use null for unused checked-tool fields. Exact repeated acts reuse retained evidence; conflicting payloads do not reset progress. A new final revision requires new readiness before release. Contract changes use a Main-owned explicit successor and retained in-flight disposition; a stale contract never revives membership or authority. Tracking alone, an early Result or body text cannot stand in for the required chain. Main may recover and accept retained work separately without synthesizing missing worker acts.
 
 After canonical own DONE, the selected checked broker permits only status and an exact repeated DONE; end the provider turn instead of polling again. Restart replays the same records. The route observer compares canonical closing against the actual observed return time; later closing cannot retroactively turn an early exit into graceful participation. Closing does not accept substantive work, settle charges, release capacity, or prove process-group absence. Missing Python leaves the same manual record and review obligations; missing selected helper holds that interface and must not silently remove the selected obligations.
+
+
+## Team allocation operations
+
+Native Team input accepts `resource_pool` (the authorized whole policy) alongside `limits.budget` (the reserved share). Main admits it once and uses the returned Team budget for Jobs. The helpers below accept a JSON object through `--input` and run under the active Main; files remain the portable canonical interface.
+
+- `freeze-team-allocation`: `team`, unique `operation`. Stop new Team effects, then reconcile all holders and liabilities.
+- `revise-team-allocation`: `team`, exact allocation `predecessor`, total `money_minor`, total `slots`, unique `operation`, optional `source_release` Message ID. Reduction requires the accepted freeze and quiescent source. Increase checks the parent pool after any source release. Retry the same operation; do not generate a second grant.
+- `settle-team-allocation`: `team`, `integrated: true`, only after Main finishes substantive acceptance and integration. This settles the grant and attempts message archiving; it also supports an explicit integration receipt for terminal legacy Teams without resetting their historical budgets.
+- `archive-team-messages`: `team`; retry a missed eligible Team closure.
+- `archive-closed-messages`: no JSON; catch up already accepted Team closures and explicitly closed simple Individual correspondence, respecting Archiving Never.
+
+Without Python, Main makes the same immutable grant/freeze/revision/settlement Messages and exact causal checks under the scoped guards described in [Practices > Coordination]. If it cannot verify an allocation or uncertain liability, keep that operation held while independent Teams continue. No helper, folder or timestamp grants spending authority.

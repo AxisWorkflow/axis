@@ -4,6 +4,7 @@
 New transactions use schema 2. Old journals retain their original pinned engine.
 No network, imported-code execution, Git-history merge, or credential migration.
 """
+import datetime
 import argparse
 import datetime as dt
 import hashlib
@@ -285,6 +286,8 @@ def preview(dest, source, own=None, folder=None):
          'ordinary imported folder required')
     target = plain(dest / content, 'dir', missing=True, spelling=True)
     blockers = []
+    if any((source/'_Axis/ColdStorage').glob('*.md')):
+        blockers.append('source has cold-storage catalogs; reconcile destination binding and original identities before absorption; never treat locators as opaque source evidence')
     if not child and os.path.lexists(target):
         blockers.append('imported folder name already exists; select a distinct folder in the plan')
     src = inventory(source, source=True)
@@ -337,6 +340,10 @@ def occupied_ids(root, exclude_child=None):
                        and (exclude_child is None or Path(parent) / d != exclude_child)]
             for name in dirs + names:
                 result.update(ID.findall(name))
+    if (root/'_Axis/ColdStorage').exists():
+        spec=importlib.util.spec_from_file_location('merge_cold_ids',Path(__file__).with_name('archive-storage.py'));archive=importlib.util.module_from_spec(spec);spec.loader.exec_module(archive)
+        for _,record in archive.locators(root):
+            result.update(item['record_id'] for item in record['files'] if item['record_id'])
     claims = root / '_Temp'
     if claims.exists():
         result.update(p.name[:-8] for p in claims.iterdir() if p.name.endswith('.tsclaim') and ID.fullmatch(p.name[:-8]))
@@ -380,6 +387,12 @@ def kind(name):
         return 'evidence'
     if parts[0] == '_Axis':
         tail = parts[2:] if len(parts) > 1 and parts[1] == 'Archive' else parts[1:]
+        if tail and tail[0]=='Messages':
+            nested=tail[1:]
+            if nested and nested[0]=='Archive':nested=nested[1:]
+            if (len(nested)==2 and nested[0]=='Individual' or len(nested)==3 and nested[0]=='Teams' and ID.fullmatch(nested[1])) and ID.fullmatch(Path(nested[-1]).stem) and nested[-1].endswith('.md'):
+                return 'record'
+        if len(tail)==3 and tail[1]=='Archive' and tail[0] in RECORDS:tail=[tail[0],tail[2]]
         if len(tail) == 4 and tail[0] == 'Imports' and ID.fullmatch(tail[1]) and tail[2] in HISTORY_ONLY:
             tail = tail[2:]
         if len(tail) == 2 and tail[0] in RECORDS and ID.fullmatch(Path(tail[1]).stem) and tail[1].endswith('.md'):
@@ -458,13 +471,14 @@ def layout(root, view, txid, ids, readmes=None):
             target = (unique_path(root, folder + '/Project-background.md', used) if readme_content(original, readmes.get(name))
                       else '_Axis/Merges/' + txid + '/source/' + renamed + '.source')
         elif category == 'record':
+            local_archive = len(parts)==4 and parts[2]=='Archive'
             archived = parts[1] == 'Archive'
-            family = parts[-2]
+            family = 'Messages' if parts[:2]==['_Axis','Messages'] else parts[1] if local_archive else parts[-2]
             filename = remap_ids(parts[-1], ids)
             if family in HISTORY_ONLY:
                 target = '_Axis/Archive/Imports/' + txid + '/' + family + '/' + filename
             else:
-                target = '_Axis/' + ('Archive/' if archived else '') + family + '/' + filename
+                target = '_Axis/' + ('Archive/' if archived else '') + family + ('/Archive/' if local_archive else '/') + filename
         elif category == 'memo':
             target = renamed
             # Current timestamp names have already been globally allocated; legacy names remain meaningful.
@@ -719,7 +733,7 @@ def allowed(name, txid=None):
             need(len(parts) >= 4 and parts[-1].endswith('.md') and ID.fullmatch(Path(parts[-1]).stem),
                  'new archived record required')
         else:
-            need(len(parts) == 3 and parts[1] in RECORDS - HISTORY_ONLY
+            need((len(parts) == 3 or len(parts)==4 and parts[2]=='Archive') and parts[1] in RECORDS - HISTORY_ONLY
                  and parts[-1].endswith('.md') and ID.fullmatch(Path(parts[-1]).stem), 'protected Axis path')
     elif parts[0].startswith('_'):
         need(parts[0] in ('_Memos', '_Wiki'), 'unsupported project root')
@@ -876,6 +890,49 @@ def check_plan(root, source, plan, base):
     return list(by_path.values()), objects
 
 
+def recovery_directory(root, txid):
+    need(ID.fullmatch(txid), 'invalid merge identity')
+    permanent=root/'_Axis/Merges'/txid
+    pointer=permanent/'recovery.json'
+    if not pointer.exists():return plain(permanent,'dir')
+    value=json.loads(read(pointer,4096))
+    need(value=={'schema':1,'transaction':txid,'path':'_Temp/Merge-'+txid},'invalid merge recovery pointer')
+    return plain(root/value['path'],'dir')
+
+def publish_terminal(root,tx,txid,name):
+    permanent=root/'_Axis/Merges'/txid
+    if permanent==tx:return
+    data=read(tx/name)
+    if (permanent/name).exists():need(read(permanent/name)==data,'terminal receipt changed')
+    else:once(permanent/name,data)
+
+def validate_startup(root,session,txid):
+    permanent=root/'_Axis/Merges'/txid
+    pointer=json.loads(read(permanent/'recovery.json',4096))
+    need(pointer=={'schema':1,'transaction':txid,'path':'_Temp/Merge-'+txid},'invalid merge recovery pointer')
+    temporary=root/pointer['path'];receipt=permanent/'validated.json'
+    if not receipt.exists():
+        _,engine,tx,start,source=transaction(root,session,txid)
+        need(session!=start['session'],'first fresh combined startup required')
+        need((tx/'retired.json').exists() or (tx/'aborted.json').exists(),'merge not finished')
+        need(not (root/'_Axis/Flags/merge-pending').exists(),'finish matching merge barriers before startup acceptance')
+        publish_terminal(root,tx,txid,'retired.json' if (tx/'retired.json').exists() else 'aborted.json')
+        if (tx/'retired.json').exists():
+            final_content(root,tx,start)
+            # Names and all imported record links, including ignored/local-only outputs, must validate again.
+            scopes=[str(destination_path(root,op['path'])) for op in start['operations'] if op['path'].endswith('.md')]
+            for args in (['names'],['links',*sum((['--scope',p] for p in scopes),[])]):
+                q=subprocess.run([sys.executable,'-B',str(root/'_Axis/Resources/record-check.py'),'--root',str(root),*args],capture_output=True,timeout=120)
+                need(q.returncode==0,'first combined startup record validation failed')
+        engine.guard()
+        once(receipt,encode({'schema':1,'transaction':txid,'session':session,'plan_sha256':start['plan_sha256'],'engine_sha256':start['engine_sha256'],'source_id':start['preview']['source_id'],'destination_id':start['preview']['destination_id'],'validated':True,'trash':'_Trash/'+datetime.datetime.now(datetime.timezone.utc).date().isoformat()+'--Merge-'+txid}))
+    value=json.loads(read(receipt,4096))
+    need(value.get('schema')==1 and value.get('transaction')==txid and value.get('validated') is True and re.fullmatch(r'_Trash/\d{4}-\d{2}-\d{2}--Merge-'+re.escape(txid),value.get('trash','')),'invalid merge validation receipt')
+    if temporary.exists():
+        _,engine=load_state(root,session);engine.guard();target=root/value['trash'];need(not target.exists(),'merge retirement collision');mkdirs(target.parent);os.rename(plain(temporary,'dir'),target)
+    return {'status':'validated','transaction':txid,'trash':value['trash']}
+
+
 def prepare(root, session, plan_path, approval):
     _, engine = load_state(root, session)
     plan_path = plain(root / plan_path)
@@ -898,8 +955,11 @@ def prepare(root, session, plan_path, approval):
          and '\nmerge-destination-id: ' + view['destination_id'] + '\n' in auth, 'approval project identity binding')
     source = plain(root / view['source'], 'dir')
     operations, objects = check_plan(root, source, plan, plan_path.parent)
-    tx = root / '_Axis/Merges' / approval
-    need(not os.path.lexists(tx), 'transaction exists')
+    permanent = root / '_Axis/Merges' / approval
+    tx = root / ('_Temp/Merge-' + approval)
+    need(not os.path.lexists(tx) and not os.path.lexists(permanent), 'transaction exists')
+    mkdirs(permanent)
+    once(permanent/'recovery.json',encode({'schema':1,'transaction':approval,'path':'_Temp/Merge-'+approval}))
     engine.guard()
     mkdirs(tx / 'objects')
     for sha, data in objects.items():
@@ -938,7 +998,7 @@ def prepare(root, session, plan_path, approval):
 def transaction(root, session, txid):
     module, engine = load_state(root, session)
     need(ID.fullmatch(txid), 'transaction identity')
-    tx = plain(root / '_Axis/Merges' / txid, 'dir')
+    tx = recovery_directory(root,txid)
     start = json.loads(read(tx / 'start.json', PLAN_LIMIT))
     need(start.get('schema') == 2, 'historical merge: use its original pinned engine and original state rules')
     need(start['transaction'] == txid, 'transaction binding')
@@ -994,7 +1054,7 @@ def source_guard(root, start, source, ephemeral=None):
         if op['path'].startswith(view['content_root'] + '/'):
             name = op['path'][len(view['content_root']) + 1:]
             allowed.setdefault(name, []).append({'kind': 'file', 'sha256': op['after'], 'mode': op['mode']})
-    plan = json.loads(read(root / '_Axis/Merges' / start['transaction'] / 'plan.json', PLAN_LIMIT))
+    plan = json.loads(read(recovery_directory(root,start['transaction']) / 'plan.json', PLAN_LIMIT))
     for name in plan['directories']:
         if name.startswith(view['content_root'] + '/'):
             allowed.setdefault(name[len(view['content_root']) + 1:], []).append({'kind': 'dir'})
@@ -1131,6 +1191,7 @@ def apply(root, session, txid, reverse=False):
     need(not (tx / 'accepted.json').exists(), 'accepted merge cannot be blindly rolled back')
     if (tx / 'aborted.json').exists():
         need(reverse, 'aborted transaction')
+        publish_terminal(root,tx,txid,'aborted.json')
         for directory in (source, root):
             flag = directory / '_Axis/Flags/merge-pending'
             if os.path.lexists(flag):
@@ -1285,6 +1346,7 @@ def retire(root, session, txid, source_checkpoint=None):
     need((tx / 'accepted.json').exists(), 'acceptance required')
     need(source_checkpoint is None, 'source Git history is not checkpointed or imported by absorption')
     if (tx / 'retired.json').exists():
+        publish_terminal(root,tx,txid,'retired.json')
         flag = root / '_Axis/Flags/merge-pending'
         if os.path.lexists(flag):
             need(read(flag) == flag_bytes(start), 'foreign pending merge')
@@ -1324,6 +1386,7 @@ def retire(root, session, txid, source_checkpoint=None):
          'mode': 'absorption-v2', 'content_root': start['preview']['content_root'],
          'source_id': start['preview']['source_id'], 'destination_id': start['preview']['destination_id'],
          'source_infrastructure_removed': True, 'source_git_history': 'abandoned'}))
+    publish_terminal(root,tx,txid,'retired.json')
     flag = root / '_Axis/Flags/merge-pending'
     need(read(flag) == flag_bytes(start), 'foreign pending merge')
     flag.unlink()
@@ -1414,7 +1477,7 @@ def main():
     p.add_argument('--session', required=True)
     p.add_argument('--plan', required=True)
     p.add_argument('--approval-log', required=True)
-    for name in ('apply', 'abort', 'finish', 'retire', 'repair-barriers'):
+    for name in ('apply', 'abort', 'finish', 'retire', 'repair-barriers', 'validate-startup'):
         p = sub.add_parser(name)
         p.add_argument('--session', required=True)
         p.add_argument('--transaction', required=True)
@@ -1436,6 +1499,8 @@ def main():
             value = apply(root, args.session, args.transaction, args.command == 'abort')
         elif args.command == 'finish':
             value = finish(root, args.session, args.transaction, args.checkpoint)
+        elif args.command == 'validate-startup':
+            value = validate_startup(root,args.session,args.transaction)
         elif args.command == 'repair-barriers':
             value = repair_barriers(root, args.session, args.transaction)
         else:

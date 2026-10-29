@@ -90,7 +90,7 @@ Use the directory-as-index shape:
 
 Keep Line 1 at or below 80 characters by shortening the display scope; the exact path remains in `scope:`. A Supervision record is WORM once presented. It records what parent Main observed or attempted; it never claims the child performed work without child-side evidence.
 
-The active window is the newest 30 Supervision records. Immediately after writing and verifying a new record, move the oldest excess records unchanged into `_Axis/Archive/Supervision/` until 30 remain. Then Log one parent Event naming the command, record, child scope, outcome, Host action, and any overflow paths. This automatic overflow is reversible, preserves timestamp identity, requires no extra confirmation, and is also repaired by `^refresh`. `^archive` may move additional Supervision history under a User-selected boundary. Nothing automatically deletes Supervision history.
+The active window is the newest 30 Supervision records. Immediately after writing and verifying a new record, move the oldest excess records unchanged into `_Axis/Supervision/Archive/` until 30 remain. Then Log one parent Event naming the command, record, child scope, outcome, Host action, and any overflow paths. This automatic overflow is reversible, preserves timestamp identity, requires no extra confirmation, and is also repaired by `^refresh`. `^archive` may move additional Supervision history under a User-selected boundary. Nothing automatically deletes Supervision history.
 
 ## Message-First Host Acceleration
 
@@ -236,3 +236,5 @@ A parent Main may push an Axis update to **every Axis Project nested anywhere be
 5. For `remove {logical name}`, resolve exactly one Schedule and Environment row, inspect any Host job only through an exact binding, and show the removal plan. Require literal `REMOVE SCHEDULE`. If one Host job exists, remove it and verify absence before retiring portable intent. If the creation record proves no Host job was created, retire directly. Unknown or ambiguous Host state leaves both layers unchanged with manual removal guidance. Preserve definition revisions and occurrence history.
 
 6. Write one Supervision record for completed creation or removal, naming the Schedule, local activation result and manual fallback. `complete` means each requested layer was verified; use `degraded` when the optional trigger is unavailable. Apply overflow, report the result, and STOP.
+
+Storage policy: [Settings > Archiving] = Never suppresses archival moves, including overflow and terminal self-archiving. Preserve terminal fields and report pending placement; never reopen closed work. Otherwise new moves use this family’s local `Archive/`. Legacy Archive Location remains a lookup source only.

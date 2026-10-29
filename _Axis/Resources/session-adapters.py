@@ -49,6 +49,11 @@ def load_record_format():
     return module
 
 
+def load_message_paths():
+    spec=importlib.util.spec_from_file_location('axis_adapter_paths',Path(__file__).with_name('message-paths.py'))
+    module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);return module
+
+
 def exact_root(value):
     path = Path(value)
     if not path.is_absolute() or str(path) != str(path.resolve(strict=True)):
@@ -404,7 +409,7 @@ def _native_identity(adapter, raw, argv):
     return native
 
 
-def _bounded_process(argv, cwd, prompt, seconds, max_output, check, *, launch_state=None, truncate_output=False, output_sink=None, on_launch=None):
+def _bounded_process(argv, cwd, prompt, seconds, max_output, check, *, launch_state=None, truncate_output=False, output_sink=None, on_launch=None, env=None, redact_values=()):
     """Own one fresh process group; keep post-spawn failures as bounded evidence.
 
     PID and cleanup observations are diagnostics, never authority to signal a
@@ -418,6 +423,16 @@ def _bounded_process(argv, cwd, prompt, seconds, max_output, check, *, launch_st
         raise ValueError('cleanup requires default SIGCHLD disposition and sole child reaping ownership')
     check()
     streams = [bytearray(), bytearray()]
+    redactions = tuple(v.encode() if isinstance(v, str) else v for v in redact_values if v)
+    pending_redaction = [b'', b'']
+    tail = max((len(v) for v in redactions), default=1) - 1
+    def redact(index, data, final=False):
+        data = pending_redaction[index] + data
+        for value in redactions: data = data.replace(value, b'[REDACTED]')
+        cut = len(data) if final else max(0, len(data) - tail)
+        pending_redaction[index] = data[cut:]
+        return data[:cut]
+
     output_truncated = False
     input_error = None
     reason = None
@@ -428,7 +443,7 @@ def _bounded_process(argv, cwd, prompt, seconds, max_output, check, *, launch_st
     if launch_state is not None:
         launch_state.update(attempted=True, spawned=False)
     proc = subprocess.Popen(argv, cwd=cwd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE, shell=False, start_new_session=True)
+                            stderr=subprocess.PIPE, shell=False, start_new_session=True, env=env)
     if launch_state is not None:
         launch_state.update(spawned=True, pid=proc.pid, leader_reaped=False, diagnostic_only=True)
     try:
@@ -478,7 +493,9 @@ def _bounded_process(argv, cwd, prompt, seconds, max_output, check, *, launch_st
                 chunk = os.read(key.fileobj.fileno(), 65536)
                 if not chunk:
                     sel.unregister(key.fileobj)
-                    continue
+                    chunk = redact(key.data, b'', final=True)
+                else: chunk = redact(key.data, chunk)
+                if not chunk: continue
                 room = max_output - sum(map(len, streams))
                 captured = chunk[:max(0, room)]
                 streams[key.data].extend(captured)
@@ -591,18 +608,29 @@ def execute_start(adapter, plan, *, store, authority, access, operation, explici
         budget = authority.get('budget')
         if not isinstance(budget, str) or not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._:-]{0,127}', budget):
             raise ValueError('a shared authority budget key is required')
-        if access.get('adapter') != p.adapter or access.get('model') != model or access.get('executable_sha256') != p.executable_sha256 or access.get('mode') != 'included-subscription' or access.get('auth_verified') is not True:
-            raise ValueError('exact included-subscription access has not been verified')
-        when, remaining, reserve = access.get('verified_at'), access.get('remaining_fraction'), access.get('reserve_fraction')
-        if not isinstance(when, (int, float)) or not 0 <= time.time() - when <= 900 or not isinstance(remaining, (int, float)) or not isinstance(reserve, (int, float)) or not .2 <= reserve < remaining <= 1:
-            raise ValueError('fresh allowance evidence above the minimum 20% reserve is required')
+        if access.get('adapter') != p.adapter or access.get('model') != model or access.get('executable_sha256') != p.executable_sha256 or access.get('auth_verified') is not True:
+            raise ValueError('exact authenticated access has not been verified')
+        when = access.get('verified_at')
+        if not isinstance(when, (int, float)) or not 0 <= time.time() - when <= 900:
+            raise ValueError('fresh access evidence required')
         store.validate_authority(access.get('authority', {}))
-        # No credential values are inspected, copied or logged. Refuse API/cloud
-        # auth selectors instead of silently falling back from an included account.
-        forbidden = ('OPENAI_API_KEY', 'CODEX_API_KEY', 'ANTHROPIC_API_KEY', 'ANTHROPIC_AUTH_TOKEN',
-                     'CLAUDE_CODE_USE_BEDROCK', 'CLAUDE_CODE_USE_VERTEX', 'CLAUDE_CODE_USE_FOUNDRY')
-        if any(key in os.environ for key in forbidden):
-            raise ValueError('API/cloud authentication selectors present; no substitution allowed')
+        mode = access.get('mode')
+        if mode == 'included-subscription':
+            remaining, reserve = access.get('remaining_fraction'), access.get('reserve_fraction')
+            if not isinstance(remaining, (int, float)) or not isinstance(reserve, (int, float)) or not .2 <= reserve < remaining <= 1:
+                raise ValueError('fresh allowance evidence above the minimum 20% reserve is required')
+        elif mode == 'api-key':
+            paid = authority.get('api_spend')
+            if not isinstance(paid, dict) or paid.get('currency') != 'USD' or type(paid.get('ceiling_minor')) is not int or paid['ceiling_minor'] <= 0 or access.get('paid_authorized') is not True:
+                raise ValueError('explicit bounded API spending authority required')
+            # This legacy startup dispatcher serializes launches; each intent reserves
+            # the whole grant until authoritative settlement. No implicit fallback.
+        else: raise ValueError('unsupported authentication mode')
+        authspec = importlib.util.spec_from_file_location('axis_launch_access', Path(__file__).with_name('model-access.py'))
+        auth = importlib.util.module_from_spec(authspec); authspec.loader.exec_module(auth)
+        selected = auth.selected(project.root, p.adapter, {'included': mode == 'included-subscription'})
+        if selected != ('subscription' if mode == 'included-subscription' else 'api-key'):
+            raise ValueError('project Model Access differs from verified launch route')
         fresh = adapter.start(project, model, store=store, authority=authority, explicit=True)
         if not fresh.details.get('syntax_verified'):
             raise ValueError(fresh.reason)
@@ -636,6 +664,8 @@ def execute_start(adapter, plan, *, store, authority, access, operation, explici
             raise ValueError('operation already dispatched or uncertain; reconcile retained records')
         if sum(r['data'].get('budget') == budget for r in intents) >= launches:
             raise ValueError('shared launch budget exhausted')
+        if mode == 'api-key' and any(r['data'].get('budget') == budget and r['data'].get('access_mode') == 'api-key' for r in intents):
+            raise ValueError('API startup grant already reserved; reconcile cost and authorize a distinct remaining allocation')
         outcomes = {}
         for row in rows:
             data = row['data']
@@ -656,7 +686,7 @@ def execute_start(adapter, plan, *, store, authority, access, operation, explici
                                data={'protocol': 'axis.session/v1', 'stage': 'dispatch-intent', 'operation': operation, 'budget': budget,
                                      'adapter': p.adapter, 'model': model, 'project': project.project, 'root': project.root,
                                      'executable': p.executable, 'executable_sha256': p.executable_sha256, 'generation': owner['nonce'],
-                                     'authority': store.validate_authority(authority), 'limits': limits})
+                                     'authority': store.validate_authority(authority), 'limits': limits, 'access_mode': mode, 'api_reservation': authority.get('api_spend') if mode == 'api-key' else None})
         intent = record.get('record', record)
         # Release short admission lock before the long subprocess. The immutable
         # intent reserves the sole concurrent slot, including after a crash.
@@ -679,11 +709,14 @@ def execute_start(adapter, plan, *, store, authority, access, operation, explici
         if not gate.details.get('syntax_verified'):
             raise ValueError(gate.reason)
         check()
-        outputs = store.path('_Axis/Messages/' + intent['id'], missing=True, kind='directory')
+        outputs = store.path(str(load_message_paths().resolve(store.root,intent['id']).with_suffix('').relative_to(store.root)), missing=True, kind='directory')
         if outputs.is_symlink() or outputs.parent.is_symlink():
             raise ValueError('unsafe output directory')
         outputs.mkdir(exist_ok=True)
-        local_result = _bounded_process(expected, project.root, plan.details['stdin'], seconds, output, check, launch_state=launch_state)
+        launch_argv, launch_env, metadata = auth.prepare(store.root, p.adapter, expected, mode=selected, paid_authorized=mode == 'api-key')
+        auth.verify_cli(p.adapter,launch_argv,launch_env,project.root)
+        secrets = [launch_env[k] for k in auth.SELECTORS if k in launch_env]
+        local_result = _bounded_process(launch_argv, project.root, plan.details['stdin'], seconds, output, check, launch_state=launch_state, env=launch_env, redact_values=secrets)
         paths = {}
         for name in ('stdout', 'stderr'):
             path = outputs / (name + '.txt')
@@ -728,7 +761,7 @@ def execute_start(adapter, plan, *, store, authority, access, operation, explici
                          'process': dict(launch_state)}
         if intent:
             try:
-                outputs = store.path('_Axis/Messages/' + intent['id'], missing=True, kind='directory')
+                outputs = store.path(str(load_message_paths().resolve(store.root,intent['id']).with_suffix('').relative_to(store.root)), missing=True, kind='directory')
                 if outputs.is_symlink() or outputs.parent.is_symlink():
                     raise ValueError('unsafe local recovery path')
                 outputs.mkdir(exist_ok=True)

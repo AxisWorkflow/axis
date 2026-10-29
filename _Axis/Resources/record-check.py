@@ -32,11 +32,11 @@ import argparse,datetime as dt,hashlib,json,os,re,subprocess,sys
 from pathlib import Path,PurePosixPath
 
 NAME=re.compile(r'\d{4}(?:\.\d{2}){5}\.\d{3}Z\.md')
-FAMILIES=('Audit','CX','Followups','Ideas','Logs','Notes','Reminders','Reviews','Snapshots','Status','Supervision','Tasks','Teams','Messages','Jobs','Schedules')
+FAMILIES=('Audit','CX','Followups','Ideas','Logs','Notes','Reminders','Reviews','Snapshots','Status','Supervision','Tasks','Teams','Messages','Jobs','Schedules','ColdStorage')
 IGNORED=('.gitkeep','.DS_Store')
 WORM={'Logs':'Logs','Snapshots':'Snapshots','CX':'CX reports','Audit':'Audit reports','Reviews':'Review reports',
       'Status':'Status reports','Supervision':'Supervision records','Teams':'Team charters',
-      'Messages':'Messages','Jobs':'Job mandates'}
+      'Messages':'Messages','Jobs':'Job mandates','ColdStorage':'Cold storage locators'}
 LIMIT=50
 
 def valid(name):
@@ -56,7 +56,7 @@ def exact_repo(root):
 def has_head(root):return git(root,'rev-parse','--verify','-q','HEAD^{commit}') is not None
 
 def names(root,since):
-    malformed=[];zero=[];folders=['_Axis/'+f for f in FAMILIES]
+    malformed=[];zero=[];folders=['_Axis/'+f for f in FAMILIES]+['_Axis/'+f+'/Archive' for f in FAMILIES]
     archive=root/'_Axis/Archive'
     if archive.is_dir() and not archive.is_symlink():
         for entry in sorted(archive.iterdir()):
@@ -79,6 +79,18 @@ def names(root,since):
         for entry in sorted(base.iterdir()):
             relative=folder+'/'+entry.name
             if entry.name in IGNORED and not entry.is_symlink():continue
+            if folder in ('_Axis/Messages','_Axis/Messages/Archive') and entry.name in ('Individual','Teams') and entry.is_dir() and not entry.is_symlink():
+                if entry.name=='Individual':folders.append(relative)
+                else:
+                    for team in sorted(entry.iterdir()):
+                        if team.name in IGNORED:continue
+                        if team.is_dir() and not team.is_symlink() and valid(team.name+'.md'):folders.append(team.relative_to(root).as_posix())
+                        else:malformed.append(team.relative_to(root).as_posix())
+                continue
+            if folder.startswith('_Axis/Messages/') and entry.is_dir() and not entry.is_symlink() and valid(entry.name+'.md') and (base/(entry.name+'.md')).is_file():continue
+            if entry.name=='Archive' and folder.count('/')==1 and entry.is_dir() and not entry.is_symlink():continue
+            if entry.name=='COLD.md' and folder.endswith('/Archive') and entry.is_file() and not entry.is_symlink():continue
+            if folder=='_Axis/ColdStorage' and entry.is_dir() and not entry.is_symlink() and valid(entry.name+'.md') and (base/(entry.name+'.md')).is_file():continue
             if folder.endswith(('/Teams','/Messages')) and entry.is_dir() and not entry.is_symlink() and valid(entry.name+'.md') and (base/(entry.name+'.md')).is_file() and not (base/(entry.name+'.md')).is_symlink() and (base/(entry.name+'.md')).stat().st_nlink==1:continue
             if entry.is_symlink() or not entry.is_file() or not valid(entry.name):malformed.append(relative)
             else:found.append(relative)
@@ -113,10 +125,11 @@ def rule(root,path):
     parts=path.split('/')
     if len(parts)<3 or parts[0]!='_Axis' or parts[-1] in IGNORED:return None
     family=parts[1]
-    if family=='Archive':return 'archived history is write-once'
+    if parts[-1]=='COLD.md' and len(parts)>3 and parts[2]=='Archive':return None
+    if family=='Archive' or len(parts)>3 and parts[2]=='Archive':return 'archived history is write-once'
     if family=='Updates':return None if parts[-1]=='operation.lck' else 'update evidence is write-once'
     if family in ('Merges','Splits','Repairs'):return 'transaction history is write-once and retained'
-    if family in WORM and (family not in ('Teams','Messages','Jobs') or len(parts)==3):return WORM[family]+' are write-once'
+    if family in WORM and (family not in ('Teams','Jobs') or len(parts)==3):return WORM[family]+' are write-once'
     if family in ('Tasks','Followups','Reminders') and len(parts)==3:
         data=git(root,'show','HEAD:'+path)
         if data is None:return None
@@ -148,9 +161,44 @@ def compaction_exempt(root,added):
         except (ValueError,KeyError,TypeError,AttributeError):continue
     return removed
 
+def harmonization_exempt(root,added):
+    """Exact staged repairs covered by a newly completed, scope-bound adoption."""
+    allowed=set()
+    for receipt_path in added:
+        if not re.fullmatch(r'_Axis/Updates/'+IDENT.pattern+r'/completed\.json',receipt_path):continue
+        tx=receipt_path.split('/')[2];prefix=receipt_path.rsplit('/',1)[0]+'/'
+        try:
+            receipt=json.loads(git(root,'show',':'+receipt_path).decode(),object_pairs_hook=_json_unique)
+            raw=git(root,'show',':'+prefix+'harmonization.json')
+            if not raw or hashlib.sha256(raw).hexdigest()!=receipt.get('harmonization_sha256'):continue
+            report=json.loads(raw.decode(),object_pairs_hook=_json_unique)
+            if receipt.get('schema')!=2 or receipt.get('outcome')!='consumed' or receipt.get('transaction')!=tx:continue
+            if report.get('status')!='best-effort-complete' or report.get('outcome') in ('skipped','restored'):continue
+            if any(report.get(k)!=receipt.get(k) for k in ('transaction','target_commit','plan_sha256','engine_sha256')):continue
+            if report.get('target_version')!=receipt.get('to_version') or report.get('conventions')!='axis-layout/v3.08':continue
+            authority=receipt['authorization']
+            if authority['record']!='_Axis/Logs/'+tx+'.md':continue
+            auth=git(root,'show',':'+authority['record'])
+            if not auth or hashlib.sha256(auth).hexdigest()!=authority['sha256']:continue
+            lines=auth.decode().splitlines()
+            if [v for v in lines if v.startswith('plan_scope_sha256:')]!=['plan_scope_sha256: '+report['plan_scope_sha256']]:continue
+            if [v for v in lines if v.startswith('engine_sha256:')]!=['engine_sha256: '+receipt['engine_sha256']]:continue
+            accepted=set()
+            for change in report['dispositions']:
+                old,new=change['source'],change['target']
+                if not all(_safe_relative(n) and n.split('/')[0] in ('_Axis','_Memos','_Wiki','_Dev') and not any(p in {'Secrets','Agents','Flags','Tracking','.git','.codex','.claude','.gemini','Updates','Resources','Rules','Practices','Commands'} or p.endswith(('_U','_X')) for p in n.split('/')) for n in (old,new)):raise ValueError('repair outside content scope')
+                before=git(root,'show','HEAD:'+old);after=git(root,'show',':'+new)
+                if before is None or after is None:continue
+                if any(len(data)!=change[side]['bytes'] or hashlib.sha256(data).hexdigest()!=change[side]['sha256'] for data,side in ((before,'before'),(after,'after'))):continue
+                if old!=new and git(root,'show',':'+old) is not None:continue
+                accepted.update((old,new))
+            allowed.update(accepted)
+        except (ValueError,KeyError,TypeError,AttributeError,UnicodeError):continue
+    return allowed
+
 def update_exempt(root,added):
     """Paths named by an update transaction whose evidence this commit adds (apply, adoption or rollback)."""
-    exempt=compaction_exempt(root,added)
+    exempt=compaction_exempt(root,added)|harmonization_exempt(root,added)
     for tx in sorted({p.split('/')[2] for p in added if p.startswith('_Axis/Updates/') and p.count('/')>=3}):
         data=git(root,'show',':_Axis/Updates/'+tx+'/start.json')
         try:
@@ -504,7 +552,7 @@ def move_receipt(root,session,source,target,reason,recover=False):
 def reference_history(root,known,names,reader,paths,revision=None):
     history={}
     for path in paths:
-        if not re.fullmatch(r'_Axis/(?:Archive/)?Logs/'+IDENT.pattern+r'\.md',path):continue
+        if not re.fullmatch(r'_Axis/(?:Archive/)?Logs/(?:Archive/)?'+IDENT.pattern+r'\.md',path):continue
         try:value=receipt_data(reader(path))
         except ExceptionsError:continue
         if not value or value.get('kind')!='move' or set(value)-{'source_commit'}!={'schema','kind','source','target','sha256','reason'}:continue
@@ -595,6 +643,31 @@ def identities(root,arch):
     except OSError:pass
     return known
 
+def cold_references(known,names,reader,paths):
+    catalog={}
+    for rel in paths:
+        if not re.fullmatch(r'_Axis/ColdStorage/'+IDENT.pattern+r'\.md',rel):continue
+        raw=reader(rel)
+        if raw is None:continue
+        blocks=re.findall(rb'```axis-cold-storage\n(.*?)\n```',raw,re.S)
+        if len(blocks)!=1:raise ExceptionsError('invalid cold locator: '+rel)
+        value=json.loads(blocks[0],object_pairs_hook=_json_unique);files=value['files'];identity=Path(rel).stem
+        canonical=(json.dumps(files,sort_keys=True,indent=2)+'\n').encode()
+        if value.get('schema')!=1 or value.get('id')!=identity or value.get('manifest_sha256')!=hashlib.sha256(canonical).hexdigest():raise ExceptionsError('invalid cold manifest: '+rel)
+        # Original IDs remain reserved even while copying or while the external device is offline.
+        for item in files:
+            src=item['source']
+            if not _safe_relative(src) or not re.fullmatch('[0-9a-f]{64}',item['sha256']):raise ExceptionsError('unsafe cold member')
+            if item.get('record_id'):known.add(item['record_id'])
+        receipt=reader('_Axis/ColdStorage/'+identity+'/copied.json')
+        if receipt is None:continue
+        proof=json.loads(receipt,object_pairs_hook=_json_unique)
+        if proof!={'schema':1,'id':identity,'manifest_sha256':value['manifest_sha256']}:raise ExceptionsError('invalid cold copy receipt')
+        for item in files:
+            if item['source'] in catalog:raise ExceptionsError('duplicate cold source identity')
+            catalog[item['source']]=rel
+    names['__cold__']=catalog
+
 def context(root,scopes,with_archive):
     """Files in scope with their text, plus everything an identifier or link may resolve to."""
     arch=archive_root(root);known=identities(root,arch);files=[]
@@ -618,8 +691,9 @@ def context(root,scopes,with_archive):
     if arch:
         for q in arch.rglob('*.md'):names.setdefault(q.name,[]).append(q)
     logs=[p.relative_to(root).as_posix() for p in (root/'_Axis/Logs').glob('*.md')]
-    logs += [p.relative_to(root).as_posix() for p in (root/'_Axis/Archive/Logs').glob('*.md')]
+    logs += [p.relative_to(root).as_posix() for base in (root/'_Axis/Archive/Logs',root/'_Axis/Logs/Archive') for p in base.glob('*.md')]
     reference_history(root,known,names,lambda p:_working_source(root,p),logs)
+    cold_references(known,names,lambda p:_working_source(root,p),[p.relative_to(root).as_posix() for p in (root/'_Axis/ColdStorage').glob('*.md')])
     return arch,known,names,texts
 
 def snapshot_context(root,revision):
@@ -656,6 +730,7 @@ def snapshot_context(root,revision):
         except ValueError:return path.exists()
         return rel in present
     reference_history(root,known,names,reader,entries,revision)
+    cold_references(known,names,reader,entries)
     return arch,known,names,texts,reader,exists
 
 def coordination_metadata_lines(text,rel):
@@ -728,6 +803,9 @@ def scan(root,arch,known,names,f,text,rel,exists=None):
             t=unquote(target.split('#',1)[0].split('?',1)[0])
             if not t or (exists(f.parent/t) if exists else (f.parent/t).exists()):continue
             local=Path(os.path.normpath((f.parent/t).as_posix()))
+            cold=names.get('__cold__',{}).get(local.relative_to(root).as_posix()) if local.is_relative_to(root) else None
+            if cold:
+                out.append(('HISTORICAL-LINK',i,target+' -> cold locator '+cold,worm));continue
             alias=names.get('__history__',{}).get(local.relative_to(root).as_posix()) if local.is_relative_to(root) else None
             if alias:
                 out.append(('HISTORICAL-LINK',i,target+' -> '+alias,worm));continue

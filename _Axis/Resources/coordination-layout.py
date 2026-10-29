@@ -4,6 +4,19 @@ import argparse,importlib.util,json,os,stat,sys
 from pathlib import Path
 FAMILIES=('Submissions','Messages','Teams','Jobs','Schedules')
 
+def empty_messages(folder):
+    # Only the shipped structural skeleton is an empty family. Never ignore
+    # unknown folders or records while constructing a zero-count index.
+    allowed={'Individual','Teams','Archive','Archive/Individual','Archive/Teams'}
+    for p in folder.rglob('*'):
+        rel=p.relative_to(folder).as_posix()
+        if p.is_symlink():return False
+        if p.is_dir():
+            if rel not in allowed:return False
+        elif p.name not in ('.gitkeep','.DS_Store') or not p.is_file() or p.name=='.gitkeep' and p.stat().st_size:return False
+    return True
+
+
 def harmonize(startup):
     startup.guard()
     axis=startup.path('_Axis',kind='directory')
@@ -21,7 +34,7 @@ def harmonize(startup):
         name='_Axis/'+family.upper()+'.md';index=startup.path(name,missing=True)
         if index.exists():continue
         # An absent populated index needs canonical projection, never an invented zero count.
-        if folder.exists() and any(p.name not in ('.gitkeep','.DS_Store') for p in folder.iterdir()):raise ValueError('missing index for populated family; rebuild canonically before startup: '+name)
+        if folder.exists() and (not empty_messages(folder) if family=='Messages' else any(p.name not in ('.gitkeep','.DS_Store') for p in folder.iterdir())):raise ValueError('missing index for populated family; rebuild canonically before startup: '+name)
         indexes.append((name,('# '+family+'\n> **Purpose:** Show cached coordination state; records and accepted events are authoritative.\n\npending-count: 0\nverified: never\n\n| ID | Subject | State | Head |\n| --- | --- | --- | --- |\n').encode()))
     for family in ('Merges',*FAMILIES):
         if family in missing:continue

@@ -9,10 +9,10 @@
 - Files in `_Axis/Audit/` are WORM, once saved and presented to User.
 - Memos, Reviews included, are editable ([Practices > Memos]); a Review is a record by its own statement, not a WORM record.
 - Files in `_Axis/Supervision/` are WORM, once saved and presented to User.
-- Files in `_Axis/Followups/` are mutable only while open; terminal Follow-Ups move to `_Axis/Archive/Followups/` and are WORM.
-- Files in `_Axis/Reminders/` are mutable only while open; terminal Reminders move to `_Axis/Archive/Reminders/` and are WORM.
+- Files in `_Axis/Followups/` are mutable only while open; terminal Follow-Ups move to `_Axis/Followups/Archive/` and are WORM.
+- Files in `_Axis/Reminders/` are mutable only while open; terminal Reminders move to `_Axis/Reminders/Archive/` and are WORM.
 - In a write-once record, cite another record by its bare identifier and family (for example `Log 2026.05.18.22.33.24.230Z`), not by a relative link: paths change when records are archived, identifiers never do. Links are fine in editable files, which `^refresh` repairs.
-- Exact reference correction is one narrow edit exception: follow [Practices > LinkMaintenance] for Permissions, evidence, the narrow helper and correction Log. Autonomous never asks for repair permission; Default confirms only exceptional or drastic cases; Restricted confirms every repair. The only additional exception is audited, meaning-preserving prose whitespace repair at Fault Tolerance 2 under [Practices > FaultTolerance]. No other content changes. Preserve intentional quotations through exact exceptions, not rewritten history; sealed evidence, update receipts and checked Coordination history remain unchanged.
+- Exact reference correction is one narrow edit exception: follow [Practices > LinkMaintenance] for Permissions, evidence, the narrow helper and correction Log. Autonomous never asks for repair permission; Default confirms only exceptional or drastic cases; Restricted confirms every repair. The only additional exception is audited, meaning-preserving prose whitespace repair at Fault Tolerance 2 under [Practices > FaultTolerance]. Verified release adoption also permits the transaction-scoped convention repairs in [Check-Update-Handoff], including WORM filenames, wrappers and links. Preserve actual facts, authorship, event dates, failures and spending; ambiguous repairs stay unchanged. The completed adoption receipt binds exact preimages, replacements and path mappings for record checks. Outside that transaction, no other content changes. Preserve intentional quotations through exact exceptions, not rewritten history; sealed evidence, update receipts and checked Coordination history remain unchanged.
 - Logs and Snapshots are retained indefinitely unless User moves inactive history through `^archive`; archived copies remain unchanged and WORM.
 - Never overwrite a Review - each has its own timestamped file.
 - Task Status values are: Active, Blocked, Completed, Cancelled.
@@ -26,13 +26,13 @@
 - Marker files: Line 1=Subject (`Main: session`, `External: {host}`, or `Subagent: {role}`), Line 2=blank. Main and External Markers carry `session: {Session ID}` plus the host; Subagent Markers carry start time, return condition, and Log pointer.
 - CX Report files: Line 1=`CX: {topic}`; Audit Report files: Line 1=`Audit: {topic}`; Review files: Line 1=`Review: {topic}`; Supervision files: Line 1=`Supervision: {action} - {scope}` (each ≤ 80 chars).
 - Directive entries in `DIRECTIVES.md`: a `## {name}` heading with `#### Keywords` / `#### Description` / `#### Triggers` / `#### Behavior` subsections.
-- Archive the oldest excess Notes when count exceeds **Max Notes** in Settings.
+- At Default/Aggressive Archiving, archive eligible excess Notes after reviewing current guidance; Never reports excess without moving.
 - Automatic Note archiving is purely count-based - there is no time-based expiry of Notes.
-- Archive storage is reversible and lives under `_Axis/Archive/{record-family}/`, resolved through [Settings > Archive Location]; WORM records retain their bytes and timestamp identities.
-- Only Completed or Cancelled Tasks may be archived. Their canonical index entries remain and link to `Archive/Tasks/{timestamp}.md`.
-- Open Follow-Ups live only in `_Axis/Followups/`; terminal Follow-Ups self-archive unchanged under `_Axis/Archive/Followups/` and are never restored.
-- Open Reminders live only in `_Axis/Reminders/`; terminal Reminders self-archive unchanged under `_Axis/Archive/Reminders/` and reopening creates a new identity.
-- `_Axis/Supervision/` keeps the newest 30 active records; oldest excess records move unchanged to `_Axis/Archive/Supervision/` and remain WORM.
+- Local archives live under `_Axis/{record-family}/Archive/`; cold storage is external with local catalogs. Legacy Archive Location remains readable. WORM bytes and original IDs remain protected.
+- Only Completed or Cancelled Tasks may be archived. After verified movement, remove their active index entries and retain a family Archive pointer; archived status remains discoverable.
+- Open Follow-Ups live only in `_Axis/Followups/`; terminal Follow-Ups self-archive unchanged unless Archiving Never retains them locally under `_Axis/Followups/Archive/` and are never restored.
+- Open Reminders live only in `_Axis/Reminders/`; terminal Reminders self-archive unchanged unless Archiving Never retains them locally under `_Axis/Reminders/Archive/` and reopening creates a new identity.
+- `_Axis/Supervision/` keeps the newest 30 active records; oldest excess records move unchanged to `_Axis/Supervision/Archive/` and remain WORM.
 
 - Merge journals, preserved objects and retirement receipts in `_Axis/Merges/` are retained write-once history; never edit, delete or relocate them without explicit scoped authority.
 - Durable update evidence in `_Axis/Updates/` is append-only; never rewrite a completed receipt or erase interrupted prefixes. It is project state, never Temp or release content.

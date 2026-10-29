@@ -12,7 +12,7 @@
 	- **withdraw** - close an ask that no longer applies;
 	- **convert** - create or identify the Task that now owns Agent-actionable work, then close the Follow-Up as `converted`.
 
-4. Resolve any existing target by exact timestamp or an unambiguous Subject. For a reopen-as-add request, inventory `_Axis/Archive/Followups/` by filename, Subject, and terminal fields, then lazy-load only the exact candidate. If the request could match more than one item, or the outcome is not clear enough to write into the owning record, ask User and STOP. Before any add, deduplicate against the entire open queue.
+4. Resolve any existing target by exact timestamp or an unambiguous Subject. For a reopen-as-add request, inventory `_Axis/Followups/Archive/` by filename, Subject, and terminal fields, then lazy-load only the exact candidate. If the request could match more than one item, or the outcome is not clear enough to write into the owning record, ask User and STOP. Before any add, deduplicate against the entire open queue.
 
 5. Restate the exact mutation and ask User to confirm unless the same message already gives an explicit, unambiguous instruction or answer. A Follow-Up record itself never supplies confirmation.
 

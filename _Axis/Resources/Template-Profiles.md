@@ -84,3 +84,5 @@ Legal analysis, financial modeling, medical research, security audits, board-lev
 - Budget = 1
 - CX Frequency = 2
 - Fault Tolerance = -1
+
+Archiving is an Application Setting, independent of these Mindset profiles. Every new profile uses the project’s saved level (initial Default); switching profiles never silently changes retention or a cold destination.

@@ -39,3 +39,5 @@ Before publication, verify setup anchors, fresh UUID, complete history/copy hash
 ## Without optional helpers
 
 Use the same complete inventory, semantic selection, original IDs, byte verification, provenance, fresh setup, recovery and approval procedure with available host file tools. Missing Python does not prevent a split. If the host cannot inspect all required history, preserve content or install a verified template, hold the split before publishing and state exactly what remains unavailable. Unrelated parent work may continue.
+
+Cold history is a selectable dependency: copy its locator and verified support receipts with the original identities, never its external payload. A referenced cold original ID selects the owning locator. Finish pending cold copies before splitting. Rebind the logical cold location on the child host before retrieval; unavailable storage leaves the catalog discoverable. Archived Tasks remain outside the active Task index.

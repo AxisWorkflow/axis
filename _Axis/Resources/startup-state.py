@@ -24,9 +24,9 @@ except ImportError:
     fcntl = None
 
 ID = re.compile(r'\d{4}(?:\.\d{2}){5}\.\d{3}Z')
-FAMILIES = ('Agents','Audit','CX','Followups','Ideas','Logs','Notes','Reminders','Reviews','Snapshots','Status','Supervision','Tasks','Teams','Messages','Jobs','Schedules')
+FAMILIES = ('Agents','Audit','CX','Followups','Ideas','Logs','Notes','Reminders','Reviews','Snapshots','Status','Supervision','Tasks','Teams','Messages','Jobs','Schedules','ColdStorage')
 # Reviews/ arrives with the first ^review on projects updated from 2.00; Status/ is the pre-2.01 name it replaces.
-OPTIONAL_FAMILIES = ('Reviews','Status','Teams','Messages','Jobs','Schedules')
+OPTIONAL_FAMILIES = ('Reviews','Status','Teams','Messages','Jobs','Schedules','ColdStorage')
 CAPS = ('model','host-spawn','host-parallel','host-shell','host-local-llm','host-cloud-sync','host-storage')
 OWNER_KEYS = {'schema','kind','token','session','host','phase','starting_log','started_log'}
 
@@ -377,6 +377,19 @@ class Startup:
                         else:
                             regular(info,name)
                             if entry.name==candidate+'.md' or (label=='_Memos' and entry.name.startswith(candidate+' - ') and entry.name.endswith('.md')):occupied=True
+        # Admission reserves cold IDs as data; it never loads another executable.
+        cold='_Axis/ColdStorage'
+        if os.path.lexists(self.root/cold):
+            for path in self.path(cold,kind='directory').glob('*.md'):
+                name=cold+'/'+path.name;parse_stamp(path.stem)
+                text=self.read(name,limit=131072)
+                blocks=re.findall(r'```axis-cold-storage\n(.*?)\n```',text,re.S)
+                need(len(blocks)==1,'cold_catalog',name)
+                value=json.loads(blocks[0]);need(value.get('schema')==1 and value.get('id')==path.stem and isinstance(value.get('files'),list),'cold_catalog',name)
+                for item in value['files']:
+                    need(isinstance(item,dict) and 'record_id' in item,'cold_catalog',name)
+                    ident=item['record_id']
+                    if ident is not None:parse_stamp(ident);occupied=occupied or ident==candidate
         return occupied
 
     def release_timestamp(self, relative, body, expected_identity, deadline):
@@ -385,12 +398,15 @@ class Startup:
         need(self.read(relative+'/OWNER')==body,'timestamp_owner',relative)
         os.unlink(self.path(relative+'/OWNER'));os.rmdir(self.path(relative,kind='directory'))
 
-    def record(self, family, body, initial=None, bootstrap=False, renew_lease=True, memo_subject=None):
+    def record(self, family, body, initial=None, bootstrap=False, renew_lease=True, memo_subject=None, message_directory=None):
         need(type(renew_lease) is bool,'renew_lease')
+        if message_directory is not None:
+            need(family=='Messages' and (message_directory=='_Axis/Messages/Individual' or re.fullmatch(r'_Axis/Messages/Teams/\d{4}(?:\.\d{2}){5}\.\d{3}Z',message_directory)), 'message_directory')
+            self.path(message_directory,kind='directory')
         candidate=initial or stamp();parse_stamp(candidate)
         for _ in range(1000):
             content=body(candidate)
-            raw=content.encode();record_limit=131072 if family in ('Teams','Messages','Jobs','Schedules') else 65536
+            raw=content.encode();record_limit=131072 if family in ('Teams','Messages','Jobs','Schedules','ColdStorage') else 65536
             need(len(raw)<=record_limit,'record_too_large',family)
             if bootstrap:self.owner_check()
             else:self.guard()
@@ -409,7 +425,7 @@ class Startup:
                 need(not self.exists('_Axis/Agents/'+candidate+'.kill'),'lease_killed','_Axis/Agents/'+candidate+'.md');self.owner_check()
             else:self.guard()
             need(self.read(relative+'/OWNER')==owner,'timestamp_owner',relative)
-            name=('_Memos/'+candidate+' - '+memo_subject+'.md') if memo_subject is not None else ('_Axis/'+family+'/'+candidate+'.md');destination=self.path(name,missing=True)
+            name=('_Memos/'+candidate+' - '+memo_subject+'.md') if memo_subject is not None else ((message_directory or '_Axis/'+family)+'/'+candidate+'.md');destination=self.path(name,missing=True)
             need(time.monotonic()-started<10,'claim_expired',relative)
             fd=os.open(destination,os.O_RDWR|os.O_CREAT|os.O_EXCL|os.O_NOFOLLOW,0o644)
             try:write_fd(fd,raw);need(read_fd(fd,name,record_limit)==raw,'record_readback',name)
@@ -494,7 +510,7 @@ class Startup:
                     need(metadata(path)==before,'index_changed',name)
                 finally:os.close(fd)
                 files={};directories={}
-                for relative in (family,'Archive/'+family):
+                for relative in (family,family+'/Archive','Archive/'+family):
                     directory='_Axis/'+relative
                     if relative.startswith('Archive/') and outside is not None:
                         directory=str(outside/family);folder=outside/family
@@ -504,7 +520,7 @@ class Startup:
                         if not archive.exists():continue
                         directory=inside+'/'+family
                         folder=self.path(directory,missing=True,kind='directory')
-                    else:folder=self.path(directory,kind='directory')
+                    else:folder=self.path(directory,missing=True,kind='directory')
                     if not folder.exists():continue
                     directories[relative]=metadata(folder)
                     with os.scandir(folder) as listing:
@@ -512,6 +528,8 @@ class Startup:
                             need(time.monotonic()<deadline,'inspection_limit')
                             need(len(files)<10000,'inspection_limit',directory)
                             item=relative+'/'+entry.name;info=entry.stat(follow_symlinks=False)
+                            if relative==family and entry.name=='Archive' and stat.S_ISDIR(info.st_mode) and not stat.S_ISLNK(info.st_mode):continue
+                            if relative.endswith('/Archive') and entry.name=='COLD.md' and stat.S_ISREG(info.st_mode):continue
                             regular(info,directory+'/'+entry.name)
                             if entry.name=='.gitkeep':continue
                             need(entry.name.endswith('.md') and ID.fullmatch(entry.name[:-3]),'unexpected_entry',directory+'/'+entry.name)
@@ -533,7 +551,7 @@ class Startup:
                 if len(matches)!=1 or section.count('[Details...]')!=1:
                     issue(family,'entry_link_count','entry '+str(number))
                 for link in matches:
-                    found=re.fullmatch(r'(?:Archive/)?'+family+r'/('+ID.pattern+r')\.md',link)
+                    found=re.fullmatch(r'(?:Archive/)?'+family+r'/(?:Archive/)?('+ID.pattern+r')\.md',link)
                     if found:
                         try:parse_stamp(found[1])
                         except Fault:found=None
@@ -546,7 +564,7 @@ class Startup:
                 if count!=1:issue(family,'duplicate_link',link)
                 if link not in files:issue(family,'missing_detail',link)
             for name in files:
-                if name not in linked:issue(family,'unindexed_detail',name)
+                if name not in linked and not name.startswith((family+'/Archive/','Archive/'+family+'/')):issue(family,'unindexed_detail',name)
                 record=name.rsplit('/',1)[-1]
                 if record in identities:issue(family,'duplicate_identity',name)
                 identities[record]=name

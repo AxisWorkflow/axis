@@ -22,6 +22,8 @@ A trashed item stays recoverable for at least **2 days**. Automatic sweeps delet
 ## Boundaries
 
 - `_Trash/` is excluded from version control except its `.gitkeep`, and a release ships it empty with exactly that placeholder.
-- WORM records (Logs, Snapshots, CX, Audit, Status, terminal Tasks) and archived history belong in [Practices > Archiving], not here - Archive preserves, Trash destroys. Trash one only on User's explicit, named instruction.
+- WORM records (Logs, Snapshots, CX, Audit, Status, terminal Tasks) and archived history belong in [Practices > Archiving], not here - Archive preserves, Trash destroys. Trash one only on User's explicit, named instruction. The narrow cold-offload exception retires only the redundant local source after external hash verification and durable catalog checkpoint under [Practices > Archiving]; the canonical external history and local locator remain. It never deletes cold history.
 - Each Subproject has its own `_Trash/`; a parent never sweeps a child's Trash.
 - `_Trash/` is not storage: never park work in it, and never read trashed content back into work without restoring it first.
+
+Before sweeping, inspect update/merge recovery pointers and exclude any still-required recovery regardless of its apparent age. Verified completion places recovery in dated Trash; ordinary two-day removal then applies, even with Archiving Never. Do not make a fresh rollback copy of the Trash.

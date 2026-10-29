@@ -160,6 +160,7 @@ def collect(root, detail):
     data = {
         'generated': now.strftime('%Y-%m-%d %H:%M'), 'project': name, 'version': version, 'folder': str(root),
         'model': model_name(model),
+        'model_access': next((v for v in read(ax/'Flags/model-access').splitlines()[:1] if v in {'subscription','api-key'}),'unverified'),
         'context': context_method(read(ax / 'SETTINGS.md')),
         'decisions': [{'initiative': i['name'], 'next': i['next']} for i in inits if i['status'] in ('Active', 'Blocked') and i['next']],
         'direction': direction, 'tasks': count, 'active': active, 'blocked': blocked,
@@ -266,7 +267,7 @@ def text(d, width, color):
     home = os.path.expanduser('~'); path = d['root']
     path = '~' + path[len(home):] if path == home or path.startswith(home + '/') else path
     row = lambda k, v: f"    {(k + ':').ljust(13)}{v}"
-    out += [row('Project', d['project']), row('Path', path), row('Model', d['model']), row('Context', d['context']), '',
+    out += [row('Project', d['project']), row('Path', path), row('Model', d['model']), row('Access', d.get('model_access','unverified')), row('Context', d['context']), '',
             row('Tasks', f"{t['Active']} active / {t['Blocked']} blocked"), row('Follow-Up', len(d['followups'])),
             row('Reminders', len(d['reminders'])), row('Agents', len(d['agents'])), row('Version', d['version']), '', rule, '']
     full = d['detail'] == 'full'

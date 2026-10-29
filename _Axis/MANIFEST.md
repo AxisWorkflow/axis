@@ -222,6 +222,13 @@ Optional project state: `EXCEPTIONS.md` in the Axis control folder, created on f
 
 ### Resources
 
+- `_Axis/Resources/axis-launch.py` - Optional tmux project launcher and reattachment.
+- `_Axis/Resources/model-access.py` - Shared launch-time subscription/API credential selector.
+- `_Axis/Resources/message-paths.py` - Nested, archived and legacy Message identity lookup.
+- `_Axis/Resources/message-archive.py` - Closed, integrated and settled Message retention.
+- `_Axis/Resources/team-allocation.py` - Main-issued independent Team resource grants and settlement.
+- `_Axis/Resources/adoption-harmonize.py` - Verified adoption's best-effort convention repairs and temporary recovery.
+
 - `_Axis/Resources/external-team.py` - Scoped External proposal Team operations; no provider launch.
 
 - `_Axis/Resources/coordination-layout.py` - Missing-only coordination state layout during owned Main startup.
@@ -271,6 +278,7 @@ Optional project state: `EXCEPTIONS.md` in the Axis control folder, created on f
 - `_Axis/Resources/Draft-Mindset.md`
 - `_Axis/Resources/Lock-File.md`
 - `_Axis/Resources/Check-Update-Handoff.md`
+- `_Axis/Resources/archive-storage.py` - optional policy inventory, checked cold copy/resume/retrieval and recovery protection.
 - `_Axis/Resources/update-transaction.py`
 - `_Axis/Resources/Load-Project-Overlay.md`
 - `_Axis/Resources/Lifecycle-Presentation.md`
@@ -305,3 +313,5 @@ Optional project state: `EXCEPTIONS.md` in the Axis control folder, created on f
 - `_Axis/Wiki/Library-Activity.md`
 - `_Axis/Wiki/Library-Status.md`
 - `_Axis/Wiki/Library-Schema.md`
+
+Cold history metadata is created on first use in `_Axis/ColdStorage/`; detail files use timestamp IDs, with copied receipts in matching support directories. Family-local `Archive/` folders and reserved `COLD.md` catalogs are created on demand. No live cold payload ships in the template.
