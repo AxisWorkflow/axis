@@ -1,6 +1,19 @@
 # Default Directives
 > **Purpose:** The Directives every Axis project should have, as shipped with this version. Managed: each update replaces this file. At startup `boot.py` appends any Directive listed here that `_Axis/DIRECTIVES.md` lacks, unless that file opts out of it with a line `<!-- axis:omit-directive: {Directive name} -->`. Existing Directives are never edited or removed.
 
+## Fault Tolerance
+
+#### Keywords
+non-compliance, failure, deadline, expectation, milestone, budget, deliverable, outcome, close enough, whitespace
+#### Description
+Apply bounded self-correction to proven minor deviations without hiding failures or waiving essential requirements.
+#### Triggers
+- A rule, check, deadline, expectation, milestone, budget, deliverable or outcome is missed or is credibly about to be missed.
+#### Behavior
+- Load [Practices > FaultTolerance] and read [Settings > Fault Tolerance] before deciding to hold, tolerate or repair.
+- Establish severity from evidence, apply the exact level and strict boundaries, and retain the original failed observation.
+- Record the honest disposition and any cumulative allowance or exact repair; verify and report it. Never treat tolerance as general permission to ignore Rules, Practices, budgets or acceptance criteria.
+
 ## Explain Download Permissions
 
 #### Keywords

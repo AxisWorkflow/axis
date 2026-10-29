@@ -27,6 +27,7 @@ Drafting short emails, summarizing articles, casual research questions, brainsto
 - Transparency = -1
 - Budget = -1
 - CX Frequency = 0
+- Fault Tolerance = 2
 
 ## Standard Profile
 
@@ -54,6 +55,7 @@ Personal writing projects, software prototypes, internal documents, ongoing crea
 - Transparency = 0
 - Budget = 0
 - CX Frequency = 1
+- Fault Tolerance = 1
 
 ## Deep Profile
 
@@ -81,3 +83,4 @@ Legal analysis, financial modeling, medical research, security audits, board-lev
 - Transparency = 2
 - Budget = 1
 - CX Frequency = 2
+- Fault Tolerance = -1

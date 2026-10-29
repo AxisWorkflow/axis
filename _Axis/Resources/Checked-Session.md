@@ -1,6 +1,8 @@
 # Checked Session Tools
 > **Purpose:** Run explicitly scoped reads, complete coordination replay and atomic record creation through an optional bounded tool interface.
 
+Proposal-Team members use the same Team mode under [Practices > ExternalTeams]. The broker checks the live External owner as well as the dispatched member and reports proposal classification and `return_to: owner`; it grants no ordinary Main tools. Proposal scope is enforced by these tools, not by unrelated host tools. Main-only selected closing and replay remain unavailable to External controllers.
+
 Load only when configuring or using checked session tools, or when complete coordination replay is required. Python is optional; the ordinary file workflow and manual record protocol remain available. Do not describe an ordinary shell session as confined by this helper.
 
 For a delegated Team member, use the Team mode below instead of the Main procedure.
@@ -21,6 +23,8 @@ For a delegated Team member, use the Team mode below instead of the Main procedu
 Bind the installed helper to the actual dispatched member with `--team {TEAM_ID} --job {JOB_ID} --attempt {ATTEMPT} --epoch {JOB_EPOCH}`, plus the same `--root`, `--session` and finite `--expires`. Team mode refuses all Main replay, record, save, index, shutdown and presentation grants. Optional exact `--read-path` inputs remain read-only. Apply the host-boundary verification above; this interface does not disable other host tools by itself.
 
 The tools are `team_info`, `inbox`, `read_message`, `observe_message`, `send_message`, `read_member_file`, `write_draft`, `delete_draft`, `publish_artifact` and own `track`; `read_file` appears only for exact launcher-granted inputs. Identity and scopes come from the launcher, never tool arguments. A member cannot supply another slot to a write or acquire Main tools. File paths are relative to that member's `work/`; peer reads name the peer slot explicitly. Published revisions are checked against their canonical announcement before reading.
+
+Active Team tool requests renew only the member's existing validated Marker when it is at least 30 minutes old, after authority, budget and participation checks. Guarded inbox waits apply the same check. This does not revive a stale, missing, killed or replaced Marker, keep a DONE member active, or extend any deadline or budget. An idle broker is not a background heartbeat.
 
 `inbox` can wait up to 30 seconds within the existing invocation. Positive waits default to `answer` and ignore receipts; use explicit `observation` for receipts or `all` for the complete addressed view. Optional `reply_to` selects exact replies and `compact: true` returns previews marked incomplete. Keep a separate cursor per selection and retrieve complete evidence with `read_message`. See [Resources > Coordination-Manual > Compact observation and purpose-specific waits]. Waiting spends no additional Agent launch and never extends the grant. Check the actual tool catalog before work, retain observed refusals, and stop on a missing lease, changed membership, expired participation or unavailable storage. STOP.
 

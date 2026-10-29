@@ -12,7 +12,7 @@
 - Files in `_Axis/Followups/` are mutable only while open; terminal Follow-Ups move to `_Axis/Archive/Followups/` and are WORM.
 - Files in `_Axis/Reminders/` are mutable only while open; terminal Reminders move to `_Axis/Archive/Reminders/` and are WORM.
 - In a write-once record, cite another record by its bare identifier and family (for example `Log 2026.05.18.22.33.24.230Z`), not by a relative link: paths change when records are archived, identifiers never do. Links are fine in editable files, which `^refresh` repairs.
-- Exact reference correction is the sole edit exception: follow [Practices > LinkMaintenance] for Permissions, evidence, the narrow helper and correction Log. Autonomous never asks for repair permission; Default confirms only exceptional or drastic cases; Restricted confirms every repair. Nothing else in a write-once record changes. Preserve intentional quotations through exact exceptions, not rewritten history; sealed evidence, update receipts and checked Coordination history remain unchanged.
+- Exact reference correction is one narrow edit exception: follow [Practices > LinkMaintenance] for Permissions, evidence, the narrow helper and correction Log. Autonomous never asks for repair permission; Default confirms only exceptional or drastic cases; Restricted confirms every repair. The only additional exception is audited, meaning-preserving prose whitespace repair at Fault Tolerance 2 under [Practices > FaultTolerance]. No other content changes. Preserve intentional quotations through exact exceptions, not rewritten history; sealed evidence, update receipts and checked Coordination history remain unchanged.
 - Logs and Snapshots are retained indefinitely unless User moves inactive history through `^archive`; archived copies remain unchanged and WORM.
 - Never overwrite a Review - each has its own timestamped file.
 - Task Status values are: Active, Blocked, Completed, Cancelled.
@@ -36,3 +36,5 @@
 
 - Merge journals, preserved objects and retirement receipts in `_Axis/Merges/` are retained write-once history; never edit, delete or relocate them without explicit scoped authority.
 - Durable update evidence in `_Axis/Updates/` is append-only; never rewrite a completed receipt or erase interrupted prefixes. It is project state, never Temp or release content.
+
+- Split receipts and exact preimages in `_Axis/Splits/` are retained immutable history. Cosmetic repair originals and audit receipts are immutable evidence under [Practices > FaultTolerance].

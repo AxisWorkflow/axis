@@ -115,7 +115,7 @@ def rule(root,path):
     family=parts[1]
     if family=='Archive':return 'archived history is write-once'
     if family=='Updates':return None if parts[-1]=='operation.lck' else 'update evidence is write-once'
-    if family=='Merges':return 'merge history is write-once and retained'
+    if family in ('Merges','Splits','Repairs'):return 'transaction history is write-once and retained'
     if family in WORM and (family not in ('Teams','Messages','Jobs') or len(parts)==3):return WORM[family]+' are write-once'
     if family in ('Tasks','Followups','Reminders') and len(parts)==3:
         data=git(root,'show','HEAD:'+path)
@@ -246,6 +246,63 @@ def corrections(root,added):
         elif mode=='identifier':
             old,new=f['correction-old'],f['correction-new']
             if REF.fullmatch(old) and REF.fullmatch(new) and old!=new and IDENT.search(new) and re.search(r'\d{4}\.\d{2}\.\d{2}',old) and head.count(old.encode()) and head.replace(old.encode(),new.encode())==staged:ok.add(f['correction-path'])
+    return ok
+
+
+def cosmetic_whitespace(data):
+    """Only one redundant trailing ASCII space on unquoted ordinary prose."""
+    text=data.decode('utf-8');out=[];fence=None;count=0
+    if re.search(r'(?m)^ {0,3}(?:<|>)',text):
+        raise ValueError('HTML blocks and quotations require separate review; no cosmetic exception')
+    for line in text.splitlines(keepends=True):
+        mark=re.match(r'^ {0,3}(`{3,}|~{3,})',line)
+        if mark:
+            token=mark[1]
+            if fence is None:fence=token
+            elif (token[0]==fence[0] and len(token)>=len(fence)
+                  and re.fullmatch(r' {0,3}' + re.escape(token) + r'[ \t]*(?:\r?\n)?',line)):fence=None
+        eligible=(not fence and not mark and not line.startswith((' ','\t'))
+                  and not line.lstrip().startswith(('>','|'))
+                  and not any(x in line for x in ('`','|','<','>','\\','$')))
+        if eligible and re.search(r'[^ \t\r\n] (?:\r?\n|\Z)',line):
+            line=re.sub(r' (?=\r?\n|\Z)','',line);count+=1
+        out.append(line)
+    if not count:raise ValueError('no eligible cosmetic prose whitespace')
+    return ''.join(out).encode('utf-8'),count
+
+
+def cosmetic_corrections(root,added):
+    """Accept only staged exact cosmetic diffs with new bound intent/outcome/preimage."""
+    ok=set();settings=git(root,'show',':_Axis/SETTINGS.md')
+    if settings is None:return ok
+    sections=re.findall(r'^### Fault Tolerance\s*\n(.*?)(?=^### |^## |\Z)',settings.decode('utf-8','replace'),re.M|re.S)
+    if len(sections)!=1 or re.findall(r'^\*\*Value:\*\*\s*(\S+)\s*$',sections[0],re.M)!=['2']:return ok
+    for receipt in added:
+        if not re.fullmatch(r'_Axis/Logs/'+IDENT.pattern+r'\.md',receipt):continue
+        raw=git(root,'show',':'+receipt)
+        if raw is None:continue
+        text=raw.decode('utf-8','replace')
+        if not text.startswith('Fault tolerance repair: '):continue
+        path=field(text,'repair-path');intent=field(text,'intent-log')
+        if not path or not re.fullmatch(r'_Axis/(?:Archive/)?(?:Logs|Tasks|Snapshots|CX|Audit|Supervision|Followups|Reminders)/'+IDENT.pattern+r'\.md',path):continue
+        if not intent or not IDENT.fullmatch(intent):continue
+        log='_Axis/Logs/'+intent+'.md';original='_Axis/Repairs/'+intent+'/original'
+        if log not in added or original not in added:continue
+        before=git(root,'show','HEAD:'+path);after=git(root,'show',':'+path);source=git(root,'show',':'+original);intent_data=git(root,'show',':'+log)
+        if before is None or after is None or source!=before or intent_data is None:continue
+        if protected_coordination_detail(path,before) or protected_coordination_detail(path,after):continue
+        try:expected,count=cosmetic_whitespace(before)
+        except (ValueError,UnicodeError):continue
+        if expected!=after:continue
+        intent_text=intent_data.decode('utf-8','replace')
+        if not intent_text.startswith('Fault tolerance repair intent: '):continue
+        sessions=[re.findall(r'^session: ([^\r\n]+)$',t,re.M) for t in (text,intent_text)]
+        if sessions[0]!=sessions[1] or len(sessions[0])!=1 or not IDENT.fullmatch(sessions[0][0]):continue
+        if any(re.findall(r'^by: ([^\r\n]+)$',t,re.M)!=['Main Agent'] for t in (text,intent_text)):continue
+        binding={'repair-path':path,'repair-kind':'prose-trailing-space','fault-tolerance':'2','before-sha256':hashlib.sha256(before).hexdigest(),'after-sha256':hashlib.sha256(after).hexdigest(),'occurrences':str(count),'repair-original':original,'eligibility':'unsealed; no byte-bound dependents; unchanged meaning'}
+        if not all(field(text,k)==v and field(intent_text,k)==v for k,v in binding.items()):continue
+        if not all(field(t,k) for t in (text,intent_text) for k in ('session','reason','verification')):continue
+        ok.add(path)
     return ok
 
 NEAR=re.compile(r'(?<![\w.])\d{4}\.\d{2}\.\d{2}\.\d{2}[0-9A-Za-z.:*?]*')
@@ -808,7 +865,7 @@ def write_once(root):
         if status[:1] in 'RC':entries.append((status,tokens[i+1],tokens[i+2]));i+=3
         else:entries.append((status,tokens[i+1],None));i+=2
     entries=rename_entries(entries)
-    exempt=update_exempt(root,[p for s,p,_ in entries if s=='A'])|corrections(root,[p for s,p,_ in entries if s=='A'])
+    exempt=update_exempt(root,[p for s,p,_ in entries if s=='A'])|corrections(root,[p for s,p,_ in entries if s=='A'])|cosmetic_corrections(root,[p for s,p,_ in entries if s=='A'])
     # A move Git did not pair (heavy edit, rename limit) keeps its identity: pair a deletion and an addition by name.
     deleted={}
     for status,path,_ in entries:

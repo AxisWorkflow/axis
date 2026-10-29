@@ -105,11 +105,19 @@
 
 ### Permissions
 
-**Description:** How often Agents stop to confirm a change before making it (see [Rules > Permissions]). `Restricted` = confirm every change that deletes, overwrites or cannot be undone exactly; `Default` = act on clear intent when the change carries little risk (reversible, additive or verifiably disposable), and confirm unclear intent, new design or direction choices, live model work and irreversible loss; `Autonomous` = act on clear intent and confirm only when intent is unclear or a mistake could not be rolled back and would be major. No level removes `^pub`, `^update`, pushing, paid spending, Secrets, WORM (apart from exact reference repairs under [Practices > LinkMaintenance]) or role gates, and every level reports what changed.
+**Description:** How often Agents stop to confirm a change before making it (see [Rules > Permissions]). `Restricted` = confirm every change that deletes, overwrites or cannot be undone exactly; `Default` = act on clear intent when the change carries little risk (reversible, additive or verifiably disposable), and confirm unclear intent, new design or direction choices, live model work and irreversible loss; `Autonomous` = act on clear intent and confirm only when intent is unclear or a mistake could not be rolled back and would be major. No level removes `^pub`, `^update`, pushing, paid spending, Secrets, WORM (apart from exact reference repairs under [Practices > LinkMaintenance] and bounded repairs under [Practices > FaultTolerance]) or role gates, and every level reports what changed.
 
 **Range:** `Restricted`, `Default`, `Autonomous`
 
 **Value:** Default
+
+### Fault Tolerance
+
+**Description:** Bounded response to demonstrated minor non-compliance; load [Practices > FaultTolerance] when a check, deadline, expectation, milestone, budget or deliverable is missed. `-2` = strict compliance; `-1` = repair ordinary reversible defects before continuing; `0` = may disclose and tolerate a harmless cosmetic defect without editing its record, but no deadline grace; `1` = also permits bounded completion grace of up to 1% of the original duration (at most two minutes); `2` = also permits up to 5% completion grace (at most fifteen minutes) and audited, meaning-preserving WORM whitespace repairs. Grace applies only where the existing authority permits it; never raise a money cap, cross a hard deadline, weaken evidence or exceed role/host authority. Default is `1`; missing means `1`, malformed means `-2` until corrected. This is an Application Setting, not a Mindset adjustment or permission to lower acceptance criteria.
+
+**Range:** `-2`, `-1`, `0`, `1` or `2`
+
+**Value:** 1
 
 ### Max Concurrent Sessions
 

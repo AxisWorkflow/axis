@@ -358,9 +358,9 @@ const LOCK_TIMEOUT_HOURS = 10 / 3600;
 const KEYS = ["Reasoning","Exploration","Eagerness","Skepticism","Familiarity","Verbosity","Simplicity",
               "Precision","Generalization","Rigor","Creativity","Transparency","Budget","CX Frequency"];
 const PROFILES = {
-  Fast:     {Reasoning:-1,Exploration:-2,Eagerness:1, Skepticism:-1,Familiarity:2, Verbosity:-1,Simplicity:1,Precision:0,Generalization:-1,Rigor:-1,Creativity:-1,Transparency:-1,Budget:-1,"CX Frequency":0},
-  Standard: {Reasoning:0, Exploration:0, Eagerness:-1,Skepticism:0, Familiarity:0, Verbosity:0, Simplicity:0,Precision:0,Generalization:0, Rigor:1, Creativity:0, Transparency:0, Budget:0, "CX Frequency":1},
-  Deep:     {Reasoning:2, Exploration:1, Eagerness:-2,Skepticism:1, Familiarity:-1,Verbosity:1, Simplicity:0,Precision:2,Generalization:0, Rigor:2, Creativity:1, Transparency:2, Budget:1, "CX Frequency":2}
+  Fast:     {Reasoning:-1,Exploration:-2,Eagerness:1, Skepticism:-1,Familiarity:2, Verbosity:-1,Simplicity:1,Precision:0,Generalization:-1,Rigor:-1,Creativity:-1,Transparency:-1,Budget:-1,"CX Frequency":0,"Fault Tolerance":2},
+  Standard: {Reasoning:0, Exploration:0, Eagerness:-1,Skepticism:0, Familiarity:0, Verbosity:0, Simplicity:0,Precision:0,Generalization:0, Rigor:1, Creativity:0, Transparency:0, Budget:0, "CX Frequency":1,"Fault Tolerance":1},
+  Deep:     {Reasoning:2, Exploration:1, Eagerness:-2,Skepticism:1, Familiarity:-1,Verbosity:1, Simplicity:0,Precision:2,Generalization:0, Rigor:2, Creativity:1, Transparency:2, Budget:1, "CX Frequency":2,"Fault Tolerance":-1}
 };
 
 const NEEDS_SERVER = "The Dashboard is live and needs a running web server - ask your Agent for <code>^dashboard</code>. " +
@@ -504,7 +504,7 @@ async function recordAgeHours(file, url, partial=null, card=""){ // durable reco
 }
 function detectProfile(vals){
   for (const [name,p] of Object.entries(PROFILES))
-    if (KEYS.every(k => String(p[k]) === String(vals[k]))) return name;
+    if (KEYS.every(k => String(p[k]) === String(vals[k])) && String(p["Fault Tolerance"]) === String(vals["Fault Tolerance"] ?? "1")) return name;
   return "Custom";
 }
 function parseTasks(md){                           // shared by the Tasks card and Status assessment
@@ -578,6 +578,7 @@ function followupSort(a, b){
 }
 
 
+const FAULT_GLOSS = {"-2":"Strict (-2)","-1":"Careful (-1)","0":"Tolerant (0)","1":"Balanced (+1)","2":"Very Lenient (+2)"};
 const CX_GLOSS = {"0":"Never","1":"Final deliverables","2":"Key steps","3":"Every step"};
 const MINDSET_GLOSS = {"-2":"Much Less -2","-1":"Less -1","0":"-","1":"More +1","2":"Much More +2"};
 const ROUTINE_VALUES = new Set(["Standard","✓","-","Ready"]);
@@ -678,6 +679,7 @@ async function renderConfiguration(partial){       // Settings and validated Hos
     row("Local Model", selected),
     row("CX Model", cxm),
     row("CX Frequency", CX_GLOSS[cxf] ?? cxf),
+    row("Fault Tolerance", FAULT_GLOSS[vals["Fault Tolerance"] ?? "1"] ?? "Invalid - Strict (-2)"),
     row("Last Snapshot", snap),
     row("Portability", portability),
     row("Subagents", subagents),

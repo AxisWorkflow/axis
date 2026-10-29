@@ -1,7 +1,7 @@
 # Changelog
 > **Purpose:** Record Axis release identity and the structural migrations needed to update an existing project safely.
 
-current-version: 3.06
+current-version: 3.07
 changelog-format: 1
 self-update-baseline: 26.08.19
 
@@ -39,6 +39,34 @@ update-impact: automatic
 ### Verification
 
 - None.
+
+## 3.07
+
+released: 2026-10-29
+
+update-impact: automatic
+
+### Structural Changes
+
+- Revise `_Axis/Commands/merge.md`, `_Axis/Practices/Merging.md` and `merge-project.py` to retire source scratch/Inbox/Trash and entry/license scaffolding, preserving reviewed non-Axis README content separately and exact recovery evidence.
+- Add `_Axis/Commands/split.md`, `_Axis/Practices/Splitting.md` and `_Axis/Resources/split-history.py` for new child setup with directly relevant parent history. `_Axis/Splits/` is optional project history, created only by a split and never shipped populated.
+- Add `_Axis/Practices/FaultTolerance.md`, the Fault Tolerance Setting and managed default Directive, Profile values and Dashboard display. Narrow cosmetic WORM checkpoint receipts use optional immutable `_Axis/Repairs/` originals; preserve these as project state.
+
+- Add `_Axis/Practices/ExternalTeams.md` and `_Axis/Resources/external-team.py`; existing coordination readers now recognize explicitly proposal-only External controls. Scoped members return through External; only Main accepts project integration.
+
+### Project-State Migrations
+
+- Add Fault Tolerance to existing `_Axis/SETTINGS.md` only when absent, with Value 1 and the current template description/range. Preserve every existing value. This introduces bounded default completion tolerance, never monetary or authority grace; hard deadlines remain strict. Profile values apply only when User selects a Profile, not by resetting the project during update.
+- Preserve existing Teams, Messages, Jobs, membership and budgets unchanged. New External issuer/proposal fields are for newly created records only; older readers cannot interpret them, so use the coordinated update boundary before creating External Teams.
+- Startup appends the new Fault Tolerance Directive from `_Axis/Resources/Default-Directives.md` only if absent and not explicitly omitted; preserve existing customized Directives. Preserve all merge/split/repair journals. No existing project is merged, split, repaired or rewritten merely by updating.
+
+### Retired Paths
+
+- None. Source cleanup occurs only in a newly authorized merge, not as a global update migration.
+
+### Verification
+
+- Verify absent-only Setting migration, Directive append/opt-out, all three Profile values and Dashboard display. Check merge discard/extraction/recovery, split selective history/provenance/no inherited authority, and exact cosmetic repair receipts plus denied substantive/checked-history changes.
 
 ## 3.06
 

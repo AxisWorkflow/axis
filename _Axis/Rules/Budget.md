@@ -4,7 +4,7 @@
 
 ## Budget limits and extensions
 
-If you hit a budget constraint or deadline, stop and ask for an extension - do not just fail.
+If you hit a budget constraint or deadline, preserve progress and ask for an extension rather than just failing. The only standing time exception is pre-assessed completion grace under [Practices > FaultTolerance]; spending caps, hard deadlines and expiring mandates remain strict.
 
 Preserve completed work, current usage, pending actions and uncertain effects. Pause the affected execution and ask once for the additional time or spending needed, explaining what remains. Keep the Task resumable while awaiting the answer; a budget hold alone is not failure, cancellation or completion. Carry the same request forward instead of opening duplicate approval loops.
 

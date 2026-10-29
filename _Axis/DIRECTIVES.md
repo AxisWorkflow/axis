@@ -1,6 +1,19 @@
 # Directives
 > **Purpose:** Define conditional Directives to follow when a Trigger applies.
 
+## Fault Tolerance
+
+#### Keywords
+non-compliance, failure, deadline, expectation, milestone, budget, deliverable, outcome, close enough, whitespace
+#### Description
+Apply bounded self-correction to proven minor deviations without hiding failures or waiving essential requirements.
+#### Triggers
+- A rule, check, deadline, expectation, milestone, budget, deliverable or outcome is missed or is credibly about to be missed.
+#### Behavior
+- Load [Practices > FaultTolerance] and read [Settings > Fault Tolerance] before deciding to hold, tolerate or repair.
+- Establish severity from evidence, apply the exact level and strict boundaries, and retain the original failed observation.
+- Record the honest disposition and any cumulative allowance or exact repair; verify and report it. Never treat tolerance as general permission to ignore Rules, Practices, budgets or acceptance criteria.
+
 ## Explain Download Permissions
 
 #### Keywords

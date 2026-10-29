@@ -1,6 +1,6 @@
 # Axis Workflow User Manual
 > **Purpose:** How to use the Axis Workflow day to day: setup, commands, the Dashboard, the Wiki, working across tools and machines, and working with Agents and models. For the technical and compliance reference, see [SPECIFICATION](/_Axis/SPECIFICATION.md).
-> **Version:** 3.06
+> **Version:** 3.07
 
 
 
@@ -228,6 +228,7 @@ For example, the text...
 | `^kill`      | Stop another live Agent by revoking its Marker lease (tombstone; User-only).                                   |
 | `^log`       | Manually Log an entry into `_Axis/Logs/`.                                                                      |
 | `^merge` | Absorb a project folder, combining its records, Memos and Wiki into one continuing project. |
+| `^split` | Turn a project subfolder into an independent Axis Subproject with relevant parent history. |
 | `^memo`      | Write or update a Memo for User in `_Memos/`.                                                                  |
 | `^memos`     | List live Memos, read User's replies, and archive finished ones.                                               |
 | `^note`      | Manually save a Note into `_Axis/Notes/`.                                                                      |
@@ -317,7 +318,11 @@ The **Memo Generation** setting decides how often memos are written, from `0` (o
 
 ### Combining projects
 
-Use `^merge` to combine projects. For separate projects, Axis asks which continues and moves the other project's folder under its root. A nested subproject stays in place and becomes ordinary parent content. Axis imports full records with their original timestamps, adjusts collisions by milliseconds, repairs links, combines Memos and reconciles the Wiki. After you approve the concrete plan, it preserves the content, removes the absorbed project's Axis infrastructure and abandons its old Git repository. The continuing repository tracks eligible resulting files. Existing instructions and permissions remain with the continuing project; copied history does not activate jobs or schedules. Two copies of the same project need reconciliation instead of merging.
+Use `^merge` to combine projects. For separate projects, Axis asks which continues and moves the other project's folder under its root. A nested subproject stays in place and becomes ordinary parent content. Axis imports full records with their original timestamps, adjusts collisions by milliseconds, repairs links, combines Memos and reconciles the Wiki. After you approve the concrete plan, it preserves the content, removes the absorbed project's Axis infrastructure and abandons its old Git repository. The continuing repository tracks eligible resulting files. Existing instructions and permissions remain with the continuing project; copied history does not activate jobs or schedules. Two copies of the same project need reconciliation instead of merging. The absorbed folder loses its old entry files, LICENSE, Axis-only README and entire `_Temp/`, `_Inbox/` and `_Trash/` folders. Any non-Axis README content is kept separately after review; originals remain in the recovery journal.
+
+Use `^split {folder}` to make an existing folder an independent Axis Subproject in place. Axis installs a verified template with a fresh project identity, reviews all parent history, and copies directly relevant records and necessary context without changing their original facts or removing the parent's copies. You review the folder scope, history selection, current-work ownership and repository arrangement before the prepared child is installed. The child can then be moved elsewhere as a complete project.
+
+Fault Tolerance controls bounded handling of minor deviations: -2 is strict, -1 requires ordinary repair, 0 may disclose a harmless cosmetic deviation, +1 also permits up to two minutes of eligible completion grace, and +2 permits a capped 5% grace and audited cosmetic WORM repairs. Standard defaults to +1, Fast to +2 and Deep to -1. The Dashboard shows the level. This setting never changes a failed check into a pass, authorizes a substantive history edit, raises spending limits, or overrides hard deadlines, security or host controls. See [Practices > FaultTolerance] for the exact boundaries.
 
 ### Sending feedback to the Axis developers
 
@@ -586,7 +591,8 @@ A project has exactly ONE Main Agent - and an **External Agent** is what any add
 - **Read and answer.** It reads the project (never `_Axis/Secrets/`) and answers questions - the Tracking timeline makes "what is going on right now?" a one-read answer, Subagents included.
 - **Append.** `^note`, `^idea`, its own Logs and Tracking lines, a Status report, a clearly-labelled in-context review.
 - **Create new documents** in content areas, each opening with a provenance stamp naming its author and moment - visible, attributable, reversible.
-- **Never** edit an existing file, touch `_Axis/` doctrine, change the Plan or Tasks, open Secrets, or spawn Subagents.
+- **Proposal Teams.** It may create its own scoped Team and spawn permitted native members. Each member works in its own Team workspace and messages, returns to External, and External submits immutable deliverables to Main for acceptance.
+- **Never** edit shared project content, touch `_Axis/` doctrine, change the Plan or Tasks, open Secrets, or spawn outside that proposal-Team scope.
 
 External is instructed to make only additive, attributable contributions. Optional host hooks enforce part of that boundary; they do not sandbox a compromised agent or remove its operating-system access. Credentials that require technical isolation need host permissions or storage outside the workspace. Becoming Main is a gated ceremony (`^promote`): the request counts only from the gateway-verified owner, the agent discloses its full footprint first, User confirms with a literal reply, a contested project additionally requires approval from a trusted surface, and the grant executes as a full re-boot that leaves a write-once record. Earlier dated rehearsals exercised these scenarios on specific hosts and versions. Current deterministic tests cover the revised protocols and failure schedules; they do not prove that every host or model follows them. Current channel delivery and GUI behavior remain limited by the evidence described below.
 

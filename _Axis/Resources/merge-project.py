@@ -38,7 +38,9 @@ MUTABLE = {'PROJECT.md', 'PLAN.md', 'TASKS.md', 'NOTES.md', 'IDEAS.md',
 INDEXES = {'TASKS.md', 'NOTES.md', 'IDEAS.md', 'FOLLOWUPS.md', 'REMINDERS.md'}
 WIKI_ADMIN = {'Library-Schema.md', 'Library-Index.md', 'Input-Index.md',
               'Library-Activity.md', 'Library-Status.md'}
-ENTRY = {'agents.md', 'claude.md', 'gemini.md'}
+ENTRY = {'agents.md', 'claude.md', 'gemini.md', 'clude.md'}
+DISCARD_DIRS = {'_Temp', '_Inbox', '_Trash'}
+RETIRE_FILES = ENTRY | {'license', 'readme.md'}
 HOST_DIRS = {'.claude', '.codex', '.gemini', '.cursor', '.vscode'}
 ATTESTATIONS = {'continuation_confirmed', 'source_authority', 'destination_authority',
                 'external_archive_verified', 'external_jobs_stopped',
@@ -370,6 +372,10 @@ def remap_ids(value, mapping):
 
 def kind(name):
     parts = name.split('/')
+    if parts[0] in DISCARD_DIRS or (len(parts) == 1 and parts[0].casefold() in ENTRY | {'license'}):
+        return 'discard'
+    if len(parts) == 1 and parts[0].casefold() == 'readme.md':
+        return 'readme'
     if Path(name).name == '.gitkeep' and parts[0] in ('_Axis', '_Memos', '_Wiki'):
         return 'evidence'
     if parts[0] == '_Axis':
@@ -392,6 +398,23 @@ def kind(name):
     return 'content'
 
 
+def readme_content(data, review=None):
+    """Remove known Axis scaffolding, preserving unmarked project prose verbatim."""
+    if review is not None:
+        need(isinstance(review, dict) and set(review) == {'source_sha256', 'content', 'reason'}, 'README extraction fields')
+        need(review['source_sha256'] == digest(data) and isinstance(review['content'], str)
+             and isinstance(review['reason'], str) and review['reason'].strip(), 'reviewed README extraction binding')
+        return review['content'].encode('utf-8')
+    try:
+        text = data.decode('utf-8')
+    except UnicodeError:
+        return data
+    markers = ('<!-- axis:workflow-readme -->', '<!-- axis:project-summary:begin -->', '<!-- axis:project-summary:end -->')
+    need(not any(marker in text for marker in markers),
+         'marked README needs explicit reviewed extraction; preserve all non-Axis project prose, including inside managed summaries')
+    return data if text.strip() else b''
+
+
 def unique_path(root, proposed, used):
     candidate = proposed
     n = 1
@@ -403,7 +426,8 @@ def unique_path(root, proposed, used):
     return candidate
 
 
-def layout(root, view, txid, ids):
+def layout(root, view, txid, ids, readmes=None):
+    readmes = readmes or {}
     """Complete source-to-destination map; opaque runtime machinery stays inert evidence."""
     mappings = {}
     folder = view['content_root']
@@ -412,14 +436,9 @@ def layout(root, view, txid, ids):
     source_tops = {p.split('/')[0] for p in view['source_inventory']['files']}
     source_tops.update(p.split('/')[0] for p in view['source_inventory']['directories'])
     top_dirs = {p for p in view['source_inventory']['directories'] if '/' not in p}
-    inert_folder = 'Imported-instructions'
-    number = 1
-    while inert_folder.casefold() in {p.casefold() for p in source_tops}:
-        number += 1
-        inert_folder = 'Imported-instructions-' + str(number)
     ordinary = {p.casefold() for p in source_tops if not p.startswith(('_', '.'))}
     for top in sorted(source_tops):
-        if top in top_dirs and top.startswith('_') and top not in ('_Axis', '_Memos', '_Wiki'):
+        if top in top_dirs and top.startswith('_') and top not in {'_Axis', '_Memos', '_Wiki'} | DISCARD_DIRS:
             base = top.lstrip('_') or 'Imported-content'
             value = base
             n = 1
@@ -432,7 +451,13 @@ def layout(root, view, txid, ids):
         category = kind(name)
         parts = name.split('/')
         renamed = remap_ids(name, ids)
-        if category == 'record':
+        if category in ('discard', 'inert'):
+            target = '_Axis/Merges/' + txid + '/source/' + renamed + '.source'
+        elif category == 'readme':
+            original = read(source_path(root / view['source'], view['source_inventory'], name))
+            target = (unique_path(root, folder + '/Project-background.md', used) if readme_content(original, readmes.get(name))
+                      else '_Axis/Merges/' + txid + '/source/' + renamed + '.source')
+        elif category == 'record':
             archived = parts[1] == 'Archive'
             family = parts[-2]
             filename = remap_ids(parts[-1], ids)
@@ -457,22 +482,17 @@ def layout(root, view, txid, ids):
                 target = name
             else:
                 target = '_Axis/Merges/' + txid + '/source/' + renamed + '.source'
-        elif category == 'inert':
-            safe = name.lstrip('.')
-            target = folder + '/' + inert_folder + '/' + safe
-            if any(p.casefold() in ENTRY for p in parts):
-                target += '.txt'
         else:
             target = folder + '/' + '/'.join([top_map.get(parts[0], parts[0]), *parts[1:]])
         mappings[name] = target
-        if category not in ('evidence', 'index', 'wiki', 'raw-wiki') and not (
+        if category not in ('evidence', 'index', 'wiki', 'raw-wiki', 'readme') and not (
                 category == 'memo' and not ID.search(parts[-1])):
             need(target.casefold() not in used, 'import destination collision')
             used.add(target.casefold())
     directories = {folder}
     for name in view['source_inventory']['directories']:
         parts = name.split('/')
-        if parts[0] not in ('_Axis', '_Memos', '_Wiki') and parts[0] not in HOST_DIRS:
+        if parts[0] not in {'_Axis', '_Memos', '_Wiki'} | DISCARD_DIRS and parts[0] not in HOST_DIRS:
             directories.add(folder + '/' + '/'.join([top_map.get(parts[0], parts[0]), *parts[1:]]))
     for target in mappings.values():
         if '/objects/' not in target:
@@ -483,8 +503,10 @@ def layout(root, view, txid, ids):
     return mappings, sorted(directories, key=lambda x: (x.count('/'), x))
 
 
-def rewrite(data, source_name, target_name, source, root, view, mappings, ids):
+def rewrite(data, source_name, target_name, source, root, view, mappings, ids, readmes=None):
     """Repair known file/record references without changing historical date/status fields."""
+    if kind(source_name) == 'readme':
+        data = readme_content(data, (readmes or {}).get(source_name))
     if Path(source_name).suffix.lower() not in TEXT_SUFFIXES:
         return data
     try:
@@ -588,9 +610,9 @@ def record_payload(data, name, target, source, root, view, mappings, ids):
 
 def source_evidence(plan):
     prefix = '_Axis/Merges/' + plan['transaction'] + '/source/'
-    return {name: prefix + name + '.source' if kind(name) == 'record' else target
+    return {name: prefix + name + '.source' if kind(name) in ('record', 'readme') else target
             for name, target in plan['imports'].items()
-            if kind(name) == 'record' or kind(name) == 'evidence' and target.startswith(prefix)}
+            if kind(name) in ('record', 'readme') or kind(name) in ('evidence', 'discard', 'inert') and target.startswith(prefix)}
 
 
 def operation(root, name, data, payload, before_override=None):
@@ -601,7 +623,8 @@ def operation(root, name, data, payload, before_override=None):
             'payload': payload}
 
 
-def draft(root, source, session, plan_path, folder=None):
+def draft(root, source, session, plan_path, folder=None, readmes=None):
+    readmes = readmes or {}
     module, engine = load_state(root, session)
     view = preview(root, source, session, folder)
     need(not view['blockers'], 'merge preview has blockers: ' + '; '.join(view['blockers']))
@@ -613,7 +636,7 @@ def draft(root, source, session, plan_path, folder=None):
     while txid in occupied_ids(root):
         txid = module.advance(txid)
     ids = allocate_ids(root, view, txid)
-    mappings, directories = layout(root, view, txid, ids)
+    mappings, directories = layout(root, view, txid, ids, readmes)
     source = plain(root / view['source'], 'dir')
     payloads = plan_path.parent / 'payloads'
     need(not payloads.exists(), 'payload directory already exists')
@@ -621,7 +644,7 @@ def draft(root, source, session, plan_path, folder=None):
     ops = []
     for name, target in mappings.items():
         category = kind(name)
-        if category == 'evidence':
+        if category in ('evidence', 'discard', 'inert') or (category == 'readme' and target.startswith('_Axis/Merges/' + txid + '/source/')):
             continue
         original = read(source_path(source, view['source_inventory'], name))
         if category == 'raw-wiki':
@@ -629,7 +652,7 @@ def draft(root, source, session, plan_path, folder=None):
         elif category == 'record':
             data = record_payload(original, name, target, source, root, view, mappings, ids)
         else:
-            data = rewrite(original, name, target, source, root, view, mappings, ids)
+            data = rewrite(original, name, target, source, root, view, mappings, ids, readmes)
         if category == 'index':
             old = read(destination_path(root, target))
             text = data.decode()
@@ -649,11 +672,11 @@ def draft(root, source, session, plan_path, folder=None):
         filename = 'payloads/' + str(len(ops))
         (plan_path.parent / filename).write_bytes(data)
         op = operation(root, target, data, filename)
-        if category in ('content', 'inert', 'raw-wiki', 'wiki', 'memo', 'record') and op['before'] is None:
+        if category in ('content', 'readme', 'raw-wiki', 'wiki', 'memo', 'record') and op['before'] is None:
             op['mode'] = view['source_inventory']['files'][name]['mode']
         ops.append(op)
     plan = {'schema': 2, 'transaction': txid, 'preview': view, 'engine_sha256': digest(Path(__file__).read_bytes()),
-            'id_map': ids, 'imports': mappings, 'directories': directories, 'operations': ops,
+            'id_map': ids, 'readmes': readmes, 'imports': mappings, 'directories': directories, 'operations': ops,
             **{name: False for name in ATTESTATIONS}}
     engine.guard()
     plan_path.write_bytes(encode(plan))
@@ -763,7 +786,7 @@ def check_plan(root, source, plan, base):
     view = plan['preview']
     txid = plan['transaction']
     need(set(plan) == {'schema', 'transaction', 'preview', 'engine_sha256', 'id_map', 'imports',
-                       'directories', 'operations'} | ATTESTATIONS, 'plan schema')
+                       'directories', 'operations', 'readmes'} | ATTESTATIONS, 'plan schema')
     need(plan['schema'] == 2 and ID.fullmatch(txid), 'plan version or transaction')
     for name in ATTESTATIONS:
         need(plan[name] is True, 'Main must establish ' + name)
@@ -771,7 +794,8 @@ def check_plan(root, source, plan, base):
     mappings = plan['imports']
     files = view['source_inventory']['files']
     need(set(mappings) == set(files), 'every source file needs a disposition')
-    expected, _ = layout(root, view, txid, plan['id_map'])
+    need(isinstance(plan['readmes'], dict) and all(k in files and kind(k) == 'readme' for k in plan['readmes']), 'README review scope')
+    expected, _ = layout(root, view, txid, plan['id_map'], plan['readmes'])
     for name, target in mappings.items():
         relative(target)
         category = kind(name)
@@ -827,11 +851,11 @@ def check_plan(root, source, plan, base):
         original = read(source_path(source, view['source_inventory'], name))
         need(digest(original) == files[name]['sha256'], 'source changed during preservation')
         objects[files[name]['sha256']] = original
-        if category == 'evidence':
+        if category in ('evidence', 'discard', 'inert') or (category == 'readme' and target.startswith('_Axis/Merges/' + plan['transaction'] + '/source/')):
             continue
         expected_data = (record_payload(original, name, target, source, root, view, mappings, plan['id_map'])
                          if category == 'record' else original if category == 'raw-wiki'
-                         else rewrite(original, name, target, source, root, view, mappings, plan['id_map']))
+                         else rewrite(original, name, target, source, root, view, mappings, plan['id_map'], plan['readmes']))
         after = objects[by_path[target]['after']] if target in by_path else read(destination_path(root, target))
         if category not in ('wiki', 'index'):
             need(after == expected_data, 'source content or full record text was lost: ' + name)
@@ -887,7 +911,7 @@ def prepare(root, session, plan_path, approval):
         mkdirs(path.parent)
         once(path, objects[view['source_inventory']['files'][name]['sha256']])
     removals = [p.name for p in source.iterdir() if (p.is_dir() and p.name.startswith('_')) or p.name == '.git'
-                or p.name.casefold() in ENTRY or p.name in HOST_DIRS]
+                or p.name.casefold() in RETIRE_FILES or p.name in HOST_DIRS]
     quarantine = '_Temp/MergeRecovery-' + approval
     need(not os.path.lexists(root / quarantine), 'recovery path already exists')
     start = {'schema': 2, 'transaction': approval, 'plan_sha256': ph, 'approval_log': approval,
@@ -1170,7 +1194,7 @@ def final_content(root, tx, start):
             plain(p)
             actual.add(p.relative_to(folder).as_posix())
     need(actual == expected, 'imported folder contains missing or unplanned content')
-    need(not any((p.is_dir() and p.name.startswith('_')) or p.name == '.git' or p.name.casefold() in ENTRY
+    need(not any((p.is_dir() and p.name.startswith('_')) or p.name == '.git' or p.name.casefold() in RETIRE_FILES
                  for p in folder.iterdir()),
          'source infrastructure remains')
     by_path = {op['path']: op for op in start['operations']}
@@ -1381,6 +1405,7 @@ def main():
     p.add_argument('--session')
     p.add_argument('--folder')
     p = sub.add_parser('draft')
+    p.add_argument('--readme-review', help='Reviewed source-bound README extraction JSON; required for marked workflow introduction')
     p.add_argument('--source', required=True)
     p.add_argument('--session', required=True)
     p.add_argument('--plan', required=True)
@@ -1404,7 +1429,7 @@ def main():
         elif args.command == 'preview':
             value = preview(root, Path(args.source), args.session, args.folder)
         elif args.command == 'draft':
-            value = draft(root, Path(args.source), args.session, Path(args.plan), args.folder)
+            value = draft(root, Path(args.source), args.session, Path(args.plan), args.folder, json.loads(read(Path(args.readme_review))) if args.readme_review else None)
         elif args.command == 'prepare':
             value = prepare(root, args.session, Path(args.plan), args.approval_log)
         elif args.command in ('apply', 'abort'):

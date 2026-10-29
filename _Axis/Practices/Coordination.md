@@ -1,6 +1,8 @@
 # Coordination
 > **Purpose:** Operate an Axis Team of Agents and bounded Jobs under one accepting Main.
 
+External-owned proposal Teams reuse these records, budgets and workspaces with explicit `proposal_only` provenance and no Main acceptance snapshot. Their internal controls project only their own proposal lifecycle; they never become project decisions. Load [Practices > ExternalTeams] for the owner-bound route, member permissions, `owner` result recipient and Main submission. Ordinary Main controls below retain their gates.
+
 ## Records and ownership
 
 Initialize a portable `project-id:` UUID in Project metadata once. Relocation and synchronized copies retain it; an intentional fork receives a new UUID with provenance. UUIDs and hashes identify records, not people or permission. Activate one writer/dispatcher placement explicitly; Git and cloud sync are not locks. First initialization activates only a newly minted Project UUID. An existing identity, new Main, move, copy, storage change or expiry requires explicit reactivation after verifying that the previous placement is inactive.

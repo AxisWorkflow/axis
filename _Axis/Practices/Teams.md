@@ -1,6 +1,8 @@
 # Teams
 > **Purpose:** Set up a feasible Team using common infrastructure and a task-specific collaboration plan.
 
+An External may use this planning process for its own proposal Team under [Practices > ExternalTeams]. It follows the explicit owner-bound helper route; only Main accepts project changes.
+
 Load for Team creation or a material method change. [Practices > Coordination] owns records, authority, member binding, dispatch, workspaces and acceptance. [Practices > Collaboration] owns the selected working method. Membership, logical role, provider session and actual concurrent availability are distinct.
 
 ## Setup

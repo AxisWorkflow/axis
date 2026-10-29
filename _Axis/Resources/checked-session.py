@@ -256,13 +256,20 @@ class CheckedTeamSession(CheckedSession):
     def guard(self, name=None, arguments=None):
         need(dt.datetime.now(UTC) < self.expires, 'expired')
         self.store._direct_context(**self.binding)
+        state = None
+        participating = True
         if self.closing is not None:
             state = self.closing.validate_binding(self.store, self.closing_contract, self.binding)
             own = state['members'].get(state['slot'], {})
-            if own.get('done') is not None and name is not None:
+            participating = own.get('done') is None
+            if not participating and name is not None:
                 need(name == 'closing_status' or (name == 'closing_step' and arguments.get('action') == 'done'), 'closing-participation-ended')
-            return state
-        return None
+        # Activity renews only this existing, validated lease. Direct authority,
+        # budgets, expiry and closing participation must all pass first. renew
+        # rechecks identity/readback and refuses missing, replaced or stale leases.
+        if participating and self.start.time.time() - self.io.path(self.io.marker_name).stat().st_mtime >= 1800:
+            self.io.renew(self.io.marker_name, self.io.marker_body())
+        return state
 
     def call(self, name, arguments):
         import base64
@@ -292,6 +299,8 @@ class CheckedTeamSession(CheckedSession):
             if name == 'team_info':
                 charter, view, _, _, item = self.store._direct_context(**self.binding)
                 return {'team': self.binding['team'], 'slot': item['slot'], 'members': view['members'],
+                        'acceptance_class': 'proposal' if charter.get('proposal_only') else 'accepted',
+                        'owner': charter['acceptance_owner'], 'return_to': 'owner' if charter.get('proposal_only') else 'main',
                         'workspace': self.store._workspace_root(self.binding['team'], item['slot']),
                         'collaboration': charter['collaboration'], 'expires': self.expires.isoformat()}
             if name == 'read_message': return self.store.team_message(**self.binding, **arguments)

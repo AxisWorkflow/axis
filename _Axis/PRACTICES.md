@@ -117,6 +117,8 @@ Read before the matching action.
 - [Practices > Status] - The quick-look `^status` summary, in the terminal or as a web page.
   *Load for `^status`.*
 
+- [Practices > Splitting] - load for `^split` or its recovery only.
+
 - [Practices > Merging] - Reviewed project consolidation and child absorption, preserved history and recovery.
 - [Practices > Memos] - Dated Markdown messages to User in `_Memos/`, including Reviews.
   *Load before writing, reading replies in, or archiving a Memo, and for `^memo`, `^memos` and `^review`.*
@@ -160,3 +162,7 @@ Route durable guidance by purpose; no extra file to load:
 | A named short-cut User will type | a new file in `_Axis/Commands/` |
 | A project-specific fact, deadline, or preference | a Note |
 | A speculative thought to revisit later | an Idea |
+
+- [Practices > FaultTolerance] - load for missed or imminent noncompliance.
+
+- [Practices > ExternalTeams] - load for External proposal Teams or Main review.

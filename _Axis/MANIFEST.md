@@ -88,7 +88,11 @@ Optional project state: `EXCEPTIONS.md` in the Axis control folder, created on f
 - `_Axis/Dashboard/server.py`
 - `_Axis/Dashboard/plan-diagram.{mermaid|svg|png}` - optional Plan illustration.
 
+
 ### Optional project files
+
+- `_Axis/Splits/` - created on demand for approved split provenance and recovery; never template history.
+- `_Axis/Repairs/` - optional durable originals for audited cosmetic repairs; created on demand, never release history.
 
 - `_Axis/INITIATIVES.md` - optional shared outcomes and Task groups; absent is valid, and no startup detail load is required.
 - `_Axis/Branding/` - the product brand package (stylesheet with light and dark themes, WOFF2 fonts, tokens, mark, logo, favicons), shipped read-only and replaced whole by each update; `manifest.json` lists every file with its SHA-256. Its assets are not under the MIT License (see `LICENSE-ASSETS.md`). A project updated by an updater older than 2.01 (from any earlier version) receives it with its next update after 2.01 (updaters before 2.01 cannot install a new folder); absent until then is valid, and the Dashboard and `^status` pages fall back to plain brand colours.
@@ -124,12 +128,15 @@ Optional project state: `EXCEPTIONS.md` in the Axis control folder, created on f
 - `_Axis/Practices/Messages.md`
 - `_Axis/Practices/Coordination.md`
 - `_Axis/Practices/Teams.md`
+- `_Axis/Practices/ExternalTeams.md`
 - `_Axis/Practices/Collaboration.md`
 - `_Axis/Practices/Scheduling.md`
 - `_Axis/Practices/Reminders.md`
 - `_Axis/Practices/Settings.md`
 - `_Axis/Practices/Snapshots.md`
 - `_Axis/Practices/Merging.md`
+- `_Axis/Practices/Splitting.md`
+- `_Axis/Practices/FaultTolerance.md`
 - `_Axis/Practices/Memos.md`
 - `_Axis/Practices/Status.md`
 - `_Axis/Practices/Subprojects.md`
@@ -190,6 +197,7 @@ Optional project state: `EXCEPTIONS.md` in the Axis control folder, created on f
 - `_Axis/Commands/kill.md`
 - `_Axis/Commands/log.md`
 - `_Axis/Commands/merge.md`
+- `_Axis/Commands/split.md`
 - `_Axis/Commands/memo.md`
 - `_Axis/Commands/memos.md`
 - `_Axis/Commands/note.md`
@@ -213,6 +221,8 @@ Optional project state: `EXCEPTIONS.md` in the Axis control folder, created on f
 - `_Axis/Commands/wiki.md`
 
 ### Resources
+
+- `_Axis/Resources/external-team.py` - Scoped External proposal Team operations; no provider launch.
 
 - `_Axis/Resources/coordination-layout.py` - Missing-only coordination state layout during owned Main startup.
 - `_Axis/Resources/supervision-tree.py` - Read-only recursive subproject coverage and ancestry.
@@ -276,6 +286,7 @@ Optional project state: `EXCEPTIONS.md` in the Axis control folder, created on f
 - `_Axis/Resources/Template-LocalPrompt.md`
 - `_Axis/Resources/Template-Mindset.md`
 - `_Axis/Resources/Template-Profiles.md`
+- `_Axis/Resources/split-history.py`
 - `_Axis/Resources/axis-dashboard-meridian.png` - README illustration of the default Dashboard.
 - `_Axis/Resources/axis-folders.svg` - README illustration of an Axis project folder.
 

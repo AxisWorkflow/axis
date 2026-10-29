@@ -1,6 +1,10 @@
 # Start Subagent
 > **Purpose:** Spawn a Subagent after [Practices > Delegation] has selected the route, bounded scope, and validator. Role and coordination rules live in [Practices > Agents].
 
+## External proposal-Team spawners
+
+An External spawner uses [Practices > ExternalTeams] and the explicit `external-team.py native-launch` route. It inherits the same envelope, lease, capability, capacity, Tracking, redacted launch audit and return-validation duties described here for Main, but only for its own proposal members. Their output returns to External; External submits it to Main. This exception grants no supervisor role, Secrets, shared project write, schedule, placement, budget extension or project acceptance. The helper returns a carried scope, not OS isolation; the native host spawn remains a separate observable action.
+
 ## How to Prompt a Subagent
 
 #### Prompt Envelope

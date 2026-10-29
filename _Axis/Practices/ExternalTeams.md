@@ -1,0 +1,29 @@
+# External Teams
+> **Purpose:** Let an External Agent prepare collaborative proposals while Main retains project acceptance.
+
+An External may form a proposal Team under the current User mandate, without asking Main to perform each internal step. It must own a live External Marker and use current atomic storage and the live Main placement. It cannot activate or move that placement. The helper refuses on serialized storage, changed placement, expired/revoked authority, a missing/killed owner or member, or foreign Team ownership. Do not bypass that refusal with direct shared writes. This is workflow authority, not host authentication or OS isolation.
+
+If the helper, qualified atomic storage or permitted native host spawning is unavailable, continue through the ordinary individual External contribution and Submissions workflow, or ask Main to mediate collaboration under Main's own authority. Preserve useful drafts and evidence. Report the specific unavailable route; it does not make all External work unavailable. Never bypass a host refusal, role gate or storage boundary.
+
+## Create and dispatch
+
+Use `_Axis/Resources/external-team.py --root . --session {External ID} {operation}` with one JSON argument object on stdin. It uses the existing coordination record schema, unique timestamp claims, scoped locks, Team workspace layout and native budget ledger. It does not use a parallel queue or launch a provider.
+
+1. `team`: pass `charter` with subject, objective, validator, User authority pointing to an immutable own-project Log, allowed actions and an explicit native money/runtime budget. List members as slot-only objects, including exactly one `leader`; no caller-supplied member sessions. The returned fresh Team ID owns `_Axis/Teams/{Team ID}/members/`. The helper assigns this scope and member scopes itself. Native budget semantics remain unchanged: actual money/runtime bounds apply; count and phase targets are not extra budgets.
+2. `member`: pass `team` and `slot` for each unbound slot. The helper mints a fresh Subagent Marker bound to this External owner, exact Team and slot, then binds it. Never adopt an arbitrary worker, another External or Main. An interrupted allocation may leave an unused Marker; report it to Main for reconciliation rather than reuse a guessed identity.
+3. `event`: pass `family: Teams`, `ident`, `action: start`. Then `job`: pass `mandate` with this Team ID, its authority and budget, scope inside that Team's members tree, plus a unique `operation_key`. No schedules or budget amendments are allowed.
+4. `native-launch`: pass `team`, `job`, `slot`, unique `attempt`, specific `task`, and the native budget `charge` evidence. It logs redacted intent, validates the nonce envelope and records dispatch. The result is `dispatch-recorded-not-launched`: invoke the available native host spawn tool with its returned `prompt`, then retain the observed host handle/outcome. Never claim that preparation proves a process started or stopped. Ambiguous effects require reconciliation under the existing Job semantics. A host that refuses the operation stays refused; do not disable its guardrails. Automatic process/provider routes in `team-route.py` and `session-adapters.py` remain Main-only.
+
+The native carried-scope route is supported where the host permits native subagents (for example the Codex native spawn tool). Optional OpenClaw External guardrails still refuse spawn; that route remains unavailable until the host supplies scoped proposal enforcement. No installation or guardrail disablement is implied.
+
+## Member work and communication
+
+Configure `checked-session.py` with the returned session, Team, Job, attempt, epoch and expiry, and explicit public `--read-path` inputs if needed. `CheckedTeamSession` validates owner/member leases, authority, Team epoch and dispatch binding before operations. Its `team_info` identifies `acceptance_class: proposal`, the External owner and `return_to: owner`. Members can write/delete only own work/ drafts, read peers, publish immutable artifact revisions, append own Tracking and send direct scoped Messages. Only these rights travel in the prompt; no shared project edits, Secrets, role changes, spawning or budget expansion.
+
+The owner uses `message` with team, member recipient, body and optional scoped attachments, and `inbox` with team to read returned Messages. Members send final results to `owner`; `main` is refused on a proposal Team. Owner `event` operations may record internal results and validate proposal quality. Such validation is always **proposed**, never project acceptance. Ordinary `require_main`, placement, schedules, indexes and project-control APIs remain Main-only. Scope amendment, arbitrary member replacement and automatic provider routes are not granted.
+
+## Submit and acceptance
+
+Use `submit` with team, body, immutable artifact attachments and a stable `submission_key`. It appends an explicitly unaccepted Main-directed request to canonical Messages. The same key and digest return the prior ID; changed content under the same key is a conflict. This is the safe Main-directed messaging alternative to Submissions. It never edits project files, sets a project acceptance snapshot or disposes its own request.
+
+Main sees the request through normal pending-message classification, reviews exact artifact hashes and accepts or rejects it using its own authority. Main alone integrates accepted content into shared project files and Git. Indexes and portable imports preserve proposal provenance, including completed or internally validated proposal work; import, receipt and internal validation do not mean acceptance. Main-owned Teams remain outside External control. Expired or revoked participation does not authorize fresh writes; Main can read retained history and handle abandoned proposals.

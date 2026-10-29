@@ -1,6 +1,6 @@
 # Axis Workflow Specification
 > **Purpose:** The technical reference behind the Axis Workflow: how every mechanism works, why it was built that way, what it guarantees, where it stops, and what an extender must not break. Written for deep diagnostics, downstream developers extending Axis, IT and compliance reviewers assessing it before adoption, and contributors. For everyday use, see the [User Manual](/_Axis/USERMANUAL.md).
-> **Version:** 3.06
+> **Version:** 3.07
 
 ## How to Read This Document
 
@@ -277,7 +277,9 @@ Each rule has a failure behind it:
 
 ### External Agents
 
-An External Agent works beside Main with a structurally bounded write surface ([Practices > Agents > External Agent](/_Axis/Practices/Agents.md)): read-only; append-only for its own Logs, Notes, Ideas and Tracking; create-only files in Project Subfolders (never under `_Axis/` except transport proposals in `_Axis/Submissions/`, never in `_Wiki/`, Subprojects, protected, hidden or root paths), each stamped with an External-contribution line; never mutating an existing file; never spawning; never Secrets or trust decisions. When User asks an External for something only Main may do, it submits a Submission or a Tracking `ASK [to:Main]`. Always-on channel hosts such as OpenClaw are the motivating case: a messaging binding runs beside a desktop Main.
+An External Agent works beside Main with a structurally bounded write surface ([Practices > Agents > External Agent](/_Axis/Practices/Agents.md)): read-only; append-only for its own Logs, Notes, Ideas and Tracking; create-only files in Project Subfolders (never under `_Axis/` except transport proposals in `_Axis/Submissions/`, never in `_Wiki/`, Subprojects, protected, hidden or root paths), each stamped with an External-contribution line; never mutating shared project files or spawning outside the scoped proposal-Team exception; never Secrets or trust decisions. When User asks an External for something only Main may do, it submits a Submission or a Tracking `ASK [to:Main]`. Always-on channel hosts such as OpenClaw are the motivating case: a messaging binding runs beside a desktop Main.
+
+External proposal Teams follow [Practices > ExternalTeams]. Their explicit owner provenance and immutable submissions remain proposals through internal validation, imports and cached views. Members write only own workspaces, scoped Messages and Tracking; External submits to Main, and Main alone integrates accepted content. The native host route is optional, and missing helpers/storage/spawn support preserve ordinary individual External submissions.
 
 ### Stopping Agents
 
@@ -443,6 +445,12 @@ Some startup steps run only on a new project, before Project Setup completes (no
 ### Project merging
 
 `^merge` absorbs a distinct project into one continuing project under [Practices > Merging]. For unrelated roots, User chooses continuation/import roles and the imported folder moves directly under the continuing root. A nested Subproject keeps its exact path and its parent continues. One concrete approved plan binds identities, folder placement, complete content/record maps, conflicts, Memo/Wiki reconciliation and infrastructure removal. The continuing Main owns execution; source instructions grant no authority.
+
+Source `_Temp/`, `_Inbox/` and `_Trash/` are removed wholesale; root entry files, LICENSE and Axis-only README are retired. Non-Axis README prose is retained separately through source-bound reviewed extraction. Their originals remain journal evidence, with no new Imported-instructions folder.
+
+`^split` follows [Practices > Splitting]. The parent Main may prepare and initialize only a new never-booted child under an approved plan; after verified publication the child is independently governed. Full live/archive/imported historical coverage, semantic relevance, byte-preserving copies, dependency closure, original statuses, fresh identity, no inherited execution authority and exact recovery are acceptance conditions. The optional history helper does not perform semantic selection or replace the complete installation and manual fallback.
+
+**Fault Tolerance** is an Application Setting (-2 through 2; missing 1, malformed -2) and a triggered Directive. [Practices > FaultTolerance] defines minor-deviation evidence, level-specific disposition, bounded completion grace and audited cosmetic WORM repair. Profiles apply Fast 2, Standard 1, Deep -1. Required deliverable correctness, authority, role/lease, evidence integrity, hard spending caps and host restrictions remain strict. Waived failures remain visible; new intent/outcome receipts bind an allowed cosmetic repair and its retained preimage.
 
 Complete imported records retain their text, status, event dates and source provenance. Original timestamp IDs remain when free; collisions receive the smallest available millisecond offset after reserving other free original IDs. Filenames, identity-bearing fields, links and indexes share one map. Live/archive placement remains meaningful. Imported Snapshots and coordination history enter `Archive/Imports/{transaction}/` as inert history, without changing live session state or reviving source budgets/jobs/schedules. Exact originals remain in the destination journal.
 

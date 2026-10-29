@@ -186,8 +186,9 @@ def _envelope(record):
     except (ValueError, TypeError, AttributeError):
         raise CoordinationError('project-id') from None
     issuer = record.get('issuer')
-    need(isinstance(issuer, dict) and issuer.get('role') in {'main', 'worker'}, 'issuer')
+    need(isinstance(issuer, dict) and issuer.get('role') in {'main', 'worker', 'external'}, 'issuer')
     identity(issuer.get('session'))
+    if issuer.get('role') == 'external' or 'proposal_only' in record or 'proposal_control' in record: _controlled(record)
     if 'budget_amendment' in record:
         if record['family'] == 'Jobs': identity(record['budget_amendment'])
         else:
@@ -262,6 +263,24 @@ def _accepted(record):
     need(acceptance.get('marker_sha256') == digest(marker), 'acceptance-digest')
     if 'placement_activation' in acceptance:
         need(isinstance(acceptance['placement_activation'], str) and re.fullmatch(r'[0-9a-f]{32}', acceptance['placement_activation']), 'acceptance-placement')
+
+
+def _controlled(record):
+    """Validate a control's provenance without conflating proposal and acceptance."""
+    if record.get('issuer', {}).get('role') != 'external':
+        need('proposal_only' not in record and 'proposal_control' not in record, 'proposal-classification')
+        return _accepted(record)
+    need('acceptance' not in record, 'proposal-has-acceptance')
+    proposal = record.get('proposal_control', {})
+    sid = record['issuer']['session']
+    need(isinstance(proposal, dict) and set(proposal) == {'version', 'owner', 'marker', 'marker_sha256', 'main', 'placement_activation'}, 'proposal-control-shape')
+    need(proposal.get('version') == 1 and proposal.get('owner') == sid, 'proposal-owner')
+    marker = proposal.get('marker')
+    need(isinstance(marker, str) and marker.startswith('External:'), 'proposal-external-marker')
+    need(proposal.get('marker_sha256') == digest(marker), 'proposal-marker-digest')
+    identity(proposal.get('main'))
+    need(re.fullmatch(r'[0-9a-f]{32}', proposal.get('placement_activation', '')) is not None, 'proposal-placement')
+    need(record.get('proposal_only') is True, 'proposal-classification')
 
 
 def validate_acceptance(record):
@@ -405,7 +424,7 @@ def _bound_plan(record, *, verify=True):
 
 
 def _initial(record):
-    _accepted(record)
+    _controlled(record)
     need(record['family'] in {'Teams', 'Jobs'}, 'projection-family')
     limits = _limits(record.get('limits'))
     authority = record.get('authority', {})
@@ -417,9 +436,14 @@ def _initial(record):
     need(isinstance(record.get('validator'), str) and record['validator'].strip(), 'validator')
     need(isinstance(record.get('scope'), list) and record['scope'], 'scope')
     for path in record['scope']: relative(path)
+    if record.get('proposal_only'):
+        team_id = record['id'] if record['family'] == 'Teams' else identity(record.get('team'))
+        prefix = '_Axis/Teams/' + team_id + '/members'
+        need(all(p == prefix or p.startswith(prefix + '/') for p in record['scope']), 'proposal-scope')
+        need(_native(record), 'proposal-native-budget-required')
     need(isinstance(record.get('actions'), list) and record['actions'] and set(record['actions']) <= SAFE_OPERATIONS, 'actions')
     need(timestamp(limits['deadline']) <= timestamp(authority['expires']), 'mandate-deadline')
-    common = {'id': record['id'], 'family': record['family'], 'head': record['id'], 'epoch': 0, 'held': False, 'holds': [], 'history': [], 'limits': limits, 'authority': copy.deepcopy(authority), 'completed_at': None}
+    common = {'acceptance_class': 'proposal' if record.get('proposal_only') else 'accepted', 'id': record['id'], 'family': record['family'], 'head': record['id'], 'epoch': 0, 'held': False, 'holds': [], 'history': [], 'limits': limits, 'authority': copy.deepcopy(authority), 'completed_at': None}
     if record['family'] == 'Teams':
         if 'collaboration' in record: collaboration(record['collaboration'])
         members = copy.deepcopy(record.get('members', []))
@@ -677,7 +701,10 @@ def project_records(founding, messages, teams=None):
         if not isinstance(event, dict) or event.get('target') != founding['id'] or event.get('family') != founding['family']:
             continue
         try:
-            _envelope(message); _accepted(message)
+            _envelope(message); _controlled(message)
+            need(bool(message.get('proposal_only')) == bool(founding.get('proposal_only')), 'control-classification')
+            if founding.get('proposal_only'):
+                need(message['issuer']['session'] == founding['issuer']['session'], 'proposal-owner')
             need(message['project'] == founding['project'], 'project-mismatch')
             need(message.get('authority') == founding.get('authority'), 'authority-mismatch')
             need(message.get('kind') == {'dispatch': 'assignment', 'validate': 'validation', 'receipt': 'receipt', 'result': 'decision'}.get(event.get('action'), 'control'), 'event-kind')
@@ -747,6 +774,8 @@ def _team_context(founding, messages, teams, job_state):
     need(_native(founding) == _native(team), 'team-budget-semantics')
     if _native(founding): need(founding['limits']['budget'] == team['limits']['budget'], 'team-budget-binding')
     admitted = snapshot(founding.get('team_head'))
+    need(bool(founding.get('proposal_only')) == bool(team.get('proposal_only')), 'team-classification')
+    if team.get('proposal_only'): need(founding['issuer'] == team['issuer'], 'proposal-owner')
     need(admitted['epoch'] == founding.get('team_epoch'), 'team-epoch')
     need(set(founding['actions']) <= set(team['actions']) and all(any(p == base or p.startswith(base + '/') for base in team['scope']) for p in founding['scope']), 'team-scope')
     for message in messages:
@@ -757,6 +786,8 @@ def _team_context(founding, messages, teams, job_state):
             attempt = data if event['action'] == 'dispatch' else job_state['attempts'][data['attempt']]
             need(context['epoch'] == attempt.get('team_epoch'), 'team-epoch')
             need(context['members'].get(attempt['slot'], {}).get('session') == attempt['session'], 'member-binding')
+            if team.get('proposal_only'):
+                need(attempt.get('scope') == ['_Axis/Teams/' + team['id'] + '/members/' + attempt['slot']], 'proposal-dispatch-scope')
 
 
 class Store:
@@ -770,6 +801,244 @@ class Store:
         self.clock = clock or (lambda: dt.datetime.now(dt.timezone.utc))
         self._last_clock = None
         self._lock = None
+        self._proposal_control = None
+
+    def _require_external(self):
+        self.guard()
+        need(not self.io.lease[2] and self.io.marker_body().splitlines()[0].startswith('External:'), 'external-required')
+        need(self.storage_profile() == 'atomic', 'direct-storage-unavailable')
+        return self.session
+
+    def _control_guard(self):
+        if self._proposal_control is None: return self.require_main()
+        self._require_external()
+        self._control_placement()
+        if self._proposal_control.get('team'):
+            self._proposal_owned(self.read('Teams', self._proposal_control['team']))
+        return self.session
+
+    def _control_placement(self):
+        if self._proposal_control is None: return self.require_placement()
+        self._require_external()
+        placement = self._read_placement()
+        return Store(self.root, placement['session']).require_placement(expected=placement['activation'])
+
+    def _proposal_snapshot(self):
+        placement = self._control_placement()
+        marker = self.io.marker_body()
+        return {'version': 1, 'owner': self.session, 'marker': marker, 'marker_sha256': digest(marker),
+                'main': placement['session'], 'placement_activation': placement['activation']}
+
+    def _proposal_owned(self, record):
+        self._require_external(); _controlled(record)
+        need(record.get('proposal_only') and record['issuer'] == {'role': 'external', 'session': self.session}, 'proposal-owner')
+        need(record['proposal_control']['marker_sha256'] == digest(self.io.marker_body()), 'proposal-owner-changed')
+        self.validate_authority(record['authority'])
+        need(self.now() < timestamp(record['limits']['deadline']), 'proposal-expired')
+        placement = self._read_placement()
+        Store(self.root, placement['session']).require_placement(expected=record['proposal_control']['placement_activation'])
+        return record
+
+    @contextlib.contextmanager
+    def _proposal_context(self, team=None):
+        need(self._proposal_control is None, 'nested-proposal-control')
+        self._require_external()
+        self._proposal_control = {'team': team}
+        try:
+            self._control_guard()
+            yield
+        finally: self._proposal_control = None
+
+    def proposal_team(self, charter):
+        """Allocate a proposal-only Team; no shared project-write scope is inherited."""
+        value = copy.deepcopy(charter)
+        need(isinstance(value, dict) and isinstance(value.get('authority'), dict), 'proposal-charter')
+        ref = value['authority'].get('ref', '')
+        need(Path(ref).parent.as_posix() == '_Axis/Logs' and Path(ref).suffix == '.md', 'proposal-authority-log')
+        identity(Path(ref).stem)
+        need(isinstance(value.get('limits'), dict) and isinstance(value['limits'].get('budget'), dict), 'proposal-native-budget-required')
+        need(value['limits']['budget'].get('accounting_owner') == self.session, 'proposal-budget-owner')
+        need(isinstance(value.get('members'), list) and value['members'], 'members')
+        need(all(isinstance(m, dict) and set(m) == {'slot'} for m in value['members']), 'proposal-unbound-members')
+        value['scope'] = ['_Axis/Teams']  # Replaced with the newly allocated Team ID inside the atomic record callback.
+        with self._proposal_context(): return self.create_team(value)
+
+    def _proposal_member(self, sid, team, item_slot=None):
+        worker = self._worker_session(sid)
+        lines = worker.marker_body().splitlines()
+        need(lines[:1] == ['Subagent: External proposal Team'], 'proposal-member-origin')
+        for label, value in (('parent', self.session), ('proposal-team', team)):
+            need([line for line in lines if line.startswith(label + ':')] == [label + ': ' + value], 'proposal-member-origin')
+        if item_slot is not None:
+            need([line for line in lines if line.startswith('proposal-slot:')] == ['proposal-slot: ' + item_slot], 'proposal-member-slot')
+        return worker
+
+    def proposal_member_create(self, team, slot):
+        """Fresh lifecycle Marker only; this does not launch a host process."""
+        workspace_token(slot)
+        with self._proposal_context(team):
+            view = self.project('Teams', team)
+            need(not view['held'] and view['state'] in {'ready', 'running'} and slot in view['members'] and view['members'][slot].get('session') is None, 'proposal-member-bound')
+            with self.locked(proposal=True):
+                configured = self.io.setting('Max Concurrent Sessions')
+                cap = int(configured) if isinstance(configured, str) and configured.isascii() and configured.isdigit() and 1 <= int(configured) <= 100 else 10
+                live = 0
+                for marker in self.path('_Axis/Agents', kind='directory').glob('*.md'):
+                    identity(marker.stem)
+                    checked = self.path('_Axis/Agents/' + marker.name)
+                    if not checked.with_suffix('.kill').exists() and time.time() - checked.stat().st_mtime < 3600: live += 1
+                need(live < cap, 'project-concurrency')
+                def allocation_body(ident):
+                    return ('External Team member allocation\n\nby: External Agent\nsession: ' + self.session
+                            + '\nteam: ' + team + '\nslot: ' + slot + '\nrole: GENERAL\nstate: allocation-intent\n'
+                            + 'Synopsis: Reserve a scoped proposal member; no host or provider has been launched.\n')
+                allocation_log, _ = self.io.record('Logs', allocation_body, renew_lease=False)
+                def body(sid):
+                    return ('Subagent: External proposal Team\n\nparent: ' + self.session + '\nproposal-team: ' + team
+                            + '\nproposal-slot: ' + slot + '\nstarted: ' + sid + '\nlog: _Axis/Logs/' + allocation_log + '.md\nreturn: External owner; Main alone accepts project integration.\n')
+                sid, path = self.io.record('Agents', body, renew_lease=False)
+            self.event('Teams', team, 'bind_member', {'slot': slot, 'session': sid})
+            return {'session': sid, 'path': path, 'team': team, 'slot': slot, 'owner': self.session, 'allocation_log': allocation_log}
+
+    def proposal_job(self, mandate, operation_key):
+        value = copy.deepcopy(mandate); need(isinstance(value, dict), 'proposal-mandate')
+        team = identity(value.get('team'))
+        need(not any(k in value for k in ('schedule', 'occurrence', 'budget_amendment')), 'proposal-job-scope')
+        with self._proposal_context(team):
+            charter = self._proposal_owned(self.read('Teams', team))
+            need(value.get('authority') == charter['authority'] or self.validate_authority(value.get('authority')) == charter['authority'], 'proposal-authority')
+            return self.admit_job(value, 'external:' + self.session + ':' + operation_key)
+
+    def proposal_event(self, family, ident, action, data=None, expected=None, epoch=None):
+        need(family in {'Teams', 'Jobs'}, 'proposal-family')
+        need(data is None or isinstance(data, dict), 'event-data')
+        record = self._proposal_owned(self.read(family, ident))
+        team = ident if family == 'Teams' else identity(record.get('team'))
+        payload = copy.deepcopy(data or {})
+        need(action not in {'amend', 'replace_leader', 'bind_member', 'route_boundary'}, 'proposal-control-scope')
+        if action == 'dispatch':
+            need('route_request_sha256' not in payload, 'proposal-native-carried-route')
+            slot = workspace_token(payload.get('slot'))
+            self._proposal_member(payload.get('session'), team, slot)
+            expected_scope = ['_Axis/Teams/' + team + '/members/' + slot]
+            need(payload.get('scope') == expected_scope, 'proposal-dispatch-scope')
+        with self._proposal_context(team): return self.event(family, ident, action, payload, expected, epoch)
+
+    def proposal_message(self, team, recipient, body, kind='question', attachments=None):
+        need(kind in PROPOSALS and isinstance(body, str), 'proposal-message-kind')
+        with self._proposal_context(team):
+            charter = self.read('Teams', team)
+            delivery = self._route(team, recipient)
+            need(all(t['slot'] != 'owner' for t in delivery['recipients']), 'proposal-owner-loop')
+            delivery['sender_slot'] = 'owner'
+            prefix = '_Axis/Teams/' + team + '/members/'
+            need(isinstance(attachments or [], list) and all(isinstance(a, dict) and str(a.get('path', '')).startswith(prefix) for a in (attachments or [])), 'proposal-attachment-scope')
+            checked = self.validate_attachments(attachments or [])
+            with self.locked(proposal=True):
+                return self._record('Messages', {'subject': 'External Team ' + kind, 'kind': kind,
+                    'recipient': recipient, 'body': body, 'team': team, 'job': None, 'epoch': self.project('Teams', team)['epoch'],
+                    'expires': charter['authority']['expires'], 'correlation': team, 'authority': None,
+                    'data': {}, 'delivery': delivery, 'attachments': checked})
+
+    def proposal_inbox(self, team):
+        self._proposal_owned(self.read('Teams', team))
+        rows = [m for m in self.records('Messages') if m.get('team') == team
+                and m.get('recipient') in {'owner', self.session}]
+        return {'team': team, 'owner': self.session, 'acceptance_class': 'proposal', 'messages': rows}
+
+    def proposal_submit(self, team, body, attachments, submission_key):
+        """Durable Main-directed request; neither submission nor review accepts integration."""
+        need(isinstance(body, str) and body.strip() and isinstance(submission_key, str) and submission_key.strip(), 'proposal-submission')
+        with self._proposal_context(team):
+            prefix = '_Axis/Teams/' + team + '/members/'
+            need(isinstance(attachments, list) and all(isinstance(a, dict) and str(a.get('path', '')).startswith(prefix) and '/artifacts/' in a['path'][len(prefix):] for a in attachments), 'proposal-attachment-scope')
+            checked = self.validate_attachments(attachments)
+            view = self.project('Teams', team); need(not view['held'], 'team-held')
+            publications = {}
+            for attachment in checked:
+                parts = attachment['path'][len(prefix):].split('/')
+                need(len(parts) >= 4 and parts[1] == 'artifacts', 'proposal-attachment-scope')
+                key = (parts[0], parts[2])
+                if key not in publications:
+                    publications[key] = self.artifact_check(team, key[0], key[1], _view=view)
+                verified = publications[key]
+                need(attachment in [verified['attachment'], *verified['manifest']['files']], 'proposal-attachment-publication')
+            need(all(v['attachment'] in checked for v in publications.values()), 'proposal-manifest-required')
+            value = {'team': team, 'body': body, 'attachments': checked}
+            key = digest({'owner': self.session, 'team': team, 'key': submission_key})
+            fingerprint = digest(value)
+            with self.locked(proposal=True):
+                for message in self.records('Messages'):
+                    if message.get('data', {}).get('proposal_submission') == key:
+                        need(message['issuer'] == {'session': self.session, 'role': 'external'} and message['data'].get('proposal_digest') == fingerprint, 'proposal-submission-conflict')
+                        return {'status': 'duplicate', 'id': message['id'], 'record': message}
+                charter = self.read('Teams', team)
+                return self._record('Messages', {'subject': 'External Team submission for Main', 'kind': 'request', 'recipient': 'main',
+                    'body': body, 'team': team, 'job': None, 'epoch': self.project('Teams', team)['epoch'],
+                    'expires': charter['authority']['expires'], 'correlation': key, 'authority': None, 'attachments': checked,
+                    'data': {'proposal_submission': key, 'proposal_digest': fingerprint, 'integration': 'unaccepted'}})
+
+    def proposal_native_launch(self, team, job, slot, attempt, task, charge=None):
+        """Record dispatch and return carried scope for the host's native spawn tool.
+
+        Host invocation is explicit after this result. This is workflow enforcement,
+        not an OS sandbox or a claim that a process has started or terminated.
+        """
+        need(isinstance(task, str) and task.strip(), 'proposal-task')
+        charter = self._proposal_owned(self.read('Teams', team))
+        founding = self._proposal_owned(self.read('Jobs', job))
+        need(founding.get('team') == team, 'proposal-job-scope')
+        member = self.project('Teams', team)['members'].get(slot, {})
+        sid = member.get('session'); self._proposal_member(sid, team, slot)
+        scope = '_Axis/Teams/' + team + '/members/' + slot
+        data = {'attempt': attempt, 'slot': slot, 'session': sid, 'operation': 'write', 'scope': [scope]}
+        if charge is not None: data['charge'] = copy.deepcopy(charge)
+        nonce = secrets.token_hex(16)
+        header = '<<AXIS:SUBAGENT>>\n<<AXIS:ROLE:GENERAL>>\n<<AXIS:ENVELOPE:' + nonce + ':BEGIN>>'
+        footer = '<<AXIS:SUBAGENT>>\n<<AXIS:ROLE:GENERAL>>\n<<AXIS:ENVELOPE:' + nonce + ':END>>'
+        spec = importlib.util.spec_from_file_location('axis_proposal_envelope', Path(__file__).with_name('envelope.py'))
+        envelope = importlib.util.module_from_spec(spec); spec.loader.exec_module(envelope)
+        binding = {'team': team, 'job': job, 'attempt': attempt, 'epoch': self.project('Jobs', job)['epoch']}
+        expires = min(charter['authority']['expires'], founding['authority']['expires'])
+        tracking = 'TRACKING: your Session ID is {assigned ID}. Append `{Current UTC timestamp} - {assigned ID} - {one-line statement}` to `_Axis/Tracking/{assigned ID}.md` - one `INTENT [{scope}] {what you will do}` line now at start, and one `DONE [{same scope}] {outcome}` line just before you return; scope names the Task IDs and paths you will touch. TIMESTAMPS: write every timestamp in UTC as `yyyy.mm.dd.hh.mm.ss.xxxZ` with real milliseconds, made by running this exact command and using what it prints: `TS=$(date -u +"%Y.%m.%d.%H.%M.%S.%3NZ"); case "$TS" in *3N*) TS=$(node -e \'console.log(new Date().toISOString().replace(/[-T:]/g,"."))\' 2>/dev/null || python3 -c \'import datetime as d;n=d.datetime.now(d.timezone.utc);print(n.strftime("%Y.%m.%d.%H.%M.%S.")+"%03dZ"%(n.microsecond//1000))\' 2>/dev/null || perl -MTime::HiRes=time -e \'my $t=time;my @g=gmtime $t;printf "%04d.%02d.%02d.%02d.%02d.%02d.%03dZ",$g[5]+1900,$g[4]+1,$g[3],$g[2],$g[1],$g[0],($t-int $t)*1000\');; esac; echo "$TS"` - never type, guess, round or reformat one. FILE CREATION: your first append may create this Tracking file if absent; never create or replace your Marker. Before any product write, append and read back INTENT; computing its timestamp alone is insufficient. With Python, `python3 _Axis/Resources/startup-state.py --root . track --session {assigned ID} --type INTENT --scope \'{scope}\' --text \'{statement}\'` performs time, append and readback in one call; use DONE on return. Substitute shell-quoted literal values, escaping embedded quotes and shell metacharacters so each scope and statement stays one argument. APPEND-ONLY: add lines at the end of the file only; never edit, reorder or delete an existing line, even your own - to correct a line, append a new line that says so. If you cannot write files or run the command, say so in your return and Main records a current-time retrospective STATUS in Main\'s own file.'.replace('{assigned ID}', sid).replace('{scope}', scope)
+        if self.io.setting('Tracking') not in {'writes', 'verbose'}: tracking = ''
+        elif self.io.setting('Tracking') == 'verbose': tracking += ' Plus one STATUS [{same scope}] line at each step checkpoint.'
+        instructions = (envelope.VALIDATE + '\n\n'
+            'You are a scoped member of an External-led proposal Team. Owner: ' + self.session + '. Session: ' + sid + '.\n'
+            'Existing Marker: _Axis/Agents/' + sid + '.md; kill tombstone: _Axis/Agents/' + sid + '.kill. '
+            'Never create or replace the Marker. Missing, expired or killed owner/member means stop.\n'
+            'Binding: ' + canonical(binding).decode() + '. Team epoch: ' + str(self.project('Teams', team)['epoch']) + '. Slot: ' + slot + '.\n'
+            'Before each operation verify own lease and live Team/Job/owner authority using CheckedTeamSession. '
+            'Use write_draft and delete_draft only for ' + scope + '/work/; publish_artifact creates immutable revisions under ' + scope + '/artifacts/.\n'
+            'Allowed checked tools: team_info, read_file, read_message, inbox, observe_message, send_message, read_member_file, write_draft, delete_draft, publish_artifact, track. '
+            'Read all peers through read_member_file; peer and shared project files stay read-only. '
+            'Use send_message for any teammate slot or team broadcast; final result goes to owner. Scoped canonical Messages and own append-only '
+            '_Axis/Tracking/' + sid + '.md are explicit write exceptions. Poll inbox every ' + str(charter['collaboration']['poll_seconds']) + ' seconds while participation is valid.\n'
+            'Read only task-relevant public project files explicitly granted by the spawner; never Secrets. '
+            'No shared project writes, settings, indexes, role changes, provider calls, spawning, budget changes or integration. '
+            'Artifact submission does not end valid discussion. External reviews proposals; only Main accepts project integration.\n'
+            'Actual shared budget: ' + canonical(founding['limits']['budget']).decode() + '. '
+            'Provider launches count invocations, not individual tool calls. No new phase/count budget is implied. '
+            'At the actual budget/authority boundary stop and preserve evidence; never infer success, process termination, known charges or authorization from missing observations.\n'
+            'This carried scope is not OS isolation; ordinary host tools are not constrained by the checked broker. '
+            'Expires: ' + expires + '.\nTASK:\n' + task + '\n\n' + tracking + '\n\n' + envelope.TEARLINE)
+        prompt = header + '\n\n' + instructions + '\n\n' + footer
+        need(envelope.check(prompt) is None, 'proposal-envelope')
+        # Retain only a redacted spawn audit; never copy the complete prompt into a Log.
+        with self._proposal_context(team):
+            with self.locked(proposal=True):
+                def log_body(ident):
+                    return ('External Team native launch prepared\n\nby: External Agent\nsession: ' + self.session
+                            + '\nteam: ' + team + '\njob: ' + job + '\nmember: ' + sid
+                            + '\nroute: native-host-carried-scope\nrole: GENERAL\nmodel: selected by authorized native host\n'
+                            + 'task-sha256: ' + digest(task) + '\nprompt-sha256: ' + digest(prompt)
+                            + '\ninput-bytes: ' + str(len(prompt.encode())) + '\nSynopsis: Prepare scoped proposal artifacts and return evidence to External owner; Main decides integration.\n')
+                log_id, _ = self.io.record('Logs', log_body, renew_lease=False)
+        dispatch = self.proposal_event('Jobs', job, 'dispatch', data)
+        return {'status': 'dispatch-recorded-not-launched', 'dispatch': dispatch['id'], 'session': sid,
+                'binding': binding, 'expires': expires, 'spawn_log': log_id,
+                'workspace': scope, 'prompt': prompt,
+                'route': 'native-host-carried-scope', 'isolation': 'workflow only; host sandbox governs actual filesystem access'}
 
     def now(self):
         value = self.clock()
@@ -809,8 +1078,12 @@ class Store:
         return self.session
 
     @contextlib.contextmanager
-    def locked(self, worker=False):
-        if worker:
+    def locked(self, worker=False, *, proposal=False):
+        need(not (worker and proposal), 'lock-mode')
+        if proposal:
+            need(self._proposal_control is not None, 'proposal-context-required')
+            self._control_guard()
+        elif worker:
             self.guard()
             need(not self.io.lease[2] and self.storage_profile() == 'atomic', 'direct-storage-unavailable')
         else: self.require_main()
@@ -818,7 +1091,7 @@ class Store:
         name = '_Axis/coordination.lock'
         lock = self.path(name, missing=True, kind='directory')
         owner = canonical({'session': self.session, 'nonce': secrets.token_hex(16)}) + b'\n'
-        until = time.monotonic() + (2 if worker else 0)
+        until = time.monotonic() + (2 if worker or proposal else 0)
         while True:
             try:
                 os.mkdir(lock); break
@@ -830,7 +1103,7 @@ class Store:
             fd = os.open(owner_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
             try: _START.write_fd(fd, owner)
             finally: os.close(fd)
-            self._lock = (lock, owner, start, (lock.stat().st_dev, lock.stat().st_ino), worker)
+            self._lock = (lock, owner, start, (lock.stat().st_dev, lock.stat().st_ino), 'proposal' if proposal else worker)
             self._check_lock(); yield
         finally:
             if self._lock is not None:
@@ -849,7 +1122,8 @@ class Store:
         need(time.monotonic() - start < 10, 'lock-expired')
         safe = self.path('_Axis/coordination.lock', kind='directory'); info = safe.stat()
         need((info.st_dev, info.st_ino) == ident and self.io.read('_Axis/coordination.lock/OWNER') == owner.decode(), 'lock-owner')
-        if worker:
+        if worker == 'proposal': self._control_guard()
+        elif worker:
             self.guard()
             need(not self.io.lease[2] and self.storage_profile() == 'atomic', 'direct-storage-unavailable')
         else: self.require_main()
@@ -964,6 +1238,7 @@ class Store:
             return {'status': 'inactive', 'reason': getattr(exc, 'code', 'placement-io')}
 
     def _write_placement(self, *, active, expires, declaration):
+        self.require_main()
         self._check_lock()
         name = '_Axis/Flags/coordination-placement.json'
         destination = self.path(name, missing=True)
@@ -1046,6 +1321,7 @@ class Store:
             return {'status': 'initialized', 'project': self.project_id(), 'families': list(FAMILIES), 'placement': self.placement_status()['status']}
 
     def _replace(self, name, text, expected_digest=None, limit=65536):
+        self.require_main()
         need(len(text.encode()) <= limit, 'record-size')
         self._check_lock()
         destination = self.path(name, missing=True)
@@ -1080,10 +1356,25 @@ class Store:
         self.guard()
         if not worker: self._check_lock()
         project = self.project_id()
-        reserved = {'schema', 'family', 'id', 'created', 'project', 'issuer', 'acceptance'}
+        reserved = {'schema', 'family', 'id', 'created', 'project', 'issuer', 'acceptance', 'proposal_control', 'proposal_only'}
         need(not reserved.intersection(payload), 'reserved-fields')
         issuer = {'session': self.session, 'role': 'main' if self.io.lease[2] else 'worker'}
         acceptance = self._acceptance() if issuer['role'] == 'main' else None
+        proposal = self._proposal_snapshot() if self._proposal_control else None
+        if proposal is not None:
+            issuer['role'] = 'external'
+            need(family in {'Teams', 'Jobs', 'Messages'}, 'proposal-family')
+            if family == 'Teams':
+                need(self._proposal_control.get('team') is None and payload.get('acceptance_owner') == self.session, 'proposal-team-context')
+                need(all(m.get('session') is None for m in payload.get('members', [])), 'proposal-unbound-members')
+            elif family == 'Jobs':
+                team = self._proposal_control.get('team')
+                need(team is not None and payload.get('team') == team and payload.get('acceptance_owner') == self.session, 'proposal-job-scope')
+                charter = self._proposal_owned(self.read('Teams', team))
+                need(payload.get('authority') == charter['authority'] and not any(k in payload for k in ('schedule', 'occurrence', 'budget_amendment')), 'proposal-job-scope')
+            else:
+                need(payload.get('team') == self._proposal_control.get('team') and payload.get('team') is not None, 'proposal-message-scope')
+
         def body(value):
             result = dict(copy.deepcopy(payload), schema=SCHEMA, family=family, id=value, created=value, project=project, issuer=issuer)
             if family == 'Messages':
@@ -1092,6 +1383,13 @@ class Store:
                 result.setdefault('attachments', [])
                 if result.get('correlation') is None: result['correlation'] = value
             if acceptance is not None: result['acceptance'] = acceptance
+            if proposal is not None:
+                result.update(proposal_only=True, proposal_control=proposal)
+                if family == 'Teams':
+                    result['scope'] = ['_Axis/Teams/' + value + '/members']
+                    for member in result['members']:
+                        member['scope'] = ['_Axis/Teams/' + value + '/members/' + member['slot']]
+                _controlled(result)
             return render_record(result)
         try:
             ident, name = self.io.record(family, body, renew_lease=False)
@@ -1197,7 +1495,15 @@ class Store:
                         record = read_record(path); break
                     except CoordinationError as exc:
                         claim = self.path('_Temp/' + path.stem + '.tsclaim', missing=True, kind='directory')
-                        if exc.code not in {'record-integrity', 'record-encoding'} or not claim.exists() or time.monotonic() >= until:
+                        if exc.code not in {'record-integrity', 'record-encoding'}:
+                            raise
+                        if not claim.exists():
+                            # The publisher can finish and release its claim after
+                            # our partial read but before this check. One fresh,
+                            # fully validated read resolves that race. Stable
+                            # corruption still raises; never loop without a claim.
+                            record = read_record(path); break
+                        if time.monotonic() >= until:
                             raise
                         time.sleep(0.02)
                 need(record['family'] == family and record['id'] == path.stem and record['project'] == self.project_id(), 'record-identity', path)
@@ -1280,8 +1586,8 @@ class Store:
         return value
 
     def create_team(self, charter):
-        with self.locked():
-            self.require_placement()
+        with self.locked(proposal=self._proposal_control is not None):
+            self._control_placement()
             value = self._founding(charter)
             # Only newly admitted charters gain this contract. Historical bytes stay unchanged.
             value.setdefault('collaboration', copy.deepcopy(COLLABORATION))
@@ -1319,15 +1625,15 @@ class Store:
 
     def admit_job(self, mandate, operation_key):
         need(isinstance(operation_key, str) and 0 < len(operation_key.encode()) <= 256 and '\n' not in operation_key, 'operation-key')
-        with self.locked():
-            self.require_placement()
+        with self.locked(proposal=self._proposal_control is not None):
+            self._control_placement()
             self.require_history()
             value = self._founding(mandate)
             value['operation_key'] = operation_key
             jobs = self.records('Jobs'); messages = self.records('Messages')
             for record in jobs:
                 if record.get('operation_key') == operation_key:
-                    compare = {k: v for k, v in record.items() if k not in {'schema', 'family', 'id', 'created', 'project', 'issuer', 'acceptance', 'acceptance_owner', 'team_epoch', 'team_head'}}
+                    compare = {k: v for k, v in record.items() if k not in {'schema', 'family', 'id', 'created', 'project', 'issuer', 'acceptance', 'acceptance_owner', 'team_epoch', 'team_head', 'proposal_only', 'proposal_control'}}
                     candidate = {k: v for k, v in value.items() if k != 'acceptance_owner'}
                     for comparison in (compare, candidate):
                         if isinstance(comparison.get('occurrence'), dict):
@@ -1390,7 +1696,8 @@ class Store:
             if _native(record) and record['authority']['digest'] == mandate['authority']['digest']:
                 need(record['limits']['budget'].get('key') == policy['key'], 'budget-authority-key-reuse')
             if _native(record) and record['limits']['budget'].get('key') == policy['key']:
-                _accepted(record)
+                _controlled(record)
+                if self._proposal_control: need(record.get('proposal_only') and record['acceptance_owner'] == self.session, 'proposal-budget-owner')
                 need(_native_policy(record['limits']['budget']) == policy, 'budget-baseline-conflict')
                 matching.append(record)
             elif not _native(record):
@@ -1408,7 +1715,7 @@ class Store:
         need(records, 'native-budget-missing')
         policy = _native_policy(records[0]['limits']['budget'])
         for record in records:
-            _accepted(record)
+            _controlled(record)
             need(_native_policy(record['limits']['budget']) == policy, 'budget-baseline-conflict')
             self.validate_authority(record['authority'], live=False)
         ceilings = {'money_minor': policy.get('money', {}).get('ceiling_minor'), 'runtime_seconds': policy.get('runtime_seconds')}
@@ -1673,7 +1980,15 @@ class Store:
         founding = self.read('Jobs', identity(job)); state = self.project('Jobs', job)
         need(not view['held'] and view['state'] in {'ready', 'running'}, 'team-unavailable')
         need(not state['held'] and state['state'] in {'admitted', 'running'}, 'participation-ended')
-        need(founding.get('team') == team and founding['acceptance_owner'] == placement['session'], 'worker-message-scope')
+        need(founding.get('team') == team, 'worker-message-scope')
+        if charter.get('proposal_only'):
+            sponsor = Store(self.root, charter['acceptance_owner'], clock=self.clock)
+            sponsor._require_external(); sponsor._proposal_owned(charter)
+            need(founding.get('proposal_only') and founding['acceptance_owner'] == charter['acceptance_owner'], 'proposal-owner')
+            need(charter['proposal_control']['placement_activation'] == placement['activation'], 'proposal-placement')
+            sponsor._proposal_member(self.session, team, item_slot=None)
+        else:
+            need(founding['acceptance_owner'] == placement['session'] and not founding.get('proposal_only'), 'worker-message-scope')
         self.validate_authority(charter['authority']); self.validate_authority(founding['authority'])
         need(self.now() < min(timestamp(view['limits']['deadline']), timestamp(state['limits']['deadline'])), 'participation-expired')
         item = state['attempts'].get(attempt, {})
@@ -1681,6 +1996,7 @@ class Store:
         need(item.get('team_epoch') == view['epoch'], 'stale-epoch')
         need(item.get('status') in {'dispatch-intent', 'received', 'result', 'validated'}, 'participation-ended')
         slot = item.get('slot'); member = view['members'].get(slot, {})
+        if charter.get('proposal_only'): sponsor._proposal_member(self.session, team, item_slot=slot)
         need(member.get('session') == self.session, 'member-binding')
         need('coordinate' in founding['actions'] or 'report' in founding['actions'], 'discussion-scope')
         if writing: need('write' in founding['actions'] and item.get('operation') in {'write', 'coordinate'}, 'workspace-write-scope')
@@ -1691,8 +2007,9 @@ class Store:
         charter = self.read('Teams', team); view = self.project('Teams', team)
         collaboration(charter.get('collaboration'))
         need(not view['held'], 'team-unavailable')
-        if recipient in {'main', charter['acceptance_owner']}:
-            targets = [{'slot': 'main', 'session': charter['acceptance_owner']}]
+        if recipient in {'main', 'owner', charter['acceptance_owner']}:
+            need(not charter.get('proposal_only') or recipient != 'main', 'proposal-return-to-owner')
+            targets = [{'slot': 'owner' if charter.get('proposal_only') else 'main', 'session': charter['acceptance_owner']}]
         else:
             need(view['state'] in {'ready', 'running'}, 'team-unavailable')
             slot = recipient[7:] if recipient.startswith('member:') else recipient
@@ -2041,20 +2358,24 @@ class Store:
             need(kind in PROPOSALS and job is not None, 'worker-message-scope')
             need(authority is None, 'worker-message-authority')
             founding = self.read('Jobs', job); state = self.project('Jobs', job)
+            if founding.get('proposal_only'):
+                sponsor = Store(self.root, founding['acceptance_owner'], clock=self.clock)
+                sponsor._proposal_owned(founding); sponsor._proposal_member(self.session, team)
+                need(recipient != 'main', 'proposal-return-to-owner')
             need(not state['held'] and team == founding.get('team'), 'worker-message-scope')
             if team is not None and self.read('Teams', team).get('collaboration'):
                 # Retain late Main-directed Results under the prior capture contract,
                 # without granting further discussion, workspace writes or completion.
                 team_state = self.project('Teams', team)
                 attempt = state['attempts'].get(payload['data'].get('attempt'), {})
-                late_result = kind == 'result' and recipient in {'main', founding['acceptance_owner']} and (
+                late_result = kind == 'result' and recipient in {'main', 'owner', founding['acceptance_owner']} and (
                     state['state'] not in {'admitted', 'running'} or team_state['state'] not in {'ready', 'running'}
                     or attempt.get('team_epoch') != team_state['epoch']
                     or self.now() >= min(timestamp(founding['limits']['deadline']), timestamp(team_state['limits']['deadline'])))
                 if not late_result: return self._direct_message(payload)
             attempt = state['attempts'].get(payload['data'].get('attempt'), {})
             need(attempt.get('session') == self.session and attempt.get('epoch') == epoch, 'worker-message-scope')
-            need(recipient in {founding['acceptance_owner'], 'main', 'leader'}, 'worker-recipient')
+            need(recipient in {founding['acceptance_owner'], 'main', 'leader'} or (founding.get('proposal_only') and recipient == 'owner'), 'worker-recipient')
             if team is not None:
                 team_state = self.project('Teams', team)
                 need(not team_state['held'] and (kind == 'result' or attempt.get('team_epoch') == team_state['epoch']), 'stale-epoch')
@@ -2159,7 +2480,7 @@ class Store:
                 cursor = following[0]['id']
             if any(m['id'] not in reachable for m in decisions): held = True
             # Main-accepted result validation resolves the underlying result proposal.
-            accepted_validations = [m for m in messages if m.get('event', {}).get('action') == 'validate' and m.get('event', {}).get('data', {}).get('message') == message['id']]
+            accepted_validations = [m for m in messages if not m.get('proposal_only') and m.get('event', {}).get('action') == 'validate' and m.get('event', {}).get('data', {}).get('message') == message['id']]
             if accepted_validations and message.get('job'):
                 job_id = identity(message['job'])
                 if job_id not in projections:
@@ -2184,7 +2505,7 @@ class Store:
         records = {m['id']: m for m in messages}
         teams = {r['id']: r for r in self.records('Teams')}
         jobs = {r['id']: r for r in self.records('Jobs')}
-        owners = {r['acceptance_owner'] for r in list(teams.values()) + list(jobs.values()) if isinstance(r.get('acceptance_owner'), str)}
+        owners = {r['acceptance_owner'] for r in list(teams.values()) + list(jobs.values()) if not r.get('proposal_only') and isinstance(r.get('acceptance_owner'), str)}
         owners.update(m['issuer']['session'] for m in messages if m['issuer']['role'] == 'main')
         views = {}
         result = {'actionable': [], 'uncertain': [], 'other': [], 'pending_count': 0}
@@ -2205,6 +2526,10 @@ class Store:
                 lifecycle.append(family + ':' + view['state'])
             recipient = message['recipient']
             main = recipient == 'main' or recipient in owners
+            if (teams.get(message.get('team')) or {}).get('proposal_only'):
+                if recipient in {'owner', teams[message['team']]['acceptance_owner']}:
+                    row['reason'] = 'proposal-owner-recipient'; row['classification'] = 'proposal'
+                    result['other'].append(row); result['pending_count'] += 1; continue
             peer = False
             delivery = message.get('delivery')
             team = teams.get(message.get('team'))
@@ -2255,9 +2580,20 @@ class Store:
         need(family in {'Teams', 'Jobs'}, 'projection-family')
         need(action in (JOB_ACTIONS if family == 'Jobs' else TEAM_ACTIONS), 'unknown-action')
         need(data is None or isinstance(data, dict), 'event-data')
-        with self.locked():
-            self.require_placement()
+        with self.locked(proposal=self._proposal_control is not None):
+            self._control_placement()
             founding = self.read(family, ident); messages = self.records('Messages')
+            if self._proposal_control is not None:
+                self._proposal_owned(founding)
+                owner_team = ident if family == 'Teams' else founding.get('team')
+                need(self._proposal_control.get('team') == owner_team, 'proposal-owner')
+                need(action not in {'amend', 'replace_leader', 'route_boundary'}, 'proposal-control-scope')
+                supplied = data or {}
+                if action == 'bind_member': self._proposal_member(supplied.get('session'), owner_team, supplied.get('slot'))
+                if action == 'dispatch':
+                    slot = workspace_token(supplied.get('slot'))
+                    self._proposal_member(supplied.get('session'), owner_team, slot)
+                    need('route_request_sha256' not in supplied and supplied.get('scope') == ['_Axis/Teams/' + owner_team + '/members/' + slot], 'proposal-dispatch-scope')
             state = project_records(founding, messages, self.records('Teams'))
             need(not state['held'], 'projection-held')
             if expected is not None: need(expected == state['head'], 'stale-predecessor')
@@ -2331,7 +2667,9 @@ class Store:
             event = {'family': family, 'target': ident, 'action': action, 'predecessor': state['head'], 'epoch': state['epoch'], 'at': stamp(now), 'data': payload_data}
             payload = {'subject': family[:-1] + ' ' + action + ': ' + ident, 'kind': {'dispatch': 'assignment', 'validate': 'validation', 'receipt': 'receipt', 'result': 'decision'}.get(action, 'control'), 'recipient': ident, 'body': payload_data.get('summary', action), 'team': ident if family == 'Teams' else founding.get('team'), 'job': ident if family == 'Jobs' else None, 'correlation': founding.get('operation_key', ident), 'epoch': state['epoch'], 'data': {}, 'authority': founding['authority'], 'expires': founding['authority']['expires'], 'event': event}
             # Validate the complete transition before obtaining a globally unique immutable ID.
-            candidate = dict(payload, schema=SCHEMA, family='Messages', id='9999.12.31.23.59.59.999Z', created='9999.12.31.23.59.59.999Z', project=self.project_id(), issuer={'session': self.session, 'role': 'main'}, acceptance=self._acceptance())
+            candidate = dict(payload, schema=SCHEMA, family='Messages', id='9999.12.31.23.59.59.999Z', created='9999.12.31.23.59.59.999Z', project=self.project_id(), issuer={'session': self.session, 'role': 'external' if self._proposal_control else 'main'})
+            if self._proposal_control: candidate.update(proposal_only=True, proposal_control=self._proposal_snapshot())
+            else: candidate['acceptance'] = self._acceptance()
             projected = project_records(founding, messages + [candidate], self.records('Teams'))
             need(not projected['held'], 'transition:' + ';'.join(projected['holds']))
             return self._record('Messages', payload)
@@ -2488,6 +2826,7 @@ class Store:
                         state, head = record.get('status', 'held'), record.get('revision') or 'incomplete'
                     else:
                         view = project_records(record, all_records['Messages'], all_records['Teams']); state = 'held' if view['held'] else view['state']; head = view['head']
+                    if record.get('proposal_only') or record.get('data', {}).get('transport', {}).get('source_acceptance_class') in {'proposal', 'worker-proposal'} or (record['issuer']['role'] != 'main' and any(t.get('proposal_only') and t['id'] == record.get('team') for t in all_records['Teams'])): state = 'proposed-' + state
                     subject = record['subject'].replace('|', '\\|').replace('\n', ' ')
                     row = '| [' + record['id'] + '](' + self.record_link(family, record['id']) + ') | ' + subject + ' | ' + state + ' | ' + head + ' |'
                     size = len((row+'\n').encode())

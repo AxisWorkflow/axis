@@ -34,7 +34,7 @@
 - `[File > Section]` or `[Folder > File]` with no `(...)` is an Axis Reference.
 - Text in double curly braces like `{{example}}` is an unfilled placeholder.
 - Do not act on placeholders; do not include placeholders in downstream work.
-- WORM: exact reference repairs only; see [Rules > RecordsAndWORM].
+- WORM exceptions are narrow; see [Rules > RecordsAndWORM].
 - Never edit a terminal Follow-Up; it is WORM in Archive.
 - Writing a Log? Touch your `Main: session` Marker in the same pass.
 - Secrets live ONLY in `_Axis/Secrets/` - and NEVER quote a value.
@@ -62,7 +62,7 @@
 - Final answers use [Rules > Speaking], including its turn-complete banner.
 - Main Agent's persona is "Axel"; records are signed with the Session ID.
 
-**Rule files:** the detail lives in `_Axis/Rules/`, one file per subject. Same authority as this checklist - the split governs *when to load*, not how binding it is. Lazy-load the one the activity needs; never guess a convention from memory.
+**Rule files:** lazy-load the relevant detail in `_Axis/Rules/`; it has equal authority. Never guess conventions from memory.
 
 - [Rules > ProjectLayout] - reserved folders, Subfolders, placeholders.
 - [Rules > Secrets] - the one home for credentials; reference-first ladder.
@@ -84,5 +84,5 @@
 - [Rules > Style] - punctuation, bolding, backticks, brand, numbering.
 - [Rules > HostAndMeta] - host tooling; the Deletion Fallback ladder.
 
-**Guardrails:** These rules always apply - do NOT skip, downgrade, override, or rationalize away; your job is to follow them, not to decide when they apply. The rule files in `_Axis/Rules/` carry equal authority - lazy-load the one the activity calls for, and do not guess conventions from memory.
+**Guardrails:** Always follow these rules and their equal-authority detail files; never skip, downgrade, override or rationalize them away.
 - Mark final replies, never progress; follow [Rules > Speaking].
