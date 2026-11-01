@@ -1,7 +1,7 @@
 # Changelog
 > **Purpose:** Record Axis release identity and the structural migrations needed to update an existing project safely.
 
-current-version: 3.08
+current-version: 3.09
 changelog-format: 1
 self-update-baseline: 26.08.19
 
@@ -39,6 +39,28 @@ update-impact: automatic
 ### Verification
 
 - None.
+
+## 3.09
+
+released: 2026-11-01
+
+update-impact: automatic
+
+### Structural Changes
+
+- None.
+
+### Project-State Migrations
+
+- None.
+
+### Retired Paths
+
+- None.
+
+### Verification
+
+- Startup helpers are monitored for progress instead of being stopped after 120 seconds. Startup and update adoption that run longer than two or five minutes while making progress reach Ready; a helper showing no progress across repeated five-minute assessments is reported and stopped through the interrupted-startup path, keeping its journal for recovery. Process activity is read with `ps`, or from `/proc` on Linux systems without `ps`, so stall detection also works in minimal Linux environments. No project-state migration is needed.
 
 ## 3.08
 

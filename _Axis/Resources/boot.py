@@ -6,7 +6,7 @@ startup-state.py claim/initialize/commit and startup-survey.py survey), records 
 binding on a project's first session, and prints the Ready banner followed by the items the Agent
 still owes. It never answers for the Agent and never guesses: anything it cannot finish prints
 STOP with the guide to follow (Boot-Manual.md, or Entry-Protocol.md for a pending update)."""
-import argparse,datetime,hashlib,json,os,re,subprocess,sys
+import argparse,datetime,hashlib,json,os,re,subprocess,sys,tempfile,time
 from pathlib import Path
 
 a=argparse.ArgumentParser(description='Axis one-command boot')
@@ -19,11 +19,102 @@ o=a.parse_args();root=Path.cwd().resolve();R=root/'_Axis/Resources'
 
 def stamp():
     n=datetime.datetime.now(datetime.timezone.utc);return n.strftime('%Y.%m.%d.%H.%M.%S.')+'%03dZ'%(n.microsecond//1000)
-def run(*args,timeout=120):
-    r=subprocess.run([sys.executable,'-B',*map(str,args)],cwd=root,capture_output=True,text=True,timeout=timeout)
-    out=r.stdout.strip().splitlines()
-    try:return json.loads(out[-1]) if out else {'status':'error','stderr':r.stderr[-400:]}
-    except ValueError:return {'status':'error','stdout':r.stdout[-400:],'stderr':r.stderr[-400:]}
+# monitor:begin
+# Startup helpers are never stopped for elapsed time. Every ASSESS_SECONDS the monitor weighs durable progress
+# (watched journal or evidence changes, rising AXIS:PROGRESS counters), declared waits (AXIS:WAIT lines),
+# activity (CPU time, output growth) and process state. A heartbeat or a live process is activity, not progress.
+# Repeated windows without progress are a suspected stall; unavailable evidence is reported, never a stall.
+ASSESS_SECONDS=300;IDLE_WINDOWS=2;BUSY_WINDOWS=4;POLL_SECONDS=1.0;CPU_ACTIVE_SECONDS=0.5
+class StartupStall(Exception):pass
+def proc_probe(pid):
+    # Linux without ps (minimal images): state and CPU ticks from /proc.
+    try:
+        text=Path(f'/proc/{int(pid)}/stat').read_text()
+        rest=text[text.rindex(')')+2:].split()
+        return {'state':rest[0],'cpu':(int(rest[11])+int(rest[12]))/os.sysconf('SC_CLK_TCK')}
+    except (OSError,ValueError,IndexError,AttributeError):return None
+def ps_probe(pid):
+    try:out=subprocess.run(['ps','-o','stat=','-o','time=','-p',str(pid)],capture_output=True,text=True,timeout=5).stdout.split()
+    except (OSError,subprocess.SubprocessError):out=[]
+    if len(out)<2:return proc_probe(pid)
+    days,_,clock=out[1].rpartition('-')
+    try:
+        cpu=0.0
+        for part in clock.split(':'):cpu=cpu*60+float(part)
+        return {'state':out[0][:1],'cpu':cpu+(int(days)*86400 if days else 0)}
+    except ValueError:return proc_probe(pid)
+def snapshot(watch,outputs,probe,pid):
+    files=size=pending=0;counter=None;waits=0;out=0
+    for w in watch:
+        w=Path(w)
+        if not w.is_dir() or w.is_symlink():continue
+        for p in w.rglob('*'):
+            try:
+                if p.is_file() and not p.is_symlink():files+=1;size+=p.stat().st_size;pending+=p.name.endswith('.pending')
+            except OSError:pass
+    for f in outputs:
+        try:data=Path(f).read_text(errors='replace')
+        except OSError:continue
+        out+=len(data)
+        for line in data.splitlines():
+            if line.startswith('AXIS:WAIT '):waits+=1
+            elif line.startswith('AXIS:PROGRESS '):
+                try:counter=max(counter or 0,int(json.loads(line[14:]).get('done',0)))
+                except (ValueError,AttributeError):pass
+    return {'durable':(files,size),'pending':pending,'counter':counter,'waits':waits,'output':out,'probe':probe(pid) if probe else None}
+def supervise(proc,operation,watch=(),outputs=(),clock=time.monotonic,sleep=time.sleep,probe=ps_probe,report=None,give_up_after=None):
+    report=report or (lambda r:print('AXIS:BOOT '+r['line'],file=sys.stderr,flush=True))
+    start=clock();due=start+ASSESS_SECONDS;idle=quiet=0;last=None;prev=snapshot(watch,outputs,probe,proc.pid)
+    while True:
+        rc=proc.poll()
+        if rc is not None:return {'status':'exited','returncode':rc}
+        now=clock()
+        if give_up_after is not None and now-start>=give_up_after:return {'status':'running-unverified','operation':operation,'elapsed':now-start}
+        if now<due:sleep(POLL_SECONDS);continue
+        due+=ASSESS_SECONDS;cur=snapshot(watch,outputs,probe,proc.pid);m=int((now-start)//60)
+        p0,p1=prev['probe'],cur['probe']
+        progressed=cur['durable']!=prev['durable'] or (cur['counter'] or 0)>(prev['counter'] or 0)
+        active=cur['output']>prev['output'] or bool(p0 and p1 and p1['cpu']-p0['cpu']>=CPU_ACTIVE_SECONDS)
+        if progressed:kind='progress';idle=quiet=0;last=now;line=f'{operation} is making progress after {m} min'
+        elif cur['waits']>prev['waits']:kind='wait';idle=quiet=0;line=f'{operation} is in a declared wait after {m} min'
+        elif active:kind='active';idle=0;quiet+=1;line=f'{operation} is active but shows no new durable progress after {m} min ({quiet} of {BUSY_WINDOWS})'
+        elif p1:kind='idle';idle+=1;quiet+=1;line=f'{operation} shows no progress or activity after {m} min ({idle} of {IDLE_WINDOWS})'
+        else:kind='unknown';line=f'{operation} is still running after {m} min; progress evidence is unavailable, so it is left running'
+        report({'kind':kind,'elapsed':now-start,'line':line});prev=cur
+        if idle>=IDLE_WINDOWS or quiet>=BUSY_WINDOWS:
+            state=f"state {p1['state']}, cpu {p1['cpu']:.1f} s" if p1 else 'state unavailable'
+            evidence=(f"durable progress {'none' if last is None else 'last at %d s' % (last-start)}; {cur['durable'][0]} journal files; "
+                      f"{cur['pending']} unit(s) in flight; process {state}; output {cur['output']} bytes; declared waits {cur['waits']}")
+            proc.terminate()
+            try:proc.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                proc.kill();proc.wait(timeout=10)
+            return {'status':'stalled','operation':operation,'elapsed':now-start,'last_progress':None if last is None else last-start,'evidence':evidence,'terminated':True}
+# monitor:end
+def call(*args,watch=(),operation=None):
+    op=operation or ' '.join(Path(str(x)).name for x in args[:2])
+    files=[tempfile.NamedTemporaryFile(prefix='axis-boot-',delete=False) for _ in (0,1)]
+    try:
+        proc=subprocess.Popen([sys.executable,'-B',*map(str,args)],cwd=root,stdout=files[0],stderr=files[1])
+        try:r=supervise(proc,op,watch=watch,outputs=[f.name for f in files])
+        except BaseException:
+            if proc.poll() is None:
+                proc.terminate()
+                try:proc.wait(timeout=10)
+                except subprocess.TimeoutExpired:proc.kill()
+            raise
+        if r['status']=='stalled':raise StartupStall(r)
+        return r['returncode'],Path(files[0].name).read_text(errors='replace'),Path(files[1].name).read_text(errors='replace')
+    finally:
+        for f in files:
+            f.close()
+            try:os.unlink(f.name)
+            except OSError:pass
+def run(*args,watch=(),operation=None):
+    _,stdout,stderr=call(*args,watch=watch,operation=operation)
+    out=stdout.strip().splitlines()
+    try:return json.loads(out[-1]) if out else {'status':'error','stderr':stderr[-400:]}
+    except ValueError:return {'status':'error','stdout':stdout[-400:],'stderr':stderr[-400:]}
 def stop(why,guide='_Axis/Resources/Boot-Manual.md',**k):
     print(json.dumps({'axis_boot':'STOP','reason':why,'guide':guide,**k}));print(f'STOP: {why}. Follow {guide} instead.');sys.exit(2)
 
@@ -79,7 +170,7 @@ def retire_closed_updates(sid):
         if auth.resolve()!=auth or not auth.is_relative_to(root/'_Axis/Logs'):interrupted('invalid update authorization path')
         expected=[line.split(':',1)[1].strip() for line in read_control(auth).decode().splitlines() if line.startswith('engine_sha256:')]
         if expected!=[hashlib.sha256(read_control(E/'engine.py')).hexdigest()]:interrupted('update retirement engine differs from independent authorization')
-        result=run(E/'engine.py','retire','--root',root,'--session',sid,'--transaction',entry.name)
+        result=run(E/'engine.py','retire','--root',root,'--session',sid,'--transaction',entry.name,watch=[E],operation='update recovery retirement')
         if result.get('state')!='retired':interrupted('closed update recovery retirement needs repair',result=result)
 
 def validate_merged_startup(sid):
@@ -96,7 +187,7 @@ def validate_merged_startup(sid):
         plan=read_control(temporary/'plan.json');parsed=json.loads(plan)
         auth=(entry.parent.parent/'Logs'/(entry.name+'.md')).read_text()
         if '\nmerge-plan-sha256: '+hashlib.sha256(plan).hexdigest()+'\n' not in auth or parsed['engine_sha256']!=hashlib.sha256(read_control(temporary/'engine.py')).hexdigest():interrupted('merge engine differs from independent authorization')
-        result=run(temporary/'engine.py','--root',root,'validate-startup','--session',sid,'--transaction',entry.name)
+        result=run(temporary/'engine.py','--root',root,'validate-startup','--session',sid,'--transaction',entry.name,watch=[temporary],operation='merge startup validation')
         if result.get('status')!='validated':interrupted('first combined startup validation held; recovery retained',result=result)
 
 def ready_transaction():
@@ -119,7 +210,7 @@ def adopt(sid):
     auth=read_control(root/plan['authorization']['record']).decode()
     want=[l.split(':',1)[1].strip() for l in auth.splitlines() if l.startswith('engine_sha256:')]
     if want!=[hashlib.sha256(read_control(E/'engine.py')).hexdigest()]:interrupted('the update engine does not match its authorization; follow _Axis/Resources/Entry-Protocol.md',transaction=tx)
-    b=run(E/'engine.py','begin-reconcile','--root',root,'--session',sid,'--transaction',tx)
+    b=run(E/'engine.py','begin-reconcile','--root',root,'--session',sid,'--transaction',tx,watch=[E],operation='update reconciliation')
     if b.get('state')!='reconciling':interrupted('update reconciliation could not start',transaction=tx,result=b)
     edits=[]
     for n,rules in plan['reconciliation'].items():
@@ -135,7 +226,7 @@ def adopt(sid):
         body=(root/n).read_bytes();records[n]={'sha256':hashlib.sha256(body).hexdigest(),'bytes':len(body),'mode':(root/n).stat().st_mode&0o777}
     inp=root/'_Temp'/f'axis-adoption-{tx}.json'
     inp.write_text(json.dumps({'schema':1,'transaction':tx,'target_commit':plan['source']['commit'],'records':records}))
-    try:c=run(E/'engine.py','consume','--root',root,'--session',sid,'--transaction',tx,'--reconciliation',inp)
+    try:c=run(E/'engine.py','consume','--root',root,'--session',sid,'--transaction',tx,'--reconciliation',inp,watch=[E],operation='update consumption')
     finally:
         try:inp.unlink()
         except OSError:pass
@@ -333,8 +424,8 @@ def migrate_memos():
             taken={n.casefold() for n in os.listdir(a)};base=f"{when:%Y-%m-%d} - Review - "+topic[:71].rstrip(' .');name=base+'.md';k=2
             while name.casefold() in taken:name=f'{base} ({k}).md';k+=1
             before=f.read_bytes()
-            receipt=subprocess.run([sys.executable,'-B',str(R/'record-check.py'),'--root',str(root),'record-move','--session',sid,'--path',f.relative_to(root).as_posix(),'--to',(a/name).relative_to(root).as_posix(),'--reason','Review to memo migration'],cwd=root,capture_output=True,text=True,timeout=30)
-            if receipt.returncode:raise OSError('reference move receipt unavailable; report left in place')
+            code,_,_=call(R/'record-check.py','--root',root,'record-move','--session',sid,'--path',f.relative_to(root).as_posix(),'--to',(a/name).relative_to(root).as_posix(),'--reason','Review to memo migration',operation='memo migration receipt')
+            if code:raise OSError('reference move receipt unavailable; report left in place')
             if f.read_bytes()!=before or (a/name).exists():raise OSError('memo migration changed before move')
             replace_shared(f,a/name)
             if (a/name).read_bytes()!=before:raise OSError('memo migration readback differs')
@@ -372,7 +463,11 @@ def inbox_items():
     except OSError:return []
 
 if not (root/'_Axis/Resources/startup-state.py').is_file():stop('run this from the project root')
-merge_status=run(R/'merge-project.py','--root',root,'status')
+def before_claim(*args,operation):
+    # No startup ownership exists yet, so a stalled helper stops startup without an interrupted claim.
+    try:return run(*args,operation=operation)
+    except StartupStall as e:stop('suspected hang in '+e.args[0]['operation'],stall=e.args[0])
+merge_status=before_claim(R/'merge-project.py','--root',root,'status',operation='merge status check')
 if merge_status.get('status') not in ('clear','recovery'):stop('project merge state requires attention','_Axis/Practices/Merging.md',merge=merge_status)
 if o.finish_adoption:
     # Resume the admitted startup that stopped at ADOPT: same session, same admission (read back from its OWNER).
@@ -383,7 +478,7 @@ if o.finish_adoption:
 else:
     us=update_state()
     if us!='none' and us!='ready':stop('an update handoff needs attention','_Axis/Resources/Entry-Protocol.md',update=us)
-    c=run(R/'startup-state.py','--root',root,'claim','--initial',stamp(),'--host',o.host,*[x for t in o.take_over for x in ('--take-over',t)])
+    c=before_claim(R/'startup-state.py','--root',root,'claim','--initial',stamp(),'--host',o.host,*[x for t in o.take_over for x in ('--take-over',t)],operation='session claim')
     def mains(c):
         def idle(m):
             n=int(m.get('idle_seconds',m.get('age_seconds',0)))//60;return f'{n} minutes' if n<120 else f'{n//60} hours'
@@ -506,8 +601,9 @@ try:
  rf=re.search(r'^\*\*Value:\*\* (on|auto)\s*$',(root/'_Axis/SETTINGS.md').read_text().split('### Remote Freshness',1)[-1].split('###',1)[0],re.M)
  if rf:
      # Check-Remote-Freshness.md, run here so that `auto` can bring the project up to date before the Agent reads it.
-     try:f=run(R/'remote-freshness.py','--project-root',root,'--session',sid,timeout=600)
-     except subprocess.TimeoutExpired:f={'status':'unverified','notice':'Remote freshness is unverified; Axis remains usable locally.'}
+     # The helper bounds its own network calls; a suspected stall leaves freshness unverified, never blocks startup.
+     try:f=run(R/'remote-freshness.py','--project-root',root,'--session',sid,operation='remote freshness check')
+     except StartupStall:f={'status':'unverified','notice':'Remote freshness is unverified; Axis remains usable locally.'}
      if f.get('notice'):notices.append(f['notice'])
      elif f.get('status') not in ('disabled','already-checked','no-upstream','equal','local-ahead','fast-forwarded'):notices.append('Remote freshness is unverified; Axis remains usable locally.')
      if f.get('status')=='fast-forwarded':
@@ -551,4 +647,5 @@ try:
  print('Reply frame, required on every reply that hands the turn back to the user, this one included (exceptions: _Axis/Rules/Speaking.md > Final response boundary): this reply opens with the banner instead of the header; every later reply starts with the header, with nothing before it, not even a sentence; every reply ends with the closing; progress notes during a turn get neither. A later reply looks like this (the fence only marks the example; never print the fence itself):')
  print(f'```text\n{bar}\n A X I S   W O R K F L O W\n{bar}\n\n{{the answer, leading with the outcome}}\n\n> READY {folder}:\n```')
 except SystemExit:raise
+except StartupStall as e:interrupted('suspected hang in '+e.args[0]['operation']+'; the stalled helper was stopped and its journal is retained for recovery',stall=e.args[0])
 except BaseException as e:interrupted(type(e).__name__)

@@ -25,6 +25,8 @@ Grace is for finishing an already underway deliverable, its verification, saving
 
 A deadline explicitly marked hard, an expiring authority/lease, a host-enforced stop, a live provider or immutable mandate deadline, a contractual deadline and any spending ceiling remain strict. Configure permitted grace into a new execution mandate before dispatch; an existing mandate's expiry cannot be bypassed or rewritten. Predictable inability to finish inside the allowance follows [Rules > Budget]: preserve progress, hold affected work and request an extension. Never backdate a completion or infer monetary grace. A time allowance does not authorize additional paid usage.
 
+Startup and update helpers are monitored for durable progress, not timed out. No level or grace sets, shortens or reintroduces a cutoff for them; a suspected stall follows the startup interruption and recovery path.
+
 ## Harmless WORM repair at 2
 
 Main alone may correct whitespace in ordinary unsealed textual WORM history when all of the following are established before writing:

@@ -5,6 +5,8 @@ Before admission or ordinary work, inspect `_Axis/Flags/merge-pending` and `_Axi
 
 Stop at any failed check, tell the user which step failed, and leave everything else unchanged.
 
+A step can legitimately run for many minutes, especially while adopting an update. Never stop a step for elapsed time alone. At about five minutes, check whether it is still making durable progress (new or growing files in its transaction or journal folder) or has declared a wait; repeat the check about every five minutes. Treat it as stalled only when repeated checks show no progress, no declared wait and no activity, then stop it and follow the interrupted-startup path, leaving its journal and the startup records in place.
+
 1. **Session ID.** Run this command and keep what it prints as `{ID}`:
 
 		TS=$(date -u +"%Y.%m.%d.%H.%M.%S.%3NZ"); case "$TS" in *3N*) TS=$(python3 -c 'import datetime as d;n=d.datetime.now(d.timezone.utc);print(n.strftime("%Y.%m.%d.%H.%M.%S.")+"%03dZ"%(n.microsecond//1000))' 2>/dev/null || node -e 'console.log(new Date().toISOString().replace(/[-T:]/g,"."))');; esac; echo "$TS"
