@@ -1,6 +1,6 @@
 # Axis Workflow Specification
 > **Purpose:** The technical reference behind the Axis Workflow: how every mechanism works, why it was built that way, what it guarantees, where it stops, and what an extender must not break. Written for deep diagnostics, downstream developers extending Axis, IT and compliance reviewers assessing it before adoption, and contributors. For everyday use, see the [User Manual](/_Axis/USERMANUAL.md).
-> **Version:** 3.09
+> **Version:** 3.10
 
 ## How to Read This Document
 
@@ -978,10 +978,11 @@ Provider parameters change independently, so the Profile is an outcome-level int
 | Kept from OpenClaw | Disabled by default |
 | --- | --- |
 | Channels, pairing, sender allowlists and exact bindings | `SOUL.md`, `IDENTITY.md`, `USER.md` and other host persona or bootstrap state |
-| Agent/session start, stop, restart, tracking and Subagent lanes | `MEMORY.md`, `memory/`, memory search, embeddings and cross-conversation recall |
-| Directed session messages after an Axis Message exists | Memory plugins, active memory, session-memory capture, inferred commitments and dreaming |
-| Explicit cron jobs that trigger standalone Axis prompts | Generic heartbeats and host-authored proactive work |
-| Required filesystem, runtime, session, messaging and interaction tools | Broad tool access, default skills and unneeded plugins |
+| Agent/session start, stop, restart, tracking and Subagent lanes limited to one level | `MEMORY.md`, `memory/`, memory search, embeddings and cross-conversation recall |
+| Directed session messages after an Axis Message exists | Memory plugins, active memory, session-memory capture, the pre-compaction memory flush and dreaming |
+| Explicit cron jobs that trigger standalone Axis prompts | The Proactive check automation, standing intents and other host-authored proactive work |
+| Required filesystem, runtime, session, messaging and interaction tools | Broad tool access, default and self-learned skills and unneeded plugins |
+| Exact Axis agent-to-agent targets for doorbells | Open cross-agent transcript visibility and open agent-to-agent messaging |
 | Same-session transcripts and compaction needed for routing | Treating transcripts, summaries or OpenClaw databases as canonical Axis memory |
 
 ### Identity, Authority and Channel Safety
@@ -990,14 +991,15 @@ Provider parameters change independently, so the Profile is an outcome-level int
 - Identity comes from Axis files, never OpenClaw persona files. Role is fixed once by the entry protocol.
 - Gateway sender verification decides whether a message came from User. Message content stays untrusted data, and a Command counts only from the verified User sender.
 - Channel framing never outranks the entry protocol: Session Start runs before answering, and the loading notice is sent to the channel first.
+- Admission does not yet check the sender, so an allowlisted colleague's first group message can start the session that becomes Main. The documented mitigation keeps Main in User's direct chat and declares each group External in its own entry (`Axis role: External; surface: {name}; promote: refused`). Its limits: the group session shares the agent's tools, and `promote: refused` is not enforced, because `^promote` checks the Gateway's sender allowlist. Sender-aware admission is planned work.
 
 ### Reachability and Retention
 
-Optional OpenClaw integration adds a locally hosted Gateway process and messaging-channel submissions (WhatsApp, Telegram, Slack, and others). Axis configures it as a thin harness: sender allowlists, exact bindings, least-privilege per-agent tools, explicit cron, and bounded operational sessions remain; OpenClaw persona files, semantic memory/search, background consolidation, generic heartbeats, default skills, and broad tools are disabled. The Gateway's local session transcripts may still retain raw prompts outside Axis's redacted Logs because routing and active-session continuity require operational state. Governed like any other Host service, it changes reachability and Host-side retention, not the Workflow's canonical storage or audit model.
+Optional OpenClaw integration adds a locally hosted Gateway process and messaging-channel submissions (WhatsApp, Telegram, Slack, and others). Axis configures it as a thin harness: sender allowlists, exact bindings, least-privilege per-agent tools, explicit cron, and bounded operational sessions remain; OpenClaw persona files, semantic memory/search, the memory flush, background consolidation, the Proactive check, standing intents, self-learning, open cross-agent access, default skills, and broad tools are disabled. The Gateway's local session transcripts may still retain raw prompts outside Axis's redacted Logs because routing and active-session continuity require operational state. Governed like any other Host service, it changes reachability and Host-side retention, not the Workflow's canonical storage or audit model.
 
 ### Configuration and Verification
 
-OpenClaw configuration names change between releases, so setup resolves each control against the installed schema and marks unsupported controls `Unverified` rather than guessing. Hardening is complete only when configuration validates, channels and allowlists remain in force, no persona or memory injection is active, the tool surface matches the approved set, a disposable headless boot enters the Axis Workflow and is shut down, directed messaging reaches only approved targets, and cron inventory matches the schedules Axis declared. `^audit openclaw` reports `Ready`, `Degraded` or `Unverified` read-only.
+OpenClaw configuration names change between releases, so setup resolves each control against the installed schema and marks unsupported controls `Unverified` rather than guessing. The description of current OpenClaw follows its documentation and is untested on an installed OpenClaw. Hardening is complete only when configuration validates, channels and allowlists remain in force, no persona or memory injection is active, the tool surface matches the approved set, a disposable headless boot enters the Axis Workflow and is shut down, directed messaging reaches only approved targets, and the automation inventory shows the Proactive check disabled and matches the schedules Axis declared. `^audit openclaw` reports `Ready`, `Degraded` or `Unverified` read-only.
 
 ### Supervision on OpenClaw
 

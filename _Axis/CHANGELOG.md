@@ -1,7 +1,7 @@
 # Changelog
 > **Purpose:** Record Axis release identity and the structural migrations needed to update an existing project safely.
 
-current-version: 3.09
+current-version: 3.10
 changelog-format: 1
 self-update-baseline: 26.08.19
 
@@ -39,6 +39,30 @@ update-impact: automatic
 ### Verification
 
 - None.
+
+## 3.10
+
+released: 2026-11-01
+
+update-impact: automatic
+
+### Structural Changes
+
+- Documentation only, for current OpenClaw: `_Axis/Practices/OpenClaw.md`, `_Axis/Practices/WhatsApp.md`, `_Axis/Commands/install.md`, `_Axis/Commands/audit.md`, `_Axis/USERMANUAL.md`, `_Axis/SPECIFICATION.md` and the header comment of `_Axis/Resources/OpenClaw/axis-guardrails/index.ts`. The Proactive check automation replaces the retired heartbeat; inferred commitments are gone; the pre-compaction memory flush, self-learning skills, standing intents, open cross-agent transcript visibility and agent-to-agent messaging, and nested Subagents are now named for hardening; `openclaw doctor --fix` merges `TOOLS.md` into `AGENTS.md`; a running Gateway applies configuration writes at once, so the WhatsApp discovery window opens at the write; unbound group traffic reaches the fallback owner agent; sender and group gates are per bot account; onboarding grants the full tool profile; OpenClaw's delegation prompt and swarm are named for hardening; a plugin hook error blocks the call; `axis-guardrails` is a mistake-catcher, not a boundary.
+- `_Axis/Practices/OpenClaw.md` > Group Chats and the Main Lease documents a manual mitigation for an allowlisted colleague's first group message starting the session that becomes Main, and the declaration `Axis role: External; surface: {name}; promote: refused`.
+- These descriptions follow OpenClaw's documentation and are untested on an installed OpenClaw. No code changes.
+
+### Project-State Migrations
+
+- None.
+
+### Retired Paths
+
+- None.
+
+### Verification
+
+- No project-state migration. An existing OpenClaw installation stays as configured until User acts: `^audit openclaw` now also checks the Proactive check, memory flush, self-learning, session visibility, agent-to-agent messaging and Subagent limits and may report Degraded where it passed before; `^install openclaw` applies the fixes. Projects whose groups include other people should apply [Practices > OpenClaw > Group Chats and the Main Lease].
 
 ## 3.09
 

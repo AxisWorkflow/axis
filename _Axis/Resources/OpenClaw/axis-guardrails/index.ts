@@ -1,8 +1,9 @@
 // Axis guardrails for OpenClaw (optional; `^install guardrails`). For each agent listed in `externalAgents`, refuse
 // before it runs: spawning an agent or session, any use of _Axis/Secrets/, and any file write that guardrails.py
 // refuses for an External Agent (changing an existing file, or a new file outside Project Subfolders,
-// _Axis/Submissions/ and _Temp/). Other agents are untouched. A hook error lets the call through, so the written
-// Axis rules still apply.
+// _Axis/Submissions/ and _Temp/). Other agents are untouched. If this hook throws or times out, OpenClaw blocks the
+// call; if guardrails.py itself fails or times out, the hook lets the call through. It catches file-tool mistakes; it
+// is not a security boundary, because shell commands pass.
 import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";

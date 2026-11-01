@@ -1,6 +1,8 @@
 # WhatsApp
 > **Purpose:** Protocols to set up messaging between WhatsApp and an OpenClaw agent. OpenClaw must already be installed and its onboard process completed before you can set up text messaging with WhatsApp.
 
+Where these steps describe live configuration writes, the fallback owner, per-account gates, onboarding defaults or the group declaration, they follow OpenClaw's documentation and are untested on an installed OpenClaw.
+
 ## Enable WhatsApp
 > **Purpose:** Enable the WhatsApp channel in the selected Axis OpenClaw profile. Run this section once per profile - if WhatsApp is already enabled there, SKIP its linking steps.
 
@@ -14,11 +16,11 @@
 
   `openclaw config get commands.ownerAllowFrom`
 
-- Confirm that the OpenClaw installation and onboarding process is complete. Onboarding may offer memory, skills, persona, heartbeat, and other assistant features; decline those optional layers for the Axis profile. It does not replace the hardening readback below:
+- Confirm that the OpenClaw installation and onboarding process is complete. Onboarding sets the full tool profile when none is configured and may set up memory, skills, persona, the Proactive check, and other assistant features; decline those optional layers for the Axis profile, and treat the profile as unsafe until the hardening readback below passes:
 
   `openclaw onboard`
 
-- **Apply the thin-harness baseline.** Follow [Practices > OpenClaw > Schema-Adaptive Hardening] against the live schema. This preserves `AGENTS.md` while disabling optional bootstrap/persona files, non-Axis bootstrap hooks, memory search and plugins, session-memory capture, inferred commitments, dreaming, generic heartbeat, default skills, and broad tools. Do not copy a fixed config key from this Practice merely because one release used it.
+- **Apply the thin-harness baseline.** Follow [Practices > OpenClaw > Schema-Adaptive Hardening] against the live schema. This preserves `AGENTS.md` while disabling optional bootstrap/persona files, non-Axis bootstrap hooks, memory search and plugins, session-memory capture, the memory flush, dreaming, the Proactive check, standing intents, self-learned and default skills, open cross-agent access, and broad tools. Do not copy a fixed config key from this Practice merely because one release used it.
 
 - **Link a dedicated WhatsApp account to OpenClaw.**
   Instruct the User to obtain a separate phone number (the "bot number") and establish a WhatsApp account with it for OpenClaw to use. That phone number is separate from the WhatsApp phone number/account used by the User. When User is ready and is running WhatsApp with the bot number, you can add yourself (this OpenClaw "device") to the account by following this command:
@@ -47,7 +49,7 @@
 
 ### Harden an already-enabled install
 
-Arrive here either by working through the section above or by skipping it. The skip is the point: a profile that enabled WhatsApp before this Practice existed may satisfy the channel check while still carrying persona, memory, heartbeat, skills, or unrestricted tools. Run the targeted hardening audit every time, skip or no skip.
+Arrive here either by working through the section above or by skipping it. The skip is the point: a profile that enabled WhatsApp before this Practice existed may satisfy the channel check while still carrying persona, memory, a heartbeat or the Proactive check, skills, or unrestricted tools. Run the targeted hardening audit every time, skip or no skip.
 
 - **Plugin trust - do NOT set `plugins.allow`, despite what the warning says.** An empty `plugins.allow` lets discovered plugins auto-load and prints "plugins.allow is empty; may auto-load" on unrelated commands. That warning is cosmetic. Acting on it is not: setting `plugins.allow` to `["whatsapp"]` on OpenClaw 2026.7.1-2 left the model unresolvable (`Unknown model: claude-cli/claude-opus-5 ... no matching models.providers["claude-cli"].models[] entry`) and a freshly registered agent could not run at all, while agents with an established session binding kept working - so the breakage looks partial and arrives later than the change. `openclaw config unset plugins.allow` restored it immediately and the identical probe then booted in full. `plugins.allow` is an allowlist over more than the plugin named in the warning. Leave it unset unless you are prepared to re-run the boot probe for every agent afterwards and revert the moment one fails.
 
@@ -89,11 +91,13 @@ Arrive here either by working through the section above or by skipping it. The s
   ```
   A PASS is a `Main: session` Marker whose filename matches Line 1 of `session-id`, plus `host-*` Capability Flags and a `Session Started` Log. Anything less means the Agent answered without starting a Session: STOP here, tell User the Agent is not running Axis in this workspace, and do not wire any gates. Nothing below this line will fix it, and a bound group would then be served by an Agent outside the Workflow - no lease, no Logs, no arbitration - while looking perfectly healthy.
 
+  If Main already lives in User's direct chat ([Practices > OpenClaw > Group Chats and the Main Lease]), the probe boots External beside it: a PASS is then one new `External:` Marker, `host-*` Flags and a `Session Started` Log by the External Agent.
+
 - **Shut the probe session down before continuing.** This is not tidiness. A booted probe holds a live `Main: session` Marker, and the group session that boots later will find a fresh foreign Marker less than an hour old and open its first reply with an arbitration notice about a competing session. Send `^shutdown` on the SAME session key so the probe deletes its own Marker and releases its lease:
 
   `openclaw agent --agent <agent-id> --session-key probe-boot --message "^shutdown" --json --timeout 240`
 
-  Then confirm the field is clear - `<PROJECT_PATH>/_Axis/Agents/` holds no Marker. A probe that boots and is never shut down is worse than no probe at all.
+  Then confirm the probe's own Marker is gone from `<PROJECT_PATH>/_Axis/Agents/`. A probe that boots and is never shut down is worse than no probe at all.
 
   A passing probe proves this Agent CAN boot the Workflow in this workspace. It does not prove the group session will: sessions are keyed per channel and peer, and each one boots on its own. The end of this Practice checks the group session separately, and the two checks are not interchangeable.
 
@@ -101,7 +105,7 @@ Arrive here either by working through the section above or by skipping it. The s
 
   Record the numbers of everyone who will message the Agent in this group - each one needs an entry in the sender gate below, and a number that is missing there is dropped in silence.
 
-- **Open the discovery window - and treat everything from here to the Policy gate as one unbroken stretch.** The group's JID can only be read off an inbound message, and an inbound message from an unknown group bounces while `groupPolicy` is `allowlist`. So the policy has to be opened briefly. While it is open, ANY WhatsApp group the bot belongs to can reach the `main` OpenClaw agent, whose workspace is not this project and is not a sandbox.
+- **Open the discovery window - and treat everything from here to the Policy gate as one unbroken stretch.** The group's JID can only be read off an inbound message, and an inbound message from an unknown group bounces while `groupPolicy` is `allowlist`. So the policy has to be opened briefly. While it is open, ANY WhatsApp group the bot belongs to can reach whichever agent catches unbound group traffic: a group-wildcard, account-wide or channel-wide binding, otherwise the fallback owner (the configured system agent, a retained legacy owner, or the only agent); with several agents and none of these, the message is left undispatched. That agent's workspace is not a sandbox. Before opening the window, confirm this project's agent is none of these; if it is, the discovery message boots a session in this project, which must be retired before the gates are written. Treat the window as open from the moment the write commits. Where a group map without `*` already applies to the bot account, OpenClaw drops unlisted groups before routing whatever `groupPolicy` says; whether the log then still shows the new group's JID is untested.
 
   Read the current value first and write it down - restoring it is a step you must be able to perform from memory if something fails:
 
@@ -115,13 +119,13 @@ Arrive here either by working through the section above or by skipping it. The s
 
   This is not hypothetical. A script under `set -e` that aborts mid-sequence leaves the window open, reports only the original error, and says nothing about the policy. Nothing in OpenClaw closes it for you, and nothing warns that it is open.
 
-- Restart the OpenClaw gateway so the opened policy takes effect. `config set` only writes the file; every gate change in this Practice needs a restart before it means anything.
+- Make sure the opened policy is live. A running Gateway applies the write at once or restarts itself to apply it. Run a restart only when the CLI prints that one is needed (reload mode `off`, or a write made while the Gateway was stopped):
 
   `openclaw gateway restart`
 
 - Start the selected profile's Gateway log stream with `openclaw logs --follow --json --no-color`, then have User send ONE message **in** the new group. Stop the stream as soon as the new inbound event arrives and take the group JID from that event's `from` field ending `@g.us`. Only a message sent AFTER the window opened will appear. Do not paste or save the raw event in Axis - it may contain phone numbers, message content, and channel identifiers. If several groups are active, compare the distinct new `from` values and use the event's `to` field only to confirm which bot account received it; ask User when still ambiguous. The two commands that look like they would list the group can mislead, and **Traps** below explains them.
 
-- Lock down and bind the sender gate. This takes sender numbers, not group IDs - putting a JID here silently drops every message. Like the two gates below it, this key is gateway-wide and `config set` replaces the whole array, so READ it first:
+- Lock down and bind the sender gate. This takes sender numbers, not group IDs - putting a JID here silently drops every message. Like the Group gate below it, this key is shared by every project on every bot account that inherits it: the value in effect is the bot account's own entry, else `accounts.default`, else the root, so read and write the one in effect. `config set` replaces the whole array, so READ it first:
     ```
     openclaw config get channels.whatsapp.groupAllowFrom
     ```
@@ -131,7 +135,9 @@ Arrive here either by working through the section above or by skipping it. The s
     ```
     Overwriting this gate is the quietest mistake in this Practice: the gateway stays up, the group stays bound, the listener line still reads healthy, and the dropped senders simply go unheard. Check the merged array against the group's member list before moving on.
 
-- Lock down and bind the Group gate. Group JIDs belong here. `requireMention` defaults to true, meaning the agent only wakes on an @-mention, its bot number in the text, a quoted reply, or a name-derived pattern. Set it to false for always-on, or expect silence. This key holds every group on the gateway, across every project, and `config set` replaces the whole value - so READ it first:
+- **If anyone besides User will write in this group**, apply [Practices > OpenClaw > Group Chats and the Main Lease]: Main lives in User's direct chat, and this group's Group gate entry below carries the External declaration as its group prompt, for example `"<GROUP_JID>":{"requireMention":false,"systemPrompt":"Axis role: External; surface: <name>; promote: refused"}`. OpenClaw documents the group prompt for inbound group messages only, so skip the pre-warm below for a declared group: User's first message in the group boots the session. If a session for this group already booted (for example from the discovery message), retire it as that section's step 2 says before User writes. This is documented but untested on an installed OpenClaw.
+
+- Lock down and bind the Group gate. Group JIDs belong here. `requireMention` defaults to true, meaning the agent only wakes on an @-mention, its bot number in the text, a quoted reply, or a name-derived pattern. Set it to false for always-on, or expect silence. This key holds every group on every bot account that inherits it, across every project; the map in effect is the bot account's own, else `accounts.default`, else the root, and the first present replaces the others entirely, so the declaration must sit in that map and it must not contain `*`. `config set` replaces the whole value - so READ it first:
     ```
     openclaw config get channels.whatsapp.groups
     ```
@@ -161,15 +167,17 @@ Arrive here either by working through the section above or by skipping it. The s
     openclaw config set bindings '[<EXISTING_BINDINGS>,{"type":"route","agentId":"<projectname>","comment":"<ProjectName> group -> agent","match":{"channel":"whatsapp","peer":{"kind":"group","id":"<GROUP_JID>"}}}]'
     ```
 
-- Restart the gateway:
+- Restart the gateway only if the CLI says one is needed:
 
    `openclaw gateway restart`
 
 - Confirm that OpenClaw is Listening for WhatsApp inbound messages by reading the selected profile's recent stream with `openclaw logs --json --limit 200 --no-color` and locating the newest WhatsApp listener event without quoting its identifiers. The listener line names the gate that is wrong: "blocked by empty groupPolicy allowlist" means the Policy gate is set to `allowlist` while nothing is allowlisted; "sender allowlist configured" means the sender gate holds non-sender values (a JID sitting where a phone number belongs); "all groups" or "no group allowlist configured" means the Group gate is unset; "DM + N configured group(s)" is correct.
 
-- **Pre-warm the group's own session before User ever writes to it.** The probe above booted a session; it did not boot THIS one, and each session boots on its own. Boot the group session directly by naming its exact session key - the same key the channel will use - so the Workflow is already running when User's first message lands. Omit `--deliver`: nothing is sent to the group.
+- **Pre-warm the group's own session before User ever writes to it** (skip this for a declared group). The probe above booted a session; it did not boot THIS one, and each session boots on its own. Boot the group session directly by naming its exact session key - the same key the channel will use - so the Workflow is already running when User's first message lands. Omit `--deliver`: nothing is sent to the group.
 
   `openclaw agent --agent <agent-id> --session-key "whatsapp:group:<GROUP_JID>" --message "hello" --json --timeout 240`
+
+  On a non-default bot account the channel's key ends in `:thread:whatsapp-account-<accountId>`; use that full key, or skip the pre-warm.
 
   Send `hello` and nothing else. A bare greeting has no answer to shortcut to, which is exactly why it boots reliably; a question does not (see the Traps entry on first-message skipping). Again, expect up to 60 seconds of silence - Session Start is running.
 
@@ -188,13 +196,13 @@ Arrive here either by working through the section above or by skipping it. The s
   ```
   ls <PROJECT_PATH>/_Axis/Agents/ && head -1 <PROJECT_PATH>/_Axis/Flags/session-id
   ```
-  A fresh `Main: session` Marker and a `session-id` Flag whose Line 1 matches it mean the Workflow booted. Neither present means the Agent answered from the files without starting a Session: routing is good, but the Agent is not running Axis. Report that to User plainly rather than recording the pairing as fully working, and treat it as a host-side boot problem to investigate separately - it is not a fault in this binding.
+  A fresh `Main: session` Marker and a `session-id` Flag whose Line 1 matches it mean the Workflow booted. For a declared group the evidence is instead the group session's own new `External:` Marker, and its reply says it is External per the standing declaration; the direct-chat Main's Marker and `session-id` prove nothing about the group. If the group session came up as Main, User sends `^shutdown` and then `/new` alone in the group, and the check is repeated. Neither present means the Agent answered from the files without starting a Session: routing is good, but the Agent is not running Axis. Report that to User plainly rather than recording the pairing as fully working, and treat it as a host-side boot problem to investigate separately - it is not a fault in this binding.
 
 - **Before declaring done, confirm the Policy gate is closed.** Run this last, every time, on every path through this Practice - including paths where nothing failed, and especially paths that aborted and were resumed. The one failure mode here that is both silent and remotely reachable is a `groupPolicy` left `open`:
   ```
   openclaw config get channels.whatsapp.groupPolicy
   ```
-  Anything other than `allowlist` means the window is still open: set it to `allowlist`, restart the gateway, and re-check before telling User the pairing is complete.
+  Anything other than `allowlist` means the window is still open: set it to `allowlist`, restart the gateway if the CLI says one is needed, and re-check before telling User the pairing is complete.
 
 ### Traps
 
@@ -208,9 +216,10 @@ This Practice runs rarely, so nothing here should depend on remembering it. Read
   listener still reads healthy, so a clobbered sender list looks exactly like a
   working one until someone asks why the Agent ignores them.
 
-- `config set` only writes the file. Every gate change needs `openclaw gateway
-  restart` before it means anything - the command even says so. A test run
-  before the restart proves nothing about the configuration you just wrote.
+- Assume every write is live as soon as it commits, so the discovery window
+  opens at the write. Only reload mode `off` or a write made while the Gateway
+  was stopped waits for `openclaw gateway restart`. Either way, read the key
+  back and check the listener line before testing.
 
 - A rejected write leaves the OLD value in place. Config validation can refuse
   your value, and the failure is a
@@ -237,9 +246,9 @@ This Practice runs rarely, so nothing here should depend on remembering it. Read
   for you and nothing warns that it is open. Restore `allowlist` on any failure
   BEFORE diagnosing, and confirm it at the end of every run.
 
-- While the window is open, every group the bot belongs to can reach the `main`
-  agent - not this project's agent. `main`'s workspace is its own folder, and a
-  workspace is not a sandbox.
+- While the window is open, every group the bot belongs to can reach the
+  agent that catches unbound traffic - usually not this project's agent; check
+  before opening the window. A workspace is not a sandbox.
 
 - Only a message sent AFTER the window opened appears in the log. Re-reading
   the log for a message User sent earlier will not find the JID.

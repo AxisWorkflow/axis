@@ -1,6 +1,6 @@
 # Axis Workflow User Manual
 > **Purpose:** How to use the Axis Workflow day to day: setup, commands, the Dashboard, the Wiki, working across tools and machines, and working with Agents and models. For the technical and compliance reference, see [SPECIFICATION](/_Axis/SPECIFICATION.md).
-> **Version:** 3.09
+> **Version:** 3.10
 
 
 
@@ -707,9 +707,10 @@ OpenClaw must retain enough operational session state to route a turn, continue 
 
 - **One agent, one project.** Give each OpenClaw agent its own Axis Project folder. On startup it becomes that project's Main Agent, unless a standing declaration or another live Main makes it an External Agent. Markers, leases, and file locks preserve the same one-Main boundary used on every other Host.
 - **Role stays Axis-owned.** A standing role declaration takes effect at the next boot; a live session changes role only through User-run `^promote` or `^demote`. OpenClaw display metadata, transcripts, and configuration cannot reassign it mid-session.
+- **Groups with other people.** Admission does not yet check who sent the first message, so an allowlisted colleague's first message in a project group can start the session that becomes Main. To reduce the risk, declare each group External in its own group entry with the line `Axis role: External; surface: {name}; promote: refused`, reset the group's session, and keep Main in your own direct chat. The group session still has Main's tools, and `^promote` is not yet blocked for colleagues, so use it only from your direct chat. [Practices > OpenClaw](/_Axis/Practices/OpenClaw.md) has the steps.
 - **Delegation stays gated.** OpenClaw Subagents become Axis Subagents: each task carries the nonce-bound Prompt Envelope in isolated context, and Main validates the return. ACP mode can instead start a full external harness such as Claude Code, which boots through the project entry file; Local Subagents continue to call Ollama directly.
 - **Messages stay authoritative.** Axis persists its local outbound Message and reads back the direct child's Submissions envelope before trying an exact OpenClaw notification. The notification carries only the Subject and path. The child's genuine Main imports the envelope; queued delivery alone does not prove receipt or authorize action.
-- **Schedules stay explicit.** OpenClaw cron may trigger a standalone Axis prompt such as `Read AGENTS.md and follow it. Then run ^refresh.` Generic heartbeats are disabled. The Host binding does not travel, so Axis records the portable intent in a Schedule and references it from `_Axis/ENVIRONMENT.md`.
+- **Schedules stay explicit.** OpenClaw cron (now called automations) may trigger a standalone Axis prompt such as `Read AGENTS.md and follow it. Then run ^refresh.` The built-in Proactive check automation is disabled. The Host binding does not travel, so Axis records the portable intent in a Schedule and references it from `_Axis/ENVIRONMENT.md`.
 - **The project remains portable.** Leaving OpenClaw requires no memory export or record conversion. Open the same authoritative folder, or a correctly transferred copy, in another compatible Host and run `^resume`.
 
 #### Security and Audit Boundaries
@@ -720,7 +721,7 @@ Every delegated task carries the prompt-envelope validation rules with it. Child
 
 Always-on access also creates a second-session problem. One project still has one Main: a phone-side session arriving beside a live desktop Main becomes an **External Agent**. It may read and answer, take Notes and Ideas, and draft clearly stamped new documents, but it cannot edit an existing file, mutate Workflow control state, spawn a Subagent, or read Secrets. `^promote` provides a disclosed, User-confirmed transfer when that External should take over. See [External Agents](#external-agents).
 
-OpenClaw capabilities and configuration keys are probed, never assumed. OpenClaw releases change their schema: a current documentation path can differ from the installed release's valid key. Axis reads the installed CLI and live schema, generates a secret-free patch under `_Temp/`, dry-runs it when supported, previews the semantic changes, asks before mutating the Host, validates the complete configuration, and boot-probes the resulting Agent.
+OpenClaw capabilities and configuration keys are probed, never assumed. Axis's description of current OpenClaw follows its documentation and has not yet been tested on an installed OpenClaw. OpenClaw releases change their schema: a current documentation path can differ from the installed release's valid key. Axis reads the installed CLI and live schema, generates a secret-free patch under `_Temp/`, dry-runs it when supported, previews the semantic changes, asks before mutating the Host, validates the complete configuration, and boot-probes the resulting Agent.
 
 #### OpenClaw Setup
 
@@ -728,19 +729,20 @@ Run `^install openclaw` to install or harden the integration. Axis first asks wh
 
 The hardening keeps `AGENTS.md` injection and disables the competing layers:
 
-- Persona and bootstrap files such as `SOUL.md`, `IDENTITY.md`, `USER.md`, `HEARTBEAT.md`, and `BOOTSTRAP.md`.
-- `MEMORY.md`, `memory/`, embedding search, cross-conversation recall, memory plugins, active memory, session-memory capture, inferred commitments, and dreaming.
+- Persona and bootstrap files such as `SOUL.md`, `IDENTITY.md`, `USER.md`, and `BOOTSTRAP.md`.
+- `MEMORY.md`, `memory/`, embedding search, cross-conversation recall, memory plugins, active memory, session-memory capture, the automatic memory flush (it writes into the project folder), and dreaming.
 - OpenClaw bootstrap hooks that run `BOOT.md` or inject extra non-Axis context. Operational command-audit and compaction-notice hooks may remain because they do not supply project instructions or semantic memory.
-- Generic heartbeats, default skills, and unrestricted `tools.profile: full` access.
-- Wildcard cross-agent visibility and unneeded browser/web, media, memory, and plugin-management tools.
+- The Proactive check automation, standing intents, self-learning skills (learned skills bypass the skills allowlist), default skills, and unrestricted `tools.profile: full` access, which onboarding grants by default.
+- Open cross-agent access: by default every session can read other agents' transcripts and every agent can message every other. Axis narrows visibility so a session sees only itself and its own helpers, never your direct chat, and allows messaging only between exact Axis agents.
+- Nested Subagents (limited to one level), OpenClaw's prompt that tells a main session to prefer hidden helpers, swarm, and unneeded browser/web, media, memory, and plugin-management tools.
 
 The explicit Axis tool surface retains filesystem/runtime access, agent and session control, messaging, cron, status, and User interaction. Extra tools are opt-in per Project. Required channel and model-provider plugins stay enabled; Axis never disables all plugins or adds a broad plugin allowlist merely to silence a warning.
 
 Do not create OpenClaw persona or memory files for an Axis agent. Put standing project guidance in `_Axis/INSTRUCTIONS.md`, conversational stance in `_Axis/MINDSET.md`, User/project facts in the owning project records, and persistent memory in Axis Notes. Channel display metadata may still provide a name or avatar, but it supplies no behavior, memory, role, or authority.
 
-If legacy persona or memory files already exist, Axis checks only their existence and asks before moving them intact to `_Trash/OpenClaw-Legacy/`. It never reads them merely to harden the profile and never edits OpenClaw's SQLite state. For a previously personal or mixed installation, a fresh dedicated Axis profile is safer than trying to clean a shared memory index. The User decides whether old profile state and transcripts are archived or purged.
+If legacy persona or memory files already exist, Axis checks only their existence and asks before moving them intact to `_Trash/OpenClaw-Legacy/`. A leftover `TOOLS.md` matters most: OpenClaw's repair command (`openclaw doctor --fix`, which also runs during OpenClaw updates) merges it into `AGENTS.md`, which would edit the Axis entry file, so Axis moves it first and treats every repair run and update as a change you approve. It never reads them merely to harden the profile and never edits OpenClaw's SQLite state. For a previously personal or mixed installation, a fresh dedicated Axis profile is safer than trying to clean a shared memory index. The User decides whether old profile state and transcripts are archived or purged.
 
-Run `^audit openclaw` for a read-only report. It verifies the live-schema mapping, bootstrap and memory controls, instruction-injection hooks, inferred commitments, effective tools, heartbeat, skills, exact messaging policy, bounded session maintenance, channel/plugin availability, schedule declarations, and legacy-file presence. The result is `Ready`, `Degraded`, or `Unverified`; the audit never logs in, restarts the Gateway, applies configuration, sends a probe, reads old memory, or deletes anything.
+Run `^audit openclaw` for a read-only report. It verifies the live-schema mapping, bootstrap and memory controls, instruction-injection hooks, effective tools, the Proactive check, skills and self-learning, session visibility, exact messaging policy, Subagent depth, delegation prompt and swarm, bounded session maintenance, channel/plugin availability, schedule declarations, and legacy-file presence. The result is `Ready`, `Degraded`, or `Unverified`; the audit never logs in, restarts the Gateway, applies configuration, sends a probe, reads old memory, or deletes anything.
 
 The User still performs the account-bound steps: approve a dedicated profile when needed, provide and link the bot phone/account, scan the channel QR code, approve pairing, create WhatsApp groups, and send discovery and real verification messages. Axis handles schema inspection, hardening previews, validated CLI changes, exact bindings, boot probes, and portable Environment/schedule records after the corresponding approval.
 
