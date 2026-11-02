@@ -1,6 +1,6 @@
 # Axis Workflow User Manual
 > **Purpose:** How to use the Axis Workflow day to day: setup, commands, the Dashboard, the Wiki, working across tools and machines, and working with Agents and models. For the technical and compliance reference, see [SPECIFICATION](/_Axis/SPECIFICATION.md).
-> **Version:** 3.10
+> **Version:** 3.11
 
 
 
@@ -384,7 +384,7 @@ Axis repairs genuine broken references as it encounters them. At **Autonomous**,
 
 An old Log may intentionally quote a mistake. Axis can record that exact occurrence in optional `_Axis/EXCEPTIONS.md` without editing the Log. The exception binds the file, its complete content hash, the finding, line and occurrence, and explains why it is intentional. It does not exempt the same bad reference elsewhere; changed source bytes invalidate it. Scans report matches as acknowledged rather than defects. Adding or changing an exception follows the same permission policy as a repair. Read-only checks such as `^audit` stay read-only. You can ask to review the registry; removing an entry makes its unresolved finding visible again.
 
-Cross-project links produce a warning and a Log instead of blocking your save. Axis keeps a record when a report is renamed or a referenced file is trashed, so historical citations remain understandable. If a genuine record check still blocks a checkpoint, you can explicitly approve the named files and check for that exact commit; unrelated safeguards continue to apply. Updates receive their own local checkpoint after adoption, and delegated updates verify that commit. New coordination folders and empty summary files are created automatically when missing, preserving existing contents. Scratch folder names are not record IDs. Explicit exact-file approval receipts also work on a first Git commit; genuine reference errors still require repair or approval.
+Cross-project links produce a warning and a Log instead of blocking your save. Axis keeps a record when a report is renamed or a referenced file is trashed, so historical citations remain understandable. If a genuine record check still blocks a checkpoint, you can explicitly approve the named files and check for that exact commit, or give a standing instruction that Axis then cites; unrelated safeguards continue to apply. Updates receive their own local checkpoint after adoption, including the record edits the update itself required, and delegated updates verify that commit. New coordination folders and empty summary files are created automatically when missing, preserving existing contents. Scratch folder names are not record IDs. Explicit exact-file approval receipts also work on a first Git commit; genuine reference errors still require repair or approval.
 
 ### Supervising Child Projects
 

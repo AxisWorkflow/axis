@@ -9,8 +9,9 @@ Run from the project root:
       commit (or, without Git, at or after --since) is reported.
   python3 _Axis/Resources/record-check.py write-once
       Staged changes against HEAD. A modified write-once file refuses the commit; renames (archive moves) and
-      deletions pass. Paths named by an update transaction whose evidence is added in the same commit pass, and so
-      does an identifier correction whose Log the same commit adds (below).
+      deletions pass. A reconciliation edit passes when a completion receipt added in the same commit binds its
+      path to the exact staged bytes; so do an identifier correction whose Log the same commit adds (below) and
+      the exact paths of a checkpoint override receipt.
   python3 _Axis/Resources/record-check.py correct --path {path} --old {wrong identifier} --new {right identifier}
       The one edit a write-once record takes, under LinkMaintenance Permissions: replace a wrong record
       identifier (a timestamp ID, or a path or reference built on one) with the right one, and change nothing else.
@@ -27,6 +28,10 @@ Run from the project root:
       --staged (^save): refuse only the problems staged records add beyond their HEAD version.
       --range {old}..{new} (^resume): scan the in-scope files a received range changed. Git checks use their index or
       destination-commit registry and source bytes, never uncommitted working-tree exceptions.
+  python3 _Axis/Resources/record-check.py gate [--session {Session ID}]
+      The pre-commit gate for ^save, ^git, Auto Send and update checkpoints: names, write-once and links --staged in
+      one call with one exit status. With --session it records reference warnings in a Log, stages that Log and
+      reruns the three checks. The last line is always the verdict, so a pipe cannot hide a refusal from a reader.
 Exit 0 prints OK (after any warning lines); 1 prints REFUSED; 2 means this check cannot run: use the manual steps."""
 import argparse,datetime as dt,hashlib,json,os,re,subprocess,sys
 from pathlib import Path,PurePosixPath
@@ -196,13 +201,74 @@ def harmonization_exempt(root,added):
         except (ValueError,KeyError,TypeError,AttributeError,UnicodeError):continue
     return allowed
 
-def update_exempt(root,added):
-    """Paths named by an update transaction whose evidence this commit adds (apply, adoption or rollback)."""
-    exempt=compaction_exempt(root,added)|harmonization_exempt(root,added)
-    for tx in sorted({p.split('/')[2] for p in added if p.startswith('_Axis/Updates/') and p.count('/')>=3}):
-        data=git(root,'show',':_Axis/Updates/'+tx+'/start.json')
+RECONCILABLE=('_Axis/PLAN.md','_Axis/INITIATIVES.md','_Axis/TASKS.md','_Axis/SNAPSHOTS.md','_Axis/PROJECT.md','_Axis/SETTINGS.md','_Axis/MINDSET.md','_Axis/DIRECTIVES.md','_Axis/ENVIRONMENT.md')
+
+def reconcilable(path):
+    parts=path.split('/') if isinstance(path,str) else []
+    return path in RECONCILABLE or len(parts)==3 and parts[:2] in (['_Axis','Tasks'],['_Axis','Followups']) and bool(NAME.fullmatch(parts[2]))
+
+RECEIPT_KEYS={'schema','transaction','session','from_version','to_version','target_commit','plan_sha256','authorization','engine_sha256','git_checkpoints','unrelated_changes','outcome','completed','trash'}
+
+def ever_committed(root,path):
+    """A receipt or plan already in history grants nothing again, even after a deletion."""
+    return bool((git(root,'log','-1','--format=%H','--all','--',path) or b'').strip())
+
+def staged_matches(root,path,binding):
+    """The staged blob equals the bound bytes, or the working file does and Git normalizes it to that blob."""
+    staged=git(root,'show',':'+path)
+    if staged is not None and len(staged)==binding['bytes'] and hashlib.sha256(staged).hexdigest()==binding['sha256']:return True
+    f=root/path
+    if staged is None or f.is_symlink() or not f.is_file():return False
+    data=f.read_bytes()
+    if len(data)!=binding['bytes'] or hashlib.sha256(data).hexdigest()!=binding['sha256']:return False
+    normalized=(git(root,'hash-object','--path='+path,'--',path) or b'').strip();index=(git(root,'rev-parse',':'+path) or b'').strip()
+    return bool(normalized) and normalized==index
+
+def completion_receipt(root,receipt_path,tx):
+    """The staged receipt has the engine's full shape and names its own committed or staged authorization Log."""
+    r=json.loads(git(root,'show',':'+receipt_path).decode(),object_pairs_hook=_json_unique)
+    def need(ok):
+        if not ok:raise ValueError('invalid completion receipt')
+    need(set(r)-{'harmonization_sha256','reconciled'}==RECEIPT_KEYS and r['schema']==2 and r['transaction']==tx and r['outcome']=='consumed' and IDENT.fullmatch(r['session']))
+    need(all(isinstance(r[k],str) and re.fullmatch('[0-9a-f]{64}',r[k]) for k in ('plan_sha256','engine_sha256')) and re.fullmatch('[0-9a-f]{40,64}',str(r['target_commit'])))
+    need(isinstance(r['git_checkpoints'],list) and all(re.fullmatch('[0-9a-f]{40,64}',str(v)) for v in r['git_checkpoints']) and isinstance(r['unrelated_changes'],list))
+    need(all(re.fullmatch(r'(?:[0-9]+\.[0-9]{2}|[0-9]{2}\.[0-9]{2}\.[0-9]{2}(?:-[1-9][0-9]*)?)',str(r[k])) for k in ('from_version','to_version')) and re.fullmatch(r'_Trash/\d{4}-\d{2}-\d{2}--Update-'+re.escape(tx),str(r['trash'])))
+    authority=r['authorization'];need(isinstance(authority,dict) and set(authority)=={'record','sha256'} and authority['record']=='_Axis/Logs/'+tx+'.md')
+    auth=git(root,'show',':'+authority['record']);head=git(root,'show','HEAD:'+authority['record'])
+    need(auth is not None and hashlib.sha256(auth).hexdigest()==authority['sha256'] and (head is None or head==auth))
+    lines=auth.decode().splitlines()
+    need([v for v in lines if v.startswith('engine_sha256:')]==['engine_sha256: '+r['engine_sha256']] and len([v for v in lines if re.fullmatch(r'plan_scope_sha256: [0-9a-f]{64}',v)])==1)
+    if 'harmonization_sha256' in r:
+        raw=git(root,'show',':'+receipt_path.rsplit('/',1)[0]+'/harmonization.json');need(raw is not None and hashlib.sha256(raw).hexdigest()==r['harmonization_sha256'])
+    return r
+
+def reconciliation_exempt(root,added):
+    """Exact reconciliation edits bound by a newly added consumed completion receipt; the plan itself is gone by then."""
+    allowed=set()
+    for receipt_path in added:
+        if not re.fullmatch(r'_Axis/Updates/'+IDENT.pattern+r'/completed\.json',receipt_path) or ever_committed(root,receipt_path):continue
+        tx=receipt_path.split('/')[2]
         try:
-            plan=json.loads(data.decode())['plan']
+            bound=completion_receipt(root,receipt_path,tx).get('reconciled',{})
+            if not isinstance(bound,dict):continue
+            for source,binding in bound.items():
+                if not reconcilable(source) or not isinstance(binding,dict) or set(binding)-{'path'}!={'sha256','bytes'} or type(binding['bytes']) is not int:continue
+                target=binding.get('path',source)
+                if target!=source:
+                    # An archive binding covers only a real move of a live record to its own family Archive.
+                    if not source.startswith('_Axis/Followups/') or target not in ('_Axis/Followups/Archive/'+Path(source).name,'_Axis/Archive/Followups/'+Path(source).name):continue
+                    if git(root,'show','HEAD:'+source) is None or git(root,'show','HEAD:'+target) is not None or git(root,'show',':'+source) is not None:continue
+                if staged_matches(root,target,binding):allowed.update((source,target))
+        except (ValueError,KeyError,TypeError,AttributeError,UnicodeError):continue
+    return allowed
+
+def update_exempt(root,added):
+    """Paths covered by update evidence this commit adds (apply, adoption or rollback)."""
+    exempt=compaction_exempt(root,added)|harmonization_exempt(root,added)|reconciliation_exempt(root,added)
+    # Legacy journals kept the plan beside their evidence; only a plan added in this commit names paths.
+    for plan_path in sorted(p for p in added if re.fullmatch(r'_Axis/Updates/'+IDENT.pattern+r'/start\.json',p) and not ever_committed(root,p)):
+        try:
+            plan=json.loads(git(root,'show',':'+plan_path).decode())['plan']
             exempt|={c['path'] for c in plan['changes']}|set(plan.get('reconciliation',{}))|set(plan.get('migration_paths',[]))
             exempt|={r['archive_to'] for r in plan.get('reconciliation',{}).values() if 'archive_to' in r}
         except (AttributeError,ValueError,KeyError,TypeError):continue
@@ -588,11 +654,23 @@ def blob_digest(root,revision,path):
     data=git(root,'show',revision+':'+path)
     return hashlib.sha256(data).hexdigest() if data is not None else None
 
+def standing_authority(root,authority,user_words):
+    """A standing User instruction cited by an override: a committed record where User instructions live, unchanged in
+    this commit, quoting the words. It is review evidence, not proof that User wrote them."""
+    if not isinstance(authority,dict) or set(authority)!={'record','sha256'} or not _safe_relative(authority['record']):return False
+    if not (authority['record']=='_Axis/INSTRUCTIONS.md' or re.fullmatch(r'_Axis/(?:Archive/)?(?:Logs|Notes)/(?:Archive/)?'+IDENT.pattern+r'\.md',authority['record'])):return False
+    head=git(root,'show','HEAD:'+authority['record']);staged=git(root,'show',':'+authority['record'])
+    if head is None or staged!=head or hashlib.sha256(head).hexdigest()!=authority['sha256']:return False
+    words=' '.join(user_words.split())
+    text=' '.join(re.sub(r'(?m)^[ \t]*(?:>[ \t]?)+','',head.decode('utf-8','replace')).split())
+    return len(words)>=20 and words in text
+
 def approved_paths(root,check):
     head=(git(root,'rev-parse','--verify','HEAD') or b'').decode().strip();approved=set()
     for log,value in staged_receipts(root,'override'):
-        if set(value)!={'schema','kind','head','check','paths','reason','user_words'} or value['head']!=head or value['check']!=check:continue
+        if set(value)-{'authority'}!={'schema','kind','head','check','paths','reason','user_words'} or value['head']!=head or value['check']!=check:continue
         if not all(isinstance(value[k],str) and value[k].strip() for k in ('reason','user_words')) or not isinstance(value['paths'],list) or not value['paths']:continue
+        if 'authority' in value and not standing_authority(root,value['authority'],value['user_words']):continue
         good=set()
         for item in value['paths']:
             if not isinstance(item,dict) or set(item)!={'path','before_sha256','after_sha256'} or not _safe_relative(item['path']):break
@@ -604,16 +682,23 @@ def approved_paths(root,check):
         else:approved.update(good)
     return approved
 
-def approval_receipt(root,session,check,paths,reason,user_words):
+def approval_receipt(root,session,check,paths,reason,user_words,authority=None):
     if check not in ('write-once','links') or not exact_repo(root):raise ValueError('override requires a project repository and named record check')
     if not reason.strip() or not user_words.strip() or not paths:raise ValueError('record the reason and actual User approval words')
+    cited=None
+    if authority is not None:
+        data=git(root,'show','HEAD:'+authority) if _safe_relative(authority) else None
+        cited={'record':authority,'sha256':hashlib.sha256(data).hexdigest() if data is not None else ''}
+        if not standing_authority(root,cited,user_words):raise ValueError('the cited standing instruction must be committed, unchanged in this commit, and contain the quoted User words')
     bindings=[]
     for path in sorted(set(paths)):
         if not _safe_relative(path):raise ValueError('override path is not project-local')
         before,after=blob_digest(root,'HEAD',path),blob_digest(root,'',path)
         if before==after:raise ValueError('override requires an exact changed staged file: '+path)
         bindings.append({'path':path,'before_sha256':before,'after_sha256':after})
-    return save_receipt(root,session,{'schema':1,'kind':'override','head':(git(root,'rev-parse','--verify','HEAD') or b'').decode().strip(),'check':check,'paths':bindings,'reason':reason,'user_words':user_words})
+    value={'schema':1,'kind':'override','head':(git(root,'rev-parse','--verify','HEAD') or b'').decode().strip(),'check':check,'paths':bindings,'reason':reason,'user_words':user_words}
+    if cited:value['authority']=cited
+    return save_receipt(root,session,value)
 
 def warning_receipt(root,session,lines):
     warnings=[line for line in lines if line.split(' ',1)[0] in WARNING_KINDS]
@@ -963,6 +1048,29 @@ def write_once(root):
     if refused:return 1,refused[:LIMIT]+[f'REFUSED: {len(refused)} write-once file(s) changed; do not commit; show User these paths and ask how to proceed']
     return 0,['OK']
 
+def gate(root,session=None):
+    """Run all three commit checks; any refusal refuses, and a check that cannot run sends the caller to the manual steps."""
+    def once():
+        out=[];codes={}
+        for name,run in (('names',lambda:names(root,None)),('write-once',lambda:write_once(root)),('links --staged',lambda:links_staged(root))):
+            try:code,lines=run()
+            except Exception as error:code,lines=2,['UNAVAILABLE: '+type(error).__name__+' while checking']
+            codes[name]=code;out+=[name+': '+line for line in lines]
+        return codes,out
+    codes,out=once()
+    findings=[line.split(': ',1)[1] for line in out if line.startswith('links --staged: ')]
+    # A rerun reuses a staged warnings Log for the same findings instead of adding another.
+    if session and not any(codes.values()) and not any(v.get('warnings')==[x[:500] for x in findings if x.split(' ',1)[0] in WARNING_KINDS][:5] for _,v in staged_receipts(root,'warnings')):
+        try:logged=warning_receipt(root,session,findings)
+        except Exception as error:return 1,out+['REFUSED: warning Log could not be recorded: '+str(getattr(error,'code',error)),'GATE REFUSED: links --staged']
+        if logged:
+            if subprocess.run(['git','-C',str(root),'add','--',logged],capture_output=True,timeout=30).returncode:return 1,out+['GATE REFUSED: could not stage the warning Log '+logged]
+            codes,out=once();out.insert(0,'RECORDED: '+logged+' (staged; checks rerun)')
+    refused=[n for n,c in codes.items() if c==1];unavailable=[n for n,c in codes.items() if c==2]
+    if refused:return 1,out+['GATE REFUSED: '+', '.join(refused)+'; do not commit']
+    if unavailable:return 2,out+['GATE UNAVAILABLE: '+', '.join(unavailable)+'; use the manual steps for these checks']
+    return 0,out+['GATE OK']
+
 def main():
     p=argparse.ArgumentParser(description='Axis pre-commit record checks');p.add_argument('--root',default='.')
     sub=p.add_subparsers(dest='check',required=True);n=sub.add_parser('names');n.add_argument('--since');sub.add_parser('write-once')
@@ -970,24 +1078,28 @@ def main():
     k=sub.add_parser('links');k.add_argument('--scope',action='append');k.add_argument('--archive',action='store_true')
     k.add_argument('--staged',action='store_true');k.add_argument('--range');k.add_argument('--log-warnings',action='store_true');k.add_argument('--session')
     m=sub.add_parser('record-move');m.add_argument('--session',required=True);m.add_argument('--path',required=True);m.add_argument('--to',required=True);m.add_argument('--reason',required=True);m.add_argument('--recover',action='store_true')
-    o=sub.add_parser('approve');o.add_argument('--session',required=True);o.add_argument('--check',dest='approved_check',choices=('links','write-once'),required=True);o.add_argument('--path',action='append',required=True);o.add_argument('--reason',required=True);o.add_argument('--user-words',required=True)
+    g=sub.add_parser('gate');g.add_argument('--session')
+    o=sub.add_parser('approve');o.add_argument('--session',required=True);o.add_argument('--check',dest='approved_check',choices=('links','write-once'),required=True);o.add_argument('--path',action='append',required=True);o.add_argument('--reason',required=True);o.add_argument('--user-words',required=True);o.add_argument('--authority')
     a=p.parse_args();root=Path(os.path.abspath(a.root))
     if a.check=='names' and a.since is not None and not re.fullmatch(r'\d{4}(?:\.\d{2}){5}\.\d{3}Z',a.since):
         print('UNAVAILABLE: --since is not a Session ID');return 2
-    if not (root/'_Axis').is_dir():print('UNAVAILABLE: run from the project root');return 2
+    if not (root/'_Axis').is_dir():print(('GATE ' if a.check=='gate' else '')+'UNAVAILABLE: run from the project root');return 2
     if a.check in ('record-move','approve'):
         try:
-            path=move_receipt(root,a.session,a.path,a.to,a.reason,a.recover) if a.check=='record-move' else approval_receipt(root,a.session,a.approved_check,a.path,a.reason,a.user_words)
+            path=move_receipt(root,a.session,a.path,a.to,a.reason,a.recover) if a.check=='record-move' else approval_receipt(root,a.session,a.approved_check,a.path,a.reason,a.user_words,a.authority)
             print('RECORDED: '+path);return 0
-        except (ValueError,OSError,RuntimeError,ExceptionsError) as error:print('REFUSED: '+str(error));return 1
+        except Exception as error:print('REFUSED: '+str(getattr(error,'code',error)));return 1
     if a.check=='links' and a.log_warnings and (not a.staged or not a.session):p.error('--log-warnings requires --staged and --session')
-    if a.check=='links':code,lines=links_staged(root) if a.staged else links_range(root,a.range) if a.range else links(root,a.scope or SCOPE,a.archive)
+    if a.check=='gate' and a.session is not None and not re.fullmatch(r'\d{4}(?:\.\d{2}){5}\.\d{3}Z',a.session):
+        print('GATE UNAVAILABLE: --session is not a Session ID');return 2
+    if a.check=='gate':code,lines=gate(root,a.session)
+    elif a.check=='links':code,lines=links_staged(root) if a.staged else links_range(root,a.range) if a.range else links(root,a.scope or SCOPE,a.archive)
     else:code,lines=names(root,a.since) if a.check=='names' else correct(root,a.path,a.old,a.new,a.link) if a.check=='correct' else write_once(root)
     if a.check=='links' and a.log_warnings:
         try:
             logged=warning_receipt(root,a.session,lines)
             if logged:lines.append('RECORDED: '+logged+'; stage this Log and re-run the three checks before committing')
-        except (ValueError,OSError,RuntimeError) as error:code=1;lines.append('REFUSED: warning Log could not be recorded: '+str(error))
+        except Exception as error:code=1;lines.append('REFUSED: warning Log could not be recorded: '+str(getattr(error,'code',error)))
     for line in lines:print(line)
     return code
 

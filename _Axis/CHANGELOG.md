@@ -1,7 +1,7 @@
 # Changelog
 > **Purpose:** Record Axis release identity and the structural migrations needed to update an existing project safely.
 
-current-version: 3.10
+current-version: 3.11
 changelog-format: 1
 self-update-baseline: 26.08.19
 
@@ -39,6 +39,33 @@ update-impact: automatic
 ### Verification
 
 - None.
+
+## 3.11
+
+released: 2026-11-02
+
+update-impact: automatic
+
+### Structural Changes
+
+- `_Axis/Resources/update-transaction.py` writes an optional `reconciled` map into a consumed `_Axis/Updates/{ID}/completed.json`: each reconciled record path with the SHA-256 and byte count it had at consumption, and `path` for a Follow-Up archive move. Updater-only receipts never carry it. A plan may reconcile only the Plan, index and project files or a live top-level Task or Follow-Up record. `_Axis/Resources/boot.py` and the engine accept and shape-check the key.
+- `_Axis/Resources/record-check.py` exempts a write-once path from the staged write-once check when a completion receipt added in the commit, never committed before and of the engine's full shape, binds it to the exact staged bytes (or bytes Git normalizes to them), with its authorization Log matching the receipt's digest and engine line and unchanged if already committed. An archive binding covers only a real move. A legacy `start.json` plan counts only when added in the same commit. It adds `gate [--session {ID}]`: `names`, `write-once` and `links --staged` with one exit status, a reference-warning Log recorded once and staged, and the verdict printed last; `^save`, `^git`, Auto Send and update checkpoints use it. `approve --authority {record}` lets an override cite a committed `_Axis/INSTRUCTIONS.md`, Log or Note that quotes the approval words.
+- `_Axis/Practices/FaultTolerance.md` > Checker defect on an authorized path; `_Axis/Practices/GIT.md`, `_Axis/Commands/save.md`, `_Axis/Practices/LinkMaintenance.md`, `_Axis/Rules/Permissions.md`, `_Axis/Rules/RecordsAndWORM.md` and `_Axis/Resources/Check-Update-Handoff.md` (reconciliation prefers editable records) follow.
+- `_Axis/Resources/guardrails.py` lets Main edit a finished Task or Follow-Up that an in-progress adoption reconciliation names in its frozen plan.
+- `_Axis/Resources/startup-survey.py` reports `open_count`, `malformed` and `malformed_count` for Follow-Ups and Reminders; the startup notice counts only open Follow-Ups.
+- `_Axis/Resources/coordination.py` reads only a Team's Message folders (with the legacy flat, Individual and archived folders) wherever a check filters by Team, and `_Axis/Resources/team-closing.py` reuses each record scan and checks each exact artifact reference once per closing projection. `_Axis/Resources/checked-session.py` names the return recipient in its send tool: the owner when the Axis Team of Agents is a proposal Team, otherwise Main.
+
+### Project-State Migrations
+
+- None.
+
+### Retired Paths
+
+- None.
+
+### Verification
+
+- Updater files change, so `^update` runs in two steps. The step-one receipt carries no `reconciled` key and stays readable by the 3.10 startup helper; the fresh adoption that consumes step two commits its reconciliation edits, including a Completed Task, without a User override.
 
 ## 3.10
 

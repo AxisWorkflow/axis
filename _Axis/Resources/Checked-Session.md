@@ -1,7 +1,7 @@
 # Checked Session Tools
 > **Purpose:** Run explicitly scoped reads, complete coordination replay and atomic record creation through an optional bounded tool interface.
 
-Proposal-Team members use the same Team mode under [Practices > ExternalTeams]. The broker checks the live External owner as well as the dispatched member and reports proposal classification and `return_to: owner`; it grants no ordinary Main tools. Proposal scope is enforced by these tools, not by unrelated host tools. Main-only selected closing and replay remain unavailable to External controllers.
+Proposal-Team members use the same Team mode under [Practices > ExternalTeams]. The broker checks the live External owner as well as the dispatched member and reports proposal classification and `return_to: owner`; its `send_message` description names the owner as the return recipient, and a send to `main` is refused. It grants no ordinary Main tools. Proposal scope is enforced by these tools, not by unrelated host tools. Main-only selected closing and replay remain unavailable to External controllers.
 
 Load only when configuring or using checked session tools, or when complete coordination replay is required. Python is optional; the ordinary file workflow and manual record protocol remain available. Do not describe an ordinary shell session as confined by this helper.
 

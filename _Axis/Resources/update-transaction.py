@@ -32,6 +32,9 @@ STATE_DIRS=('Agents','Archive','Audit','CX','Flags','Followups','Ideas','Logs','
 
 def require(v,m):
     if not v:raise ValueError(m)
+def reconcilable(n):
+    # One rule for plans, receipts and the commit check: indexes or a live top-level Task or Follow-Up record.
+    return n in MUTABLE or isinstance(n,str) and n.count('/')==2 and n.startswith(('_Axis/Tasks/','_Axis/Followups/')) and bool(re.fullmatch(ID+r'\.md',n.split('/')[2]))
 def encode(v):return (json.dumps(v,sort_keys=True,indent=2)+'\n').encode()
 def digest(b):return hashlib.sha256(b).hexdigest()
 def parse(b):
@@ -191,7 +194,7 @@ def validate_plan(root,p):
         require(digest(read(safe(root,h['helper'])))==h['sha256'],'harmonizer source changed')
     require(isinstance(p['reconciliation'],dict),'invalid reconciliation set')
     for n,rules in p['reconciliation'].items():
-        require(n in MUTABLE or n.startswith(('_Axis/Tasks/','_Axis/Followups/')) and n.endswith('.md'),'invalid reconciliation path')
+        require(reconcilable(n),'invalid reconciliation path')
         safe(root,n);require(not any(v['path']==n for v in p['changes']),'managed changes cannot also require reconciliation');require(set(rules) in ({'contains','absent'},{'contains','absent','archive_to'}) and all(isinstance(rules[k],list) and all(isinstance(x,str) and x for x in rules[k]) for k in ('contains','absent')),'invalid reconciliation conditions')
         if 'archive_to' in rules:
             target=rules['archive_to'];require(n.startswith('_Axis/Followups/') and target in ('_Axis/Archive/Followups/'+Path(n).name,'_Axis/Followups/Archive/'+Path(n).name),'invalid reconciliation archive');safe(root,target);require(target not in p['preserved'] and not any(v['path']==target for v in p['changes']),'archive destination has conflicting ownership')
@@ -250,7 +253,8 @@ def before_data(root,E,s,i,v):
 def completed_temporary(root,U):
     require(all(q.name in ('completed.json','recovery.json','harmonization.json') or finder(q) for q in U.iterdir()),'unknown transaction evidence')
     r=parse(read(safe(U,'completed.json')))
-    require(set(r)-{'harmonization_sha256'}=={'schema','transaction','session','from_version','to_version','target_commit','plan_sha256','authorization','engine_sha256','git_checkpoints','unrelated_changes','outcome','completed','trash'} and r['schema']==2 and r['transaction']==U.name and re.fullmatch(ID,r['session']) and r['outcome'] in ('consumed','rolled-back'),'invalid completed update receipt')
+    require(set(r)-{'harmonization_sha256','reconciled'}=={'schema','transaction','session','from_version','to_version','target_commit','plan_sha256','authorization','engine_sha256','git_checkpoints','unrelated_changes','outcome','completed','trash'} and r['schema']==2 and r['transaction']==U.name and re.fullmatch(ID,r['session']) and r['outcome'] in ('consumed','rolled-back'),'invalid completed update receipt')
+    if 'reconciled' in r:valid_reconciled(r['reconciled'],r['outcome'])
     require(isinstance(r['unrelated_changes'],list) and all(isinstance(v,str) and safe(root,v) for v in r['unrelated_changes']),'invalid unrelated-change summary')
     version(r['from_version']);version(r['to_version']);datetime.datetime.fromisoformat(r['completed'])
     require(re.fullmatch('[0-9a-f]{40,64}',r['target_commit']) and isinstance(r['git_checkpoints'],list) and all(re.fullmatch('[0-9a-f]{40,64}',v) for v in r['git_checkpoints']),'invalid checkpoint receipt')
@@ -262,6 +266,21 @@ def completed_temporary(root,U):
     if 'harmonization_sha256' in r:require(digest(read(safe(U,'harmonization.json')))==r['harmonization_sha256'],'harmonization result changed')
     return r
 
+def valid_reconciled(v,outcome):
+    require(outcome=='consumed' and isinstance(v,dict) and v,'invalid reconciliation binding')
+    for n,b in v.items():
+        require(reconcilable(n),'invalid reconciliation binding')
+        require(isinstance(b,dict) and set(b)-{'path'}=={'sha256','bytes'} and re.fullmatch('[0-9a-f]{64}',str(b['sha256'])) and type(b['bytes']) is int and b['bytes']>=0,'invalid reconciliation binding')
+        if 'path' in b:require(n.startswith('_Axis/Followups/') and b['path'] in ('_Axis/Followups/Archive/'+Path(n).name,'_Axis/Archive/Followups/'+Path(n).name),'invalid reconciliation binding')
+
+def reconciled(consumed):
+    # Bind each reconciled record to its exact consumed bytes so the adoption checkpoint can commit it.
+    out={}
+    for n,value in consumed['reconciliation']['records'].items():
+        if isinstance(value,dict) and set(value)=={'path','identity'}:out[n]={'path':value['path'],'sha256':value['identity']['sha256'],'bytes':value['identity']['bytes']}
+        else:out[n]={'sha256':value['sha256'],'bytes':value['bytes']}
+    return out
+
 def retire_temporary(root,sid,tx):
     U=safe(root,'_Axis/Updates/'+tx)
     if not (U/'recovery.json').exists():return None
@@ -272,6 +291,10 @@ def retire_temporary(root,sid,tx):
         r={'schema':2,'transaction':tx,'session':sid,'from_version':p['from_version'],'to_version':p['to_version'],'target_commit':p['source']['commit'],'plan_sha256':s['plan_sha256'],'authorization':{k:p['authorization'][k] for k in ('record','sha256')},'engine_sha256':s['engine_sha256'],'git_checkpoints':sorted(set(s.get('git_before',{}).values())),'unrelated_changes':parse(read(E/'consumed.json')).get('unrelated_changes',[]) if (E/'consumed.json').exists() else [],'outcome':'consumed' if (E/'consumed.json').exists() else 'rolled-back','completed':datetime.datetime.now(datetime.timezone.utc).isoformat(),'trash':'_Trash/'+datetime.datetime.now(datetime.timezone.utc).date().isoformat()+'--Update-'+tx}
         if (E/'harmonization.json').exists():
             raw=read(E/'harmonization.json');once(U/'harmonization.json',raw);r['harmonization_sha256']=digest(raw)
+        # Never on an updater-only step: the still-installed older boot.py reads that receipt and rejects unknown keys.
+        if (E/'consumed.json').exists() and not p.get('updater_only'):
+            bound=reconciled(parse(read(E/'consumed.json')))
+            if bound:valid_reconciled(bound,'consumed');r['reconciled']=bound
         once(U/'completed.json',r)
     dest=safe(root,r['trash'])
     if E.exists():

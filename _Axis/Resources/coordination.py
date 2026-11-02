@@ -1529,6 +1529,15 @@ class Store:
         try: yield from message_paths().paths(self.root,team=team,archived=archived)
         except ValueError as exc: raise CoordinationError(str(exc)) from None
 
+    @contextlib.contextmanager
+    def cached_reads(self):
+        """Reuse family scans within one read-only projection; inside a lock the lock's own cache applies."""
+        if getattr(self,'_operation_records',None) is not None:
+            yield;return
+        self._operation_records={};self._record_read_count=0;self._record_read_seconds=0.0
+        try:yield
+        finally:self._operation_records=None
+
     def records(self, family, team=None, archived=True):
         cache=getattr(self,'_operation_records',None);key=(family,team,archived)
         if cache is not None and key in cache:return copy.deepcopy(cache[key])
@@ -2161,7 +2170,7 @@ class Store:
             need(payload['kind'] in PROPOSALS, 'worker-message-scope')
             expiry = min(timestamp(charter['limits']['deadline']), timestamp(founding['limits']['deadline']), timestamp(charter['authority']['expires']), timestamp(founding['authority']['expires']))
             need(self.now() < timestamp(payload['expires']) <= expiry, 'message-expiry')
-            history = [m for m in self.records('Messages') if m.get('team') == payload['team']]
+            history = [m for m in self.records('Messages', team=payload['team']) if m.get('team') == payload['team']]
             observed = payload['data'].get('observed_message')
             if observed is not None:
                 for prior in history:
@@ -2212,7 +2221,7 @@ class Store:
             original = self.team_message(team, job, attempt, epoch, reply_to)
             need(original.get('job') in (None, job), 'inbox-reply-assignment')
         rows = []; size = 0; more = False
-        for message in self.records('Messages'):
+        for message in self.records('Messages', team=team):
             if message.get('team') != team or (after is not None and message['id'] <= after): continue
             delivery = message.get('delivery', {})
             addressed = {'slot': item['slot'], 'session': self.session} in delivery.get('recipients', [])
@@ -2258,7 +2267,7 @@ class Store:
         need(original.get('team') == team and original.get('delivery', {}).get('team_epoch') == view['epoch'], 'observation-scope')
         need({'slot': item['slot'], 'session': self.session} in original['delivery']['recipients'], 'observation-recipient')
         need(original['kind'] != 'receipt', 'no-receipt-loop')
-        for record in self.records('Messages'):
+        for record in self.records('Messages', team=team):
             if record['issuer']['session'] == self.session and record.get('data', {}).get('observed_message') == message_id:
                 return {'status': 'duplicate', 'id': record['id']}
         sender = original.get('delivery', {}).get('sender_slot', 'main')
@@ -2361,7 +2370,7 @@ class Store:
     def artifact_publish(self, team, job, attempt, epoch, revision, paths, *, supersedes=None):
         with self.locked(worker=True, team=team):
             charter, view, founding, _, item = self._direct_context(team, job, attempt, epoch, writing=True)
-            need(_native(charter) or sum(m['issuer']['session'] == self.session and m.get('team') == team for m in self.records('Messages')) < charter['collaboration']['max_messages_per_member'], 'message-budget')
+            need(_native(charter) or sum(m['issuer']['session'] == self.session and m.get('team') == team for m in self.records('Messages', team=team)) < charter['collaboration']['max_messages_per_member'], 'message-budget')
             workspace_token(revision)
             # One of the Message's sixteen attachment slots pins the manifest.
             need(isinstance(paths, list) and 0 < len(paths) <= 15 and len(set(paths)) == len(paths), 'artifact-files')
@@ -2402,7 +2411,7 @@ class Store:
         except (ValueError, UnicodeError): raise CoordinationError('artifact-manifest') from None
         need(manifest.get('schema') == 1 and manifest.get('team') == team and manifest.get('slot') == slot and manifest.get('revision') == revision, 'artifact-manifest')
         reference = {'path': base+'/_artifact.json', 'size': len(raw), 'sha256': digest(raw)}
-        publications = [m for m in self.records('Messages') if m.get('team') == team and m.get('artifact_publication', {}).get('path') == reference['path']]
+        publications = [m for m in self.records('Messages', team=team) if m.get('team') == team and m.get('artifact_publication', {}).get('path') == reference['path']]
         need(len(publications) == 1 and publications[0]['artifact_publication'] == reference
              and publications[0]['issuer']['session'] == manifest.get('session')
              and publications[0].get('job') == manifest.get('job'), 'artifact-publication')
@@ -2521,7 +2530,7 @@ class Store:
             if team is not None and self.read('Teams', team).get('collaboration'):
                 with self.locked(worker=True, team=team):
                     cap = self.read('Teams', team)['collaboration']['max_messages_per_member']
-                    need(_native(self.read('Teams', team)) or sum(m['issuer']['session'] == self.session and m.get('team') == team for m in self.records('Messages')) < cap, 'message-budget')
+                    need(_native(self.read('Teams', team)) or sum(m['issuer']['session'] == self.session and m.get('team') == team for m in self.records('Messages', team=team)) < cap, 'message-budget')
                     return self._record('Messages', payload, worker=True)
             return self._record('Messages', payload, worker=True)
         payload['attachments'] = self.validate_attachments(attachments)

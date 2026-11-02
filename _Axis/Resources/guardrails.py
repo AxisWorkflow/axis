@@ -10,7 +10,7 @@ For an OpenClaw agent listed as an External Agent, the `axis-guardrails` plugin 
 no `_Axis/Secrets/`, no change to an existing file, and new files only in Project Subfolders, `_Axis/Submissions/` and
 `_Temp/`. The Claude Code hook reads JSON from stdin; both exit 2 with a reason to refuse, and 0 otherwise.
 Python 3 standard library only; reads paths and status lines, never prints file contents. It does not see what a
-shell command or helper script writes. Adoption repairs run only through the verified, scope-bound update engine; they do not disable this hook for ordinary edits. It never affects User's own editing.
+shell command or helper script writes. Adoption repairs run only through the verified, scope-bound update engine; they do not disable this hook for ordinary edits. During an adoption's reconciliation, Main may edit the Tasks and Follow-Ups its frozen plan names. It never affects User's own editing.
 
 Self-test without a host: python3 _Axis/Resources/guardrails.py --check {project-relative path} [--new] [--agent {type}]"""
 import importlib.util,json,os,re,sys
@@ -85,10 +85,24 @@ def external(rel,exists,write):
     if rel.startswith('_Temp/') or (len(parts)>=2 and not parts[0].startswith(('_','.'))):return None
     return 'an External Agent writes new files only in Project Subfolders, _Axis/Submissions/ or _Temp/'
 
+def reconciling(root,rel):
+    """An adoption has begun reconciliation (started, not consumed) and its frozen plan names rel."""
+    temp=root/'_Temp'
+    if not temp.is_dir() or temp.is_symlink():return False
+    for journal in temp.glob('Update-*'):
+        if journal.is_symlink() or not journal.is_dir() or not (journal/'reconciliation-start.json').is_file() or (journal/'consumed.json').exists():continue
+        try:plan=json.loads((journal/'start.json').read_text())['plan']
+        except (OSError,ValueError,KeyError,TypeError):continue
+        if isinstance(plan.get('reconciliation'),dict) and rel in plan['reconciliation']:return True
+    return False
+
 def verdict(root,rel,exists,agent,tool):
     if agent and (rel==SECRETS or rel.startswith(SECRETS+'/')):return 'helpers never read or write _Axis/Secrets/'
     if tool not in WRITE_TOOLS:return None
-    return write_once(root,rel,exists) or (helper_scope(agent,rel,exists) if agent else None)
+    refusal=write_once(root,rel,exists)
+    # Main's reconciliation edit is bound later by the completion receipt; nothing else is exempt.
+    if refusal and not agent and rel.split('/')[1:2] in (['Tasks'],['Followups']) and reconciling(root,rel):refusal=None
+    return refusal or (helper_scope(agent,rel,exists) if agent else None)
 
 def new_text(root,rel,tool,ti):
     """The file's text after this Write, Edit or MultiEdit, or None when it cannot be known."""

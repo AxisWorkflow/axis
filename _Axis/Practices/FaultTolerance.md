@@ -39,6 +39,16 @@ Main alone may correct whitespace in ordinary unsealed textual WORM history when
 
 For example, one unintended trailing space on an ordinary prose line in an unsealed Log can be held at -2, left unchanged and disclosed at 0, or removed with this audit at 2. WORM status is otherwise unchanged. This exception cannot excuse a substantive history edit.
 
+## Checker defect on an authorized path
+
+A record check can refuse the exact effect an authorized procedure requires, such as an update checkpoint refusing the reconciliation edit the update named. Establish that the refusal is a checker defect: the procedure's own evidence names the path and the exact bytes, and nothing else in the commit relies on the exemption.
+
+1. Where the procedure's evidence is byte-bound for the checker, it passes without any disposition; the consumed completion receipt does this for update reconciliation edits.
+2. Elsewhere, continue only when a standing User instruction covers continuing past checker defects. Write the override under [Practices > LinkMaintenance > User-approved checkpoint overrides] with `--authority` citing that committed instruction and quoting its words, report the override and the defect, and record a Task to fix the checker.
+3. Without such an instruction, ask User once, naming the check, the paths and the evidence.
+
+Safety, Secrets, spending, authorization and data-loss gates stay strict; this never covers a refusal whose cause is unexplained or whose path the procedure did not name.
+
 ## Honest disposition and recurrence
 
 Record the requirement, evidence, severity, decision, level, exact allowance/repair, residual effect and verification in the current Task/Log. A level-0 waiver does not alter the affected historical record; its disposition belongs in a new Log and the report. Keep original failures visible. Use precise states: compliant after repair, tolerated with disclosed deviation, or held. Never report a waived check as passed or an incomplete deliverable as complete. Describe material deviations in the final report.

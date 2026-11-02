@@ -136,7 +136,10 @@ def completed_receipt(e):
     if any(p.name not in ('completed.json','recovery.json','harmonization.json') and not (p.name=='.DS_Store' and p.is_file() and not p.is_symlink()) for p in e.iterdir()):raise ValueError('unknown completed update evidence')
     value=json.loads(read_control(e/'completed.json'))
     keys={'schema','transaction','session','from_version','to_version','target_commit','plan_sha256','authorization','engine_sha256','git_checkpoints','unrelated_changes','outcome','completed','trash'}
-    if set(value)-{'harmonization_sha256'}!=keys or value['schema']!=2 or value['transaction']!=e.name or value['outcome'] not in ('consumed','rolled-back'):raise ValueError('invalid completed update receipt')
+    if set(value)-{'harmonization_sha256','reconciled'}!=keys or value['schema']!=2 or value['transaction']!=e.name or value['outcome'] not in ('consumed','rolled-back'):raise ValueError('invalid completed update receipt')
+    bound=value.get('reconciled',{})
+    live=lambda n:n in ('_Axis/PLAN.md','_Axis/INITIATIVES.md','_Axis/TASKS.md','_Axis/SNAPSHOTS.md','_Axis/PROJECT.md','_Axis/SETTINGS.md','_Axis/MINDSET.md','_Axis/DIRECTIVES.md','_Axis/ENVIRONMENT.md') or bool(re.fullmatch(r'_Axis/(?:Tasks|Followups)/\d{4}(?:\.\d{2}){5}\.\d{3}Z\.md',n))
+    if 'reconciled' in value and (value['outcome']!='consumed' or not isinstance(bound,dict) or not bound or any(not isinstance(v,dict) or not live(n) or set(v)-{'path'}!={'sha256','bytes'} or not re.fullmatch('[0-9a-f]{64}',str(v['sha256'])) or type(v['bytes']) is not int or v.get('path',n) not in ((n,'_Axis/Followups/Archive/'+n.rsplit('/',1)[-1],'_Axis/Archive/Followups/'+n.rsplit('/',1)[-1]) if n.startswith('_Axis/Followups/') else (n,)) for n,v in bound.items())):raise ValueError('invalid completed reconciliation binding')
     ident=r'\d{4}(?:\.\d{2}){5}\.\d{3}Z'
     if not re.fullmatch(ident,value['session']) or not re.fullmatch(r'_Trash/\d{4}-\d{2}-\d{2}--Update-'+re.escape(e.name),value['trash']):raise ValueError('invalid completion identity')
     for k in ('plan_sha256','engine_sha256'):
@@ -581,8 +584,12 @@ try:
  if s.get('main_uncertain_messages'):pending.append('inspect uncertain Message routing/lifecycle before acting')
  if s.get('pending_messages') and 'main_pending_messages' not in s:pending.append('rebuild the unclassified MESSAGES.md view; global pending records are not a Main work count')
  if (s.get('legacy_requests') or {}).get('count'):pending.append('legacy Requests are held for the explicit Coordination migration or neighbor upgrade; do not adjudicate a second queue')
- if (q.get('Followups') or {}).get('count'):notices.append(f"{q['Followups']['count']} open Follow-Ups (^followups lists them)")
- if (q.get('Reminders') or {}).get('count'):later.append('check open Reminders for due items under _Axis/Practices/Reminders.md')
+ # Open means a live record without an outcome; the family Archive and terminal records awaiting placement are history.
+ fq=q.get('Followups') or {};fo=fq.get('open_count',fq.get('count'))
+ if fo:notices.append(f"{fo} open Follow-Up{'' if fo==1 else 's'} (^followups lists them)")
+ if fq.get('malformed_count'):notices.append(f"{fq['malformed_count']} Follow-Up file(s) could not be read as records; ^followups shows the queue problem")
+ rq=q.get('Reminders') or {}
+ if rq.get('open_count',rq.get('count')):later.append('check open Reminders for due items under _Axis/Practices/Reminders.md')
  mk=s.get('markers') or {}
  if swept:notices.append(swept)
  if mk.get('orphan_subagents'):notices.append(f"{mk['orphan_subagents']} orphaned Subagent record(s) from a crashed spawn; ^refresh can clear them")

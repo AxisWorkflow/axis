@@ -31,12 +31,15 @@ def artifact(store, team, view, value):
     need(type(manifest.get('schema')) is int and manifest['schema'] == 1, 'closing-artifact-schema')
     return checked['attachment'], manifest
 
-def artifact_ref(store, team, view, ref):
+def artifact_ref(store, team, view, ref, checked=None):
     need(isinstance(ref, dict) and isinstance(ref.get('path'), str), 'closing-artifact-reference')
+    key=(ref['path'],ref.get('sha256'))
+    if checked is not None and key in checked:return copy.deepcopy(checked[key])
     parts = ref['path'].split('/')
     need(len(parts) == 8 and parts[:3] == ['_Axis','Teams',team] and parts[3] == 'members' and parts[5] == 'artifacts' and parts[7] == '_artifact.json', 'closing-artifact-reference')
     actual, manifest = artifact(store, team, view, {'slot':parts[4], 'revision':parts[6]})
     need(actual == ref, 'closing-artifact-changed')
+    if checked is not None:checked[key]=copy.deepcopy(manifest)
     return manifest
 
 def _contract(store, contract_id, historical=False):
@@ -73,7 +76,13 @@ def _contract(store, contract_id, historical=False):
 
 def project(store, contract_id, *, historical=False):
     """Replay canonical closing records; malformed/conflicting state refuses closed."""
+    # One projection reads each record family once and checks each exact artifact reference once.
+    with store.cached_reads():
+        return _project(store, contract_id, historical)
+
+def _project(store, contract_id, historical):
     c=core(); need(not historical or store.io.lease[2], 'closing-history-main-only'); record, contract, team, job, tv, jv = _contract(store, contract_id, historical)
+    checked={}
     members={slot:{'ready':None,'release':None,'ack':None,'result':None,'done':None,'state':'participating' if contract['actors'][slot]['attempt'] in jv['attempts'] else 'awaiting-dispatch'} for slot in contract['participants']}
     by_id={}; rows=[]
     messages=store.records('Messages',team=team['id'])
@@ -96,7 +105,7 @@ def project(store, contract_id, *, historical=False):
         if action=='release':
             need(slot==contract['release_slot'] and message['kind']=='offer' and message['recipient']=='team', 'closing-release-owner')
             targets=data.get('targets'); need(isinstance(targets,list) and targets and len(set(targets))==len(targets) and set(targets)<=set(members), 'closing-release-targets')
-            manifest=artifact_ref(store,team['id'],tv,data.get('artifact'));need(manifest['slot']==contract['final_slot'],'closing-final-owner')
+            manifest=artifact_ref(store,team['id'],tv,data.get('artifact'),checked);need(manifest['slot']==contract['final_slot'],'closing-final-owner')
             need(isinstance(data.get('ready'),dict) and set(data['ready'])==set(targets),'closing-ready-proof')
             for target in targets:
                 need({'slot':target,'session':contract['actors'][target]['session']} in message['delivery'].get('recipients',[]),'closing-release-delivery')
@@ -107,7 +116,7 @@ def project(store, contract_id, *, historical=False):
             need(state is not None and state['done'] is None,'closing-participation-ended')
             if action=='ready':
                 need(message['kind']=='offer' and message['recipient']==contract['release_slot'] and state['release'] is None,'closing-ready-state')
-                manifest=artifact_ref(store,team['id'],tv,data.get('artifact'));need(manifest['slot']==contract['final_slot'],'closing-final-owner')
+                manifest=artifact_ref(store,team['id'],tv,data.get('artifact'),checked);need(manifest['slot']==contract['final_slot'],'closing-final-owner')
                 state['ready']=message['id'];state['state']='report-ready'
             elif action=='ack':
                 need(contract['require_ack'] and message['kind']=='receipt' and message['recipient']==contract['release_slot'],'closing-ack')
@@ -116,7 +125,7 @@ def project(store, contract_id, *, historical=False):
             elif action=='result':
                 need(message['kind']=='result' and message['recipient']=='main' and state['result'] is None,'closing-result')
                 need(state['release'] is not None and data.get('release')==state['release'] and (not contract['require_ack'] or state['ack'] is not None),'closing-release-proof')
-                manifest=artifact_ref(store,team['id'],tv,data.get('artifact'))
+                manifest=artifact_ref(store,team['id'],tv,data.get('artifact'),checked)
                 need(manifest['slot']==slot and manifest['session']==actor['session'] and manifest['job']==job['id'] and manifest['attempt']==actor['attempt'],'closing-result-artifact')
                 state['result']=message['id'];state['state']='result-recorded'
             else:
@@ -291,7 +300,7 @@ def step(store, *, contract_id, binding, action, body, targets=None, artifact=No
                 data['tracking']={'status':'appended','path':path,'timestamp':matches[0],'type':'DONE'}
             else:
                 data['tracking']=store.io.track('DONE','closing '+contract_id,'Result '+state['result'])
-        history=store.records('Messages');need(c._native(charter) or sum(m['issuer']['session']==store.session and m.get('team')==binding['team'] for m in history)<charter['collaboration']['max_messages_per_member'],'message-budget')
+        history=store.records('Messages',team=binding['team']);need(c._native(charter) or sum(m['issuer']['session']==store.session and m.get('team')==binding['team'] for m in history)<charter['collaboration']['max_messages_per_member'],'message-budget')
         store._check_lock();store._direct_context(**binding)
         payload={'subject':'Closing '+action,'kind':kind,'recipient':recipient,'body':body,'team':binding['team'],'job':binding['job'],'correlation':contract_id,'epoch':binding['epoch'],'data':{'attempt':binding['attempt'],'closing':data},'expires':min(charter['limits']['deadline'],job['limits']['deadline'],charter['authority']['expires'],job['authority']['expires']),'authority':None,'attachments':store.validate_attachments(attachments),'delivery':dict(store._route(binding['team'],recipient),sender_slot=slot)}
         return store._record('Messages',payload,worker=True)

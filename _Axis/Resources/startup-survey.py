@@ -38,6 +38,24 @@ def inventory(self, name):
         if entry.is_symlink() or not entry.is_file(follow_symlinks=False) or entry.name.startswith('.'):unexpected=True
     return {'state':'empty' if not entries else 'unexpected' if unexpected else 'nonempty','entries':entries[:50],'count':len(entries)}
 
+def open_records(self, name):
+    """Open Follow-Ups or Reminders: live records whose outcome is N/A or absent; the family Archive is history."""
+    count=0;malformed=[];directory=self.path(name,kind='directory')
+    for item in sorted(os.scandir(directory),key=lambda e:e.name):
+        entry=item.name
+        if entry in ('.gitkeep','.DS_Store') and item.is_file(follow_symlinks=False):continue
+        if entry=='Archive' and item.is_dir(follow_symlinks=False):continue
+        try:
+            if not re.fullmatch(r'\d{4}(?:\.\d{2}){5}\.\d{3}Z\.md',entry) or not item.is_file(follow_symlinks=False):raise ValueError(entry)
+            # The structured fields sit at the top; a bounded header read suffices.
+            fd=os.open(self.path(name+'/'+entry),os.O_RDONLY|os.O_NOFOLLOW)
+            try:header=os.read(fd,16384).decode('utf-8','replace')
+            finally:os.close(fd)
+        except (OSError,ValueError,Fault):count+=1;malformed.append(entry);continue
+        outcome=next((m[1].strip().strip('*').strip() for m in (re.fullmatch(r'outcome:[ \t]*(.*)',line.strip()) for line in header.splitlines()) if m),'N/A')
+        if outcome in ('N/A',''):count+=1
+    return {'open_count':count,'malformed':malformed[:50],'malformed_count':len(malformed)}
+
 def survey(self, model, harness, interaction, spawn, parallel):
     """Mechanical Start-Session checks in one call; the Agent keeps every semantic, queue-handling and overlay step."""
     need(self.state['phase']=='initialized','phase',self.owner_name);self.guard()
@@ -129,6 +147,9 @@ def survey(self, model, harness, interaction, spawn, parallel):
     report['markers']={'stale':stale,'fresh_external':externals,'orphan_subagents':subagents}
     # Queues and Trash (inventory only), stale locks and claims, Notes count.
     report['queues']={name:inventory(self,'_Axis/'+name) for name in ('Followups','Reminders','Submissions')}
+    for name in ('Followups','Reminders'):
+        if report['queues'][name]['state'] in ('nonempty','unexpected'):report['queues'][name].update(open_records(self,'_Axis/'+name))
+        elif report['queues'][name]['state']=='empty':report['queues'][name].update(open_count=0,malformed=[],malformed_count=0)
     report['legacy_requests']=inventory(self,'_Axis/Requests')
     report['pending_messages']=None
     try:
