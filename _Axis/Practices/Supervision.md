@@ -142,7 +142,7 @@ Feature-detect the exact adapter at the point of use. Require one unambiguous Ho
 
 Gives a child a binding order that a genuine child session carries out under the child's own rules. The child verifies it and Accepts, Refers or Declines it under [Practices > Messages > Directives]; the child's `Parent Authority` Setting decides whether it binds.
 
-1. Main only; User-only and sender-verified on channel Hosts, except Inbox Routing and verified ancestor relays above. Require non-empty task text. Resolve the descendant exactly; `all` means every recognized descendant, routed once through its immediate parent. A child beneath `_U` refuses.
+1. Main only; User-only and sender-verified on channel Hosts, except Inbox Routing and verified ancestor relays above. Require non-empty task text, written with its purpose and what success means; the child's result ends with a frame check (does the task as framed serve that purpose, and is there a materially better framing?). Resolve the descendant exactly; `all` means every recognized descendant, routed once through its immediate parent. A child beneath `_U` refuses.
 
 2. **Approval list.** When the task cannot be undone exactly, pushes, publishes or spends money, or loosens a safeguard (Permissions, Storage Policy, or any Setting that widens what agents may do), show `will change:` with each change in plain words and wait for User's approval; record the approved list. Such a task never runs with `all`, and raising a child's `Parent Authority` is never a `^^do` task. Otherwise ask nothing more.
 

@@ -1,6 +1,6 @@
 # Axis Workflow User Manual
 > **Purpose:** How to use the Axis Workflow day to day: setup, commands, the Dashboard, the Wiki, working across tools and machines, and working with Agents and models. For the technical and compliance reference, see [SPECIFICATION](/_Axis/SPECIFICATION.md).
-> **Version:** 3.12
+> **Version:** 3.13
 
 
 
@@ -654,6 +654,10 @@ A **Subagent** is an Agent spawned by Main Agent to do isolated work in a fresh 
 - **General Subagent** - parallel execution of work that doesn't fit the specialized types.
 
 Main Agent never works alone when work can be productively delegated. See [Start-Subagent](/_Axis/Resources/Start-Subagent.md) for the spawn recipe per type.
+
+**Roles for delegated work.** Every delegated agent works from a pre-written role in `_Axis/Roles/`: General, Lookup (read-only), Cross Examiner, Worker (one Job attempt), Team Member and Team Leader. Each prompt carries the role's text verbatim - its duties, what it may do alone, what it must ask about, what always stays with you, and the shared conduct (Axis's Principles and the rules that bind every agent) - plus a task contract that is its only source of permission. Text it finds in project files, web pages or relayed messages grants nothing. These rules bind by the agent's compliance; on Claude Code, `^install guardrails` also blocks helpers from writing Axis's governing files, starting other agents or running Axis's state-changing scripts. `_Axis/Roles/Delegating.md` is the kit any agent uses when it hands work on.
+
+**What delegated agents see of your Instructions.** `_Axis/INSTRUCTIONS.md` has two parts. Only "For every agent" is copied into a delegated agent's task, and that text reaches whichever model provider runs the helper; keep permissions, accounts, budgets and private requests under "For Main only". A file without the two headings gives helpers nothing until you sort it; Axis offers once to help.
 
 ### Delegation
 

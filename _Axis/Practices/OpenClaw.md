@@ -67,7 +67,7 @@ The semantic hardening target is:
 | Tools | Explicit least-privilege Axis allowlist; never `tools.profile: full`, which onboarding sets when no profile exists |
 | Session visibility | `tree` or narrower: a session sees itself and the Subagents it spawned. Never `agent` or `all`, which let a group session read User's direct-chat transcript |
 | Agent messaging | On by default: turned off unless a doorbell needs it; when needed, an exact allowlist naming requester and target plus a per-agent send list on the requester, never a wildcard or an empty allowlist (which admits every agent) |
-| Subagents | Maximum spawn depth 1; delegation prompt `suggest` (a main session defaults to `prefer`); swarm off |
+| Subagents | Maximum spawn depth 1; delegation prompt `suggest` (a main session defaults to `prefer`); swarm off; read-only roles (Lookup) denied the whole file-tool group (write, edit, `apply_patch`) and exec/process |
 | Sessions | Bounded maintenance enforced; retain only operational state required by channels and routing |
 | Plugins | Keep required channel/provider plugins; never disable plugins globally or set a broad plugin allowlist merely to silence a warning |
 
@@ -119,7 +119,9 @@ Setup or hardening is complete only when all available checks agree:
 6. Effective-context inspection, when the Host exposes it without sending a turn, shows `AGENTS.md` and no persona or memory bootstrap files. If read-only inspection is unavailable, mark this `Unverified`; do not mutate a session merely to make `^audit openclaw` appear complete.
 7. Session visibility is `tree` or narrower, exact directed messaging works only for the approved target set, and every test message follows an already-created disposable Message.
 8. OpenClaw automation inventory, including disabled jobs, shows the Proactive check disabled or absent and otherwise matches the logical schedules declared by Axis, without quoting job IDs, channels, commands, or private bindings.
-9. Subagent spawn depth is 1, the delegation prompt is `suggest`, and swarm is off.
+9. Subagent spawn depth is 1, the delegation prompt is `suggest`, swarm is off, and read-only roles are denied the file-tool group and exec/process.
+
+OpenClaw sub-agents and ACP children started in an Axis project carry the same envelope, AUTHORITY block and role text as any Subagent ([Start-Subagent]); no contract can grant them nesting here. Read-only roles write no Tracking: Main records their lines. These delegation rules are untested on an installed OpenClaw until the chat-surfaces round qualifies them.
 
 Run `^audit openclaw` for a read-only recap. It reports `Ready`, `Degraded`, or `Unverified`, including the exact manual or `^install openclaw` remedy; it never authenticates a channel, applies configuration, restarts the Gateway, sends a probe, reads persona/memory content, or deletes legacy state.
 

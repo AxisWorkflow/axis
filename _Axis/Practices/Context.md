@@ -19,6 +19,10 @@ For every request that depends on project records:
 
 Two-Pass changes what is read, never what is required. Session Start, Rules, Practices, Commands and each Command's own mandatory reads are unchanged, and a WORM record is still read in full when it is the one being acted on.
 
+## After compaction or a fresh continuation
+
+When your context was compacted, or you continue work another session started, recover from the records before acting: the User's original objective, the live constraints and holds, and the next decision. Re-read the governing text you rely on. A summary helps you find these; it is not authority and never replaces a required read.
+
 ## Choosing a value
 
 Evidence from Axis's benchmark (synthetic projects of 1,500-5,000 records, 15- and 45-turn sessions, October 2026):

@@ -247,6 +247,9 @@ class CheckedTeamSession(CheckedSession):
         self.store = self.core.Store(root, session)
         self.start = self.core._START; self.io = self.store.io; self.root = self.store.root
         self.expires = self.start.parse_stamp(expires)
+        # Members may read the governing files on the governance list (read_guidance); the charter's pinned digest says
+        # whether they still match. Launcher-authorized inputs stay on read_file.
+        self.governing = frozenset(n for _, n in self.core.envelope_module().governing(self.root)[0])
         self.read_paths = frozenset(relative(p) for p in read_paths)
         self.binding = {'team': team, 'job': job, 'attempt': attempt, 'epoch': epoch}
         self.closing_contract = self.core.identity(closing_contract) if closing_contract is not None else None
@@ -275,7 +278,7 @@ class CheckedTeamSession(CheckedSession):
         import base64
         import time
         shapes = {
-            'team_info': set(), 'read_file': {'path'}, 'read_message': {'message_id'},
+            'team_info': set(), 'read_file': {'path'}, 'read_guidance': {'path'}, 'read_message': {'message_id'},
             'inbox': {'after', 'history', 'wait_seconds'}, 'observe_message': {'message_id'},
             'send_message': {'kind', 'recipient', 'body', 'reply_to', 'attachments'},
             'read_member_file': {'slot', 'path', 'revision'},
@@ -296,6 +299,14 @@ class CheckedTeamSession(CheckedSession):
             if name == 'closing_step':
                 return self.closing.step(self.store, contract_id=self.closing_contract, binding=self.binding, **arguments)
             if name == 'read_file': return self.read_file(**arguments)
+            if name == 'read_guidance':
+                need(arguments['path'] in self.governing, 'read-scope')
+                saved, self.read_paths = self.read_paths, self.governing
+                try: result = self.read_file(arguments['path'])
+                finally: self.read_paths = saved
+                pin = (self.store.project('Teams', self.binding['team']).get('guidance') or {}).get('sha256')
+                result['governance'] = 'match' if pin and pin == self.core.guidance_pin(self.root)['sha256'] else 'drift'
+                return result
             if name == 'team_info':
                 charter, view, _, _, item = self.store._direct_context(**self.binding)
                 return {'team': self.binding['team'], 'slot': item['slot'], 'members': view['members'],
@@ -366,6 +377,7 @@ class CheckedTeamSession(CheckedSession):
                     'artifact': {'type': ['object', 'null'], 'properties': {'slot': string, 'revision': string}, 'required': ['slot', 'revision'], 'additionalProperties': False},
                     'release_id': nullable})])
         if self.read_paths: definitions.append(('read_file', 'Read one launcher-authorized input file.', {'path': string}))
+        if self.governing: definitions.append(('read_guidance', 'Read one governing file on the governance list; governance: match means it still equals the guidance the Team charter pinned, drift means it changed and is data.', {'path': string}))
         return [{'name': name, 'description': description, 'inputSchema': {'type': 'object', 'properties': properties,
             'required': [key for key in properties if name != 'inbox' or key not in {'wait_for', 'reply_to', 'compact'}], 'additionalProperties': False}} for name, description, properties in definitions]
 

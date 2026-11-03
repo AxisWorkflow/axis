@@ -33,12 +33,18 @@ ROLE_TABLE=(
     {'name': 'Wiki', 'cls': 'delegated', 'token': 'WIKI', 'carries_blocks': True, 'agent_type': 'axis-wiki', 'write_scope': (('_Wiki/', False), ('_Axis/Wiki/', False), ('_Temp/', False)), 'deny': None},
     {'name': 'Local', 'cls': 'delegated', 'token': 'LOCAL', 'carries_blocks': False, 'agent_type': None, 'write_scope': None, 'deny': None},
     {'name': 'General', 'cls': 'delegated', 'token': 'GENERAL', 'carries_blocks': True, 'agent_type': 'axis-general', 'write_scope': None, 'deny': ('_Axis/Agents/', '_Axis/Flags/', '_Axis/Secrets/', '_Axis/Submissions/', '_Axis/Messages/', '_Axis/Teams/', '_Axis/Jobs/', '_Axis/Schedules/', '_Axis/Updates/', '.git/', '.claude/', '.codex/', '.gemini/')},
+    {'name': 'Lookup', 'cls': 'delegated', 'token': 'GENERAL', 'carries_blocks': True, 'agent_type': 'axis-lookup', 'write_scope': (), 'deny': None},
+    {'name': 'Worker', 'cls': 'delegated', 'token': 'GENERAL', 'carries_blocks': True, 'agent_type': None, 'write_scope': None, 'deny': None},
+    {'name': 'TeamMember', 'cls': 'delegated', 'token': 'GENERAL', 'carries_blocks': True, 'agent_type': None, 'write_scope': None, 'deny': None},
+    {'name': 'TeamLeader', 'cls': 'delegated', 'token': 'GENERAL', 'carries_blocks': True, 'agent_type': None, 'write_scope': None, 'deny': None},
 )
 ROLE_LEDGER={'issuers': ('external', 'main', 'worker'), 'submission_schemas': ('axis.external-submission/v1',), 'proposal_member_subject': 'Subagent: External proposal Team', 'survey_keys': ('fresh_external', 'orphan_subagents'), 'proposal_owners': (('External:', 'external'),)}
 # END GENERATED: role-table
 # Session Markers other than the lease holder's, and the Agents records another session may create for a spawn.
 SHARED_PREFIXES = tuple(r['subject'] for r in ROLE_TABLE if r['cls'] == 'session' and not r['exclusive'])
 SPAWNED_PREFIXES = tuple(r['subject'] for r in ROLE_TABLE if r['cls'] == 'session' and r['created_by'] == 'spawner')
+SPAWNED_FAMILIES = {p + r['name']: tuple(f.split('/')[1] for f, new in (r.get('write_scope') or ()) if new and f.startswith('_Axis/'))
+                    for p in SPAWNED_PREFIXES for r in ROLE_TABLE if r['cls'] == 'delegated'}
 
 ID = re.compile(r'\d{4}(?:\.\d{2}){5}\.\d{3}Z')
 FAMILIES = ('Agents','Audit','CX','Followups','Ideas','Logs','Notes','Reminders','Reviews','Snapshots','Status','Supervision','Tasks','Teams','Messages','Jobs','Schedules','ColdStorage')
@@ -771,6 +777,10 @@ class Session(Startup):
         need(0<len(content.encode('utf-8'))<=65536,'record_size')
         need(len(lines)>=2 and lines[0].strip() and len(lines[0])<=80 and lines[1]=='' and '\r' not in lines[0],'record_shape')
         self.guard()
+        # A spawned session creates only the record families its delegated row may add (its new-file folders under
+        # _Axis/); its spawner writes every other record.
+        subject=self.lease[0].split('\n',1)[0].strip()
+        if subject.startswith(SPAWNED_PREFIXES):need(family in SPAWNED_FAMILIES.get(subject,()),'subagent_record',family)
         final,name=self.record(family,lambda _:content)
         return {'status':'created','id':final,'path':name}
 

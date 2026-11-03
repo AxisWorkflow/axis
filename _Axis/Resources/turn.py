@@ -6,7 +6,7 @@ Runs from the project root at the start of every later turn (and about every 30 
 Exit 0 prints OK (plus any items to handle, then the reply-frame reminder for roles with a reply frame); 3 KILLED; 4 LOST LEASE (missing Marker); 6 FOREIGN MAIN or TAKEN OVER;
 7 READ-ONLY (the host refused the renewal); 8 VERSION CHANGED or VERSION UNVERIFIED; 2 or 5 errors. It never recreates a missing Marker, never executes an
 update helper, and never writes anything except the renewed Marker mtime."""
-import argparse,errno,importlib.util,json,os,re,stat,sys,time
+import argparse,datetime as dt,errno,importlib.util,json,os,re,stat,sys,time
 from pathlib import Path
 
 # BEGIN GENERATED: role-table
@@ -19,6 +19,10 @@ ROLE_TABLE=(
     {'name': 'Wiki', 'cls': 'delegated', 'token': 'WIKI', 'carries_blocks': True, 'agent_type': 'axis-wiki', 'write_scope': (('_Wiki/', False), ('_Axis/Wiki/', False), ('_Temp/', False)), 'deny': None},
     {'name': 'Local', 'cls': 'delegated', 'token': 'LOCAL', 'carries_blocks': False, 'agent_type': None, 'write_scope': None, 'deny': None},
     {'name': 'General', 'cls': 'delegated', 'token': 'GENERAL', 'carries_blocks': True, 'agent_type': 'axis-general', 'write_scope': None, 'deny': ('_Axis/Agents/', '_Axis/Flags/', '_Axis/Secrets/', '_Axis/Submissions/', '_Axis/Messages/', '_Axis/Teams/', '_Axis/Jobs/', '_Axis/Schedules/', '_Axis/Updates/', '.git/', '.claude/', '.codex/', '.gemini/')},
+    {'name': 'Lookup', 'cls': 'delegated', 'token': 'GENERAL', 'carries_blocks': True, 'agent_type': 'axis-lookup', 'write_scope': (), 'deny': None},
+    {'name': 'Worker', 'cls': 'delegated', 'token': 'GENERAL', 'carries_blocks': True, 'agent_type': None, 'write_scope': None, 'deny': None},
+    {'name': 'TeamMember', 'cls': 'delegated', 'token': 'GENERAL', 'carries_blocks': True, 'agent_type': None, 'write_scope': None, 'deny': None},
+    {'name': 'TeamLeader', 'cls': 'delegated', 'token': 'GENERAL', 'carries_blocks': True, 'agent_type': None, 'write_scope': None, 'deny': None},
 )
 ROLE_LEDGER={'issuers': ('external', 'main', 'worker'), 'submission_schemas': ('axis.external-submission/v1',), 'proposal_member_subject': 'Subagent: External proposal Team', 'survey_keys': ('fresh_external', 'orphan_subagents'), 'proposal_owners': (('External:', 'external'),)}
 # END GENERATED: role-table
@@ -228,6 +232,18 @@ if role['exclusive']:
             changed=any((root/n).stat().st_mtime>since for n in ('_Axis/PROJECT.md',lines[3].strip()))
         except OSError:changed=True
         if changed:items.append('the project overlay or its declaration changed since activation: revalidate it under _Axis/Resources/Load-Project-Overlay.md (activate phase) before applying its guidance')
+# Guidance versioning: name governing files changed since this session's previous turn (never before boot), so
+# version-bound sessions re-read them. A notice only; it changes no lease outcome and hashes nothing.
+if role['version_bound']:
+    try:
+        booted_at=dt.datetime.strptime(o.session,'%Y.%m.%d.%H.%M.%S.%fZ').replace(tzinfo=dt.timezone.utc).timestamp()
+        since=max(booted_at,marker_info.st_mtime);changed=[]
+        names=[root/'_Axis'/n for n in ('PRINCIPLES.md','RULES.md','PRACTICES.md','DIRECTIVES.md','MINDSET.md','GLOSSARY.md','MANIFEST.md','PROJECT.md','INSTRUCTIONS.md','SETTINGS.md')]
+        for folder in ('Rules','Practices','Roles'):names+=sorted((root/'_Axis'/folder).glob('*.md'))
+        for n in names:
+            if n.is_file() and not n.is_symlink() and n.stat().st_mtime>since:changed.append(n.relative_to(root).as_posix())
+        if changed:items.append('guidance changed since your last turn ('+', '.join(changed[:4])+(f', +{len(changed)-4} more' if len(changed)>4 else '')+'): re-read it before relying on it')
+    except (OSError,ValueError):pass
 print('OK: lease renewed.')
 for x in items:print('Handle before answering: '+x)
 if role['reply_frame']:

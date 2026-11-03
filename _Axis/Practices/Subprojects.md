@@ -52,7 +52,7 @@ When a session boots inside a Subproject, it identifies its direct parent (neare
 - **Goals** - inherit non-conflicting parent Aspirations, Objectives, Scope, and Constraints, but not parent Deliverables or Criteria.
 - **Behavior** - inherit non-conflicting parent Principles, Directives, Mindset, and Settings.
 
-Child guidance overrides ordinary inherited parent guidance. A verified Parent Authority directive is the explicit per-task exception described above. Tell User in one line whenever inheritance is active, naming the direct parent. Never search farther upward than the nearest anchor-carrying ancestor.
+A delegated agent inside a child reads only the child's own governance list; the parent's guidance is a declared omission in its contract. Inheritance stops at a project set to `Parent Authority: advise`. Child guidance overrides ordinary inherited parent guidance. A verified Parent Authority directive is the explicit per-task exception described above. Tell User in one line whenever inheritance is active, naming the direct parent. Never search farther upward than the nearest anchor-carrying ancestor.
 
 ## Version Control
 

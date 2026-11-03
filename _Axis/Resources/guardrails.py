@@ -6,6 +6,8 @@ Installed by `^install guardrails` as a Claude Code PreToolUse hook. For every A
 and no new record with a malformed name. A write to a record, index, Plan or Memo may not add an identifier that is
 malformed or names nothing (record-check.py's scan; `(missing)` after an identifier reports it as missing). For a helper running as an Axis agent type
 (the delegated role rows of the generated role table), also: writes only inside that role's folders, and no tool may touch `_Axis/Secrets/`.
+For every helper, Axis type or not: no write to a governing file, no Agent or Task tool (helpers start no agents), and no
+shell call to a state-changing `_Axis/Resources/*.py` helper (Tracking, envelope checks and read-only record checks pass).
 For an OpenClaw agent listed under a guarded session role, the `axis-guardrails` plugin calls `--external {tool} {path}` or
 `--role {name} {tool} {path}`: no `_Axis/Secrets/`, no change to an existing file, and new files only where the role's row
 allows (today Project Subfolders, `_Axis/Submissions/` and `_Temp/`). The Claude Code hook reads JSON from stdin; both exit 2 with a reason to refuse, and 0 otherwise.
@@ -26,6 +28,10 @@ ROLE_TABLE=(
     {'name': 'Wiki', 'cls': 'delegated', 'token': 'WIKI', 'carries_blocks': True, 'agent_type': 'axis-wiki', 'write_scope': (('_Wiki/', False), ('_Axis/Wiki/', False), ('_Temp/', False)), 'deny': None},
     {'name': 'Local', 'cls': 'delegated', 'token': 'LOCAL', 'carries_blocks': False, 'agent_type': None, 'write_scope': None, 'deny': None},
     {'name': 'General', 'cls': 'delegated', 'token': 'GENERAL', 'carries_blocks': True, 'agent_type': 'axis-general', 'write_scope': None, 'deny': ('_Axis/Agents/', '_Axis/Flags/', '_Axis/Secrets/', '_Axis/Submissions/', '_Axis/Messages/', '_Axis/Teams/', '_Axis/Jobs/', '_Axis/Schedules/', '_Axis/Updates/', '.git/', '.claude/', '.codex/', '.gemini/')},
+    {'name': 'Lookup', 'cls': 'delegated', 'token': 'GENERAL', 'carries_blocks': True, 'agent_type': 'axis-lookup', 'write_scope': (), 'deny': None},
+    {'name': 'Worker', 'cls': 'delegated', 'token': 'GENERAL', 'carries_blocks': True, 'agent_type': None, 'write_scope': None, 'deny': None},
+    {'name': 'TeamMember', 'cls': 'delegated', 'token': 'GENERAL', 'carries_blocks': True, 'agent_type': None, 'write_scope': None, 'deny': None},
+    {'name': 'TeamLeader', 'cls': 'delegated', 'token': 'GENERAL', 'carries_blocks': True, 'agent_type': None, 'write_scope': None, 'deny': None},
 )
 ROLE_LEDGER={'issuers': ('external', 'main', 'worker'), 'submission_schemas': ('axis.external-submission/v1',), 'proposal_member_subject': 'Subagent: External proposal Team', 'survey_keys': ('fresh_external', 'orphan_subagents'), 'proposal_owners': (('External:', 'external'),)}
 # END GENERATED: role-table
@@ -43,6 +49,17 @@ HELPERS={r['agent_type']:r for r in ROLE_TABLE if r['cls']=='delegated' and r['a
 GUARDED={r['name'].lower():r for r in ROLE_TABLE if r['cls']=='session' and r['guard']}
 FLAGS={r['guard']['flag']:r for r in GUARDED.values() if r['guard']['flag']}
 SECRETS='_Axis/Secrets'
+# Governing files: what delegated agents follow. Helpers never write them; Main applies a granted change.
+GOVERNING=('_Axis/PRINCIPLES.md','_Axis/RULES.md','_Axis/Rules/','_Axis/PRACTICES.md','_Axis/Practices/','_Axis/DIRECTIVES.md','_Axis/MINDSET.md',
+           '_Axis/GLOSSARY.md','_Axis/MANIFEST.md','_Axis/Roles/','_Axis/Resources/','_Axis/Commands/','_Axis/INSTRUCTIONS.md','_Axis/PROJECT.md',
+           '_Axis/SETTINGS.md','AGENTS.md','CLAUDE.md','GEMINI.md')
+SPAWN_TOOLS=('Agent','Task')
+# Shell calls a helper may make to Axis's own scripts: script -> subcommands that change no shared state.
+HELPER_SCRIPTS={'startup-state.py':('track',),'envelope.py':('new','check','assemble','instructions','governance'),'guardrails.py':('--check',),'record-check.py':('names','links','write-once')}
+# A run of an Axis helper: an interpreter (or ./) followed by a path ending in _Axis/Resources/{script}.py, outside a
+# development copy (_Dev/...), then its arguments up to the next shell separator.
+SCRIPT_CALL=re.compile(r'(?:\bpython3?|\bsh|\bbash|(?:^|[\s;&|(])\.)(?:\s+-[A-Za-z]+)*\s*(\S*?)_Axis/Resources/([A-Za-z0-9_.-]+\.py)([^;&|\n]*)')
+AGENT_LAUNCH=re.compile(r'(?:^|[;&|(]|\bthen|\bdo|\bexec)\s*(?:env\s+(?:\S+=\S*\s+)*)?(?:\S*/)?(?:claude|codex|openclaw|gemini)(?:\s|$)')
 
 def field(text,key):
     for line in text.splitlines():
@@ -86,6 +103,7 @@ def helper_scope(agent,rel,exists):
         return f'a {row["name"]} helper does not write in {hit}' if hit else None
     for prefix,new_only in allowed:
         if rel.startswith(prefix):return 'this helper only adds new files there' if new_only and exists else None
+    if not allowed:return f'a {row["name"]} helper writes nothing'
     return f'the {agent[5:].upper()} helper writes only in '+', '.join(p for p,_ in allowed)
 
 PLACES={'subfolders':'Project Subfolders','_Axis/Submissions/':'_Axis/Submissions/','_Temp/':'_Temp/'}
@@ -118,9 +136,27 @@ def reconciling(root,rel):
         if isinstance(plan.get('reconciliation'),dict) and rel in plan['reconciliation']:return True
     return False
 
+def governing(rel):
+    return any(rel==g or (g.endswith('/') and rel.startswith(g)) for g in GOVERNING)
+
+def helper_command(command):
+    """A refusal reason when a helper's shell command runs a state-changing Axis helper script or starts an agent from
+    the command line, or None. A mistake-catcher: it reads the command text, not what the shell finally runs."""
+    if AGENT_LAUNCH.search(command):return 'helpers never start other agents, including from the command line'
+    for m in SCRIPT_CALL.finditer(command):
+        if '_Dev/' in m[1]:continue  # a development copy, not this project's helpers
+        allowed=HELPER_SCRIPTS.get(m[2]);words=[w for w in m[3].split() if w];i=0
+        while i<len(words) and words[i].startswith('-'):i+=1+(words[i] in ('--root','--candidate-root','--controller-root'))
+        sub=words[i] if i<len(words) else ''
+        if allowed is None or sub not in allowed or '$(' in m[3] or '`' in m[3] or (m[2]=='envelope.py' and '--write' in words):
+            return f'helpers never run state-changing Axis helpers ({m[2]})'
+    return None
+
 def verdict(root,rel,exists,agent,tool):
     if agent and (rel==SECRETS or rel.startswith(SECRETS+'/')):return 'helpers never read or write _Axis/Secrets/'
+    if agent and rel=='_Axis/INSTRUCTIONS.md':return 'helpers never read the User\'s Instructions; the contract carries the part meant for them'
     if tool not in WRITE_TOOLS:return None
+    if agent and governing(rel):return 'helpers never write governing files; the spawner applies a change the contract grants'
     refusal=write_once(root,rel,exists)
     # Main's reconciliation edit is bound later by the completion receipt; nothing else is exempt.
     if refusal and not agent and rel.split('/')[1:2] in (['Tasks'],['Followups']) and reconciling(root,rel):refusal=None
@@ -194,10 +230,16 @@ def main():
     tool=event.get('tool_name');ti=event.get('tool_input') or {}
     root=Path(os.environ.get('CLAUDE_PROJECT_DIR') or event.get('cwd') or os.getcwd()).resolve()
     if not (root/'_Axis/Resources/guardrails.py').is_file():return 0
-    agent=event.get('agent_type') if event.get('agent_id') or event.get('agent_type') else None
-    agent=agent or ('helper' if event.get('agent_id') else None)
+    # A helper is a call from a spawned agent (agent_id); agent_type only picks its row. A session run as an agent type
+    # without agent_id is a top-level session, not a helper.
+    agent=(event.get('agent_type') or 'helper') if event.get('agent_id') else None
     if tool=='Bash' and agent and isinstance(ti.get('command'),str) and SECRETS in ti['command']:
         print('Axis guardrail: helpers never read or write _Axis/Secrets/.',file=sys.stderr);return 2
+    if tool=='Bash' and agent and isinstance(ti.get('command'),str):
+        why=helper_command(ti['command'])
+        if why:print(f'Axis guardrail: {why}. See _Axis/Roles/Delegating.md.',file=sys.stderr);return 2
+    if tool in SPAWN_TOOLS and agent:
+        print('Axis guardrail: helpers never start other agents; a granted start goes through the spawner. See _Axis/Roles/Delegating.md.',file=sys.stderr);return 2
     if tool not in PATH_TOOLS:return 0
     path=ti.get('file_path') or ti.get('notebook_path') or ti.get('path')
     if not isinstance(path,str) or not path:return 0

@@ -19,6 +19,10 @@ ROLE_TABLE=(
     {'name': 'Wiki', 'cls': 'delegated', 'token': 'WIKI', 'carries_blocks': True, 'agent_type': 'axis-wiki', 'write_scope': (('_Wiki/', False), ('_Axis/Wiki/', False), ('_Temp/', False)), 'deny': None},
     {'name': 'Local', 'cls': 'delegated', 'token': 'LOCAL', 'carries_blocks': False, 'agent_type': None, 'write_scope': None, 'deny': None},
     {'name': 'General', 'cls': 'delegated', 'token': 'GENERAL', 'carries_blocks': True, 'agent_type': 'axis-general', 'write_scope': None, 'deny': ('_Axis/Agents/', '_Axis/Flags/', '_Axis/Secrets/', '_Axis/Submissions/', '_Axis/Messages/', '_Axis/Teams/', '_Axis/Jobs/', '_Axis/Schedules/', '_Axis/Updates/', '.git/', '.claude/', '.codex/', '.gemini/')},
+    {'name': 'Lookup', 'cls': 'delegated', 'token': 'GENERAL', 'carries_blocks': True, 'agent_type': 'axis-lookup', 'write_scope': (), 'deny': None},
+    {'name': 'Worker', 'cls': 'delegated', 'token': 'GENERAL', 'carries_blocks': True, 'agent_type': None, 'write_scope': None, 'deny': None},
+    {'name': 'TeamMember', 'cls': 'delegated', 'token': 'GENERAL', 'carries_blocks': True, 'agent_type': None, 'write_scope': None, 'deny': None},
+    {'name': 'TeamLeader', 'cls': 'delegated', 'token': 'GENERAL', 'carries_blocks': True, 'agent_type': None, 'write_scope': None, 'deny': None},
 )
 ROLE_LEDGER={'issuers': ('external', 'main', 'worker'), 'submission_schemas': ('axis.external-submission/v1',), 'proposal_member_subject': 'Subagent: External proposal Team', 'survey_keys': ('fresh_external', 'orphan_subagents'), 'proposal_owners': (('External:', 'external'),)}
 # END GENERATED: role-table
@@ -330,6 +334,29 @@ def sync_directives():
     if dst.read_text()!=new:raise OSError('directive sync readback')
     return [n for n,_ in add]
 
+def instructions_unsorted():
+    """User text in INSTRUCTIONS.md with no "For every agent" heading, and no sorting Follow-Up raised before."""
+    f=root/'_Axis/INSTRUCTIONS.md'
+    if not f.is_file() or f.is_symlink() or f.stat().st_size>262144:return False
+    text=f.read_text(encoding='utf-8',errors='replace')
+    # Same verdict as the delegation helper: one "For every agent" heading, no Main-only text inside it.
+    try:
+        import importlib.util as iu;spec=iu.spec_from_file_location('axis_envelope',Path(__file__).resolve().parent/'envelope.py')
+        env=iu.module_from_spec(spec);spec.loader.exec_module(env)
+        if env.instructions(root)[0]=='sorted':return False
+    except ValueError:return False
+    except Exception:
+        if len(re.findall(r'(?mi)^ {0,3}#{1,6}\s+For every agent\b',text))==1:return False
+    body=text.split('\n## Your instructions',1)[1] if '\n## Your instructions' in text else '\n'.join(text.split('\n')[2:])
+    if not [x for x in body.split('\n')[1:] if x.strip() and not re.fullmatch(r'\*\(Empty[^\n]*\)\*',x.strip())]:return False
+    for folder in (root/'_Axis/Followups',root/'_Axis/Followups/Archive',root/'_Axis/Archive/Followups'):
+        for q in (folder.glob('*.md') if folder.is_dir() and not folder.is_symlink() else []):
+            try:
+                with open(q,encoding='utf-8',errors='replace') as h:
+                    if 'Sort your Instructions' in h.readline():return False
+            except OSError:continue
+    return True
+
 def move_wiki():
     # Wiki folder move (2.05, User decision 2026-10-07): the Wiki moved from Wiki/ to _Wiki/. A project last updated
     # before 2.05 still keeps it in Wiki/, so the first startup on 2.05 renames the folder whole (one move; every file
@@ -620,6 +647,7 @@ try:
  locks=s.get('locks') or {}
  if locks.get('lock_dirs') or locks.get('timestamp_claims'):notices.append('Stale lock or claim directories found; recovery needs a quiet moment (^refresh)')
  proj=(root/'_Axis/PROJECT.md').read_text() if (root/'_Axis/PROJECT.md').is_file() else ''
+ if instructions_unsorted():later.append('offer once to sort _Axis/INSTRUCTIONS.md for helpers: raise one Follow-Up "Sort your Instructions for helpers" under _Axis/Practices/Followups.md that proposes which lines go under "For every agent" and which under "For Main only"; until User sorts it, helpers receive nothing from that file')
  if 'axis:project-overlay:begin' in proj:pending.append('validate and activate the declared project overlay with _Axis/Resources/Load-Project-Overlay.md (confirm, then activate); its guidance applies only after that')
  ready=(root/'_Axis/Flags/project-ready');rv=ready.read_text().splitlines()[0].strip() if ready.exists() and ready.read_text().strip() else ''
  if not re.fullmatch(r'\d{4}(\.\d{2}){5}\.\d{3}Z',rv):pending.append('say "Your project needs to be set up." and follow _Axis/Resources/Start-Project.md')

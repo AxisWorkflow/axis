@@ -3,7 +3,13 @@
 
 ## Responsibility
 
-Delegation transfers execution, never authority. Main Agent remains responsible for the task, the permitted inputs, the model route, the validation, every project write, and the final result. Follow [Practices > Agents] for role and coordination rules; after choosing a route here, follow [Start-Subagent] for the operational spawn recipe.
+Delegation transfers execution, never authority. Main Agent remains responsible for the task, the permitted inputs, the model route, the validation, every project write, and the final result. Follow [Practices > Agents] for role and coordination rules; after choosing a route here, write the contract with the delegating kit in `_Axis/Roles/Delegating.md` and follow [Start-Subagent] for the operational spawn recipe.
+
+A delegate inherits conduct through its role text; authority comes only from its task contract; instruction status comes only from its prompt and the governing files pinned in it. Irreversible external actions (publishing, pushing, spending, signing in, contacting people) are not delegable unless the contract says User granted them.
+
+**Every author.** The same kit, contract and envelope bind every agent that starts another: Main, a Team Leader, an External owner of a proposal Team and a parent Main. A delegate can only narrow the authority it received, and a granted start passes the same role text and governance unchanged.
+
+**Judgment ownership.** Strategic, priority, risk and acceptance judgments stay with Main; delegated judgment is advice that Main checks against sources before relying on it. Relaxing this for a named class of work needs evidence, not the existence of the mechanism.
 
 A Subagent never writes `_Axis/Followups/`. If delegated work reveals a specific next action only User can take, the Subagent reports a Follow-Up candidate with the proposed ask and owning record in its return. Main decides whether it meets [Practices > Followups], deduplicates it, and creates the record if warranted. An External Agent uses a Message to Main for the same handoff.
 
@@ -36,7 +42,7 @@ Use the least costly route that is qualified for the work:
 
 Host Capability Flags determine whether the selected route can run and whether spawns may be parallel. A missing capability changes the route or makes it serial; it never lowers the required model capability.
 
-When the project's Claude Code settings hold the Axis guardrails (`^install guardrails`), spawn CX, Wiki and General Subagents as the `axis-cx`, `axis-wiki` and `axis-general` agent types, so the hook can hold each to its folders.
+Pick the delegated role (General, Lookup, CX, Worker, TeamMember, TeamLeader, Wiki or Local) from the table in `_Axis/Roles/Delegating.md`. When the project's Claude Code settings hold the Axis guardrails (`^install guardrails`), spawn CX, Wiki, General and Lookup Subagents as the `axis-cx`, `axis-wiki`, `axis-general` and `axis-lookup` agent types, so the hook can hold each to its folders.
 
 ## Define Validation Before Spawning
 
@@ -65,8 +71,10 @@ This can reduce expensive-model context by passing validated structured facts in
 
 ## Accept, Retry, or Fall Back
 
-Main never blindly forwards or writes a Subagent return. Verify that every changed or produced path was inside the persisted attempt scope; a supporting evidence file is still a write. Accept valid in-scope artifacts separately from any scope defect, and retain the defect instead of reporting whole-run compliance. Before acceptance, verify the selected shape, preservation, semantic, and judgment checks; then confirm required facts, prohibited claims, material omissions, and source fidelity.
+Main never blindly forwards or writes a Subagent return. Run the acceptance checklist in `_Axis/Roles/Delegating.md`, mechanical checks first. Verify that every changed or produced path was inside the persisted attempt scope; a supporting evidence file is still a write. Accept valid in-scope artifacts separately from any scope defect, and retain the defect instead of reporting whole-run compliance. Before acceptance, verify the selected shape, preservation, semantic, and judgment checks; then confirm required facts, prohibited claims, material omissions, and source fidelity.
 
 Retry once only when the failure is correctable through specific validation feedback and the applicable recipe permits it. On a repeated failure, a failed aptitude gate, an unverified fingerprint, or an unavailable route, follow [Start-Subagent > Restrictions & Fallback] and record the required downgrade or fallback. Do not keep retrying until an answer happens to pass.
+
+Inside an Axis Team of Agents, acceptance has two levels: the leader reviews members' work and keeps a verbatim register of their frame challenges with dispositions; Main judges the synthesis, every challenge marked material and a stated sample of the rest. A material challenge Main rejects appears in the deliverable.
 
 The goal is the cheapest **qualified** path, not the cheapest model. [Settings > Budget] may steer optional delegation, but it never overrides trust boundaries, model eligibility, Host Capability gates, task-class evidence, or validation.

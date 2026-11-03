@@ -43,7 +43,7 @@ Read before the matching action.
   *Load when a name ends in `_U` or `_X`, or before a Protect or Release request.*
 
 - [Practices > Planning] - Drafting and maintaining the Plan.
-  *Load before drafting or revising `PLAN.md`.*
+  *Load before drafting or revising `PLAN.md`, and for strategy or completion judgments.*
 
 - [Practices > Initiatives] - Optional Task groups and shared outcomes.
   *Load before Initiative creation, edits, reporting or work; read only its relevant section.*

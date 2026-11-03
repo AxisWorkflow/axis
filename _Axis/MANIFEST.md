@@ -48,7 +48,7 @@
 - `_Axis/Schedules/`
 - `_Axis/Submissions/`
 - `_Axis/Resources/`
-- `_Axis/Roles/` - the role table: one file per role, compiled into the helpers, guardrails and Command gates at release; nothing reads it at runtime.
+- `_Axis/Roles/` - the role library: one file per role (its table row, compiled into the helpers, guardrails and Command gates at release, and for a delegated role the Role Text a Subagent receives), the shared conduct and the delegating kit.
 - `_Axis/Snapshots/`
 - `_Axis/Supervision/`
 - `_Axis/Tasks/`
@@ -243,7 +243,7 @@ Optional project state: `EXCEPTIONS.md` in the Axis control folder, created on f
 - `_Axis/Resources/Startup-Records-Manual.md` - complete manual startup record fallback, loaded only when selected.
 - `_Axis/Resources/startup-state.py` - optional local startup record accelerator and `record` command for any Index-Detail record; manual startup and minting remain available.
 - `_Axis/Resources/record-check.py` - optional `^save` checks of record names and write-once files before a commit; the manual checks remain available.
-- `_Axis/Resources/envelope.py` - optional send-side Subagent envelope check and nonce generator; Main's reading check remains available.
+- `_Axis/Resources/envelope.py` - optional send-side Subagent envelope check (carried blocks, Role Text, Task Contract labels), nonce generator, prompt assembler, governance list and Instructions extractor; it writes only a governance list file on request, and Main's reading check remains available.
 - `_Axis/Resources/status.py` - optional read-only `^status` helper; the Agent can compose the same summary by hand.
 - `_Axis/Resources/startup-survey.py` - optional one-call startup survey; the numbered Start-Session steps remain available.
 - `_Axis/Resources/boot.py` - one-command Main startup used by the entry files.
@@ -255,8 +255,8 @@ Optional project state: `EXCEPTIONS.md` in the Axis control folder, created on f
 - `_Axis/Resources/Default-Directives.md` - the shipped default Directives; startup adds any missing from the project's `DIRECTIVES.md`.
 - `_Axis/Resources/merge-project.py` - optional local merge preview, preservation, approved apply/abort and durable retirement support.
 - `_Axis/Resources/feedback-format.py` - read-only bug/feature draft format checker; never sends or grants consent.
-- `_Axis/Resources/guardrails.py` - optional host hook (`^install guardrails`) that refuses an Agent's edit to a write-once record or a malformed new record name, and a helper's use of `_Axis/Secrets/` or writes outside its role's folders.
-- `_Axis/Resources/Helpers/axis-cx.claude-agent`, `axis-wiki.claude-agent`, `axis-general.claude-agent` - helper role definitions `^install guardrails` copies into `.claude/agents/` as `.md` files.
+- `_Axis/Resources/guardrails.py` - optional host hook (`^install guardrails`) that refuses an Agent's edit to a write-once record or a malformed new record name, and a helper's use of `_Axis/Secrets/`, writes outside its role's folders or to governing files, starting other agents, or running state-changing Axis helpers.
+- `_Axis/Resources/Helpers/axis-cx.claude-agent`, `axis-wiki.claude-agent`, `axis-general.claude-agent`, `axis-lookup.claude-agent` - helper role definitions `^install guardrails` copies into `.claude/agents/` as `.md` files.
 - `_Axis/Resources/OpenClaw/axis-guardrails/openclaw.plugin.json` and `index.ts` - optional OpenClaw plugin (`^install guardrails`) that applies `guardrails.py --external` to agents configured as External Agents.
 - `_Axis/Resources/team-plan.py` - optional structural plan validator.
 - `_Axis/Resources/Team-Patterns/meta-team.json`, `assistance.json`, `delegated-report.json` - editable examples, never execution authority.
@@ -298,7 +298,9 @@ Optional project state: `EXCEPTIONS.md` in the Axis control folder, created on f
 - `_Axis/Resources/split-history.py`
 - `_Axis/Resources/axis-dashboard-meridian.png` - README illustration of the default Dashboard.
 - `_Axis/Roles/Main.md`, `_Axis/Roles/External.md`, `_Axis/Roles/Subagent.md` - session role rows.
-- `_Axis/Roles/CX.md`, `_Axis/Roles/Wiki.md`, `_Axis/Roles/Local.md`, `_Axis/Roles/General.md` - delegated Subagent role rows.
+- `_Axis/Roles/CX.md`, `_Axis/Roles/Wiki.md`, `_Axis/Roles/Local.md`, `_Axis/Roles/General.md`, `_Axis/Roles/Lookup.md`, `_Axis/Roles/Worker.md`, `_Axis/Roles/TeamMember.md`, `_Axis/Roles/TeamLeader.md` - delegated role rows; all but Wiki and Local carry Role Text.
+- `_Axis/Roles/Common.md` - shared conduct compiled into every delegated Role Text.
+- `_Axis/Roles/Delegating.md` - the delegating kit: role selection, carriers, the Task Contract and acceptance.
 - `_Axis/Resources/axis-folders.svg` - README illustration of an Axis project folder.
 
 ## Wiki

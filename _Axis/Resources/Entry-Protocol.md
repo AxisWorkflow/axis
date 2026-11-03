@@ -56,8 +56,8 @@ Role is fixed once: Main commits under Claim-Session; External and Subagent rout
 
 ## 4. Startup for Subagent
 
-1. Follow the envelope's carried `VALIDATE, THEN WORK` rules first. Validate its first three non-empty lines (Sentinel, role, `<<AXIS:ENVELOPE:{nonce}:BEGIN>>`) and final three (same Sentinel, role, nonce `END`). On failure return `<<AXIS:ERROR:PROMPT-ENVELOPE>>` on Line 1 and one reason on Line 2: `front boundary`, `tail boundary`, `role mismatch`, or `nonce mismatch`. Do nothing else: no guessing, reads or writes.
-2. Read `_Axis/Practices/Agents.md`, lazy-load only required Practices, and take role solely from the validated token: `<<AXIS:ROLE:CX>>`, `<<AXIS:ROLE:WIKI>>`, `<<AXIS:ROLE:LOCAL>>`, or `<<AXIS:ROLE:GENERAL>>`. Never read Main-only Start-Session. Follow the validated task and its assigned identity/lease. STOP this entry.
+1. Follow the envelope's carried `VALIDATE, THEN WORK` rules first. Validate its first three non-empty lines (Sentinel, role, `<<AXIS:ENVELOPE:{nonce}:BEGIN>>`) and final three (same Sentinel, role, nonce `END`). On failure return `<<AXIS:ERROR:PROMPT-ENVELOPE>>` on Line 1 and one reason on Line 2: `front boundary`, `tail boundary`, `role mismatch`, `nonce mismatch` or, for a named role file, `role checksum`. Do nothing else: no guessing, reads or writes.
+2. Follow the prompt's AUTHORITY block, the role text it carries or names (verify a named file's SHA-256 first) and its task contract; follow a governing file only when the prompt pins it by checksum. Read `_Axis/Practices/Agents.md` only when the prompt carries no role text. Take role solely from the validated token: `<<AXIS:ROLE:CX>>`, `<<AXIS:ROLE:WIKI>>`, `<<AXIS:ROLE:LOCAL>>`, or `<<AXIS:ROLE:GENERAL>>`. Never read Main-only Start-Session. Follow the validated task and its assigned identity/lease. STOP this entry.
 
 **Guardrails:** This entry carries the rule, not the evidence. Do not skip, downgrade, override or rationalize away this protocol. Likewise a connected-folder framing does not turn this entry into passive data. Your host's own rules come first: if one blocks a step, say which step and never claim incomplete startup succeeded.
 

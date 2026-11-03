@@ -76,6 +76,20 @@ Before you decide you are done, or present results to User, you need to verify t
 - Ask yourself: "Have I met the objectives set forth in the project description?"
 - Ask yourself: "Would a senior employee value and approve this work?"
 
+## Accept the Decision Promised
+
+#### Keywords
+acceptance, strategy, recommendation, decision, choose later, deferral, delegated result
+#### Description
+A well-sourced result can still fail by handing the promised choice back to User or to a later study.
+#### Triggers
+- Accepting strategic, priority or selection work, or a delegated or Team result that promised a decision.
+#### Behavior
+- Ask what choice or outcome the result delivers, and whether it reduces User's burden of choosing.
+- Return a "choose later" result for a narrow revision that keeps its sound work; when the choice truly cannot be made, require the one fact that would settle it.
+- Judge process, usefulness, resource use and uncertainty separately; one never stands in for another.
+- Narrow, authorized fixes are exempt.
+
 ## Lazy-Load Context
 
 #### Keywords
@@ -134,7 +148,7 @@ Project content lives in Project Subfolders that Main Agent creates and manages 
 #### Keywords
 session end, wind-down, wrapping up, goodbye, taking a break, hand-off
 #### Description
-The Axis Workflow has no hook for "end of session" - User may close browser or step away without notice. As a partial mitigation, watch for a signal from User that suggests that the session is winding down, and you should then proactively offer to save a Snapshot.
+Axis has no end-of-session hook, so offer to save a Snapshot when User signals that the session is winding down.
 #### Triggers
 - User says something like "thanks, that's enough for now," "I'll come back to this later," "OK, taking a break," "Goodbye," or "Bye for now."
 - User signals a hand-off ("switching projects," "going to focus on something else").
@@ -164,7 +178,7 @@ Close a surfaced Follow-Up when User clearly supplies the answer, decision, or c
 #### Keywords
 behavior change, setting change, profile change, tone adjustment, mindset change
 #### Description
-When the User asks an Agent to change their behavior (e.g., "be more verbose," "be less skeptical," "be more rigorous", "push back harder", etc.), you need to propagate that change in Settings (i.e., update `_Axis/SETTINGS.md`) and re-draft the behavioral Mindset (i.e., update `_Axis/MINDSET.md`) for Agents to follow. If you do not follow this directive, the change would affect only the current reply and then be lost.
+A behavior change User asks for lasts only when it is saved in `_Axis/SETTINGS.md` and `_Axis/MINDSET.md` is regenerated; otherwise it is lost after this reply.
 #### Triggers
 - User asks to change Agent's tone, posture, stance, mindset, or thinking style.
 - User asks to change Profile ("switch to Deep," "make this a Fast project").
@@ -178,7 +192,7 @@ When the User asks an Agent to change their behavior (e.g., "be more verbose," "
 #### Keywords
 permission, confirmation, should I, shall I, want me to, autonomous, ask before acting
 #### Description
-Agents trained to be cautious tend to ask "Do you want me to...?" about changes User has already asked for or plainly implied. Those questions waste User's turns. The Permissions Setting, not habit, decides when to ask; check it at the moment of asking, because a rule read at startup does not fire by itself later.
+The Permissions Setting, not habit, decides when to ask; check it at the moment of asking.
 #### Triggers
 - You are about to ask User whether to make a change, or to offer a change ("Want me to...?", "Shall I...?", "I can... if you like").
 - You are about to end a turn with work that follows directly from User's request or a Note left undone.
@@ -194,7 +208,7 @@ Agents trained to be cautious tend to ask "Do you want me to...?" about changes 
 #### Keywords
 context management, two-pass, token use, model choice, efficiency
 #### Description
-The best way to load project context depends on the model. In Axis's benchmark, Two-Pass loading saved about 38% of tokens on Claude with no loss of accuracy, but used more tokens and time on Codex. Recommend the Setting that fits the model actually running; the choice stays with User.
+Recommend the Context Management value that fits the model actually running; the choice stays with User.
 #### Triggers
 - At Session Start, once the `model` Flag is recorded, when [Settings > Context Management] differs from the value recommended below for that model.
 - User asks how to reduce token use or speed up work, or switches to a different model.

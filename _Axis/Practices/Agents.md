@@ -27,7 +27,7 @@ A General Subagent assigned to an Axis Team of Agents may communicate directly w
 
 #### Types of Subagents
 
-There are four types of **Subagents:** CX Subagent, Wiki Subagent, Local Subagent, and General Subagent. Every prompt begins with this three-line boundary:
+There are four envelope types of **Subagents:** CX, Wiki, Local and General. Delegated roles in `_Axis/Roles/` refine them: Lookup, Worker, TeamMember and TeamLeader travel as General, each with its own role text (see `_Axis/Roles/Delegating.md`). Every prompt begins with this three-line boundary:
 
 	Line 1: `<<AXIS:SUBAGENT>>`
 	Line 2: `<<AXIS:ROLE:CX>>` or `<<AXIS:ROLE:WIKI>>` or `<<AXIS:ROLE:LOCAL>>` or `<<AXIS:ROLE:GENERAL>>`
@@ -47,7 +47,7 @@ Subagents can run on a variety of models, both hosted and local. Main Agent sele
 
 - Subagents should lazy-load files and details only as needed.
 
-- Subagents should follow only the instructions and practices from the Axis Workflow that relate to their own particular role as a subagent; i.e., Subagents should NOT blindly load and follow every **Core Practice** in `_Axis/Practices/`.
+- A Subagent follows its prompt's AUTHORITY block, role text and task contract, and a governing file only when the prompt pins it by checksum; it does NOT load and follow every **Core Practice** in `_Axis/Practices/`.
 
 - Importantly, subagents should NOT perform any of these practices:
 

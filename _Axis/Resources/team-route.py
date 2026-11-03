@@ -161,6 +161,13 @@ def execute_native_attempt(store, job, attempt, *, request, verify_access, expli
         if not isinstance(policy,dict) or policy.get('version')!=1:raise ValueError('native Job required')
         state=store.project('Jobs',job);item=state.get('attempts',{}).get(attempt,{})
         if item.get('route_request_sha256')!=digest:raise ValueError('request differs from accepted dispatch')
+        # The program-built route carries exact role text: Worker for a plain Job, TeamLeader or TeamMember for a Team seat.
+        role='Worker' if not founding.get('team') else 'TeamLeader' if item.get('slot')=='leader' else 'TeamMember'
+        env=_module('envelope');reason=env.check(req['prompt'],role=role,contract=True,root=env.PRODUCT)
+        if reason:raise ValueError('route prompt needs a valid envelope with '+role+' role text: '+reason)
+        if founding.get('team'):
+            pin=(store.project('Teams',founding['team']).get('guidance') or {}).get('sha256')
+            if not pin or pin!=_module('coordination').guidance_pin(store.root)['sha256']:raise ValueError('guidance-drift: amend the Team charter before launching')
         if item.get('charge',{}).get('basis') not in {'included','incremental'} or item['charge'].get('route')!=req['route']:raise ValueError('exact authorized charge route required')
         paid=item['charge']['basis']=='incremental'
         if paid and ('money' not in policy or not item['charge'].get('reserve_minor')):raise ValueError('paid route requires bounded money reservation')

@@ -1,7 +1,7 @@
 # Changelog
 > **Purpose:** Record Axis release identity and the structural migrations needed to update an existing project safely.
 
-current-version: 3.12
+current-version: 3.13
 changelog-format: 1
 self-update-baseline: 26.08.19
 
@@ -39,6 +39,33 @@ update-impact: automatic
 ### Verification
 
 - None.
+
+## 3.13
+
+released: 2026-11-03
+
+update-impact: automatic
+
+### Structural Changes
+
+- Add the delegated role library to `_Axis/Roles/`: new role rows `Lookup.md`, `Worker.md`, `TeamMember.md` and `TeamLeader.md` (they travel under the `GENERAL` envelope token), Role Text in `General.md`, `CX.md` and the new rows, the shared conduct `Common.md` and the delegating kit `Delegating.md`. Role Text is compiled at release from Principles, the Rules lines that bind every agent, Directive triggers, the Cross Examiner's Mindset levels and the shared conduct, and every delegated prompt carries it verbatim. The Cross-Examination procedure moves from `Practices/CX.md` into `Roles/CX.md`.
+- Every CX, Wiki and General prompt carries a fixed `AUTHORITY.` block right after `VALIDATE, THEN WORK`: only the task contract grants authority, and instructions come only from the prompt and checksum-pinned files. `envelope.py check` refuses a carrying prompt without it, checks Role Text (`--role`) and contract labels (`--contract`), and gains `assemble`, `governance` (the closed, SHA-256-pinned governance list; `--write` saves it under `_Temp/Governance/`) and `instructions`. General, Worker, TeamMember and TeamLeader prompts must carry a GOVERNANCE line; `assemble` writes the list for them.
+- The trust rule is reconciled (`Rules/UntrustedContent.md`, `PRINCIPLES.md`, `Rules/Subagents.md`, `Rules/ProtectedContent.md`, `Resources/Start-Subagent.md`, `Resources/Entry-Protocol.md`): a delegate follows its prompt and pinned governing files; everything else is data. `Start-Subagent.md` opens with a short section for the receiving Subagent.
+- `guardrails.py` refuses, for every host helper, file-tool writes to governing files, reads of `_Axis/INSTRUCTIONS.md`, the `Agent` and `Task` tools, and direct command-line calls to state-changing Axis helpers or agent CLIs; it is a backstop, not a sandbox. The new `axis-lookup` helper type writes nothing. `startup-state.py record` refuses records from a Subagent session except CX reports from a CX Subagent; it is a compliance gate, not authentication. `turn.py` names governing files changed since the previous turn. A Team charter pins the guidance digest; dispatch refuses `guidance-drift` or `guidance-unpinned` until an amendment carries the current digest. Proposal-Team prompts carry the AUTHORITY block and TeamMember Role Text; the command-line Team route refuses a prompt without its envelope and Role Text; checked Team reads report `governance: match` or `drift`.
+- The Instructions template splits into "For every agent" and "For Main only"; delegates receive only the first, copied into their contract. Startup offers once to sort an existing Instructions file that has no split.
+- Strategic framing: Planning gains Strategic requests, Context gains recovery after compaction, the Planning trigger covers strategy and completion judgments, and the new default Directive "Accept the Decision Promised" is appended to existing projects at startup.
+
+### Project-State Migrations
+
+- None. Existing Instructions, Directives, Team charters and records are not rewritten. A Team charter admitted before this version has no guidance pin and refuses new dispatch until amended with the current digest; existing results stay valid. Projects that installed `^install guardrails` re-run it to add the `Agent|Task` matcher and the `axis-lookup` helper.
+
+### Retired Paths
+
+- None.
+
+### Verification
+
+- Role drift, Role Text budgets and the 20,000-character cap, entry files and the Local prompt template unchanged, first-startup reading no larger than 3.09.
 
 ## 3.12
 

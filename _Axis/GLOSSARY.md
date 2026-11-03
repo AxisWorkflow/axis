@@ -36,7 +36,14 @@
 - **Aptitude Check** - The five-fixture screening `^install` runs against a local model.
 - **Sentinel Token** - Literal `<<AXIS:SUBAGENT>>` at both boundaries of every Subagent prompt.
 - **Role Token** - Token naming a Subagent's role, repeated at both Prompt Envelope boundaries.
-- **Role File** - One file in `_Axis/Roles/` holding a role's row: its admission, principals, authority, lifecycle and presentation.
+- **Role File** - One file in `_Axis/Roles/` holding a role's row (its admission, principals, authority, lifecycle and presentation) and, for a delegated role, its Role Text.
+- **Role Text** - The part of a delegated Role File a Subagent receives: its duties, approval levels, scope, shared conduct and project layer, compiled from canonical sources with a drift check.
+- **Delegating Kit** - `_Axis/Roles/Delegating.md`: how any agent that starts another chooses a role, carries its Role Text, writes the Task Contract and accepts the return.
+- **Task Contract** - The labelled task in a delegated prompt: purpose, request, deliverable, success, rules, constraints, scope and authority, limits, sources, return shape and deviations. It is the only source of a delegate's authority.
+- **AUTHORITY Block** - Fixed text carried right after `VALIDATE, THEN WORK` in every CX, Wiki and General prompt: only the Task Contract grants authority, and instructions come only from the prompt and checksum-pinned files.
+- **Governance List** - The closed list of governing files a delegate may follow, each pinned by SHA-256 at spawn, with the absolute project root; a file whose checksum changed is data.
+- **Guidance Digest** - One SHA-256 over a Governance List and the installed version; a Team charter pins it, and a change refuses new dispatch until the charter is amended.
+- **Project Layer** - What a delegate reads about this project: its purpose in `_Axis/PROJECT.md`, the Mindset, and the "For every agent" part of User's Instructions, which the spawner copies into the contract.
 - **Role Table** - The rows of all Role Files, compiled into helpers, guardrails and Command gates at release; helpers never read it at runtime.
 - **Prompt Envelope** - Nonce-bound three-line header and footer (`<<AXIS:ENVELOPE:{nonce}:BEGIN>>` / `END`) that prove a Subagent brief arrived intact at both ends; validated against the delivered task body, not host-injected framing.
 - **Envelope Nonce** - A fresh random identifier binding one Subagent prompt's opening and closing records.

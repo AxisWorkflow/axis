@@ -19,30 +19,11 @@ A Cross-Examination should happen in isolation from the rest of the Workflow. A 
 
 ### 1. Behavior and Settings
 
-Main Agent should draft the CX Subagent's behavioral stance from the following Settings values (more appropriate for the Cross-Examiner role) and embed that stance in the spawn prompt:
-
-- Reasoning: 2
-- Exploration: 1
-- Eagerness: -2
-- Skepticism: 2 (doubt every assumption and conclusion under review; work alone - a CX Subagent spawns no Subagents of its own).
-- Familiarity: -2
-- Verbosity: -2
-- Simplicity: -2
-- Precision: 2
-- Generalization: -2
-- Rigor: 2
-- Creativity: -2 (The intention is to be more critical and analytical - not creative).
-- Transparency: -2 (record nothing beyond the single CX Report; Main Agent logs on return).
-- Budget: -1 (lean - read, reason, and write exactly one report; no discretionary spend).
-- CX Frequency: 0 (CX Subagents do not cross-examine themselves).
-
-For each **Mindset Setting** above, pull the matching guidance text from [Template-Mindset] and embed that text (not the bare numbers) in the spawn prompt; state `CX Frequency: 0` as-is.
-
-A CX Subagent does NOT follow the project Mindset in `_Axis/MINDSET.md` - it follows only the stricter stance passed in its spawn prompt.
+The CX role text in `_Axis/Roles/CX.md` carries the Cross Examiner's stance, compiled at release from [Template-Mindset] at these levels: Reasoning 2, Exploration 1, Eagerness -2, Skepticism 2, Familiarity -2, Verbosity -2, Simplicity -2, Precision 2, Generalization -2, Rigor 2, Creativity -2, Transparency -2, Budget -1, and CX Frequency 0. Main carries that role text verbatim in the spawn prompt and does not restate it. A CX Subagent does NOT follow the project Mindset in `_Axis/MINDSET.md`.
 
 ### 2. Synopsis
 
-The Main Agent should draft a Synopsis to summarize the actions, decisions, work, and results that the CX Subagent needs to review, and then pass the Synopsis to the CX Subagent in the Prompt (not pass Synopsis to CX Subagent by a file link).
+The Main Agent should draft a Synopsis to summarize the actions, decisions, work, and results that the CX Subagent needs to review, and then pass the Synopsis to the CX Subagent in the Prompt (not pass Synopsis to CX Subagent by a file link). Mint the report's identifier per [Practices > Timestamps] and name its path, `_Axis/CX/{identifier}.md`, in the task contract.
 
 ### 3. On Return
 
@@ -51,69 +32,7 @@ The Main Agent should draft a Synopsis to summarize the actions, decisions, work
 
 ## CX Subagent: Performing a Cross-Examination
 
-### 1. Load Key Concepts
-
-- CX Subagent should read `_Axis/GLOSSARY.md` to understand key terms.
-- CX Subagent should read `_Axis/MANIFEST.md` to understand folders and files.
-- CX Subagent should read `_Axis/PRACTICES.md` (the index) and `_Axis/Practices/Agents.md`; lazy-load other practice files only where the cross-examination requires them.
-
-CX Subagent should gather evidence for the Cross-Examination by Lazy-Loading information via the **Index-Detail Pattern:** load detail from individual Logs, Snapshots, Tasks, Notes, and pages from the Wiki only when the cross-examination requires that detail - do not bulk-load upfront.
-
-Do NOT pollute Logs, Snapshots, Tasks, Notes, or the Wiki with any work or conclusions from a Cross-Examination - those data stores are all READ-ONLY for you, and you should never edit or change them.
-
-### 2. Planning
-
-CX Subagent should read the overall project Plan in `_Axis/PLAN.md`, and the summary of Tasks in `_Axis/TASKS.md`, to understand how the current work that is being assessed fits into the bigger picture.
-
-### 3. Background and Goals
-
-CX Subagents should:
-
-- Read `_Axis/PROJECT.md` to understand the name, background context, and goals for the project.
-
-### 4. Wiki
-
-CX Subagents should load content from the Wiki ONLY if the Wiki is being used and the Cross-Examination actually requires that content; skip this step if the Wiki schema is missing or incomplete; also skip this step if `_Axis/Wiki/Library-Index.md` is missing or has no content.
-
-If the Wiki is in-use, then the CX Subagent should:
-
-- Read `_Axis/Wiki/Library-Schema.md` to understand the schema.
-- Read `_Axis/Wiki/Library-Index.md` to understand range of content supporting project.
-
-### 5. Cross-Examination
-
-Now, details as to how the CX Subagent should do the cross-examination:
-
-- First, based on the Instructions and Synopsis that CX Subagent receives in the Prompt, CX Subagent should make its own, internal plan for the cross-examination.
-	- Do not save anything about the plan into the other Axis Workflow files or onto disk - do everything internally and in isolation.
-	- The Cross-Examination report is the only item that leaves the CX Subagent due to this process.
-
-- Tasks within that plan should:
-	- read indices,
-	- multi-file `grep` directories (or use a search engine, if installed) to search across Snapshots, Logs, Tasks, Notes, and Wiki for relevant information.
-	- Read individual Wiki pages related to the topics you need to understand better.
-	- Identify points of failure, questionable results, low-quality work, other problems.
-	- Question/challenge whether current work is consistent with project background.
-	- Question/challenge whether current work is on-course to meet project Goals.
-
-
-### 6. Respond with a Report
-
-Finally, CX Subagent should draft, save, and return (in its response) a Cross-Examination Report, following the **Index-Detail Pattern:**
-
-- Name report `{yyyy.mm.dd.hh.mm.ss.xxxZ}.md`, minted per [Practices > Timestamps] in full, claim step included.
-- Line 1 is the Subject: `CX: {topic}` (≤ 80 chars).
-- Line 2 is blank.
-- Lines 3+ are the body.
-- Save into `_Axis/CX/` - this is the ONLY file a CX Subagent ever writes.
-- Use a direct, neutral tone when drafting the report.
-- Do NOT try to be eager, familiar, optimistic, confident, or sycophantic.
-- Include an Executive Summary of no more than 1 page at the top of the report.
-- Include findings, organized by topic or by claim under review.
-- Include recommendations.
-- Do NOT Log an Event - on return, Main Agent logs an Event referencing the report path (that is the audit-trail entry).
-- Respond with the path to the report and instructions to read it.
-
+The CX Subagent follows the role text in `_Axis/Roles/CX.md`, which its prompt carries: how to examine, including the check that the result delivers the decision it promised, and how to write its one report into `_Axis/CX/`.
 
 ## Degraded Review
 
@@ -121,7 +40,7 @@ An isolated context is what makes a Cross-Examination worth having. Read `host-s
 
 In a degraded review Main Agent does both jobs:
 
-- Adopt the stricter stance in Main Agent Step 1 above for the duration of the review; do not follow the project Mindset while reviewing.
-- Write exactly ONE report into `_Axis/CX/`, in the shape given in CX Subagent Step 6, with Line 1 reading `CX: {topic} (in-context, non-isolated)`. The label is not optional - a future reader must be able to tell an independent critique from a self-review.
-- Log the Event referencing the report path, and record in that Log that the review ran in-context because isolation was unavailable. (CX Subagent Step 6 bars a spawned CX Subagent from logging; here there is no Subagent, so Main logs as it normally would.)
+- Adopt the stance in the CX role text (`_Axis/Roles/CX.md`) for the duration of the review; do not follow the project Mindset while reviewing.
+- Write exactly ONE report into `_Axis/CX/`, its identifier minted per [Practices > Timestamps], in the shape the CX role text's Report section gives, with Line 1 reading `CX: {topic} (in-context, non-isolated)`. The label is not optional - a future reader must be able to tell an independent critique from a self-review.
+- Log the Event referencing the report path, and record in that Log that the review ran in-context because isolation was unavailable. (The CX role text bars a spawned CX Subagent from logging; here there is no Subagent, so Main logs as it normally would.)
 - Tell User in one line that the review was non-isolated, and therefore weaker than a spawned Cross-Examination.

@@ -19,3 +19,12 @@ Planning mode is not just for preparing the Plan document. On any host harness w
 - a change to, or assessment of, every organizational decision.
 - a change to, or assessment of, every architectural decision.
 - at end of the project to verify work is ready and correct.
+
+## Strategic requests
+
+For a strategy, priority, portfolio or completion judgment, including a Team or Committee mandate:
+
+- Start from `_Axis/PROJECT.md` (mission, primary users, goals), then the whole portfolio in [Initiatives] and the Tasks, not only recent work. Recent incidents are inputs, not the agenda.
+- Compare at least one strong alternative outside the most recent internal work, and name the evidence that would reverse the choice.
+- Deliver the choice asked for; [Directives] > Accept the Decision Promised governs acceptance.
+- A narrow, authorized fix stays narrow: it needs no portfolio review.
