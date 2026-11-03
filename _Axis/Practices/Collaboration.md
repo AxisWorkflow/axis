@@ -25,6 +25,12 @@ A structured `axis.team-plan/v1` document includes revision, objective, delivera
 
 Members publish immutable, attributable artifact revisions through the existing workspace mechanism. Reviews cite the exact revision. Later revisions and final synthesis retain substantive objections and explain their disposition. A final-review confirmation refers to the actual final artifact; an equivalent valid causal confirmation must not fail solely because it used a different incidental Message form.
 
+## Positions and checkpoints
+
+A member that raises, changes or withdraws a claim peers rely on sends one Message whose `data.position` uses `axis.position/v1`: `change` (`raised`, `changed` or `withdrawn`), `claim`, the `affected` member slots and the requested `consequence`. A change or withdrawal also names `prior`, the author's own earlier Message or revision; a change may name `current`. The helper refuses it unless every affected peer receives it, the prior is the author's latest link, and a withdrawn claim stays withdrawn; an identical resend returns the first notice. A reader of the old Message sees `superseded_by`. Affected peers answer with a reply; a receipt shows reading, not agreement.
+
+At each phase boundary, before synthesis and when a chair or Main takes over, read `coordination.py team-checkpoint` (or the checked `team_checkpoint` tool). It derives publications, review and question obligations, positions with each peer's response, open disagreements, attempt status and next actions from canonical records, so a fresh chair continues instead of ordering a duplicate round. Keep no separate tracker. Cite its `sha256` in a leader-replacement checkpoint. Synthesis attributes each member's current position and keeps open disagreements as dissent; a withdrawn claim is not dissent.
+
 ## Adaptation and recovery
 
 The leader may refine assignments and method within delegated discretion, publish the successor plan and reason, and identify how in-flight work is treated. Formal charter plan changes use Main's existing `amend` control with a replacement `collaboration_plan`, `summary` and explicit in-flight disposition. Binding validation and the epoch fence still apply. A plan amendment cannot enlarge authority, membership, path permissions or money/runtime limits. Keep prior revisions and retained artifacts available.

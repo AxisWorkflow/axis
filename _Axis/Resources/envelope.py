@@ -143,7 +143,7 @@ def instructions(root):
         if (m and len(m[1])<=level) or (setext and (1 if setext[1][0]=='=' else 2)<=level):break
         out.append(x)
     # Never deliver a section that contains Main-only text, whatever its heading level or form.
-    if any(re.fullmatch(r'\s*(#{1,6}\s+)?\**For Main only\b.*',x,re.I) for x in out):return 'unsorted',''
+    if any(re.fullmatch(r'\s*(#{1,6}\s+)?\**For (Main only|only the Main Agent)\b.*',x,re.I) for x in out):return 'unsorted',''
     out=[x for x in out if not re.fullmatch(r'\s*\*\(Empty[^\n]*\)\*\s*',x)]
     text='\n'.join(out).strip()
     if credential(text):raise ValueError('credential-shaped text in the For every agent section')

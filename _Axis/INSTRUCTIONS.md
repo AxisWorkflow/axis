@@ -1,7 +1,7 @@
 # Instructions
 > **Purpose:** Where User's own standing instructions live. User owns this file; Agents read it and follow it, and never edit it unasked.
 
-Write here, in your own words, what Agents on this project should know and follow: the contents of an entry file you used before Axis, your organization's requirements, how your platform behaves, or standing preferences no Setting covers. Put each instruction under one of the two headings at the end. "For every agent" reaches every agent that works here, including helpers that may run on other model providers. "For Main only" reaches only your Main Agent: put permissions, accounts, budgets and pending requests there.
+Write here, in your own words, what Agents on this project should know and follow: the contents of an entry file you used before Axis, your organization's requirements, how your platform behaves, or standing preferences no Setting covers. Put each instruction under one of the two headings at the end. "For every agent" reaches every agent that works here, including helpers that may run on other model providers. "For only the Main Agent" reaches no helper: put permissions, accounts, budgets and pending requests there.
 
 ## Why here and not in the entry files
 
@@ -23,6 +23,6 @@ This file has no such limit. Main reads it at Session Start, like the Plan and t
 
 *(Empty. How work should be done here: conventions, domain rules, preferences.)*
 
-### For Main only
+### For only the Main Agent
 
-*(Empty. Permissions, accounts, budgets and requests for your Main Agent only.)*
+*(Empty. Permissions, accounts, budgets and requests.)*

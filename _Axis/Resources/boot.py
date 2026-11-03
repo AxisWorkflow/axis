@@ -647,7 +647,7 @@ try:
  locks=s.get('locks') or {}
  if locks.get('lock_dirs') or locks.get('timestamp_claims'):notices.append('Stale lock or claim directories found; recovery needs a quiet moment (^refresh)')
  proj=(root/'_Axis/PROJECT.md').read_text() if (root/'_Axis/PROJECT.md').is_file() else ''
- if instructions_unsorted():later.append('offer once to sort _Axis/INSTRUCTIONS.md for helpers: raise one Follow-Up "Sort your Instructions for helpers" under _Axis/Practices/Followups.md that proposes which lines go under "For every agent" and which under "For Main only"; until User sorts it, helpers receive nothing from that file')
+ if instructions_unsorted():later.append('offer once to sort _Axis/INSTRUCTIONS.md for helpers: raise one Follow-Up "Sort your Instructions for helpers" under _Axis/Practices/Followups.md that proposes which lines go under "For every agent" and which under "For only the Main Agent"; until User sorts it, helpers receive nothing from that file')
  if 'axis:project-overlay:begin' in proj:pending.append('validate and activate the declared project overlay with _Axis/Resources/Load-Project-Overlay.md (confirm, then activate); its guidance applies only after that')
  ready=(root/'_Axis/Flags/project-ready');rv=ready.read_text().splitlines()[0].strip() if ready.exists() and ready.read_text().strip() else ''
  if not re.fullmatch(r'\d{4}(\.\d{2}){5}\.\d{3}Z',rv):pending.append('say "Your project needs to be set up." and follow _Axis/Resources/Start-Project.md')

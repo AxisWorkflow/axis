@@ -173,6 +173,8 @@
 - **Transport** - The mechanism carrying a Delivery Envelope to the receiving Submissions queue. Delivery does not mean acceptance or completion.
 - **Disposition** - Main's recorded handling of a Message, such as admitted, declined, validated or closed.
 - **Correlation** - A shared reference linking Messages about the same exchange or operation.
+- **Position notice** - A Team Message in which a member raises, changes or withdraws its own claim and names the peers it affects. It must reach every affected peer; a withdrawn claim no longer counts as dissent.
+- **Team checkpoint** - The Team's current state derived from its canonical records: publications, open reviews and questions, positions and next actions. It keeps no separate copy.
 
 ### Scheduling
 

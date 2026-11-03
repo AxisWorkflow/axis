@@ -1,7 +1,7 @@
 # Changelog
 > **Purpose:** Record Axis release identity and the structural migrations needed to update an existing project safely.
 
-current-version: 3.13
+current-version: 3.14
 changelog-format: 1
 self-update-baseline: 26.08.19
 
@@ -39,6 +39,30 @@ update-impact: automatic
 ### Verification
 
 - None.
+
+## 3.14
+
+released: 2026-11-03
+
+update-impact: automatic
+
+### Structural Changes
+
+- The Instructions template heading "For Main only" is now "For only the Main Agent". An existing file keeps its heading, which still works: helpers never receive text under either one.
+- Team handoffs: position notices (`data.position`, `axis.position/v1`) to raise, change or withdraw a member's claim with its affected peers; `coordination.py team-checkpoint` and the checked `team_checkpoint` tool derive a phase checkpoint from canonical records; inbox rows show `superseded_by`; the Team Leader and Team Member role texts carry the matching duties.
+- A dispatch beside another Team's active Job no longer refuses as `capacity-held`; inbox, checkpoint and Main views scan each record family once per call.
+
+### Project-State Migrations
+
+- None. Existing Instructions files keep their headings, and existing Team records, Messages and charters are not rewritten; a position notice and the Team checkpoint apply to new Messages and reads.
+
+### Retired Paths
+
+- None.
+
+### Verification
+
+- Position notices, the derived Team checkpoint and one scan per read are covered by the release tests; role drift and Role Text budgets hold; the Instructions template stays within 3.09's size.
 
 ## 3.13
 

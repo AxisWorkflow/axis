@@ -1,6 +1,6 @@
 # Axis Workflow User Manual
 > **Purpose:** How to use the Axis Workflow day to day: setup, commands, the Dashboard, the Wiki, working across tools and machines, and working with Agents and models. For the technical and compliance reference, see [SPECIFICATION](/_Axis/SPECIFICATION.md).
-> **Version:** 3.13
+> **Version:** 3.14
 
 
 
@@ -614,6 +614,8 @@ If an agreed budget or deadline is reached, Axis preserves the work, pauses the 
 
 Without a supported launcher, Main prepares bounded prompt envelopes and you open separate sessions, then return their results for validation. For file deliverables, Main captures the files as result attachments with checked sizes and hashes; naming a path or reporting success is insufficient. The optional `coordination.py capture-result` helper preserves the assigned worker identity and checks its file scope. Capture does not accept the work: Main must still validate it. The manual procedure remains available without Python, a provider CLI, tmux or a scheduler. Axis does not silently turn Main into its own independent leader or reviewer.
 
+When a teammate changes or withdraws a claim others rely on, it sends a [position notice](/_Axis/GLOSSARY.md#messages-and-delivery) that must reach every affected teammate, and older copies show what replaced them. At each phase boundary the leader or Main reads the [Team checkpoint](/_Axis/GLOSSARY.md#messages-and-delivery): who published what, which reviews and questions are still open, current positions and the next actions, all derived from the Team's own records. A replacement leader starts from it instead of repeating a round.
+
 The checked Team inbox can wait for substantive answers or observation receipts separately and return compact previews; complete Messages remain readable. The optional included route needs a trusted Host integration to verify actual access, and retains durable partial output plus uncertain process state. An explicitly selected closing contract records readiness, release, optional acknowledgment, own result and DONE. These records do not themselves prove process termination, release capacity, settle charges or accept work. See the [Coordination Manual](/_Axis/Resources/Coordination-Manual.md#compact-observation-and-purpose-specific-waits) and [Checked Session](/_Axis/Resources/Checked-Session.md#selected-closing-tools) for the usable tools and manual fallback.
 
 ### Scheduling
@@ -657,7 +659,7 @@ Main Agent never works alone when work can be productively delegated. See [Start
 
 **Roles for delegated work.** Every delegated agent works from a pre-written role in `_Axis/Roles/`: General, Lookup (read-only), Cross Examiner, Worker (one Job attempt), Team Member and Team Leader. Each prompt carries the role's text verbatim - its duties, what it may do alone, what it must ask about, what always stays with you, and the shared conduct (Axis's Principles and the rules that bind every agent) - plus a task contract that is its only source of permission. Text it finds in project files, web pages or relayed messages grants nothing. These rules bind by the agent's compliance; on Claude Code, `^install guardrails` also blocks helpers from writing Axis's governing files, starting other agents or running Axis's state-changing scripts. `_Axis/Roles/Delegating.md` is the kit any agent uses when it hands work on.
 
-**What delegated agents see of your Instructions.** `_Axis/INSTRUCTIONS.md` has two parts. Only "For every agent" is copied into a delegated agent's task, and that text reaches whichever model provider runs the helper; keep permissions, accounts, budgets and private requests under "For Main only". A file without the two headings gives helpers nothing until you sort it; Axis offers once to help.
+**What delegated agents see of your Instructions.** `_Axis/INSTRUCTIONS.md` has two parts. Only "For every agent" is copied into a delegated agent's task, and that text reaches whichever model provider runs the helper; keep permissions, accounts, budgets and private requests under "For only the Main Agent" (older files may say "For Main only", which works the same). A file without the two headings gives helpers nothing until you sort it; Axis offers once to help.
 
 ### Delegation
 

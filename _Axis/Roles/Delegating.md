@@ -44,7 +44,7 @@ Every General-token contract has these labelled parts, in this order. `envelope.
 - `RETURN:` the return shape; cite your own Tracking lines by time, never by quoting identifiers.
 - `DEVIATIONS:` any declared departure from the role text, such as a substituted stance, with its reason; or `none`.
 
-Add `FOR EVERY AGENT:` with the "For every agent" part of the User's Instructions, copied by `envelope.py instructions` or by hand; an Instructions file without exactly one such heading, or with a "For Main only" heading inside that section, contributes nothing. General, Worker, TeamMember and TeamLeader prompts carry `GOVERNANCE:` with the absolute project root, the governance list file and its SHA-256 (`envelope.py assemble` writes the list); CX and Lookup prompts need none. A Lookup prompt carries no TRACKING line: its spawner writes the Lookup's INTENT and DONE lines in its own Tracking file.
+Add `FOR EVERY AGENT:` with the "For every agent" part of the User's Instructions, copied by `envelope.py instructions` or by hand; an Instructions file without exactly one such heading, or with a "For only the Main Agent" (or older "For Main only") heading inside that section, contributes nothing. General, Worker, TeamMember and TeamLeader prompts carry `GOVERNANCE:` with the absolute project root, the governance list file and its SHA-256 (`envelope.py assemble` writes the list); CX and Lookup prompts need none. A Lookup prompt carries no TRACKING line: its spawner writes the Lookup's INTENT and DONE lines in its own Tracking file.
 
 ## Accept the return
 

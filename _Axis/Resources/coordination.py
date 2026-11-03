@@ -79,6 +79,8 @@ MAX_RECORD = 131072
 MAX_ATTACHMENT = 64 * 1024 * 1024
 MAX_WORK_FILE = 65536
 COLLABORATION = {'version': 1, 'poll_seconds': 5, 'max_messages_per_member': 200}
+POSITION_PROTOCOL = 'axis.position/v1'
+POSITION_KEYS = {'protocol', 'change', 'claim', 'affected', 'consequence'}
 
 
 def workspace_token(value):
@@ -2249,6 +2251,9 @@ class Store:
             route = self._route(payload['team'], payload['recipient'])
             route['sender_slot'] = item['slot']
             payload['delivery'] = route
+            if 'position' in payload['data']:
+                duplicate = self._check_position(payload['team'], view, history, payload, item['slot'])
+                if duplicate is not None: return {'status': 'duplicate', 'id': duplicate}
             reply = payload['data'].get('reply_to')
             if reply is not None:
                 original = next((m for m in history if m['id'] == identity(reply)), None)
@@ -2277,8 +2282,12 @@ class Store:
         self.guard()
         return message
 
-    def team_inbox(self, team, job, attempt, epoch, *, after=None, limit=20, history=False,
-                   wait_for='all', reply_to=None, compact=False):
+    def team_inbox(self, *args, **kwargs):
+        """One read: each record family is scanned once per call."""
+        with self.cached_reads(): return self._team_inbox(*args, **kwargs)
+
+    def _team_inbox(self, team, job, attempt, epoch, *, after=None, limit=20, history=False,
+                    wait_for='all', reply_to=None, compact=False):
         _, view, _, _, item = self._direct_context(team, job, attempt, epoch)
         _integer(limit, 'inbox-limit', 1, 100)
         need(type(history) is bool and type(compact) is bool, 'inbox-view')
@@ -2289,8 +2298,10 @@ class Store:
             original = self.team_message(team, job, attempt, epoch, reply_to)
             need(original.get('job') in (None, job), 'inbox-reply-assignment')
         rows = []; size = 0; more = False
-        for message in self.records('Messages', team=team):
-            if message.get('team') != team or (after is not None and message['id'] <= after): continue
+        team_records = [m for m in self.records('Messages', team=team) if m.get('team') == team]
+        superseded = self._superseded(team_records)
+        for message in team_records:
+            if after is not None and message['id'] <= after: continue
             delivery = message.get('delivery', {})
             addressed = {'slot': item['slot'], 'session': self.session} in delivery.get('recipients', [])
             if not history and not addressed: continue
@@ -2319,6 +2330,7 @@ class Store:
                 projected['reply_to'] = message.get('data', {}).get('reply_to')
                 projected['observed_message'] = message.get('data', {}).get('observed_message')
             row = {'state': state, 'message': projected}
+            if message['id'] in superseded: row['superseded_by'] = superseded[message['id']]
             weight = len(canonical(row))
             if rows and (len(rows) >= limit or size + weight > MAX_RECORD): more = True; break
             rows.append(row); size += weight
@@ -2341,6 +2353,175 @@ class Store:
         sender = original.get('delivery', {}).get('sender_slot', 'main')
         return self.message('receipt', sender, 'Observed addressed Message.', team=team, job=job, epoch=epoch,
                             data={'attempt': attempt, 'reply_to': message_id, 'observed_message': message_id, 'observed_at': self.now().isoformat()})
+
+    def _position_ref(self, team, view, history, ref, slot, session):
+        """A position names its author's own Team Message or own published revision."""
+        need(isinstance(ref, dict) and len(ref) == 1, 'position-reference')
+        if 'message' in ref:
+            target = next((m for m in history if m['id'] == identity(ref['message'])), None)
+            need(target is not None and 'event' not in target and target['issuer']['session'] == session
+                 and target['kind'] in PROPOSALS - {'receipt'}, 'position-reference')
+            return {'message': target['id']}
+        value = ref.get('artifact')
+        need(isinstance(value, dict) and set(value) == {'slot', 'revision'} and value['slot'] == slot, 'position-reference')
+        need(self.artifact_check(team, slot, value['revision'], _view=view)['manifest']['session'] == session, 'position-reference')
+        return {'artifact': {'slot': slot, 'revision': value['revision']}}
+
+    def _check_position(self, team, view, history, payload, slot):
+        """Validate a raised, changed or withdrawn position. Returns the id of an identical earlier notice, else None."""
+        position = payload['data']['position']
+        need(isinstance(position, dict) and position.get('protocol') == POSITION_PROTOCOL, 'position-protocol')
+        change = position.get('change')
+        need(change in {'raised', 'changed', 'withdrawn'}, 'position-change')
+        required = POSITION_KEYS | ({'prior'} if change != 'raised' else set())
+        need(required <= set(position) <= required | ({'current'} if change == 'changed' else set()), 'position-shape')
+        for key, limit in (('claim', 512), ('consequence', 1024)):
+            need(isinstance(position[key], str) and position[key].strip() and len(position[key]) <= limit, 'position-' + key)
+        affected = position['affected']
+        need(isinstance(affected, list) and affected and len(set(affected)) == len(affected)
+             and all(isinstance(s, str) and s in view['members'] and s != slot for s in affected), 'position-affected')
+        # A changed conclusion must reach every peer it affects in this same Message.
+        need(set(affected) <= {r['slot'] for r in payload['delivery']['recipients']}, 'position-delivery')
+        own = [m for m in history if 'event' not in m and m['issuer']['session'] == self.session
+               and isinstance(m.get('data', {}).get('position'), dict)]
+        for prior in own:
+            if canonical(prior['data']['position']) == canonical(position) and prior['kind'] == payload['kind'] and prior['body'] == payload['body']:
+                return prior['id']
+        if change == 'raised': return None
+        ref = self._position_ref(team, view, history, position['prior'], slot, self.session)
+        need(ref == position['prior'], 'position-reference')
+        # Chains run through notices: change the latest notice, never an older link or a notice's current reference.
+        need(not any(m['data']['position'].get('prior') == ref for m in own), 'position-superseded')
+        need(not any(m['data']['position'].get('current') == ref for m in own), 'position-use-notice')
+        if 'message' in ref:
+            target = next(m for m in history if m['id'] == ref['message'])
+            need((target.get('data', {}).get('position') or {}).get('change') != 'withdrawn', 'position-withdrawn')
+        if 'current' in position:
+            current = self._position_ref(team, view, history, position['current'], slot, self.session)
+            need(current == position['current'] and current != ref, 'position-unchanged')
+        return None
+
+    @staticmethod
+    def _position_key(ref):
+        if 'message' in ref: return 'message:' + ref['message']
+        return 'artifact:' + ref['artifact']['slot'] + '/' + ref['artifact']['revision']
+
+    @staticmethod
+    def _superseded(history):
+        """Map each Message its author changed or withdrew to the notice that did so."""
+        result = {}
+        for m in history:
+            prior = (m.get('data', {}).get('position') or {}).get('prior') if 'event' not in m else None
+            if isinstance(prior, dict) and 'message' in prior: result[prior['message']] = m['id']
+        return result
+
+    @staticmethod
+    def _response_state(history, message, session):
+        """Delivered, read (a receipt) or responded (a substantive reply); a receipt never settles an obligation."""
+        state = 'delivered'
+        for m in history:
+            if 'event' in m or m['issuer']['session'] != session: continue
+            data = m.get('data', {})
+            if m['kind'] != 'receipt' and data.get('reply_to') == message['id']: return 'responded'
+            if m['kind'] == 'receipt' and data.get('observed_message') == message['id']: state = 'read'
+        return state
+
+    def _positions(self, view, history):
+        """Current state of every position chain, with each affected peer's delivery, read and response."""
+        chains = {}; node = {}
+        for m in history:
+            p = (m.get('data', {}).get('position') or {}) if 'event' not in m else {}
+            if not p: continue
+            slot = m.get('delivery', {}).get('sender_slot')
+            if p['change'] == 'raised':
+                root = 'message:' + m['id']
+            else:
+                key = self._position_key(p['prior']); root = node.get(key, key)
+            chain = chains.setdefault(root, {'root': root, 'author': slot, 'notices': [], 'affected': []})
+            chain.update(claim=p['claim'], state=p['change'], latest=m['id'], consequence=p['consequence'],
+                         head=None if p['change'] == 'withdrawn' else (self._position_key(p['current']) if 'current' in p else 'message:' + m['id']))
+            chain['notices'].append(m['id']); chain['affected'] = sorted(set(chain['affected']) | set(p['affected']))
+            node['message:' + m['id']] = root
+            if 'current' in p: node[self._position_key(p['current'])] = root
+        for chain in chains.values():
+            latest = next(m for m in history if m['id'] == chain['latest'])
+            stale = latest.get('delivery', {}).get('team_epoch') != view['epoch']
+            chain['peers'] = {slot: 'stale-epoch' if stale else self._response_state(history, latest, view['members'][slot].get('session'))
+                              for slot in chain['affected']}
+        return sorted(chains.values(), key=lambda c: c['latest'])
+
+    def team_checkpoint(self, team, job=None, attempt=None, epoch=None):
+        """Phase-boundary state derived only from canonical Team records, for a fresh chair or Main."""
+        with self.cached_reads():
+            if job is not None: _, view, _, _, _ = self._direct_context(team, job, attempt, epoch)
+            else:
+                self.require_main(); view = self.project('Teams', team)
+            charter = self.read('Teams', team)
+            history = [m for m in self.records('Messages', team=team) if m.get('team') == team]
+            talk = [m for m in history if 'event' not in m]
+            sessions = {s: v.get('session') for s, v in view['members'].items()}
+            publications = {}
+            for m in talk:
+                meta = m.get('artifact_publication')
+                if not isinstance(meta, dict): continue
+                parts = meta['path'].split('/')
+                publications.setdefault(parts[4], []).append({'revision': parts[6], 'message': m['id']})
+            for slot, revisions in publications.items():
+                for item in revisions:
+                    item['supersedes'] = self.artifact_check(team, slot, item['revision'], _view=view)['manifest'].get('supersedes')
+            latest = {slot: revisions[-1]['revision'] for slot, revisions in publications.items()}
+
+            def cited(m, author):
+                prefix = '_Axis/Teams/' + team + '/members/' + author + '/artifacts/'
+                found = [a['path'][len(prefix):].split('/')[0] for a in m.get('attachments', []) if a.get('path', '').startswith(prefix)]
+                return found[-1] if found else None
+            reviews = []
+            plan = view.get('collaboration_plan')
+            if plan:
+                bound = _bound_plan(dict(charter, members=[dict(v, slot=s) for s, v in view['members'].items()],
+                                         collaboration_plan=plan), verify=False)
+                for duty in bound['obligations']:
+                    done = [(m, cited(m, duty['author'])) for m in talk if m['issuer']['session'] == sessions.get(duty['reviewer'])
+                            and m['kind'] != 'receipt' and not m.get('artifact_publication') and cited(m, duty['author'])]
+                    row = {'reviewer': duty['reviewer'], 'author': duty['author'], 'latest': latest.get(duty['author'])}
+                    if not done:
+                        row['state'] = 'missing' if duty['author'] in latest else 'awaiting-publication'
+                    else:
+                        message, revision = done[-1]
+                        row.update(state='done' if revision == latest.get(duty['author']) else 'stale', review=message['id'], revision=revision)
+                        if duty['response_required']:
+                            row['response'] = self._response_state(talk, message, sessions.get(duty['author']))
+                    reviews.append(row)
+            questions = []
+            for m in talk:
+                if m['kind'] != 'question': continue
+                peers = {r['slot']: self._response_state(talk, m, r['session']) for r in m.get('delivery', {}).get('recipients', [])
+                         if r['slot'] in sessions and r['session'] == sessions[r['slot']]}
+                answered = any(state == 'responded' for state in peers.values())
+                state = 'answered' if answered else ('expired' if timestamp(m['expires']) <= self.now() else 'open')
+                if not answered and m.get('delivery', {}).get('team_epoch') != view['epoch']: state = 'stale-epoch'
+                questions.append({'id': m['id'], 'from': m.get('delivery', {}).get('sender_slot'), 'state': state, 'peers': peers})
+            positions = self._positions(view, talk)
+            attempts = {}
+            for job_id in sorted({m['job'] for m in history if m.get('job')}):
+                for name, item in self.project('Jobs', job_id)['attempts'].items():
+                    attempts[job_id + '/' + name] = {'slot': item.get('slot'), 'status': item.get('status')}
+            actions = [{'kind': 'answer-question', 'message': q['id'], 'to': sorted(q['peers'])} for q in questions if q['state'] == 'open']
+            actions += [{'kind': 'review', 'reviewer': r['reviewer'], 'author': r['author'], 'revision': r['latest']}
+                        for r in reviews if r['state'] in {'missing', 'stale'}]
+            actions += [{'kind': 'respond-to-review', 'author': r['author'], 'review': r['review']}
+                        for r in reviews if r.get('response') in {'delivered', 'read'}]
+            actions += [{'kind': 'respond-to-position', 'notice': c['latest'], 'peers': sorted(s for s, v in c['peers'].items() if v in {'delivered', 'read'})}
+                        for c in positions if any(v in {'delivered', 'read'} for v in c['peers'].values())]
+            actions += [{'kind': 'validate-result', 'attempt': key} for key, a in attempts.items() if a['status'] in {'result', 'received'}]
+            snapshot = {'protocol': 'axis.team-checkpoint/v1', 'team': team, 'team_epoch': view['epoch'], 'state': view['state'],
+                        'plan_sha256': view.get('collaboration_plan_sha256'), 'last_record': history[-1]['id'] if history else None,
+                        'publications': publications, 'reviews': reviews, 'questions': questions, 'positions': positions,
+                        'open_disagreements': [c['root'] for c in positions if c['state'] != 'withdrawn'],
+                        'attempts': attempts, 'next_actions': actions}
+            self.guard()
+            snapshot['sha256'] = digest(canonical(snapshot))
+            return snapshot
 
     def _workspace_root(self, team, slot):
         identity(team); workspace_token(slot)
@@ -2666,6 +2847,9 @@ class Store:
             return self._record('Messages', payload)
 
     def pending_messages(self):
+        with self.cached_reads(): return self._pending_messages()
+
+    def _pending_messages(self):
         messages = self.records('Messages')
         jobs = teams = None
         projections = {}
@@ -2710,6 +2894,9 @@ class Store:
         return result
 
     def main_messages(self):
+        with self.cached_reads(): return self._main_messages()
+
+    def _main_messages(self):
         """Classify pending communication for Main; never resolve or alter history.
 
         A terminal/expired mandate cannot erase an unanswered Main obligation.
@@ -2926,10 +3113,13 @@ class Store:
                 if grant and not allocation_module().settled(self,team): reserved_teams[team['id']] = allocation_module().effective(self,team)['slots']
             for team_id,count in reserved_teams.items():
                 holders.extend({'job':None,'attempt':None,'session':None,'slot':None,'team':team_id,'category':'allocated','status':'reserved-team-grant','job_state':'allocated'} for _ in range(count))
+        # A dispatch reads only its own Team's folder; every other Job is projected from its own Team's records.
+        scoped = {founding.get('team'): messages}
         for record in self.records('Jobs'):
             if not local_allocation and record.get('team') in reserved_teams: continue
             if local_allocation and record.get('team') != founding.get('team'): continue
-            state = project_records(record, messages, teams)
+            if record.get('team') not in scoped: scoped[record.get('team')] = self.records('Messages', team=record.get('team'))
+            state = project_records(record, scoped[record.get('team')], teams)
             if state['held']: held.append(record['id'])
             occupied = set(state.get('active', [])) | set(state.get('stop_unconfirmed', [])) | {a for a, item in state['attempts'].items() if item.get('route_pending') is True}
             for attempt in sorted(occupied):
@@ -3141,7 +3331,7 @@ def main(argv=None):
     listing = sub.add_parser('list'); listing.add_argument('family', choices=FAMILIES)
     capacity = sub.add_parser('capacity'); capacity.add_argument('job'); capacity.add_argument('--worker-session'); capacity.add_argument('--slot')
     projection = sub.add_parser('project'); projection.add_argument('family', choices=['Teams', 'Jobs']); projection.add_argument('id')
-    for name in ('team', 'admit', 'message', 'event', 'disposition', 'capture-result', 'amend-budget', 'extend-native-budget', 'native-budget-state', 'team-inbox', 'team-message', 'observe-message', 'workspace-init', 'workspace-read', 'workspace-write', 'workspace-delete', 'artifact-publish', 'artifact-check', 'review-changes', 'freeze-team-allocation', 'revise-team-allocation', 'settle-team-allocation', 'archive-team-messages'):
+    for name in ('team', 'admit', 'message', 'event', 'disposition', 'capture-result', 'amend-budget', 'extend-native-budget', 'native-budget-state', 'team-inbox', 'team-message', 'observe-message', 'team-checkpoint', 'workspace-init', 'workspace-read', 'workspace-write', 'workspace-delete', 'artifact-publish', 'artifact-check', 'review-changes', 'freeze-team-allocation', 'revise-team-allocation', 'settle-team-allocation', 'archive-team-messages'):
         command = sub.add_parser(name); command.add_argument('--input', default='-')
     args = parser.parse_args(argv)
     try:
@@ -3165,7 +3355,7 @@ def main(argv=None):
             value = json.loads(raw, object_pairs_hook=_unique_pairs)
             need(isinstance(value, dict), 'input-object')
             need(not any(key.startswith('_') for key in value), 'private-argument')
-            if args.command in {'team-inbox', 'team-message', 'observe-message', 'workspace-init', 'workspace-read', 'workspace-write', 'workspace-delete', 'artifact-publish', 'artifact-check', 'review-changes', 'freeze-team-allocation', 'revise-team-allocation', 'settle-team-allocation', 'archive-team-messages'}:
+            if args.command in {'team-inbox', 'team-message', 'observe-message', 'team-checkpoint', 'workspace-init', 'workspace-read', 'workspace-write', 'workspace-delete', 'artifact-publish', 'artifact-check', 'review-changes', 'freeze-team-allocation', 'revise-team-allocation', 'settle-team-allocation', 'archive-team-messages'}:
                 result = getattr(store, args.command.replace('-', '_'))(**value)
             elif args.command == 'amend-budget': result = store.amend_budget(**value)
             elif args.command == 'extend-native-budget': result = store.extend_native_budget(**value)
