@@ -3,11 +3,32 @@
 
 Runs from the project root at the start of every later turn (and about every 30 minutes inside a long turn):
   python3 _Axis/Resources/turn.py --session {Session ID}
-Exit 0 prints OK (plus any items to handle, then the reply-frame reminder for Main and External); 3 KILLED; 4 LOST LEASE (missing Marker); 6 FOREIGN MAIN or TAKEN OVER;
+Exit 0 prints OK (plus any items to handle, then the reply-frame reminder for roles with a reply frame); 3 KILLED; 4 LOST LEASE (missing Marker); 6 FOREIGN MAIN or TAKEN OVER;
 7 READ-ONLY (the host refused the renewal); 8 VERSION CHANGED or VERSION UNVERIFIED; 2 or 5 errors. It never recreates a missing Marker, never executes an
 update helper, and never writes anything except the renewed Marker mtime."""
 import argparse,errno,importlib.util,json,os,re,stat,sys,time
 from pathlib import Path
+
+# BEGIN GENERATED: role-table
+# Compiled from _Axis/Roles/ at release; edit the role files, never this region.
+ROLE_TABLE=(
+    {'name': 'Main', 'cls': 'session', 'subject': 'Main: session', 'match': 'exact', 'shape': 'exact4', 'created_by': 'claim', 'exclusive': True, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': None, 'survey_key': None, 'notice': None, 'issuer': 'main', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': None, 'guard': None, 'reference_word': 'Main', 'log_by': 'Main Agent', 'title': 'Main Agent', 'plural': 'Main Agents', 'article': 'the'},
+    {'name': 'External', 'cls': 'session', 'subject': 'External: ', 'match': 'prefix', 'shape': 'single-session-line', 'created_by': 'self', 'exclusive': False, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': 'list', 'survey_key': 'fresh_external', 'notice': 'An External Agent is serving this project ({id}).', 'issuer': 'worker', 'proposal_owner': True, 'proposal_issuer': 'external', 'submit_schema': 'axis.external-submission/v1', 'guard': {'config_key': 'externalAgents', 'flag': '--external', 'block_spawn': True, 'new_files': ('subfolders', '_Axis/Submissions/', '_Temp/')}, 'reference_word': 'External', 'log_by': 'External Agent', 'title': 'External Agent', 'plural': 'External Agents', 'article': 'an'},
+    {'name': 'Subagent', 'cls': 'session', 'subject': 'Subagent: ', 'match': 'prefix', 'shape': 'free', 'created_by': 'spawner', 'exclusive': False, 'version_bound': False, 'reply_frame': False, 'blocks_save': True, 'survey': 'count', 'survey_key': 'orphan_subagents', 'notice': '{count} orphaned Subagent record(s) from a crashed spawn; ^refresh can clear them', 'issuer': 'worker', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': None, 'guard': None, 'reference_word': 'Subagent', 'log_by': None, 'title': 'Subagent', 'plural': 'Subagents', 'article': 'a'},
+    {'name': 'CX', 'cls': 'delegated', 'token': 'CX', 'carries_blocks': True, 'agent_type': 'axis-cx', 'write_scope': (('_Axis/CX/', True), ('_Temp/', False)), 'deny': None},
+    {'name': 'Wiki', 'cls': 'delegated', 'token': 'WIKI', 'carries_blocks': True, 'agent_type': 'axis-wiki', 'write_scope': (('_Wiki/', False), ('_Axis/Wiki/', False), ('_Temp/', False)), 'deny': None},
+    {'name': 'Local', 'cls': 'delegated', 'token': 'LOCAL', 'carries_blocks': False, 'agent_type': None, 'write_scope': None, 'deny': None},
+    {'name': 'General', 'cls': 'delegated', 'token': 'GENERAL', 'carries_blocks': True, 'agent_type': 'axis-general', 'write_scope': None, 'deny': ('_Axis/Agents/', '_Axis/Flags/', '_Axis/Secrets/', '_Axis/Submissions/', '_Axis/Messages/', '_Axis/Teams/', '_Axis/Jobs/', '_Axis/Schedules/', '_Axis/Updates/', '.git/', '.claude/', '.codex/', '.gemini/')},
+)
+ROLE_LEDGER={'issuers': ('external', 'main', 'worker'), 'submission_schemas': ('axis.external-submission/v1',), 'proposal_member_subject': 'Subagent: External proposal Team', 'survey_keys': ('fresh_external', 'orphan_subagents'), 'proposal_owners': (('External:', 'external'),)}
+# END GENERATED: role-table
+SESSION_ROLES=[r for r in ROLE_TABLE if r['cls']=='session']
+MAIN_SUBJECT=next(r['subject'] for r in SESSION_ROLES if r['exclusive'])
+def role_of(first):
+    """The session row whose Marker subject names this first line, else None."""
+    for r in SESSION_ROLES:
+        if (first==r['subject']) if r['match']=='exact' else re.fullmatch(re.escape(r['subject'])+r'[^\r\n]+',first):return r
+    return None
 
 a=argparse.ArgumentParser(description='Axis per-turn lease check');a.add_argument('--session',required=True);a.add_argument('--boot-version');o=a.parse_args()
 root=Path.cwd().resolve();agents=root/'_Axis/Agents'
@@ -76,7 +97,7 @@ def held(label,code,reason):
         if p.stem==o.session or not safe_file(p) or (agents/(p.stem+'.kill')).exists():continue
         try:
             lines=p.read_text().splitlines();age=time.time()-p.stat().st_mtime
-            if lines[:1]==['Main: session'] and lines[2:3]==['session: '+p.stem] and 0<=age<3600:
+            if lines[:1]==[MAIN_SUBJECT] and lines[2:3]==['session: '+p.stem] and 0<=age<3600:
                 live.append({'session':p.stem,'host':next((v[6:] for v in lines if v.startswith('host: ')),'unverified'),'idle_seconds':int(age)})
         except OSError:pass
     installed,booted=versions()
@@ -93,7 +114,7 @@ def missing():
         flag=root/'_Axis/Flags/session-id'
         owner=((flag.read_text().splitlines() or [''])[0].strip() if safe_file(flag) else '');p=agents/f'{owner}.md'
         newer=re.fullmatch(r'\d{4}(\.\d{2}){5}\.\d{3}Z',owner) and owner>o.session and not (agents/f'{owner}.kill').exists()
-        if newer and safe_file(p) and p.read_text().splitlines()[:3]==['Main: session','','session: '+owner] and 0<=time.time()-p.stat().st_mtime<3600:
+        if newer and safe_file(p) and p.read_text().splitlines()[:3]==[MAIN_SUBJECT,'','session: '+owner] and 0<=time.time()-p.stat().st_mtime<3600:
             held('TAKEN OVER',6,f'your Marker was cleared and a newer Main session ({owner}) now holds the project.')
     except OSError:pass
     held('LOST LEASE',4,'Your Marker is missing; never recreate it.')
@@ -104,29 +125,30 @@ try:
     if marker_info.st_nlink!=1:held('LOST LEASE',4,'Your Marker has multiple links; ownership cannot be verified.')
     first=(marker_bytes.decode().splitlines() or [''])[0];age=time.time()-marker_info.st_mtime
 except OSError:missing()
-if not (first=='Main: session' or re.fullmatch(r'(External|Subagent): [^\r\n]+',first)):
+role=role_of(first)
+if role is None:
     held('LOST LEASE',4,'Your Marker role is malformed.')
-if first=='Main: session':
+if role['shape']=='exact4':
     lines=marker_bytes.decode().splitlines()
     if len(lines)!=4 or lines[1]!='' or not lines[3].startswith('host: ') or not lines[3][6:].strip():
         held('LOST LEASE',4,'Your Main Marker shape is malformed.')
-if first=='Main: session' or first.startswith('External: '):
+if role['shape'] in ('exact4','single-session-line'):
     own_sessions=re.findall(r'^session: (.+)$',marker_bytes.decode(),re.M)
     if own_sessions!=[o.session]:held('LOST LEASE',4,'Your Marker session does not exactly match your own identity.')
-if first=='Main: session':
+if role['exclusive']:
     try:
         flag=root/'_Axis/Flags/session-id'
         owner=((flag.read_text().splitlines() or [''])[0].strip() if safe_file(flag) else '')
     except OSError:owner=''
     if owner!=o.session:held('TAKEN OVER',6,f'session-id no longer names this Main ({owner or "missing or unsafe"}); ownership is unverified.')
 now=time.time();items=[]
-if first=='Main: session':
+if role['exclusive']:
     for p in agents.glob('*Z.md'):
         if p==marker or (agents/(p.stem+'.kill')).exists():continue
         if not safe_file(p):held('FOREIGN MAIN',6,'Another Marker is unsafe; ownership is unverified.')
         try:fresh=now-p.stat().st_mtime<3600;subject=(p.read_text().splitlines() or [''])[0]
         except OSError:continue
-        if fresh and subject=='Main: session':
+        if fresh and subject==MAIN_SUBJECT:
             held('FOREIGN MAIN',6,f'another Main session ({p.stem}) is live; ownership is contested.')
 # Idle is not lost (2.01): a Marker at or over one hour old counts as dead for OTHER sessions deciding whether they may
 # become Main, but its own session may resume when nothing replaced it - no tombstone (checked above), no live foreign
@@ -136,7 +158,7 @@ if age>=3600:
 # Renewal refused by a read-only host (sandbox or file system) is not a missing Marker: report it, fail closed.
 readonly='READ-ONLY: this host refused to renew your Marker (read-only sandbox or file system); the Marker is still present. Make no shared writes and do not create or repair any Marker; ask the user to rerun this session with write access.'
 installed,booted=versions()
-if first.startswith(('Main: session','External: ')) and (root/'_Axis/CHANGELOG.md').exists():
+if role['version_bound'] and (root/'_Axis/CHANGELOG.md').exists():
     if not installed or not booted:held('VERSION UNVERIFIED',8,'The installed or own boot version cannot be verified.')
     if installed!=booted:held('VERSION CHANGED',8,'Loaded Axis rules differ from the installed version; a fresh Axis session is required.')
 try:
@@ -177,7 +199,7 @@ try:
         if 'consumed.json' in names or {'rollback.json','released.json'}<=names:continue
         items.append('an update handoff needs attention: follow _Axis/Resources/Check-Update-Handoff.md before ordinary work');break
 except (OSError,ValueError,KeyError,TypeError):items.append('update handoff state unverified: inspect _Axis/Updates/ under _Axis/Resources/Check-Update-Handoff.md')
-if first=='Main: session':
+if role['exclusive']:
     incoming=root/'_Axis/Submissions'
     if incoming.is_symlink():items.append('unsafe Submissions queue; hold import')
     elif incoming.is_dir() and any(p.name not in ('.gitkeep','_migration.md','_migration-complete.md') and not (p.name=='_received' and p.is_dir() and not p.is_symlink()) for p in incoming.iterdir()):items.append('Submissions await Main review: process once under _Axis/Practices/Submissions.md; inspect the compact MESSAGES.md view')
@@ -208,6 +230,6 @@ if first=='Main: session':
         if changed:items.append('the project overlay or its declaration changed since activation: revalidate it under _Axis/Resources/Load-Project-Overlay.md (activate phase) before applying its guidance')
 print('OK: lease renewed.')
 for x in items:print('Handle before answering: '+x)
-if first.startswith(('Main: session','External: ')):
+if role['reply_frame']:
     home=os.path.expanduser('~');folder=str(root);folder='~'+folder[len(home):] if folder==home or folder.startswith(home+'/') else folder
     print(f'Reply frame: start your reply with the Axis header, with nothing before it, and end with one blank line, no divider, then > READY {folder}: (or > READY {folder} (background tasks running): while background tasks run) - progress notes get neither.')

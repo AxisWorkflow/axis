@@ -5,12 +5,27 @@
   python3 _Axis/Resources/envelope.py check [--file F] [--max-bytes N] < prompt
 Checks the assembled prompt as [Start-Subagent > Envelope Validation] describes: the first three and final three
 non-empty lines, one role at both ends, one 32-lowercase-hex nonce at both ends that appears exactly twice, and the
-two carried blocks (wrapping allowed) right inside the boundaries for CX, WIKI and GENERAL (a LOCAL prompt carries the
-boundary lines only).
+two carried blocks (wrapping allowed) right inside the boundaries for every delegated role that carries them (today a
+LOCAL prompt carries the boundary lines only).
 Exit 0 prints OK; 1 prints FAIL: {one reason}; 2 means the prompt could not be read."""
 import argparse,re,secrets,sys
 
-ROLES=('CX','WIKI','LOCAL','GENERAL')
+# BEGIN GENERATED: role-table
+# Compiled from _Axis/Roles/ at release; edit the role files, never this region.
+ROLE_TABLE=(
+    {'name': 'Main', 'cls': 'session', 'subject': 'Main: session', 'match': 'exact', 'shape': 'exact4', 'created_by': 'claim', 'exclusive': True, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': None, 'survey_key': None, 'notice': None, 'issuer': 'main', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': None, 'guard': None, 'reference_word': 'Main', 'log_by': 'Main Agent', 'title': 'Main Agent', 'plural': 'Main Agents', 'article': 'the'},
+    {'name': 'External', 'cls': 'session', 'subject': 'External: ', 'match': 'prefix', 'shape': 'single-session-line', 'created_by': 'self', 'exclusive': False, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': 'list', 'survey_key': 'fresh_external', 'notice': 'An External Agent is serving this project ({id}).', 'issuer': 'worker', 'proposal_owner': True, 'proposal_issuer': 'external', 'submit_schema': 'axis.external-submission/v1', 'guard': {'config_key': 'externalAgents', 'flag': '--external', 'block_spawn': True, 'new_files': ('subfolders', '_Axis/Submissions/', '_Temp/')}, 'reference_word': 'External', 'log_by': 'External Agent', 'title': 'External Agent', 'plural': 'External Agents', 'article': 'an'},
+    {'name': 'Subagent', 'cls': 'session', 'subject': 'Subagent: ', 'match': 'prefix', 'shape': 'free', 'created_by': 'spawner', 'exclusive': False, 'version_bound': False, 'reply_frame': False, 'blocks_save': True, 'survey': 'count', 'survey_key': 'orphan_subagents', 'notice': '{count} orphaned Subagent record(s) from a crashed spawn; ^refresh can clear them', 'issuer': 'worker', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': None, 'guard': None, 'reference_word': 'Subagent', 'log_by': None, 'title': 'Subagent', 'plural': 'Subagents', 'article': 'a'},
+    {'name': 'CX', 'cls': 'delegated', 'token': 'CX', 'carries_blocks': True, 'agent_type': 'axis-cx', 'write_scope': (('_Axis/CX/', True), ('_Temp/', False)), 'deny': None},
+    {'name': 'Wiki', 'cls': 'delegated', 'token': 'WIKI', 'carries_blocks': True, 'agent_type': 'axis-wiki', 'write_scope': (('_Wiki/', False), ('_Axis/Wiki/', False), ('_Temp/', False)), 'deny': None},
+    {'name': 'Local', 'cls': 'delegated', 'token': 'LOCAL', 'carries_blocks': False, 'agent_type': None, 'write_scope': None, 'deny': None},
+    {'name': 'General', 'cls': 'delegated', 'token': 'GENERAL', 'carries_blocks': True, 'agent_type': 'axis-general', 'write_scope': None, 'deny': ('_Axis/Agents/', '_Axis/Flags/', '_Axis/Secrets/', '_Axis/Submissions/', '_Axis/Messages/', '_Axis/Teams/', '_Axis/Jobs/', '_Axis/Schedules/', '_Axis/Updates/', '.git/', '.claude/', '.codex/', '.gemini/')},
+)
+ROLE_LEDGER={'issuers': ('external', 'main', 'worker'), 'submission_schemas': ('axis.external-submission/v1',), 'proposal_member_subject': 'Subagent: External proposal Team', 'survey_keys': ('fresh_external', 'orphan_subagents'), 'proposal_owners': (('External:', 'external'),)}
+# END GENERATED: role-table
+DELEGATED=[r for r in ROLE_TABLE if r['cls']=='delegated']
+ROLES=tuple(r['token'] for r in DELEGATED)
+BARE=tuple(r['token'] for r in DELEGATED if not r['carries_blocks'])  # boundary lines only, no carried blocks
 SENTINEL='<<AXIS:SUBAGENT>>'
 ROLE=re.compile(r'<<AXIS:ROLE:([A-Z]+)>>')
 RECORD=re.compile(r'<<AXIS:ENVELOPE:([0-9a-f]{32}):(BEGIN|END)>>')
@@ -37,7 +52,7 @@ def check(text,max_bytes=None):
     if text.count(front[1])!=2:return 'nonce repeated'
     # The carried blocks may be wrapped across lines; compare them with whitespace collapsed.
     body=' '.join(' '.join(lines[3:-3]).split());validate=' '.join(VALIDATE.split());tearline=' '.join(TEARLINE.split())
-    if front[0]=='LOCAL':return 'carried blocks in LOCAL prompt' if validate in body or tearline in body else None
+    if front[0] in BARE:return f'carried blocks in {front[0]} prompt' if validate in body or tearline in body else None
     if not body.startswith(validate):return 'missing VALIDATE block'
     if not body.endswith(tearline) or len(body)<len(validate)+len(tearline):return 'missing ENVELOPE CHECK block'
     return None

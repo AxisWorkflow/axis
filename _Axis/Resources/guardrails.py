@@ -4,17 +4,31 @@
 Installed by `^install guardrails` as a Claude Code PreToolUse hook. For every Agent: no edit to a write-once record
 (Logs, Snapshots, CX, Audit, Supervision, Teams, Messages, Jobs, archived history, update evidence, finished Tasks, Follow-Ups and Reminders)
 and no new record with a malformed name. A write to a record, index, Plan or Memo may not add an identifier that is
-malformed or names nothing (record-check.py's scan; `(missing)` after an identifier reports it as missing). For a helper running as an Axis agent type (`axis-cx`, `axis-wiki`,
-`axis-general`), also: writes only inside that role's folders, and no tool may touch `_Axis/Secrets/`.
-For an OpenClaw agent listed as an External Agent, the `axis-guardrails` plugin calls `--external {tool} {path}`:
-no `_Axis/Secrets/`, no change to an existing file, and new files only in Project Subfolders, `_Axis/Submissions/` and
-`_Temp/`. The Claude Code hook reads JSON from stdin; both exit 2 with a reason to refuse, and 0 otherwise.
+malformed or names nothing (record-check.py's scan; `(missing)` after an identifier reports it as missing). For a helper running as an Axis agent type
+(the delegated role rows of the generated role table), also: writes only inside that role's folders, and no tool may touch `_Axis/Secrets/`.
+For an OpenClaw agent listed under a guarded session role, the `axis-guardrails` plugin calls `--external {tool} {path}` or
+`--role {name} {tool} {path}`: no `_Axis/Secrets/`, no change to an existing file, and new files only where the role's row
+allows (today Project Subfolders, `_Axis/Submissions/` and `_Temp/`). The Claude Code hook reads JSON from stdin; both exit 2 with a reason to refuse, and 0 otherwise.
 Python 3 standard library only; reads paths and status lines, never prints file contents. It does not see what a
 shell command or helper script writes. Adoption repairs run only through the verified, scope-bound update engine; they do not disable this hook for ordinary edits. During an adoption's reconciliation, Main may edit the Tasks and Follow-Ups its frozen plan names. It never affects User's own editing.
 
 Self-test without a host: python3 _Axis/Resources/guardrails.py --check {project-relative path} [--new] [--agent {type}]"""
 import importlib.util,json,os,re,sys
 from pathlib import Path
+
+# BEGIN GENERATED: role-table
+# Compiled from _Axis/Roles/ at release; edit the role files, never this region.
+ROLE_TABLE=(
+    {'name': 'Main', 'cls': 'session', 'subject': 'Main: session', 'match': 'exact', 'shape': 'exact4', 'created_by': 'claim', 'exclusive': True, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': None, 'survey_key': None, 'notice': None, 'issuer': 'main', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': None, 'guard': None, 'reference_word': 'Main', 'log_by': 'Main Agent', 'title': 'Main Agent', 'plural': 'Main Agents', 'article': 'the'},
+    {'name': 'External', 'cls': 'session', 'subject': 'External: ', 'match': 'prefix', 'shape': 'single-session-line', 'created_by': 'self', 'exclusive': False, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': 'list', 'survey_key': 'fresh_external', 'notice': 'An External Agent is serving this project ({id}).', 'issuer': 'worker', 'proposal_owner': True, 'proposal_issuer': 'external', 'submit_schema': 'axis.external-submission/v1', 'guard': {'config_key': 'externalAgents', 'flag': '--external', 'block_spawn': True, 'new_files': ('subfolders', '_Axis/Submissions/', '_Temp/')}, 'reference_word': 'External', 'log_by': 'External Agent', 'title': 'External Agent', 'plural': 'External Agents', 'article': 'an'},
+    {'name': 'Subagent', 'cls': 'session', 'subject': 'Subagent: ', 'match': 'prefix', 'shape': 'free', 'created_by': 'spawner', 'exclusive': False, 'version_bound': False, 'reply_frame': False, 'blocks_save': True, 'survey': 'count', 'survey_key': 'orphan_subagents', 'notice': '{count} orphaned Subagent record(s) from a crashed spawn; ^refresh can clear them', 'issuer': 'worker', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': None, 'guard': None, 'reference_word': 'Subagent', 'log_by': None, 'title': 'Subagent', 'plural': 'Subagents', 'article': 'a'},
+    {'name': 'CX', 'cls': 'delegated', 'token': 'CX', 'carries_blocks': True, 'agent_type': 'axis-cx', 'write_scope': (('_Axis/CX/', True), ('_Temp/', False)), 'deny': None},
+    {'name': 'Wiki', 'cls': 'delegated', 'token': 'WIKI', 'carries_blocks': True, 'agent_type': 'axis-wiki', 'write_scope': (('_Wiki/', False), ('_Axis/Wiki/', False), ('_Temp/', False)), 'deny': None},
+    {'name': 'Local', 'cls': 'delegated', 'token': 'LOCAL', 'carries_blocks': False, 'agent_type': None, 'write_scope': None, 'deny': None},
+    {'name': 'General', 'cls': 'delegated', 'token': 'GENERAL', 'carries_blocks': True, 'agent_type': 'axis-general', 'write_scope': None, 'deny': ('_Axis/Agents/', '_Axis/Flags/', '_Axis/Secrets/', '_Axis/Submissions/', '_Axis/Messages/', '_Axis/Teams/', '_Axis/Jobs/', '_Axis/Schedules/', '_Axis/Updates/', '.git/', '.claude/', '.codex/', '.gemini/')},
+)
+ROLE_LEDGER={'issuers': ('external', 'main', 'worker'), 'submission_schemas': ('axis.external-submission/v1',), 'proposal_member_subject': 'Subagent: External proposal Team', 'survey_keys': ('fresh_external', 'orphan_subagents'), 'proposal_owners': (('External:', 'external'),)}
+# END GENERATED: role-table
 
 NAME=re.compile(r'\d{4}(?:\.\d{2}){5}\.\d{3}Z\.md')
 FAMILIES=('Agents','Audit','CX','Followups','Ideas','Logs','Notes','Reminders','Reviews','Snapshots','Status','Supervision','Tasks','Teams','Messages','Jobs','Schedules')
@@ -23,11 +37,11 @@ WORM={'Logs':'a Log','Snapshots':'a Snapshot','CX':'a CX report','Audit':'an Aud
 IGNORED=('.gitkeep','.DS_Store')
 WRITE_TOOLS=('Edit','Write','MultiEdit','NotebookEdit')
 PATH_TOOLS=WRITE_TOOLS+('Read','Grep','Glob')
-# Where each helper role may write: (folder prefix, new files only?).
-ROLES={'axis-cx':[('_Axis/CX/',True),('_Temp/',False)],
-       'axis-wiki':[('_Wiki/',False),('_Axis/Wiki/',False),('_Temp/',False)],
-       'axis-general':None}  # anywhere except the folders below
-GENERAL_DENY=('_Axis/Agents/','_Axis/Flags/','_Axis/Secrets/','_Axis/Submissions/','_Axis/Messages/','_Axis/Teams/','_Axis/Jobs/','_Axis/Schedules/','_Axis/Updates/','.git/','.claude/','.codex/','.gemini/')
+# Delegated helper rows by host agent type: a write scope of (folder prefix, new files only?) or a deny list.
+HELPERS={r['agent_type']:r for r in ROLE_TABLE if r['cls']=='delegated' and r['agent_type']}
+# Guarded session rows: the OpenClaw plugin's --external flag or --role {lower-case name}.
+GUARDED={r['name'].lower():r for r in ROLE_TABLE if r['cls']=='session' and r['guard']}
+FLAGS={r['guard']['flag']:r for r in GUARDED.values() if r['guard']['flag']}
 SECRETS='_Axis/Secrets'
 
 def field(text,key):
@@ -64,26 +78,34 @@ def write_once(root,rel,exists):
 
 def helper_scope(agent,rel,exists):
     """A refusal reason for an Axis helper role writing rel, or None."""
-    if agent not in ROLES:return None
+    if agent not in HELPERS:return None
     if rel.startswith('_Wiki/_Inbox/'):return 'helpers never create or edit files in _Wiki/_Inbox/'
-    allowed=ROLES[agent]
+    row=HELPERS[agent];allowed=row['write_scope']
     if allowed is None:
-        hit=next((d for d in GENERAL_DENY if rel.startswith(d) or rel+'/'==d),None)
-        return f'a General helper does not write in {hit}' if hit else None
+        hit=next((d for d in row['deny'] if rel.startswith(d) or rel+'/'==d),None)
+        return f'a {row["name"]} helper does not write in {hit}' if hit else None
     for prefix,new_only in allowed:
         if rel.startswith(prefix):return 'this helper only adds new files there' if new_only and exists else None
     return f'the {agent[5:].upper()} helper writes only in '+', '.join(p for p,_ in allowed)
 
-def external(rel,exists,write):
-    """A refusal reason for an External Agent's file tool on rel, or None."""
-    if rel==SECRETS or rel.startswith(SECRETS+'/'):return 'an External Agent never uses _Axis/Secrets/'
+PLACES={'subfolders':'Project Subfolders','_Axis/Submissions/':'_Axis/Submissions/','_Temp/':'_Temp/'}
+
+def guarded(row,rel,exists,write):
+    """A refusal reason for a guarded session role's file tool on rel, or None."""
+    who=row['article']+' '+row['title'];places=row['guard']['new_files']
+    if rel==SECRETS or rel.startswith(SECRETS+'/'):return who+' never uses _Axis/Secrets/'
     if not write:return None
-    if exists:return 'an External Agent adds new files only and never changes an existing file'
+    if exists:return who+' adds new files only and never changes an existing file'
     parts=rel.split('/')
-    if rel.startswith('_Axis/Submissions/'):
+    if rel.startswith('_Axis/Submissions/') and '_Axis/Submissions/' in places:
         return None if len(parts)==3 and re.fullmatch(r'\d{4}(?:\.\d{2}){5}\.\d{3}Z\.md',parts[-1]) else 'Submissions permits only a new timestamped detail in the queue'
-    if rel.startswith('_Temp/') or (len(parts)>=2 and not parts[0].startswith(('_','.'))):return None
-    return 'an External Agent writes new files only in Project Subfolders, _Axis/Submissions/ or _Temp/'
+    if ('_Temp/' in places and rel.startswith('_Temp/')) or ('subfolders' in places and len(parts)>=2 and not parts[0].startswith(('_','.'))):return None
+    names=[PLACES[x] for x in places]
+    return who+' writes new files only in '+(names[0] if len(names)==1 else ', '.join(names[:-1])+' or '+names[-1])
+
+def external(rel,exists,write):
+    """The --external profile (kept for callers of the earlier helper API)."""
+    return guarded(FLAGS['--external'],rel,exists,write)
 
 def reconciling(root,rel):
     """An adoption has begun reconciliation (started, not consumed) and its frozen plan names rel."""
@@ -158,11 +180,12 @@ def main():
         agent=rest[rest.index('--agent')+1] if '--agent' in rest and rest.index('--agent')+1<len(rest) else None
         why=verdict(root,rel,'--new' not in rest and (root/rel).exists(),agent,'Write')
         print(('REFUSED: '+why) if why else 'ALLOWED');return 2 if why else 0
-    if len(sys.argv)==4 and sys.argv[1]=='--external':
-        tool,path=sys.argv[2].lower(),sys.argv[3];root=Path.cwd().resolve();rel=relative(root,path)
+    row=FLAGS.get(sys.argv[1]) if len(sys.argv)==4 else GUARDED.get(sys.argv[2]) if len(sys.argv)==5 and sys.argv[1]=='--role' else None
+    if row is not None:
+        tool,path=sys.argv[-2].lower(),sys.argv[-1];root=Path.cwd().resolve();rel=relative(root,path)
         if rel is None:return 0
         exists=(root/rel).exists();write=tool not in ('read','grep','glob','ls','find')
-        why=external(rel,exists,write) or (write_once(root,rel,exists) if write else None)
+        why=guarded(row,rel,exists,write) or (write_once(root,rel,exists) if write else None)
         if why:print(f'Axis guardrail: {why} ({rel}).');return 2
         return 0
     try:event=json.load(sys.stdin)

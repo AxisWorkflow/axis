@@ -23,6 +23,23 @@ try:
 except ImportError:
     fcntl = None
 
+# BEGIN GENERATED: role-table
+# Compiled from _Axis/Roles/ at release; edit the role files, never this region.
+ROLE_TABLE=(
+    {'name': 'Main', 'cls': 'session', 'subject': 'Main: session', 'match': 'exact', 'shape': 'exact4', 'created_by': 'claim', 'exclusive': True, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': None, 'survey_key': None, 'notice': None, 'issuer': 'main', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': None, 'guard': None, 'reference_word': 'Main', 'log_by': 'Main Agent', 'title': 'Main Agent', 'plural': 'Main Agents', 'article': 'the'},
+    {'name': 'External', 'cls': 'session', 'subject': 'External: ', 'match': 'prefix', 'shape': 'single-session-line', 'created_by': 'self', 'exclusive': False, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': 'list', 'survey_key': 'fresh_external', 'notice': 'An External Agent is serving this project ({id}).', 'issuer': 'worker', 'proposal_owner': True, 'proposal_issuer': 'external', 'submit_schema': 'axis.external-submission/v1', 'guard': {'config_key': 'externalAgents', 'flag': '--external', 'block_spawn': True, 'new_files': ('subfolders', '_Axis/Submissions/', '_Temp/')}, 'reference_word': 'External', 'log_by': 'External Agent', 'title': 'External Agent', 'plural': 'External Agents', 'article': 'an'},
+    {'name': 'Subagent', 'cls': 'session', 'subject': 'Subagent: ', 'match': 'prefix', 'shape': 'free', 'created_by': 'spawner', 'exclusive': False, 'version_bound': False, 'reply_frame': False, 'blocks_save': True, 'survey': 'count', 'survey_key': 'orphan_subagents', 'notice': '{count} orphaned Subagent record(s) from a crashed spawn; ^refresh can clear them', 'issuer': 'worker', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': None, 'guard': None, 'reference_word': 'Subagent', 'log_by': None, 'title': 'Subagent', 'plural': 'Subagents', 'article': 'a'},
+    {'name': 'CX', 'cls': 'delegated', 'token': 'CX', 'carries_blocks': True, 'agent_type': 'axis-cx', 'write_scope': (('_Axis/CX/', True), ('_Temp/', False)), 'deny': None},
+    {'name': 'Wiki', 'cls': 'delegated', 'token': 'WIKI', 'carries_blocks': True, 'agent_type': 'axis-wiki', 'write_scope': (('_Wiki/', False), ('_Axis/Wiki/', False), ('_Temp/', False)), 'deny': None},
+    {'name': 'Local', 'cls': 'delegated', 'token': 'LOCAL', 'carries_blocks': False, 'agent_type': None, 'write_scope': None, 'deny': None},
+    {'name': 'General', 'cls': 'delegated', 'token': 'GENERAL', 'carries_blocks': True, 'agent_type': 'axis-general', 'write_scope': None, 'deny': ('_Axis/Agents/', '_Axis/Flags/', '_Axis/Secrets/', '_Axis/Submissions/', '_Axis/Messages/', '_Axis/Teams/', '_Axis/Jobs/', '_Axis/Schedules/', '_Axis/Updates/', '.git/', '.claude/', '.codex/', '.gemini/')},
+)
+ROLE_LEDGER={'issuers': ('external', 'main', 'worker'), 'submission_schemas': ('axis.external-submission/v1',), 'proposal_member_subject': 'Subagent: External proposal Team', 'survey_keys': ('fresh_external', 'orphan_subagents'), 'proposal_owners': (('External:', 'external'),)}
+# END GENERATED: role-table
+# Session Markers other than the lease holder's, and the Agents records another session may create for a spawn.
+SHARED_PREFIXES = tuple(r['subject'] for r in ROLE_TABLE if r['cls'] == 'session' and not r['exclusive'])
+SPAWNED_PREFIXES = tuple(r['subject'] for r in ROLE_TABLE if r['cls'] == 'session' and r['created_by'] == 'spawner')
+
 ID = re.compile(r'\d{4}(?:\.\d{2}){5}\.\d{3}Z')
 FAMILIES = ('Agents','Audit','CX','Followups','Ideas','Logs','Notes','Reminders','Reviews','Snapshots','Status','Supervision','Tasks','Teams','Messages','Jobs','Schedules','ColdStorage')
 # Reviews/ arrives with the first ^review on projects updated from 2.00; Status/ is the pre-2.01 name it replaces.
@@ -711,7 +728,7 @@ class Session(Startup):
         if self.lease is None:
             main=lines[:1]==['Main: session']
             if main:need(len(lines)==4 and lines[1]=='' and lines[2]=='session: '+self.sid and lines[3].startswith('host: ') and lines[3][6:].strip(),'marker_invalid',self.marker_name)
-            else:need(bool(lines) and lines[0].startswith(('External: ','Subagent: ')),'marker_invalid',self.marker_name)
+            else:need(bool(lines) and lines[0].startswith(SHARED_PREFIXES),'marker_invalid',self.marker_name)
             self.lease=(text,identity(info),main)
         need(text==self.lease[0] and identity(info)==self.lease[1],'marker_mismatch',self.marker_name)
         need(time.time()-info.st_mtime<3600,'lease_stale',self.marker_name)
@@ -749,7 +766,7 @@ class Session(Startup):
 
     def create(self, family, content):
         need(family in FAMILIES and family!='Status','family',family)
-        need(family!='Agents' or content.startswith('Subagent: '),'family',family)
+        need(family!='Agents' or content.startswith(SPAWNED_PREFIXES),'family',family)
         lines=content.split('\n')
         need(0<len(content.encode('utf-8'))<=65536,'record_size')
         need(len(lines)>=2 and lines[0].strip() and len(lines[0])<=80 and lines[1]=='' and '\r' not in lines[0],'record_shape')

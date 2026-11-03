@@ -1,7 +1,7 @@
 # Changelog
 > **Purpose:** Record Axis release identity and the structural migrations needed to update an existing project safely.
 
-current-version: 3.11
+current-version: 3.12
 changelog-format: 1
 self-update-baseline: 26.08.19
 
@@ -39,6 +39,31 @@ update-impact: automatic
 ### Verification
 
 - None.
+
+## 3.12
+
+released: 2026-11-03
+
+update-impact: automatic
+
+### Structural Changes
+
+- Add the role table: the new Workflow machinery folder `_Axis/Roles/` holds one file per role (`Main.md`, `External.md`, `Subagent.md` and the delegated `CX.md`, `Wiki.md`, `Local.md`, `General.md`), each with a strict-JSON `axis-role` block. It is installed by update and joins the managed set; nothing reads it at runtime.
+- Every role check in `turn.py`, `startup-state.py`, `startup-survey.py`, `boot.py`, `coordination.py`, `coordination-submissions.py`, `external-team.py`, `guardrails.py`, `record-check.py`, `checked-lifecycle.py` and `envelope.py` reads a compiled `role-table` region instead of naming the role; the OpenClaw `axis-guardrails` plugin (`index.ts`, `openclaw.plugin.json`) and the role gates of twelve Command files are generated from the same rows. Behaviour for Main, External and Subagent is unchanged apart from the refusal text and the additive `--role` form below; persisted tokens (issuers, submission schema, Marker subjects, the `externalAgents` key) are unchanged.
+- `guardrails.py` accepts `--role {name} {tool} {path}` beside `--external`. A proposal submission from a role the table does not allow is refused with `proposal route not permitted for this role` (was `external-only proposal route`).
+- `update-transaction.py` manages `_Axis/Roles/` with the other Workflow machinery folders, so later releases change role files without declaring the folder again.
+
+### Project-State Migrations
+
+- None. Existing records, Markers, Submissions and OpenClaw guard configuration remain valid.
+
+### Retired Paths
+
+- None.
+
+### Verification
+
+- A frozen role characterization test passes before and after the refactor; a test-only Dummy row compiled into a scratch copy, with no code change, passes the Candidate tests and the role probes; every generated region equals a fresh compile of `_Axis/Roles/`.
 
 ## 3.11
 

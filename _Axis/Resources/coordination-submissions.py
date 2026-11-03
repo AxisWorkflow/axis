@@ -10,6 +10,22 @@ core=importlib.util.module_from_spec(spec); spec.loader.exec_module(core)
 MAX=131072
 LEGACY_MAX=262144
 SCHEMA='axis.submission/v1'
+# BEGIN GENERATED: role-table
+# Compiled from _Axis/Roles/ at release; edit the role files, never this region.
+ROLE_TABLE=(
+    {'name': 'Main', 'cls': 'session', 'subject': 'Main: session', 'match': 'exact', 'shape': 'exact4', 'created_by': 'claim', 'exclusive': True, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': None, 'survey_key': None, 'notice': None, 'issuer': 'main', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': None, 'guard': None, 'reference_word': 'Main', 'log_by': 'Main Agent', 'title': 'Main Agent', 'plural': 'Main Agents', 'article': 'the'},
+    {'name': 'External', 'cls': 'session', 'subject': 'External: ', 'match': 'prefix', 'shape': 'single-session-line', 'created_by': 'self', 'exclusive': False, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': 'list', 'survey_key': 'fresh_external', 'notice': 'An External Agent is serving this project ({id}).', 'issuer': 'worker', 'proposal_owner': True, 'proposal_issuer': 'external', 'submit_schema': 'axis.external-submission/v1', 'guard': {'config_key': 'externalAgents', 'flag': '--external', 'block_spawn': True, 'new_files': ('subfolders', '_Axis/Submissions/', '_Temp/')}, 'reference_word': 'External', 'log_by': 'External Agent', 'title': 'External Agent', 'plural': 'External Agents', 'article': 'an'},
+    {'name': 'Subagent', 'cls': 'session', 'subject': 'Subagent: ', 'match': 'prefix', 'shape': 'free', 'created_by': 'spawner', 'exclusive': False, 'version_bound': False, 'reply_frame': False, 'blocks_save': True, 'survey': 'count', 'survey_key': 'orphan_subagents', 'notice': '{count} orphaned Subagent record(s) from a crashed spawn; ^refresh can clear them', 'issuer': 'worker', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': None, 'guard': None, 'reference_word': 'Subagent', 'log_by': None, 'title': 'Subagent', 'plural': 'Subagents', 'article': 'a'},
+    {'name': 'CX', 'cls': 'delegated', 'token': 'CX', 'carries_blocks': True, 'agent_type': 'axis-cx', 'write_scope': (('_Axis/CX/', True), ('_Temp/', False)), 'deny': None},
+    {'name': 'Wiki', 'cls': 'delegated', 'token': 'WIKI', 'carries_blocks': True, 'agent_type': 'axis-wiki', 'write_scope': (('_Wiki/', False), ('_Axis/Wiki/', False), ('_Temp/', False)), 'deny': None},
+    {'name': 'Local', 'cls': 'delegated', 'token': 'LOCAL', 'carries_blocks': False, 'agent_type': None, 'write_scope': None, 'deny': None},
+    {'name': 'General', 'cls': 'delegated', 'token': 'GENERAL', 'carries_blocks': True, 'agent_type': 'axis-general', 'write_scope': None, 'deny': ('_Axis/Agents/', '_Axis/Flags/', '_Axis/Secrets/', '_Axis/Submissions/', '_Axis/Messages/', '_Axis/Teams/', '_Axis/Jobs/', '_Axis/Schedules/', '_Axis/Updates/', '.git/', '.claude/', '.codex/', '.gemini/')},
+)
+ROLE_LEDGER={'issuers': ('external', 'main', 'worker'), 'submission_schemas': ('axis.external-submission/v1',), 'proposal_member_subject': 'Subagent: External proposal Team', 'survey_keys': ('fresh_external', 'orphan_subagents'), 'proposal_owners': (('External:', 'external'),)}
+# END GENERATED: role-table
+# Proposal submissions: every schema ever issued stays importable; a role row with a submit schema may send.
+PROPOSAL_SCHEMAS=frozenset(ROLE_LEDGER['submission_schemas'])
+SUBMITTERS=tuple(r for r in ROLE_TABLE if r['cls']=='session' and r['submit_schema'])
 ANCHORS=('AGENTS.md','CLAUDE.md','GEMINI.md','_Axis/MANIFEST.md','_Axis/PROJECT.md','_Axis/PRACTICES.md','_Axis/RULES.md')
 
 def safe(path, directory=False, missing=False):
@@ -76,7 +92,7 @@ def submissions_lock(store):
 def _key(envelope):
  if envelope.get('schema')==SCHEMA:
   return hashlib.sha256((envelope['origin_project']+':'+envelope['origin_message']).encode()).hexdigest()
- if envelope.get('schema')=='axis.external-submission/v1':
+ if envelope.get('schema') in PROPOSAL_SCHEMAS:
   return hashlib.sha256((envelope['destination']+':'+envelope['origin_log']).encode()).hexdigest()
  raise ValueError('unknown submission schema')
 
@@ -91,7 +107,7 @@ def encode(envelope):
 
 def decode(raw):
  subject,envelope=core._FORMAT.decode(raw.decode('utf-8'),MAX)
- required={'schema','submission','origin_project','origin_message','destination','digest','expires','route','record'} if envelope.get('schema')==SCHEMA else {'schema','submission','destination','origin_session','origin_log','log_digest','body','expires'} if envelope.get('schema')=='axis.external-submission/v1' else set()
+ required={'schema','submission','origin_project','origin_message','destination','digest','expires','route','record'} if envelope.get('schema')==SCHEMA else {'schema','submission','destination','origin_session','origin_log','log_digest','body','expires'} if envelope.get('schema') in PROPOSAL_SCHEMAS else set()
  if not required or set(envelope)!=required:raise ValueError('incompatible submission schema')
  if envelope['schema']==SCHEMA:
   if not isinstance(envelope['record'],dict) or not isinstance(envelope['record'].get('subject'),str):raise ValueError('invalid source record')
@@ -157,13 +173,14 @@ def validate(envelope,destination,now):
 
 def submit_proposal(store,log_id,body,expires=None):
  store.guard();marker=store.io.read(store.io.marker_name)
- if not marker.startswith('External: '):raise ValueError('external-only proposal route')
+ row=next((r for r in SUBMITTERS if marker.startswith(r['subject'])),None)
+ if row is None:raise ValueError('proposal route not permitted for this role')
  core.identity(log_id)
  if not isinstance(body,str) or len(body.encode())>core.MAX_BODY:raise ValueError('proposal size')
  raw_log=read_bytes(store.path('_Axis/Logs/'+log_id+'.md'))
  expiry=expires or core.stamp(core.timestamp(log_id)+dt.timedelta(hours=24))
  if core.timestamp(expiry)<=store.now():raise ValueError('expired proposal')
- envelope={'schema':'axis.external-submission/v1','destination':store.project_id(),'origin_session':store.session,'origin_log':log_id,'log_digest':core.digest(raw_log),'body':body,'expires':expiry}
+ envelope={'schema':row['submit_schema'],'destination':store.project_id(),'origin_session':store.session,'origin_log':log_id,'log_digest':core.digest(raw_log),'body':body,'expires':expiry}
  return _deliver(store,store.path('_Axis/Submissions',kind='directory'),envelope,log_id)
 
 def import_proposal(store,name,envelope):
@@ -221,7 +238,7 @@ def import_message(store,name):
    return finish_import(store,name,raw,result)
   envelope=decode(raw)
   if name!=envelope['submission']+'.md':raise ValueError('submission name mismatch')
-  if envelope.get('schema')=='axis.external-submission/v1':
+  if envelope.get('schema') in PROPOSAL_SCHEMAS:
    key=_key(envelope)
    prior=[r for r in store.records('Messages') if r.get('data',{}).get('proposal',{}).get('key')==key]
    if prior:

@@ -48,6 +48,7 @@
 - `_Axis/Schedules/`
 - `_Axis/Submissions/`
 - `_Axis/Resources/`
+- `_Axis/Roles/` - the role table: one file per role, compiled into the helpers, guardrails and Command gates at release; nothing reads it at runtime.
 - `_Axis/Snapshots/`
 - `_Axis/Supervision/`
 - `_Axis/Tasks/`
@@ -296,6 +297,8 @@ Optional project state: `EXCEPTIONS.md` in the Axis control folder, created on f
 - `_Axis/Resources/Template-Profiles.md`
 - `_Axis/Resources/split-history.py`
 - `_Axis/Resources/axis-dashboard-meridian.png` - README illustration of the default Dashboard.
+- `_Axis/Roles/Main.md`, `_Axis/Roles/External.md`, `_Axis/Roles/Subagent.md` - session role rows.
+- `_Axis/Roles/CX.md`, `_Axis/Roles/Wiki.md`, `_Axis/Roles/Local.md`, `_Axis/Roles/General.md` - delegated Subagent role rows.
 - `_Axis/Resources/axis-folders.svg` - README illustration of an Axis project folder.
 
 ## Wiki

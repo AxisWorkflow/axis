@@ -1,7 +1,7 @@
 # ^install
 > **Purpose:** Install extensions, tools, skills, MCPs, CLIs, functions, etc.
 
-1. Main Agent only. External Agents send a Message to Main; Subagents return the request without acting. Installing changes the current host, not merely the project, so never delegate the trust or approval decision.
+1. Main Agent only. <!-- BEGIN GENERATED: role-gate install -->External Agents send a Message to Main; Subagents return the request without acting.<!-- END GENERATED: role-gate install --> Installing changes the current host, not merely the project, so never delegate the trust or approval decision.
 
 2. Resolve the text after the command by intent: `axis` GOTO **Axis terminal launcher**; `model access`, `api key` or `subscription` GOTO **Model access**; `qmd` or local document search GOTO **qmd**; `age`, encrypted Secrets, or Secrets transport GOTO **age**; `ollama`, a supported local model name, or local LLM setup GOTO **Ollama**; `openclaw`, thin harness, Gateway hardening, or an OpenClaw-backed channel such as WhatsApp GOTO **OpenClaw**; `guardrails`, hooks, or write-once protection GOTO **Guardrails**; `cloudflare` (case-insensitive) or Cloudflare agent setup GOTO **Cloudflare**. If User asks for a different local LLM runtime, say in one line that Axis supports Ollama as its sole local runtime, then GOTO **Ollama**. Anything else, including no target, GOTO **Other**. Never run the text as a shell tail.
 

@@ -36,6 +36,8 @@
 - **Aptitude Check** - The five-fixture screening `^install` runs against a local model.
 - **Sentinel Token** - Literal `<<AXIS:SUBAGENT>>` at both boundaries of every Subagent prompt.
 - **Role Token** - Token naming a Subagent's role, repeated at both Prompt Envelope boundaries.
+- **Role File** - One file in `_Axis/Roles/` holding a role's row: its admission, principals, authority, lifecycle and presentation.
+- **Role Table** - The rows of all Role Files, compiled into helpers, guardrails and Command gates at release; helpers never read it at runtime.
 - **Prompt Envelope** - Nonce-bound three-line header and footer (`<<AXIS:ENVELOPE:{nonce}:BEGIN>>` / `END`) that prove a Subagent brief arrived intact at both ends; validated against the delivered task body, not host-injected framing.
 - **Envelope Nonce** - A fresh random identifier binding one Subagent prompt's opening and closing records.
 - **Synopsis** - A briefing drafted by **Main Agent** to give a **Subagent** project context.

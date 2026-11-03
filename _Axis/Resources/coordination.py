@@ -35,6 +35,31 @@ _SPEC.loader.exec_module(_START)
 _FORMAT_SPEC = importlib.util.spec_from_file_location('axis_coordination_record', Path(__file__).with_name('coordination-record.py'))
 _FORMAT = importlib.util.module_from_spec(_FORMAT_SPEC)
 _FORMAT_SPEC.loader.exec_module(_FORMAT)
+# BEGIN GENERATED: role-table
+# Compiled from _Axis/Roles/ at release; edit the role files, never this region.
+ROLE_TABLE=(
+    {'name': 'Main', 'cls': 'session', 'subject': 'Main: session', 'match': 'exact', 'shape': 'exact4', 'created_by': 'claim', 'exclusive': True, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': None, 'survey_key': None, 'notice': None, 'issuer': 'main', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': None, 'guard': None, 'reference_word': 'Main', 'log_by': 'Main Agent', 'title': 'Main Agent', 'plural': 'Main Agents', 'article': 'the'},
+    {'name': 'External', 'cls': 'session', 'subject': 'External: ', 'match': 'prefix', 'shape': 'single-session-line', 'created_by': 'self', 'exclusive': False, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': 'list', 'survey_key': 'fresh_external', 'notice': 'An External Agent is serving this project ({id}).', 'issuer': 'worker', 'proposal_owner': True, 'proposal_issuer': 'external', 'submit_schema': 'axis.external-submission/v1', 'guard': {'config_key': 'externalAgents', 'flag': '--external', 'block_spawn': True, 'new_files': ('subfolders', '_Axis/Submissions/', '_Temp/')}, 'reference_word': 'External', 'log_by': 'External Agent', 'title': 'External Agent', 'plural': 'External Agents', 'article': 'an'},
+    {'name': 'Subagent', 'cls': 'session', 'subject': 'Subagent: ', 'match': 'prefix', 'shape': 'free', 'created_by': 'spawner', 'exclusive': False, 'version_bound': False, 'reply_frame': False, 'blocks_save': True, 'survey': 'count', 'survey_key': 'orphan_subagents', 'notice': '{count} orphaned Subagent record(s) from a crashed spawn; ^refresh can clear them', 'issuer': 'worker', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': None, 'guard': None, 'reference_word': 'Subagent', 'log_by': None, 'title': 'Subagent', 'plural': 'Subagents', 'article': 'a'},
+    {'name': 'CX', 'cls': 'delegated', 'token': 'CX', 'carries_blocks': True, 'agent_type': 'axis-cx', 'write_scope': (('_Axis/CX/', True), ('_Temp/', False)), 'deny': None},
+    {'name': 'Wiki', 'cls': 'delegated', 'token': 'WIKI', 'carries_blocks': True, 'agent_type': 'axis-wiki', 'write_scope': (('_Wiki/', False), ('_Axis/Wiki/', False), ('_Temp/', False)), 'deny': None},
+    {'name': 'Local', 'cls': 'delegated', 'token': 'LOCAL', 'carries_blocks': False, 'agent_type': None, 'write_scope': None, 'deny': None},
+    {'name': 'General', 'cls': 'delegated', 'token': 'GENERAL', 'carries_blocks': True, 'agent_type': 'axis-general', 'write_scope': None, 'deny': ('_Axis/Agents/', '_Axis/Flags/', '_Axis/Secrets/', '_Axis/Submissions/', '_Axis/Messages/', '_Axis/Teams/', '_Axis/Jobs/', '_Axis/Schedules/', '_Axis/Updates/', '.git/', '.claude/', '.codex/', '.gemini/')},
+)
+ROLE_LEDGER={'issuers': ('external', 'main', 'worker'), 'submission_schemas': ('axis.external-submission/v1',), 'proposal_member_subject': 'Subagent: External proposal Team', 'survey_keys': ('fresh_external', 'orphan_subagents'), 'proposal_owners': (('External:', 'external'),)}
+# END GENERATED: role-table
+# Stored records validate against the ledger of everything ever issued; new writes use the current rows.
+ISSUERS = frozenset(ROLE_LEDGER['issuers'])
+PROPOSAL_OWNERS = ROLE_LEDGER['proposal_owners']
+PROPOSAL_ISSUERS = frozenset(issuer for _, issuer in PROPOSAL_OWNERS)
+PROPOSAL_MEMBER_SUBJECT = ROLE_LEDGER['proposal_member_subject']
+
+
+def proposal_owner_role(marker):
+    """The current proposal-owning session row whose subject begins this Marker text, else None."""
+    return next((r for r in ROLE_TABLE if r['cls'] == 'session' and r['proposal_owner'] and marker.startswith(r['subject'].rstrip())), None)
+
+
 SCHEMA = 'axis.coordination/v1'
 RUNTIME_SHA256 = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
 COORDINATION_PROTOCOL = 2
@@ -188,9 +213,9 @@ def _envelope(record):
     except (ValueError, TypeError, AttributeError):
         raise CoordinationError('project-id') from None
     issuer = record.get('issuer')
-    need(isinstance(issuer, dict) and issuer.get('role') in {'main', 'worker', 'external'}, 'issuer')
+    need(isinstance(issuer, dict) and issuer.get('role') in ISSUERS, 'issuer')
     identity(issuer.get('session'))
-    if issuer.get('role') == 'external' or 'proposal_only' in record or 'proposal_control' in record: _controlled(record)
+    if issuer.get('role') in PROPOSAL_ISSUERS or 'proposal_only' in record or 'proposal_control' in record: _controlled(record)
     if 'budget_amendment' in record:
         if record['family'] == 'Jobs': identity(record['budget_amendment'])
         else:
@@ -269,7 +294,7 @@ def _accepted(record):
 
 def _controlled(record):
     """Validate a control's provenance without conflating proposal and acceptance."""
-    if record.get('issuer', {}).get('role') != 'external':
+    if record.get('issuer', {}).get('role') not in PROPOSAL_ISSUERS:
         need('proposal_only' not in record and 'proposal_control' not in record, 'proposal-classification')
         return _accepted(record)
     need('acceptance' not in record, 'proposal-has-acceptance')
@@ -278,7 +303,7 @@ def _controlled(record):
     need(isinstance(proposal, dict) and set(proposal) == {'version', 'owner', 'marker', 'marker_sha256', 'main', 'placement_activation'}, 'proposal-control-shape')
     need(proposal.get('version') == 1 and proposal.get('owner') == sid, 'proposal-owner')
     marker = proposal.get('marker')
-    need(isinstance(marker, str) and marker.startswith('External:'), 'proposal-external-marker')
+    need(isinstance(marker, str) and any(marker.startswith(prefix) and issuer == record['issuer']['role'] for prefix, issuer in PROPOSAL_OWNERS), 'proposal-external-marker')
     need(proposal.get('marker_sha256') == digest(marker), 'proposal-marker-digest')
     identity(proposal.get('main'))
     need(re.fullmatch(r'[0-9a-f]{32}', proposal.get('placement_activation', '')) is not None, 'proposal-placement')
@@ -817,15 +842,21 @@ class Store:
         self._lock = None
         self._proposal_control = None
 
-    def _require_external(self):
+    def _require_proposal_owner(self):
         self.guard()
-        need(not self.io.lease[2] and self.io.marker_body().splitlines()[0].startswith('External:'), 'external-required')
+        need(not self.io.lease[2] and proposal_owner_role(self.io.marker_body()) is not None, 'external-required')
         need(self.storage_profile() == 'atomic', 'direct-storage-unavailable')
         return self.session
 
+    _require_external = _require_proposal_owner
+
+    def _proposal_role(self):
+        """This session's proposal-owning role row (callers have passed the proposal-owner check)."""
+        return proposal_owner_role(self.io.marker_body())
+
     def _control_guard(self):
         if self._proposal_control is None: return self.require_main()
-        self._require_external()
+        self._require_proposal_owner()
         self._control_placement()
         if self._proposal_control.get('team'):
             self._proposal_owned(self.read('Teams', self._proposal_control['team']))
@@ -833,7 +864,7 @@ class Store:
 
     def _control_placement(self):
         if self._proposal_control is None: return self.require_placement()
-        self._require_external()
+        self._require_proposal_owner()
         placement = self._read_placement()
         return Store(self.root, placement['session']).require_placement(expected=placement['activation'])
 
@@ -844,8 +875,8 @@ class Store:
                 'main': placement['session'], 'placement_activation': placement['activation']}
 
     def _proposal_owned(self, record):
-        self._require_external(); _controlled(record)
-        need(record.get('proposal_only') and record['issuer'] == {'role': 'external', 'session': self.session}, 'proposal-owner')
+        self._require_proposal_owner(); _controlled(record)
+        need(record.get('proposal_only') and record['issuer'] == {'role': self._proposal_role()['proposal_issuer'], 'session': self.session}, 'proposal-owner')
         need(record['proposal_control']['marker_sha256'] == digest(self.io.marker_body()), 'proposal-owner-changed')
         self.validate_authority(record['authority'])
         need(self.now() < timestamp(record['limits']['deadline']), 'proposal-expired')
@@ -856,7 +887,7 @@ class Store:
     @contextlib.contextmanager
     def _proposal_context(self, team=None):
         need(self._proposal_control is None, 'nested-proposal-control')
-        self._require_external()
+        self._require_proposal_owner()
         self._proposal_control = {'team': team}
         try:
             self._control_guard()
@@ -880,7 +911,7 @@ class Store:
     def _proposal_member(self, sid, team, item_slot=None):
         worker = self._worker_session(sid)
         lines = worker.marker_body().splitlines()
-        need(lines[:1] == ['Subagent: External proposal Team'], 'proposal-member-origin')
+        need(lines[:1] == [PROPOSAL_MEMBER_SUBJECT], 'proposal-member-origin')
         for label, value in (('parent', self.session), ('proposal-team', team)):
             need([line for line in lines if line.startswith(label + ':')] == [label + ': ' + value], 'proposal-member-origin')
         if item_slot is not None:
@@ -903,12 +934,12 @@ class Store:
                     if not checked.with_suffix('.kill').exists() and time.time() - checked.stat().st_mtime < 3600: live += 1
                 need(live < cap, 'project-concurrency')
                 def allocation_body(ident):
-                    return ('External Team member allocation\n\nby: External Agent\nsession: ' + self.session
+                    return ('External Team member allocation\n\nby: ' + self._proposal_role()['log_by'] + '\nsession: ' + self.session
                             + '\nteam: ' + team + '\nslot: ' + slot + '\nrole: GENERAL\nstate: allocation-intent\n'
                             + 'Synopsis: Reserve a scoped proposal member; no host or provider has been launched.\n')
                 allocation_log, _ = self.io.record('Logs', allocation_body, renew_lease=False)
                 def body(sid):
-                    return ('Subagent: External proposal Team\n\nparent: ' + self.session + '\nproposal-team: ' + team
+                    return (PROPOSAL_MEMBER_SUBJECT + '\n\nparent: ' + self.session + '\nproposal-team: ' + team
                             + '\nproposal-slot: ' + slot + '\nstarted: ' + sid + '\nlog: _Axis/Logs/' + allocation_log + '.md\nreturn: External owner; Main alone accepts project integration.\n')
                 sid, path = self.io.record('Agents', body, renew_lease=False)
             self.event('Teams', team, 'bind_member', {'slot': slot, 'session': sid})
@@ -984,7 +1015,7 @@ class Store:
             with self.locked(proposal=True):
                 for message in self.records('Messages'):
                     if message.get('data', {}).get('proposal_submission') == key:
-                        need(message['issuer'] == {'session': self.session, 'role': 'external'} and message['data'].get('proposal_digest') == fingerprint, 'proposal-submission-conflict')
+                        need(message['issuer'] == {'session': self.session, 'role': self._proposal_role()['proposal_issuer']} and message['data'].get('proposal_digest') == fingerprint, 'proposal-submission-conflict')
                         return {'status': 'duplicate', 'id': message['id'], 'record': message}
                 charter = self.read('Teams', team)
                 return self._record('Messages', {'subject': 'External Team submission for Main', 'kind': 'request', 'recipient': 'main',
@@ -1042,7 +1073,7 @@ class Store:
         with self._proposal_context(team):
             with self.locked(proposal=True):
                 def log_body(ident):
-                    return ('External Team native launch prepared\n\nby: External Agent\nsession: ' + self.session
+                    return ('External Team native launch prepared\n\nby: ' + self._proposal_role()['log_by'] + '\nsession: ' + self.session
                             + '\nteam: ' + team + '\njob: ' + job + '\nmember: ' + sid
                             + '\nroute: native-host-carried-scope\nrole: GENERAL\nmodel: selected by authorized native host\n'
                             + 'task-sha256: ' + digest(task) + '\nprompt-sha256: ' + digest(prompt)
@@ -1412,7 +1443,7 @@ class Store:
         acceptance = self._acceptance() if issuer['role'] == 'main' else None
         proposal = self._proposal_snapshot() if self._proposal_control else None
         if proposal is not None:
-            issuer['role'] = 'external'
+            issuer['role'] = self._proposal_role()['proposal_issuer']
             need(family in {'Teams', 'Jobs', 'Messages'}, 'proposal-family')
             if family == 'Teams':
                 need(self._proposal_control.get('team') is None and payload.get('acceptance_owner') == self.session, 'proposal-team-context')
@@ -2128,7 +2159,7 @@ class Store:
         need(founding.get('team') == team, 'worker-message-scope')
         if charter.get('proposal_only'):
             sponsor = Store(self.root, charter['acceptance_owner'], clock=self.clock)
-            sponsor._require_external(); sponsor._proposal_owned(charter)
+            sponsor._require_proposal_owner(); sponsor._proposal_owned(charter)
             need(founding.get('proposal_only') and founding['acceptance_owner'] == charter['acceptance_owner'], 'proposal-owner')
             need(charter['proposal_control']['placement_activation'] == placement['activation'], 'proposal-placement')
             sponsor._proposal_member(self.session, team, item_slot=None)
@@ -2821,7 +2852,7 @@ class Store:
             event = {'family': family, 'target': ident, 'action': action, 'predecessor': state['head'], 'epoch': state['epoch'], 'at': stamp(now), 'data': payload_data}
             payload = {'subject': family[:-1] + ' ' + action + ': ' + ident, 'kind': {'dispatch': 'assignment', 'validate': 'validation', 'receipt': 'receipt', 'result': 'decision'}.get(action, 'control'), 'recipient': ident, 'body': payload_data.get('summary', action), 'team': ident if family == 'Teams' else founding.get('team'), 'job': ident if family == 'Jobs' else None, 'correlation': founding.get('operation_key', ident), 'epoch': state['epoch'], 'data': {}, 'authority': founding['authority'], 'expires': founding['authority']['expires'], 'event': event}
             # Validate the complete transition before obtaining a globally unique immutable ID.
-            candidate = dict(payload, schema=SCHEMA, family='Messages', id='9999.12.31.23.59.59.999Z', created='9999.12.31.23.59.59.999Z', project=self.project_id(), issuer={'session': self.session, 'role': 'external' if self._proposal_control else 'main'})
+            candidate = dict(payload, schema=SCHEMA, family='Messages', id='9999.12.31.23.59.59.999Z', created='9999.12.31.23.59.59.999Z', project=self.project_id(), issuer={'session': self.session, 'role': self._proposal_role()['proposal_issuer'] if self._proposal_control else 'main'})
             if self._proposal_control: candidate.update(proposal_only=True, proposal_control=self._proposal_snapshot())
             else: candidate['acceptance'] = self._acceptance()
             projected = project_records(founding, messages + [candidate], self.records('Teams'))

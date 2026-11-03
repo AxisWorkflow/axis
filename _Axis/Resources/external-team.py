@@ -19,7 +19,7 @@ def main():
     parser.add_argument('operation',choices=OPERATIONS)
     args=parser.parse_args()
     try:
-        store=core.Store(args.root,args.session);store._require_external()
+        store=core.Store(args.root,args.session);store._require_proposal_owner()
         raw=sys.stdin.buffer.read(core.MAX_RECORD+1)
         core.need(len(raw)<=core.MAX_RECORD,'request-size')
         request=json.loads(raw,object_pairs_hook=core._unique_pairs,parse_constant=lambda value: (_ for _ in ()).throw(ValueError('nonfinite JSON')));core.need(type(request) is dict,'request-object')
