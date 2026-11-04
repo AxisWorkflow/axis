@@ -1,7 +1,7 @@
 # ^install
 > **Purpose:** Install extensions, tools, skills, MCPs, CLIs, functions, etc.
 
-1. Main Agent only. <!-- BEGIN GENERATED: role-gate install -->External Agents send a Message to Main; Subagents return the request without acting.<!-- END GENERATED: role-gate install --> Installing changes the current host, not merely the project, so never delegate the trust or approval decision.
+1. Main Agent only. <!-- BEGIN GENERATED: role-gate install -->Auxiliary Agents send a Message to Main; Subagents return the request without acting.<!-- END GENERATED: role-gate install --> Installing changes the current host, not merely the project, so never delegate the trust or approval decision.
 
 2. Resolve the text after the command by intent: `axis` GOTO **Axis terminal launcher**; `model access`, `api key` or `subscription` GOTO **Model access**; `qmd` or local document search GOTO **qmd**; `age`, encrypted Secrets, or Secrets transport GOTO **age**; `ollama`, a supported local model name, or local LLM setup GOTO **Ollama**; `openclaw`, thin harness, Gateway hardening, or an OpenClaw-backed channel such as WhatsApp GOTO **OpenClaw**; `guardrails`, hooks, or write-once protection GOTO **Guardrails**; `cloudflare` (case-insensitive) or Cloudflare agent setup GOTO **Cloudflare**. If User asks for a different local LLM runtime, say in one line that Axis supports Ollama as its sole local runtime, then GOTO **Ollama**. Anything else, including no target, GOTO **Other**. Never run the text as a shell tail.
 
@@ -91,7 +91,7 @@ OpenClaw is Axis's optional channels-and-orchestration Host Harness. Installing 
 
 ## Guardrails
 
-**Guardrails** add a host hook that refuses, before it happens, a tool call that breaks an Axis rule the host can see: for every Agent, an edit to a write-once record (a Log, Snapshot, CX, Audit, Supervision, Team, Message or Job record, archived history, update evidence, or a finished Task, Follow-Up or Reminder) or a malformed new record name; for a helper, any use of `_Axis/Secrets/` and any write outside its role's folders. On OpenClaw, an Agent configured as an External Agent may not spawn, use `_Axis/Secrets/`, change an existing file, or add files outside Project Subfolders, `_Axis/Submissions/` and `_Temp/`. Claude Code and OpenClaw only; other hosts keep Axis's written rules and the `^save` record checks.
+**Guardrails** add a host hook that refuses, before it happens, a tool call that breaks an Axis rule the host can see: for every Agent, an edit to a write-once record (a Log, Snapshot, CX, Audit, Supervision, Team, Message or Job record, archived history, update evidence, or a finished Task, Follow-Up or Reminder) or a malformed new record name; for a helper, any use of `_Axis/Secrets/` and any write outside its role's folders. On OpenClaw, an Agent configured as an Auxiliary Agent may not spawn, use `_Axis/Secrets/`, change an existing file, or add files outside Project Subfolders, `_Axis/Submissions/` and `_Temp/`. Claude Code and OpenClaw only; other hosts keep Axis's written rules and the `^save` record checks.
 
 1. Follow **Installation Contract**. On OpenClaw GOTO **OpenClaw guardrails**. Require Claude Code as the current host and `host-shell=yes`, and run `python3 _Axis/Resources/guardrails.py --check _Axis/Logs/x.md --new` as a smoke test: it must print `REFUSED`. Otherwise say the guardrails are not available on this host and STOP.
 2. Preview the exact change:
@@ -107,10 +107,10 @@ OpenClaw is Axis's optional channels-and-orchestration Host Harness. Installing 
 
 **OpenClaw guardrails**
 
-1. Require OpenClaw as the host, `host-shell=yes` and `python3`, and run `python3 _Axis/Resources/guardrails.py --external write _Axis/Logs/x.md` as a smoke test: it must print `Axis guardrail:` and exit 2. Name the OpenClaw agent IDs that serve this project as External Agents; User confirms the list.
+1. Require OpenClaw as the host, `host-shell=yes` and `python3`, and run `python3 _Axis/Resources/guardrails.py --external write _Axis/Logs/x.md` as a smoke test: it must print `Axis guardrail:` and exit 2. Name the OpenClaw agent IDs that serve this project as Auxiliary Agents; User confirms the list.
 2. Preview the exact change through [Practices > OpenClaw > Schema-Adaptive Hardening]: add the absolute path of `_Axis/Resources/OpenClaw/axis-guardrails` to `plugins.load.paths`, and set `plugins.entries.axis-guardrails` to `{"enabled": true, "config": {"externalAgents": [{agent IDs}]}}`, changing nothing else. Say that the plugin leaves every other agent untouched, that on current OpenClaw an error inside a plugin hook blocks the listed agents' tool calls until it is fixed or removed, and that shell commands' writes are not seen. Obtain approval.
 3. Apply with OpenClaw's own config commands, then require `openclaw config validate` to pass and `openclaw plugins list` to show `axis-guardrails` enabled; on failure restore the previous values and STOP. Reload the plugin or restart the Gateway as OpenClaw's release requires, after saying so.
-4. Tell User that the next External turn refuses an edit to an existing file. Remove the path and entry to uninstall. Log the configuration change. STOP.
+4. Tell User that the next Auxiliary turn refuses an edit to an existing file. Remove the path and entry to uninstall. Log the configuration change. STOP.
 
 ## Cloudflare
 
@@ -133,7 +133,7 @@ Cloudflare is optional. Setup equips the current Agent for Cloudflare developmen
 
 1. Offer the optional `axis` terminal command for macOS, Linux or WSL. Normal Axis continues without it. Check Python 3 and tmux; explain any missing dependency and apply Installation Contract before installing host software.
 2. Preview the chosen user-owned executable directory and a small POSIX wrapper invoking the exact project's `_Axis/Resources/axis-launch.py` through Python 3. Use shell-quoted literal paths, never copy credential values or overwrite an existing command without reviewing it. A wrapper, rather than a symlink to `axis`, preserves the helper location. Install only under User's request and the Installation Contract.
-3. Explain `axis [project path] --agent codex|claude|none`, `axis ls`, and `axis projects [root ...]`. Optional `AXIS_PROJECT_ROOTS` is a path-separated search list; discovery examines those roots and their direct children. Reattach uses the same canonical project session; it does not start another agent. Detach with tmux's normal prefix then `d`. Use `--detach` to create/reattach without opening a terminal client.
+3. Explain `axis [project path] --agent codex|claude|none`, `axis ls`, `axis projects [root ...]`, `axis start [path]` (refused beside a live Main) and `axis retire [path]` (ends the live Main after the User types `RETIRE`). Optional `AXIS_PROJECT_ROOTS` is a path-separated search list; discovery examines those roots and their direct children. Reattach uses the same canonical project session; it does not start another agent. Detach with tmux's normal prefix then `d`. Use `--detach` to create/reattach without opening a terminal client.
 4. Verify syntax and a disposable `--agent none --detach` session, its working directory and repeat attachment. Remove only that owned test session. Record installation under Installation Contract. STOP.
 
 ## Model access

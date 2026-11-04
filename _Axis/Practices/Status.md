@@ -1,7 +1,7 @@
 # Status
 > **Purpose:** Define `^status`, the quick look at where a project stands, and how it differs from a Review and the Dashboard.
 
-`^status` answers "where are we?" in one screen. It is built fresh from the project's canonical records every time, writes no record, and is safe to run as often as User likes, by Main or External. The procedure is `_Axis/Commands/status.md`.
+`^status` answers "where are we?" in one screen. It is built fresh from the project's canonical records every time, writes no record, and is safe to run as often as User likes, by Main or Auxiliary. The procedure is `_Axis/Commands/status.md`.
 
 ## What it shows
 

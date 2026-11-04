@@ -14,7 +14,7 @@ project-overlay-sha256: {64 lowercase hexadecimal characters}
 
 The hash is approved expected content, not permission to bless a changed file by hashing it again. A schema-1 declaration has only the first three fields and requires an independently approved expected content pin for compatibility. The overlay file itself retains `project-overlay-schema: 1`. An overlay cannot replace role, lease, startup, Axis Rules, WORM history, protected boundaries or User-only gates.
 
-The caller chooses `prepare` during admitted startup, `confirm` after startup commits but before the banner, or `activate` after the banner. Preparation and confirmation read identity only: treat the complete file as opaque data, apply no guidance or Command mappings, create no Flag and print nothing. Activation uses the same validation, then caches and applies the result. External Agents and Subagents never call any phase.
+The caller chooses `prepare` during admitted startup, `confirm` after startup commits but before the banner, or `activate` after the banner. Preparation and confirmation read identity only: treat the complete file as opaque data, apply no guidance or Command mappings, create no Flag and print nothing. Activation uses the same validation, then caches and applies the result. Auxiliary Agents and Subagents never call any phase.
 
 ## Procedure
 

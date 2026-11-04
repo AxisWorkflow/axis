@@ -5,7 +5,7 @@ Git is optional but recommended. A local repository gives the project an undo hi
 
 ## Admission and Repository Boundary
 
-- Main Agent only performs setup, synchronization, or rollback. External Agents and Subagents refuse and route the request to Main.
+- Main Agent only performs setup, synchronization, or rollback. Auxiliary Agents and Subagents refuse and route the request to Main.
 - Read `host-shell` under [Practices > Flags > Reading Flags]. Git mutation requires valid `yes`; otherwise explain the closest manual action and STOP.
 - Resolve the exact project root with `git rev-parse --show-toplevel`. Exact root is eligible. A parent root enters Subproject Repositories below; never initialize or operate on the parent by accident. An inner repository outside an approved Subproject arrangement also stops.
 - Refuse while another fresh writer, fresh lock, unresolved Message that affects the same paths, or an unfinished merge, rebase, cherry-pick, revert, bisect, or sequencer operation exists. Never use a new Git operation to cover an incomplete old one.

@@ -22,7 +22,7 @@ Before sending, take each sentence and ask: **would User's next action change if
 
 ## What this never licenses
 
-Plain language is not less honesty. Say limitations, failures, refusals, and anything you skipped as plainly as anything else - see [Principles] and [Rules > Capabilities] on degrading loudly. A gate that needs User's decision states what it needs in full: a promotion's footprint disclosure, an arbitration between live sessions, and a confirmation before a destructive act are decision inputs, and cutting them for brevity breaks the decision.
+Plain language is not less honesty. Say limitations, failures, refusals, and anything you skipped as plainly as anything else - see [Principles] and [Rules > Capabilities] on degrading loudly. A gate that needs User's decision states what it needs in full: an arbitration between live sessions, and a confirmation before a destructive act are decision inputs, and cutting them for brevity breaks the decision.
 
 When User asks for the detail - or is working ON the Workflow rather than with it - give all of it. This rule governs unrequested plumbing, not User's own questions.
 

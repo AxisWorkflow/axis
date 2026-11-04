@@ -7,11 +7,11 @@ Delegation transfers execution, never authority. Main Agent remains responsible 
 
 A delegate inherits conduct through its role text; authority comes only from its task contract; instruction status comes only from its prompt and the governing files pinned in it. Irreversible external actions (publishing, pushing, spending, signing in, contacting people) are not delegable unless the contract says User granted them.
 
-**Every author.** The same kit, contract and envelope bind every agent that starts another: Main, a Team Leader, an External owner of a proposal Team and a parent Main. A delegate can only narrow the authority it received, and a granted start passes the same role text and governance unchanged.
+**Every author.** The same kit, contract and envelope bind every agent that starts another: Main, a Team Leader, an Auxiliary owner of a proposal Team and a parent Main. A delegate can only narrow the authority it received, and a granted start passes the same role text and governance unchanged.
 
 **Judgment ownership.** Strategic, priority, risk and acceptance judgments stay with Main; delegated judgment is advice that Main checks against sources before relying on it. Relaxing this for a named class of work needs evidence, not the existence of the mechanism.
 
-A Subagent never writes `_Axis/Followups/`. If delegated work reveals a specific next action only User can take, the Subagent reports a Follow-Up candidate with the proposed ask and owning record in its return. Main decides whether it meets [Practices > Followups], deduplicates it, and creates the record if warranted. An External Agent uses a Message to Main for the same handoff.
+A Subagent never writes `_Axis/Followups/`. If delegated work reveals a specific next action only User can take, the Subagent reports a Follow-Up candidate with the proposed ask and owning record in its return. Main decides whether it meets [Practices > Followups], deduplicates it, and creates the record if warranted. An Auxiliary Agent uses a Message to Main for the same handoff.
 
 Before delegating, read applicable User preferences, [Settings > Budget], [Rules > Capabilities], and any task-specific Practice. Do not delegate merely because a cheaper model or a spawn tool is available. Delegate when the expected savings, context isolation, parallelism, independent perspective, or specialized role outweighs the handoff and validation overhead.
 

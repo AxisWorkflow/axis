@@ -9,8 +9,8 @@
 - Check [Practices > Merging] before admission, renewal and each write.
 - Source merge maintenance or retirement blocks writes.
 - Destination Main recovers unfinished merges before other work.
-- One Main Agent per project; every other Agent is an External Agent or Subagent.
-- Entry protocol fixes Main or External role once.
+- One Main Agent per project; every other Agent is an Auxiliary Agent or Subagent.
+- Entry protocol fixes Main or Auxiliary role once.
 - A validated prompt envelope fixes Subagent role.
 - Never re-judge a live role.
 - Main requires standard capability; small models are bounded Subagents only.
@@ -75,7 +75,7 @@
 - [Rules > MarkersFlagsAndLocks] - ephemeral live state; what Stale means.
 - [Rules > ProtectedContent] - the `_U` and `_X` name suffixes.
 - [Rules > Subagents] - Prompt Envelope contract and validation order.
-- [Rules > ExternalAgents] - role assignment, action classes, lease.
+- [Rules > AuxiliaryAgents] - role assignment, action classes, lease.
 - [Rules > Budget] - spending, extension requests and resumable work.
 - [Rules > Permissions] - when to confirm a change.
 - [Rules > SettingsAndProfiles] - how Profiles apply to Settings.

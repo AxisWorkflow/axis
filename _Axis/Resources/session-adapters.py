@@ -328,10 +328,11 @@ class Adapter:
                 raise ValueError('source and target share a project UUID; copied placement is not activation')
             if target.root in store.root.parents:
                 raise ValueError('a child cannot start its ancestor')
-            if store.root in target.root.parents:
-                nearest = next((p for p in target.root.parents if recognized(p)), None)
-                if nearest != store.root:
-                    raise ValueError('only a direct child may be started across a project boundary')
+            if store.root not in target.root.parents:
+                raise ValueError('only a direct child may be started; an unrelated project is refused')
+            nearest = next((p for p in target.root.parents if recognized(p)), None)
+            if nearest != store.root:
+                raise ValueError('only a direct child may be started across a project boundary')
             if not isinstance(model, str) or not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}', model):
                 raise ValueError('an exact model name is required')
             if 'start' not in self.probe.syntax or not self._same_executable():

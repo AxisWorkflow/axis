@@ -6,7 +6,7 @@
 - **Axis Workflow** - The definitions, configuration, and practices in this repository.
 - **Axis** - Synonym for **Axis Workflow**.
 - **Workflow** - Synonym for **Axis Workflow**.
-- **Axel** - The Axis mascot and the persona name of the **Main Agent**; External Agents and Subagents are unnamed. Records are signed with the Session ID, never the name.
+- **Axel** - The Axis mascot and the persona name of the **Main Agent**; Auxiliary Agents and Subagents are unnamed. Records are signed with the Session ID, never the name.
 - **Axis Reference** - A pointer to another **Axis** file > section > subsection.
 - **Project** - The folder (and all its contents) governed by one **Axis Workflow**.
 - **Subproject** - A complete Axis **Project** nested anywhere in another Project's workspace, recognized by its Standard Setup Anchors, with its own entry files, reserved folders, and Axis control files.
@@ -22,7 +22,7 @@
 
 ### Agents and Roles
 
-- **Agent** - Any LLM instance working on the project: a **Main Agent**, **External Agent**, or **Subagent**.
+- **Agent** - Any LLM instance working on the project: a **Main Agent**, **Auxiliary Agent**, or **Subagent**.
 - **User** - The human owner and director of the project.
 - **Main Agent** - The singular Agent that starts a **Session** and coordinates **Subagents**.
 - **Supervisor** - The relational function a parent Project's Main Agent performs toward recognized direct child Projects; not a fourth Agent role, Project type, Setting, Flag, or registration.
@@ -66,12 +66,13 @@
 - **Environment Signature** - Optional non-secret local change-detection hint; never identity, authority, or portable truth - see [Practices > Portability].
 - **Infrastructure Declaration** - One non-secret `_Axis/ENVIRONMENT.md` row describing a non-portable prerequisite, fallback, safe revalidation, and restoration reference - see [Practices > Portability].
 - **Flag** - A persistent file to record durable workflow state - saved in `_Axis/Flags/`.
-- **Marker** - An ephemeral file tracking live Agents (Main, External, and Subagent sessions) - in `_Axis/Agents/`.
-- **Max Concurrent Sessions** - The Setting that limits how many Agent sessions (Main, External, Subagent) may be live on a project at once; default 10 (see [Rules > MarkersFlagsAndLocks > Concurrent Sessions]).
+- **Marker** - An ephemeral file tracking live Agents (Main, Auxiliary, and Subagent sessions) - in `_Axis/Agents/`.
+- **Max Concurrent Sessions** - The Setting that limits how many Agent sessions (Main, Auxiliary, Subagent) may be live on a project at once; default 10 (see [Rules > MarkersFlagsAndLocks > Concurrent Sessions]).
 - **Permissions** - The Setting (`Restricted`, `Default`, `Autonomous`) that decides when an Agent confirms a change before making it; it never grants new authority (see [Rules > Permissions]).
 - **Tracking** - Append-only per-agent activity channel in `_Axis/Tracking/` - INTENT, STATUS, ASK, REPLY and DONE lines that let every Agent see what others are doing; telemetry, not evidence (see [Practices > Tracking]).
-- **External Agent** - The third Agent role: a restricted always-on agent (read-only, append-only, and Write-new classes) serving beside Main - see [Practices > Agents > External Agent].
+- **Auxiliary Agent** - The third Agent role: a restricted always-on agent (read-only, append-only, and Write-new classes) serving beside Main; it never becomes Main - see [Practices > Agents > Auxiliary Agent]. Named External before 3.15.
 - **Tombstone** - `_Axis/Agents/{ID}.kill` - the kill signal that revokes an Agent's Marker lease (see [Practices > Markers > The Lease]).
+- **axis retire** - The User's terminal command that ends a project's live Main after the typed word `RETIRE`; no session changes its own role. An agent may run it only on a direct child project, with the User's recorded instruction.
 - **Protected Content** - Name-suffix access control: `_U` = User-controlled, read-only for Agents; `_X` = excluded, invisible to Agents (see [Practices > Protected]).
 - **Stale** - Past freshness window (locks 10 sec; `starting` 2 min; `session-id` completion check 60 sec; **Markers** 1 hour).
 - **Race Condition** - Two+ Agents writing to same file at same time - see [Lock-File].

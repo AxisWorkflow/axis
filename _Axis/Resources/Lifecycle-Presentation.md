@@ -37,13 +37,13 @@ Only an independently validated RSI Main identity replaces the title with the sp
 
 ## Shutdown and update
 
-After verified shutdown use the same brand and metadata structure, with `Status: Stopped`. Retain the just-ended session details before removing its live records; this is a stopped-session receipt, not a fresh Main startup. An RSI Main keeps its validated boot brand. External and Subagent shutdown use the Workflow brand and their actual role, with their own known identifier labeled `Agent ID:` instead of the Main-only `Session:` row; omit an unavailable identifier. They never acquire a Main Session ID banner.
+After verified shutdown use the same brand and metadata structure, with `Status: Stopped`. Retain the just-ended session details before removing its live records; this is a stopped-session receipt, not a fresh Main startup. An RSI Main keeps its validated boot brand. Auxiliary and Subagent shutdown use the Workflow brand and their actual role, with their own known identifier labeled `Agent ID:` instead of the Main-only `Session:` row; omit an unavailable identifier. They never acquire a Main Session ID banner.
 
 Follow the block with `This session has stopped. Start a new session to continue.` If a Snapshot was saved, identify it immediately before the block. Successful update uses `Status: Updated and stopped`, adds the verified old and new versions, and retains the required fresh-session instruction. Never print Ready, a startup greeting or the final-response frame after a terminal lifecycle block.
 
 ## Compact notices
 
-Resume, External readiness, role changes and startup failures remain compact notices, not new success banners. Use `Axis Workflow | Resumed`, `Axis Workflow | External`, `Axis Workflow | Main`, or `Axis Workflow | Startup incomplete` where the owning procedure permits. Preserve the required cause, state and User decision. Fixed loading notices and machine/error tokens remain verbatim. Promotion reuses its one normal Main startup; demotion reuses External readiness.
+Resume, Auxiliary readiness, role changes and startup failures remain compact notices, not new success banners. Use `Axis Workflow | Resumed`, `Axis Workflow | Auxiliary`, `Axis Workflow | Main`, or `Axis Workflow | Startup incomplete` where the owning procedure permits. Preserve the required cause, state and User decision. Fixed loading notices and machine/error tokens remain verbatim. Promotion reuses its one normal Main startup; demotion reuses Auxiliary readiness.
 
 ## Final response
 

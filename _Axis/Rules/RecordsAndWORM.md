@@ -23,7 +23,7 @@
 - Reminder files: Line 1=`Reminder: {subject}` (≤ 80 chars), Line 2=blank, then `created:` / `updated:` / `due-at:` / `timezone:` / `target:` / `reopens:` / `outcome:` fields, then one standalone reminder paragraph.
 - Task entries in `TASKS.md`: lowercase field keys `label:` / `status:` / `created:` / `updated:` / `completed:` / `cancelled:` / `delivers:`, one per line (YAML-parseable), then a short description and a `[Details...]` link. `updated:` is an exact UTC timestamp or the migration-only value `Unknown`; `delivers:` is `N/A` when no Deliverable applies, otherwise use the exact Deliverable name from `_Axis/PROJECT.md`.
 - Snapshot entries in `SNAPSHOTS.md`: a `## {timestamp}` heading, a < 200-word summary, and a `[Details...]` link.
-- Marker files: Line 1=Subject (`Main: session`, `External: {host}`, or `Subagent: {role}`), Line 2=blank. Main and External Markers carry `session: {Session ID}` plus the host; Subagent Markers carry start time, return condition, and Log pointer.
+- Marker files: Line 1=Subject (`Main: session`, `Auxiliary: {host}`, or `Subagent: {role}`), Line 2=blank. Main and Auxiliary Markers carry `session: {Session ID}` plus the host; Subagent Markers carry start time, return condition, and Log pointer.
 - CX Report files: Line 1=`CX: {topic}`; Audit Report files: Line 1=`Audit: {topic}`; Review files: Line 1=`Review: {topic}`; Supervision files: Line 1=`Supervision: {action} - {scope}` (each ≤ 80 chars).
 - Directive entries in `DIRECTIVES.md`: a `## {name}` heading with `#### Keywords` / `#### Description` / `#### Triggers` / `#### Behavior` subsections.
 - At Default/Aggressive Archiving, archive eligible excess Notes after reviewing current guidance; Never reports excess without moving.

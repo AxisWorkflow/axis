@@ -145,7 +145,7 @@
 
 ### Max Concurrent Sessions
 
-**Description:** The most Agent sessions that may be live on this project at once - Main, External Agents and Subagents together (see [Rules > MarkersFlagsAndLocks > Concurrent Sessions]). A new External Agent or Subagent does not start while the limit is reached; Main is never refused. Missing or malformed values mean `10`.
+**Description:** The most Agent sessions that may be live on this project at once - Main, Auxiliary Agents and Subagents together (see [Rules > MarkersFlagsAndLocks > Concurrent Sessions]). A new Auxiliary Agent or Subagent does not start while the limit is reached; Main is never refused. Missing or malformed values mean `10`.
 
 **Range:** a whole number from `1` to `100`
 

@@ -37,7 +37,7 @@ Read before the matching action.
   *Load before delegating work or accepting a Subagent result.*
 
 - [Practices > Agents] - Full operating detail for all Agents, plus the Host Harness.
-  *Load when you are a Subagent or an External Agent, or before coordinating roles, spawns, or parallel work.*
+  *Load when you are a Subagent or an Auxiliary Agent, or before coordinating roles, spawns, or parallel work.*
 
 - [Practices > OpenClaw] - Thin-harness policy for channels, agents, cron, tools, and disabled Host memory/persona layers.
   *Load when running under an OpenClaw Agent Harness - every Agent on that host follows it.*
@@ -171,7 +171,7 @@ Route durable guidance by purpose; no extra file to load:
 
 - [Practices > FaultTolerance] - load for missed or imminent noncompliance.
 
-- [Practices > ExternalTeams] - load for External proposal Teams or Main review.
+- [Practices > AuxiliaryTeams] - load for Auxiliary proposal Teams or Main review.
 <!-- END _Axis/PRACTICES.md -->
 
 <!-- BEGIN _Axis/Practices/References.md -->
@@ -217,7 +217,7 @@ Axis References point to Workflow files or sections: [File], [File > Section], [
 | [Load-Project-Overlay], [Resources > Load-Project-Overlay] | `_Axis/Resources/Load-Project-Overlay.md` |
 | [Refresh-Project-README], [Resources > Refresh-Project-README] | `_Axis/Resources/Refresh-Project-README.md` |
 | [Start-Project], [Resources > Start-Project] | `_Axis/Resources/Start-Project.md` |
-| [Start-External], [Resources > Start-External] | `_Axis/Resources/Start-External.md` |
+| [Start-Auxiliary], [Resources > Start-Auxiliary] | `_Axis/Resources/Start-Auxiliary.md` |
 | [Start-Session], [Resources > Start-Session] | `_Axis/Resources/Start-Session.md` |
 | [Start-Subagent], [Resources > Start-Subagent] | `_Axis/Resources/Start-Subagent.md` |
 | [Start-Wiki], [Resources > Start-Wiki] | `_Axis/Resources/Start-Wiki.md` |
@@ -240,14 +240,14 @@ Rules of use:
 
 ## Documentation Boundary
 
-The [User Manual] and [Specification] explain Axis; they are never operational authority. Session Start and ordinary work do not load them. Load one relevant section only on User's `^help` request, or when the shipped Commands, Practices and Rules leave a genuine ambiguity and the host establishes a high-capability frontier Main Agent. External Agents and Subagents never use them as a fallback. A validated project overlay does not change this boundary.
+The [User Manual] and [Specification] explain Axis; they are never operational authority. Session Start and ordinary work do not load them. Load one relevant section only on User's `^help` request, or when the shipped Commands, Practices and Rules leave a genuine ambiguity and the host establishes a high-capability frontier Main Agent. Auxiliary Agents and Subagents never use them as a fallback. A validated project overlay does not change this boundary.
 <!-- END _Axis/Practices/References.md -->
 
 <!-- BEGIN _Axis/Practices/Markers.md -->
 # Markers
 > **Purpose:** Define ephemeral activity Markers and each Agent's lease.
 
-Markers live in `_Axis/Agents/`, named `{yyyy.mm.dd.hh.mm.ss.xxxZ}.md` under [Practices > IndexDetail]. Subjects are `Main: session`, `External: {host}` or `Subagent: {role}`. Create a Marker when activity starts; delete a Subagent's when it returns. Never use Markers for durable state: use Flags. They are ephemeral, not WORM, and gitignored. Never archive a Marker; blocked deletion follows [Rules > HostAndMeta > Deletion Fallback] by clearing or moving to `_Trash/`.
+Markers live in `_Axis/Agents/`, named `{yyyy.mm.dd.hh.mm.ss.xxxZ}.md` under [Practices > IndexDetail]. Subjects are `Main: session`, `Auxiliary: {host}` or `Subagent: {role}`. Create a Marker when activity starts; delete a Subagent's when it returns. Never use Markers for durable state: use Flags. They are ephemeral, not WORM, and gitignored. Never archive a Marker; blocked deletion follows [Rules > HostAndMeta > Deletion Fallback] by clearing or moving to `_Trash/`.
 
 ## Main Marker Shape
 
@@ -270,7 +270,7 @@ An ordinary host close leaves a Marker to age out. Successful `^shutdown` or ver
 
 ## The Lease
 
-READ your own Marker and check its tombstone at every turn start and immediately before every shared write or lock/identifier claim. Judge the read, THEN renew its `mtime` as a SEPARATE action. Never chain renewal to the read or use a bare `touch`: renewal never creates a Marker. The entry executes this for both Main's banner and External's minted boot record. Lock-File and Timestamps own their pre-write checks, including append-only records that take no file lock.
+READ your own Marker and check its tombstone at every turn start and immediately before every shared write or lock/identifier claim. Judge the read, THEN renew its `mtime` as a SEPARATE action. Never chain renewal to the read or use a bare `touch`: renewal never creates a Marker. The entry executes this for both Main's banner and Auxiliary's minted boot record. Lock-File and Timestamps own their pre-write checks, including append-only records that take no file lock.
 
 - A tombstone means KILLED: make no file writes, tell User on your surface and stop this Axis identity permanently.
 - Idle is not lost: an own Marker that is stale but present, with no tombstone, no live foreign Main and (for Main) `session-id` still naming this session, is renewed on the next turn with a one-line notice. If another Main started meanwhile, the session is taken over: no shared writes; tell User.
@@ -329,8 +329,8 @@ The qualified startup-state.py record operations and `turn.py` may renew the val
 - Check [Practices > Merging] before admission, renewal and each write.
 - Source merge maintenance or retirement blocks writes.
 - Destination Main recovers unfinished merges before other work.
-- One Main Agent per project; every other Agent is an External Agent or Subagent.
-- Entry protocol fixes Main or External role once.
+- One Main Agent per project; every other Agent is an Auxiliary Agent or Subagent.
+- Entry protocol fixes Main or Auxiliary role once.
 - A validated prompt envelope fixes Subagent role.
 - Never re-judge a live role.
 - Main requires standard capability; small models are bounded Subagents only.
@@ -395,7 +395,7 @@ The qualified startup-state.py record operations and `turn.py` may renew the val
 - [Rules > MarkersFlagsAndLocks] - ephemeral live state; what Stale means.
 - [Rules > ProtectedContent] - the `_U` and `_X` name suffixes.
 - [Rules > Subagents] - Prompt Envelope contract and validation order.
-- [Rules > ExternalAgents] - role assignment, action classes, lease.
+- [Rules > AuxiliaryAgents] - role assignment, action classes, lease.
 - [Rules > Budget] - spending, extension requests and resumable work.
 - [Rules > Permissions] - when to confirm a change.
 - [Rules > SettingsAndProfiles] - how Profiles apply to Settings.

@@ -9,12 +9,12 @@ Before the first claim, read [Practices > Markers > Main Marker Shape], [Practic
 
 ## Optional local acceleration
 
-After the preceding `inspect` result permits admission and the canonical contracts are loaded, a verified installed `_Axis/Resources/startup-state.py` may perform ordinary local admission. It requires Python3, POSIX exclusive operations, `fcntl` and existing-descriptor timestamp renewal on the authoritative local filesystem. Do not select it for a promotion contest, a confirmed serialized maintenance window, an unverified mixed update or storage without those primitives. It never grants eligibility or update approval. Missing helper/Python or an `unavailable` result before writes takes Manual admission below; missing acceleration never disables ordinary Axis.
+After the preceding `inspect` result permits admission and the canonical contracts are loaded, a verified installed `_Axis/Resources/startup-state.py` may perform ordinary local admission. It requires Python3, POSIX exclusive operations, `fcntl` and existing-descriptor timestamp renewal on the authoritative local filesystem. Do not select it for a confirmed serialized maintenance window, an unverified mixed update or storage without those primitives. It never grants eligibility or update approval. Missing helper/Python or an `unavailable` result before writes takes Manual admission below; missing acceleration never disables ordinary Axis.
 
 Run `python3 _Axis/Resources/startup-state.py --root . claim --initial {entry-timestamp} --host {host-class}`. Use the exact already-minted entry timestamp and a nonempty one-line host class. No model, endpoint, configuration or additional role parameter is accepted.
 
 - `admitted`: retain returned final Session ID, owner nonce and exact Marker path; these were exclusively written and read back. Continue Start-Session with this helper admission. The bounded batch below applies only after admission succeeds.
-- `external`: no Main artifact was written. Follow Start-External with its fresh identity and required measured cause/remedy greeting.
+- `external`: no Main artifact was written. Follow Start-Auxiliary with its fresh identity and required measured cause/remedy greeting.
 - `ask`: no Main artifact was written. Ask User under [Claim-Session > Takeover]; on yes, claim again adding `--take-over {ID}`. An `admitted` result reports the [Claim-Session > Takeover] sweep in `took_over` and `cleared`.
 - `error`: stop this boot with retained evidence; never switch to a path that reacquires or recreates its state. The helper is an optional accelerator, not an authority or recovery tool.
 
@@ -28,7 +28,7 @@ The complete original file-tool procedure below remains available without Python
 
 2. While admission is held and before creating any Marker, recheck [Practices > Merging] source maintenance/retirement; hold without writing a Marker if either applies. Then READ `_Axis/Flags/starting` directly. Missing, blank, or Line 1 `cleared` is absent. A remaining value means incomplete startup: release only your own admission claim and STOP for quiescent recovery. Never overwrite an unfinished startup merely because two minutes passed.
 
-3. Re-read all foreign Main Markers and their tombstones, measuring age, and judge every idle one under [Claim-Session > Takeover]. If a fresh foreign Main exists, or Takeover joins as External, on an ordinary boot, release only your own admission claim, state that Main admission was lost to that session, and follow [Start-External] with a fresh External identity. No Main Marker, startup Log, Capability Flag, or `starting` Flag is written on this branch. Main candidacy becomes a committed role only after this check. An explicitly authorized promotion re-boot may instead carry its pending contest into [Start-Session] and must satisfy `^promote` before serving work; no other exception applies.
+3. Re-read all foreign Main Markers and their tombstones, measuring age, and judge every idle one under [Claim-Session > Takeover]. If a fresh foreign Main exists, or Takeover joins as Auxiliary, on an ordinary boot, release only your own admission claim, state that Main admission was lost to that session, and follow [Start-Auxiliary] with a fresh Auxiliary identity. No Main Marker, startup Log, Capability Flag, or `starting` Flag is written on this branch. Main candidacy becomes a committed role only after this check; no exception applies.
 
 4. Apply [Practices > Timestamps > Bootstrap Markers] to reserve the Main Session ID, using the entry recipe's timestamp as the initial candidate. Prepare the exact canonical Main Marker Shape from [Practices > Markers > Main Marker Shape] before claiming. Within the short timestamp critical section, exclusively create and read back that first Main Marker, check its tombstone, and release only the owned timestamp claim. A collision advances the candidate before it becomes the Session ID. With admission still held, write/read back `_Axis/Flags/starting` with that final ID, then run the [Claim-Session > Takeover] sweep. Its two-minute freshness remains a diagnostic and completion check, not reclaim authority.
 
@@ -38,8 +38,8 @@ The complete original file-tool procedure below remains available without Python
 
 A foreign `Main: session` Marker at or over 1 hour old with no tombstone is an idle Main. Its last activity is the newest of its `mtime`, its last `_Axis/Tracking/{ID}.md` line and any later `_Axis/Logs/` record holding `session: {ID}`. The takeover limit is 24 hours at [Settings > Permissions] `Restricted`, 7 at `Default` (also when unset) and 3 at `Autonomous`.
 
-- Active under 1 hour: it is live. Join as External; its greeting offers `^promote`.
-- Under the limit: write nothing, release only your own claim, and ask User in one line, naming the session and its idle time and recommending takeover. On yes, claim again and take it over; otherwise join as External.
+- Active under 1 hour: it is live. Join as Auxiliary; its greeting names `axis retire`, which User runs from a terminal to end that Main.
+- Under the limit: write nothing, release only your own claim, and ask User in one line, naming the session and its idle time and recommending takeover. On yes, claim again and take it over; otherwise join as Auxiliary.
 - At or over the limit, or taken over at User's word: become Main.
 
 Sweep after your Marker and `starting` are written: delete each taken-over Main Marker that is still stale, every other Marker over 24 hours old, and every tombstone over 1 hour old with its Marker. Report the count in one greeting line. A cleared session finds its Marker missing at its next turn and, with `session-id` naming the newer live Main, is told it was taken over and stops writing.

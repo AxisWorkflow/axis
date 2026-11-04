@@ -3,7 +3,7 @@
 
 A Review summarizes the project's current state - what changed, what is open, how healthy it is. It challenges nothing (that is a Cross-Examination, `^cx`) and is lighter than an `^audit`. For a quick look without writing anything, use `^status`; for the live view, the Dashboard. A report User asks for on someone else's behalf (a client, a board, a funder) is not a Review: write it in plain language as an ordinary work product in a Project Subfolder ([Practices > Folders]). Use a direct, neutral tone.
 
-1. Confirm the role allows a new Review. An External uses only already recorded, non-secret portability/infrastructure summaries and marks current unverified health accordingly; it never probes Secrets, authentication, environment bindings, or other Main-owned state, and it returns the report to Main through a Message instead of saving it.
+1. Confirm the role allows a new Review. An Auxiliary uses only already recorded, non-secret portability/infrastructure summaries and marks current unverified health accordingly; it never probes Secrets, authentication, environment bindings, or other Main-owned state, and it returns the report to Main through a Message instead of saving it.
 
 2. Load [Practices > Memos]. Find the previous Review: the newest `* - Review - *.md` by parsed creation date or UTC timestamp (accept both legacy dates and full timestamps) in `_Memos/`, else in `_Memos/Archive/`.
 
@@ -48,7 +48,7 @@ A Review summarizes the project's current state - what changed, what is open, ho
 
 7. Save the report as a Review memo under [Practices > Memos] > Reviews, with the synopsis from item 5 as its Summary and its write-once statement first. Mark the previous live Review `superseded` and move it to `_Memos/Archive/` using the complete link-preserving Archiving procedure in [Practices > Memos].
 
-8. External Agents skip README mutation; their report went to Main in item 1. Main alone, when `project-ready` is valid, follows `_Axis/Resources/Refresh-Project-README.md` so its bounded summary can cite the new report. Preserve User-authored README content; a refresh failure does not alter the Review.
+8. Auxiliary Agents skip README mutation; their report went to Main in item 1. Main alone, when `project-ready` is valid, follows `_Axis/Resources/Refresh-Project-README.md` so its bounded summary can cite the new report. Preserve User-authored README content; a refresh failure does not alter the Review.
 
 9. Log an Event that includes the path to the new Review and the Project README refresh result.
 

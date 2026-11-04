@@ -22,14 +22,14 @@ A statement may begin with one type word and a bracketed scope: `{TYPE} [{scope}
 | --- | --- | --- |
 | `INTENT` | Before the first write of a unit of work that changes something - a Task, Command, delegated job or change - naming what you are about to do; read-only work needs none | Comma-separated Task IDs, `^command` names and project-relative paths you expect to touch |
 | `STATUS` | At a milestone, when blocked, before a long wait, or `stopped` when interrupted | The open INTENT's exact scope |
-| `ASK` | To request information or action from another Agent | `to:{Session ID}`, `to:Main`, `to:External` or `to:any` |
+| `ASK` | To request information or action from another Agent | `to:{Session ID}`, `to:Main`, `to:Auxiliary` or `to:any` |
 | `REPLY` | To answer an ASK, or by its author to withdraw it | `re:{timestamp} {Session ID}` |
 | `DONE` | Just before returning or ending that unit: the outcome, files changed and any handoff | The open INTENT's exact scope |
 
 For example:
 
 	2026.10.02.09.14.03.512Z - 2026.10.02.09.02.11.004Z - INTENT [2026.10.01.18.20.44.101Z, _Axis/PLAN.md] Revise the Plan for the new release date
-	2026.10.02.09.15.40.027Z - 2026.10.02.09.02.11.004Z - ASK [to:Main] Please add a Follow-Up for the vendor contract; I cannot write it as External
+	2026.10.02.09.15.40.027Z - 2026.10.02.09.02.11.004Z - ASK [to:Main] Please add a Follow-Up for the vendor contract; I cannot write it as Auxiliary
 	2026.10.02.09.16.02.880Z - 2026.10.02.08.40.00.311Z - REPLY [re:2026.10.02.09.15.40.027Z 2026.10.02.09.02.11.004Z] Accepted; Follow-Up 2026.10.02.09.16.01.957Z created
 	2026.10.02.09.21.17.645Z - 2026.10.02.09.02.11.004Z - DONE [2026.10.01.18.20.44.101Z, _Axis/PLAN.md] Plan revised; release moved to 10-14
 
@@ -53,7 +53,7 @@ Host interruption can arrive between checkpoints; agents must not assume continu
 ## Asking Other Agents
 
 - An ASK is a request carrying no authority. The receiver decides under its own role and gates; it never authorizes a User-only action, a Secret, a role change or work outside the receiver's permissions.
-- External Agents may ASK `to:Main` for a shared write they cannot make themselves. Main treats that ASK exactly as a Message under [Practices > Messages > Adjudication]: accept, decline or refer it to a Task, record the outcome in a Log Event (Tracking is not durable), and REPLY with the outcome. Cross-project messages use sender-local `_Axis/Messages/` and receiver `_Axis/Submissions/` under [Practices > Messages > Boundary delivery].
+- Auxiliary Agents may ASK `to:Main` for a shared write they cannot make themselves. Main treats that ASK exactly as a Message under [Practices > Messages > Adjudication]: accept, decline or refer it to a Task, record the outcome in a Log Event (Tracking is not durable), and REPLY with the outcome. Cross-project messages use sender-local `_Axis/Messages/` and receiver `_Axis/Submissions/` under [Practices > Messages > Boundary delivery].
 - An ASK nobody can answer stays open and is visible on the Board; its author may withdraw it with a REPLY to its own ID.
 
 ## The Board
@@ -71,7 +71,7 @@ Agents do not experience time passing, so [Settings > Tracking] defines which ev
 
 ## Who Tracks
 
-- Main Agents and External Agents always follow the Setting.
+- Main Agents and Auxiliary Agents always follow the Setting.
 - Standard-capability Subagents write their own file at `writes` and `verbose` - and the obligation travels IN the spawn prompt: Main mints the child's Session ID and embeds it with the TRACKING directive per [Start-Subagent], because a Practice the child never reads binds nobody. The child writes INTENT at start and DONE before returning. A child that cannot write files says so in its return. Main inspects the actual Tracking file on return; a missing or late INTENT remains a gap. Main records a current-time STATUS in Main's own file prefixed `Retrospective:` with the observed outcome, never a backdated INTENT or an invented child line.
 - Local delegations NEVER track - the benchmarked Local contract stays untouched, and Main writes their INTENT and DONE lines instead.
 

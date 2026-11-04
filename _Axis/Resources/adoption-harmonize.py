@@ -197,7 +197,7 @@ def candidate_moves(root, scan):
                 if not valid_id(record_id) or record_id!=p.stem and (record_id in ids or not identity_available(root,record_id)):raise ValueError('ambiguous identity')
                 if str(uuid.UUID(value.get('project')))!=value.get('project') or not valid_id(value.get('created')):raise ValueError('identity')
                 issuer=value.get('issuer',{})
-                if issuer.get('role') not in {'main','worker','external'} or not valid_id(issuer.get('session')):raise ValueError('issuer')
+                if issuer.get('role') not in {'main','worker','external','auxiliary'} or not valid_id(issuer.get('session')):raise ValueError('issuer')
                 if value.get('kind') not in {'request','offer','assignment','question','answer','receipt','result','validation','decision','control','transfer'} or not isinstance(value.get('body'),str):raise ValueError('Message shape')
                 if type(value.get('epoch')) is not int or value['epoch']<0 or not valid_id(value.get('expires')) or not isinstance(value.get('data',{}),dict):raise ValueError('Message shape')
                 if not all(isinstance(value.get(k),str) and value[k] for k in ('recipient','correlation')):raise ValueError('Message route')

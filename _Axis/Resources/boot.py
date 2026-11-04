@@ -13,7 +13,7 @@ from pathlib import Path
 # Compiled from _Axis/Roles/ at release; edit the role files, never this region.
 ROLE_TABLE=(
     {'name': 'Main', 'cls': 'session', 'subject': 'Main: session', 'match': 'exact', 'shape': 'exact4', 'created_by': 'claim', 'exclusive': True, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': None, 'survey_key': None, 'notice': None, 'issuer': 'main', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': None, 'guard': None, 'reference_word': 'Main', 'log_by': 'Main Agent', 'title': 'Main Agent', 'plural': 'Main Agents', 'article': 'the'},
-    {'name': 'External', 'cls': 'session', 'subject': 'External: ', 'match': 'prefix', 'shape': 'single-session-line', 'created_by': 'self', 'exclusive': False, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': 'list', 'survey_key': 'fresh_external', 'notice': 'An External Agent is serving this project ({id}).', 'issuer': 'worker', 'proposal_owner': True, 'proposal_issuer': 'external', 'submit_schema': 'axis.external-submission/v1', 'guard': {'config_key': 'externalAgents', 'flag': '--external', 'block_spawn': True, 'new_files': ('subfolders', '_Axis/Submissions/', '_Temp/')}, 'reference_word': 'External', 'log_by': 'External Agent', 'title': 'External Agent', 'plural': 'External Agents', 'article': 'an'},
+    {'name': 'Auxiliary', 'cls': 'session', 'subject': 'Auxiliary: ', 'match': 'prefix', 'shape': 'single-session-line', 'created_by': 'self', 'exclusive': False, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': 'list', 'survey_key': 'fresh_auxiliary', 'notice': 'An Auxiliary Agent is serving this project ({id}).', 'issuer': 'worker', 'proposal_owner': True, 'proposal_issuer': 'auxiliary', 'submit_schema': 'axis.external-submission/v1', 'guard': {'config_key': 'externalAgents', 'flag': '--external', 'block_spawn': True, 'new_files': ('subfolders', '_Axis/Submissions/', '_Temp/')}, 'reference_word': 'Auxiliary', 'log_by': 'Auxiliary Agent', 'title': 'Auxiliary Agent', 'plural': 'Auxiliary Agents', 'article': 'an'},
     {'name': 'Subagent', 'cls': 'session', 'subject': 'Subagent: ', 'match': 'prefix', 'shape': 'free', 'created_by': 'spawner', 'exclusive': False, 'version_bound': False, 'reply_frame': False, 'blocks_save': True, 'survey': 'count', 'survey_key': 'orphan_subagents', 'notice': '{count} orphaned Subagent record(s) from a crashed spawn; ^refresh can clear them', 'issuer': 'worker', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': None, 'guard': None, 'reference_word': 'Subagent', 'log_by': None, 'title': 'Subagent', 'plural': 'Subagents', 'article': 'a'},
     {'name': 'CX', 'cls': 'delegated', 'token': 'CX', 'carries_blocks': True, 'agent_type': 'axis-cx', 'write_scope': (('_Axis/CX/', True), ('_Temp/', False)), 'deny': None},
     {'name': 'Wiki', 'cls': 'delegated', 'token': 'WIKI', 'carries_blocks': True, 'agent_type': 'axis-wiki', 'write_scope': (('_Wiki/', False), ('_Axis/Wiki/', False), ('_Temp/', False)), 'deny': None},
@@ -24,7 +24,7 @@ ROLE_TABLE=(
     {'name': 'TeamMember', 'cls': 'delegated', 'token': 'GENERAL', 'carries_blocks': True, 'agent_type': None, 'write_scope': None, 'deny': None},
     {'name': 'TeamLeader', 'cls': 'delegated', 'token': 'GENERAL', 'carries_blocks': True, 'agent_type': None, 'write_scope': None, 'deny': None},
 )
-ROLE_LEDGER={'issuers': ('external', 'main', 'worker'), 'submission_schemas': ('axis.external-submission/v1',), 'proposal_member_subject': 'Subagent: External proposal Team', 'survey_keys': ('fresh_external', 'orphan_subagents'), 'proposal_owners': (('External:', 'external'),)}
+ROLE_LEDGER={'issuers': ('auxiliary', 'external', 'main', 'worker'), 'submission_schemas': ('axis.external-submission/v1',), 'proposal_member_subject': 'Subagent: External proposal Team', 'survey_keys': ('fresh_auxiliary', 'fresh_external', 'orphan_subagents'), 'proposal_owners': (('External:', 'external'), ('Auxiliary:', 'auxiliary'))}
 # END GENERATED: role-table
 
 a=argparse.ArgumentParser(description='Axis one-command boot')
@@ -527,13 +527,13 @@ else:
         def idle(m):
             n=int(m.get('idle_seconds',m.get('age_seconds',0)))//60;return f'{n} minutes' if n<120 else f'{n//60} hours'
         return '; '.join(f"{m['session']} (host {m.get('host') or 'unknown'}, last active {idle(m)} ago)" for m in c.get('mains') or c.get('took_over') or [])
-    if c.get('status')=='external':
-        print(json.dumps({'axis_boot':'EXTERNAL','claim':c}));print(f'EXTERNAL: another Main session is live: {mains(c)}. Follow _Axis/Resources/Start-External.md.');sys.exit(3)
+    if c.get('status')=='external':  # the claim's ledger status for the live-Main fallback; it boots an Auxiliary
+        print(json.dumps({'axis_boot':'AUXILIARY','claim':c}));print(f'AUXILIARY: another Main session is live: {mains(c)}. Follow _Axis/Resources/Start-Auxiliary.md.');sys.exit(3)
     if c.get('status')=='ask':
         # Takeover ask (Claim-Session > Takeover): nothing was written; the user decides.
         again=' '.join('--take-over '+m['session'] for m in c['mains'])
         print(json.dumps({'axis_boot':'ASK','claim':c}))
-        print(f"ASK: another Main session is idle, under the {c['threshold_hours']}-hour takeover limit at Permissions {c['permissions']}: {mains(c)}. The recorded host conversation may still be open even while its Axis lease is idle. Ask the user in one line, naming it and recommending takeover: take it over (its record is cleared and that session stops at its next turn), or join as an External Agent beside it. On take over, run: python3 _Axis/Resources/boot.py {again} --host {o.host!r} --model {o.model!r} --harness {o.harness} --spawn {o.spawn} --parallel {o.parallel}. On join, follow _Axis/Resources/Start-External.md. Do nothing else until the user answers.")
+        print(f"ASK: another Main session is idle, under the {c['threshold_hours']}-hour takeover limit at Permissions {c['permissions']}: {mains(c)}. The recorded host conversation may still be open even while its Axis lease is idle. Ask the user in one line, naming it and recommending takeover: take it over (its record is cleared and that session stops at its next turn), or join as an Auxiliary Agent beside it. On take over, run: python3 _Axis/Resources/boot.py {again} --host {o.host!r} --model {o.model!r} --harness {o.harness} --spawn {o.spawn} --parallel {o.parallel}. On join, follow _Axis/Resources/Start-Auxiliary.md. Do nothing else until the user answers.")
         sys.exit(5)
     if c.get('status')!='admitted':stop('session claim failed',claim=c)
     sid,owner=c['session'],c['owner']
@@ -607,6 +607,7 @@ try:
      h=adopted.get('harmonization')
      if h:notices.append(f"Adoption scan: {h.get('repairs',0)} repairs; {len(h.get('residual',[]))} unresolved findings retained. Report: _Axis/Updates/{adopted['transaction']}/harmonization.json")
  if s.get('manifest_missing'):notices.append('Missing Workflow files: '+', '.join(s['manifest_missing']))
+ if os.path.lexists(root/'_Axis/Flags/promote'):notices.append('An old promote Flag is still at _Axis/Flags/promote. In-session promotion was removed in 3.15, so it has no effect; it can be deleted.')
  env=s.get('environment') or {};bind=root/'_Axis/Flags/environment-binding'
  if env.get('state')=='changed' and env.get('fields')=='binding-missing-or-malformed' and not bind.exists() and not any((root/'_Axis/Snapshots').glob('*Z.md')):
      # First session of a new project: nothing earlier to validate, so record the binding now.

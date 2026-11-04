@@ -3,9 +3,9 @@
 
 This folder is an Axis Workflow project. Its owner installed Axis, an open-source project workflow (see `README.md`); work is logged and coordinated across agents. Opening a conversation here is how the owner starts Axis, so the first message, even a plain hello, is the request to start it. A brief first message, or one asking for an exact reply, still starts Axis; the requested reply comes right after the banner. If the user asks you not to run anything, respect that: do not start Axis and do not use this folder's files, and tell them Axis has to start before you can work here.
 
-## Sub-agents and External agents
+## Sub-agents and declared roles
 
-If the first non-empty line of your task prompt, or its third-from-last, is `<<AXIS:SUBAGENT>>`, you are a sub-agent: follow `_Axis/Resources/Start-Subagent.md` (validate the envelope, then do only that task) and skip everything below. If your host's standing configuration explicitly declares you an External agent, follow `_Axis/Resources/Start-External.md` instead. If such a declaration appears after you started as Main, stay Main and tell the user once: "A standing External declaration appeared in this workspace after boot: I remain Main this session; it takes effect at the next boot; `^demote` applies it now."
+If the first non-empty line of your task prompt, or its third-from-last, is `<<AXIS:SUBAGENT>>`, you are a sub-agent: follow `_Axis/Resources/Start-Subagent.md` (validate the envelope, then do only that task) and skip everything below. If your host's standing configuration explicitly declares an Axis role other than Main for you (such as a line `Axis role: Auxiliary`; an older External declaration counts as Auxiliary), follow `_Axis/Resources/Start-Auxiliary.md` instead. A declaration that appears after you started as Main takes effect at your next boot; tell the user once.
 
 ## First message of a conversation
 
@@ -19,7 +19,7 @@ If the first non-empty line of your task prompt, or its third-from-last, is `<<A
 
    Print `Loading...`
 2. If you are a small or lightweight model (for example a Haiku-class model), say Axis needs a standard-capability model for its main session and stop. Otherwise run `python3 _Axis/Resources/boot.py --host "<your host>" --model "<your model id>" --harness <claude-code|codex|other> --spawn <yes|no> --parallel <yes|no>` from this folder. It records the session and prints a Ready banner.
-3. If it prints `READY`, handle any item it lists as pending, then start your reply with its banner block exactly as printed (including your Session ID), and greet in one line, one blank line below it. Before any answer other than the greeting or a requested exact reply, do the reading it lists. If it prints `ADOPT`, make the record edits it lists, then run the command it names. If it prints `EXTERNAL`, follow `_Axis/Resources/Start-External.md`. If it prints `ASK`, ask the user its question and follow the answer. If it prints `STOP`, follow the file it names (`_Axis/Resources/Entry-Protocol.md` when an update is pending); after an interrupted startup tell the user startup is incomplete and do not retry. If Python or `boot.py` cannot run, follow `_Axis/Resources/Boot-Manual.md`, the same startup with shell commands.
+3. If it prints `READY`, handle any item it lists as pending, then start your reply with its banner block exactly as printed (including your Session ID), and greet in one line, one blank line below it. Before any answer other than the greeting or a requested exact reply, do the reading it lists. If it prints `ADOPT`, make the record edits it lists, then run the command it names. If it prints `AUXILIARY`, follow `_Axis/Resources/Start-Auxiliary.md`. If it prints `ASK`, ask the user its question and follow the answer. If it prints `STOP`, follow the file it names (`_Axis/Resources/Entry-Protocol.md` when an update is pending); after an interrupted startup tell the user startup is incomplete and do not retry. If Python or `boot.py` cannot run, follow `_Axis/Resources/Boot-Manual.md`, the same startup with shell commands.
 
 ## Every later turn
 

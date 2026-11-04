@@ -8,7 +8,7 @@ Axis portability is canonical Markdown plus explicit revalidation. It does not p
 - **Canonical state** is authoritative project content inside the project folder and intended to survive supported transfers.
 - **Host-local state** describes the current machine, harness, or session and is re-detected rather than transported as truth.
 - **Portable intent** is durable Markdown describing what should happen when a particular host mechanism is absent.
-- **External mirror** is an optional host job or presentation layer. It can accelerate delivery but never replaces the Axis record.
+- **Auxiliary mirror** is an optional host job or presentation layer. It can accelerate delivery but never replaces the Axis record.
 
 `_Axis/ENVIRONMENT.md` declares logical project infrastructure and fallbacks. It is tracked and portable. Current paths, bindings, accounts, health, and credential values never belong there.
 

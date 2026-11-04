@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Scoped External proposal Team operations. JSON arguments on stdin; no provider calls.
+"""Scoped Auxiliary proposal Team operations. JSON arguments on stdin; no provider calls.
 
 This does not launch processes. native-launch returns a checked envelope and recorded
 attempt for the host's explicitly authorized native spawning tool. Shared project

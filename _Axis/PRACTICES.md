@@ -31,7 +31,7 @@ Read before the matching action.
   *Load before delegating work or accepting a Subagent result.*
 
 - [Practices > Agents] - Full operating detail for all Agents, plus the Host Harness.
-  *Load when you are a Subagent or an External Agent, or before coordinating roles, spawns, or parallel work.*
+  *Load when you are a Subagent or an Auxiliary Agent, or before coordinating roles, spawns, or parallel work.*
 
 - [Practices > OpenClaw] - Thin-harness policy for channels, agents, cron, tools, and disabled Host memory/persona layers.
   *Load when running under an OpenClaw Agent Harness - every Agent on that host follows it.*
@@ -165,4 +165,4 @@ Route durable guidance by purpose; no extra file to load:
 
 - [Practices > FaultTolerance] - load for missed or imminent noncompliance.
 
-- [Practices > ExternalTeams] - load for External proposal Teams or Main review.
+- [Practices > AuxiliaryTeams] - load for Auxiliary proposal Teams or Main review.

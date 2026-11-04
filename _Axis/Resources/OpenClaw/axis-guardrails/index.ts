@@ -15,9 +15,9 @@ const SECRETS = "_Axis/Secrets";
 type Guard = { agents: (api: any) => Set<string>; spawn: string | null; secrets: string; args: (tool: string, path: string) => string[] };
 // BEGIN GENERATED: role-table
 // Compiled from _Axis/Roles/ at release; edit the role files, never this region.
-const DESCRIPTION = "Refuses tool calls by Axis External Agents that Axis rules forbid.";
+const DESCRIPTION = "Refuses tool calls by Axis Auxiliary Agents that Axis rules forbid.";
 const GUARDED: Guard[] = [
-  { agents: (api: any) => new Set<string>(((api as any).pluginConfig?.externalAgents as string[]) ?? []), spawn: "Axis guardrail: an External Agent never spawns agents or sessions.", secrets: "Axis guardrail: an External Agent never uses _Axis/Secrets/.", args: (tool: string, path: string) => ["--external", tool, path] },
+  { agents: (api: any) => new Set<string>(((api as any).pluginConfig?.externalAgents as string[]) ?? []), spawn: "Axis guardrail: an Auxiliary Agent never spawns agents or sessions.", secrets: "Axis guardrail: an Auxiliary Agent never uses _Axis/Secrets/.", args: (tool: string, path: string) => ["--external", tool, path] },
 ];
 // END GENERATED: role-table
 

@@ -36,11 +36,26 @@ def discover(roots):
     return sorted(found)
 
 
+SUPERVISION = ('--source-root', '--session', '--authority', '--execute', '--explicit-start', '--operation', '--access-evidence')
+
+
 def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
+    if argv and argv[0] == 'retire':
+        return module('axis-roles').main(argv)
+    if argv and argv[0] == 'start' and not any(a.split('=')[0] in SUPERVISION for a in argv[1:]):
+        # User mode: a fresh session in a project without a live Main. Agents start children through ^^start.
+        roles = module('axis-roles')
+        if roles.agent_shell():
+            print('axis: an agent starts a child project only through ^^start, which passes --source-root, --session and --authority', file=sys.stderr); return 2
+        rest = argv[1:]
+        try: roles.start(argparse.Namespace(project=next((x for x in rest if not x.startswith('-')), '.')), lambda root, args: None)
+        except roles.RoleActionError as exc:
+            print('axis: ' + str(exc), file=sys.stderr); return 2
+        return main(rest)
     if argv and argv[0] in {'probe', 'status', 'start'}:
         return subprocess.call([sys.executable, str(Path(__file__).with_name('session-adapters.py')), *argv])
-    parser = argparse.ArgumentParser(description='axis [project] [--agent codex|claude|none]; axis ls; axis projects [roots]')
+    parser = argparse.ArgumentParser(description='axis [project] [--agent codex|claude|none]; axis start [project]; axis retire [project]; axis ls; axis projects [roots]')
     parser.add_argument('target', nargs='?', default='.')
     parser.add_argument('roots', nargs='*')
     parser.add_argument('--agent', default='codex', choices=('codex', 'claude', 'none'))

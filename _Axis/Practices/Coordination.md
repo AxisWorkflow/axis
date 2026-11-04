@@ -1,7 +1,7 @@
 # Coordination
 > **Purpose:** Operate an Axis Team of Agents and bounded Jobs under one accepting Main.
 
-External-owned proposal Teams reuse these records, budgets and workspaces with explicit `proposal_only` provenance and no Main acceptance snapshot. Their internal controls project only their own proposal lifecycle; they never become project decisions. Load [Practices > ExternalTeams] for the owner-bound route, member permissions, `owner` result recipient and Main submission. Ordinary Main controls below retain their gates.
+Auxiliary-owned proposal Teams reuse these records, budgets and workspaces with explicit `proposal_only` provenance and no Main acceptance snapshot. Their internal controls project only their own proposal lifecycle; they never become project decisions. Load [Practices > AuxiliaryTeams] for the owner-bound route, member permissions, `owner` result recipient and Main submission. Ordinary Main controls below retain their gates.
 
 ## Records and ownership
 
@@ -42,7 +42,7 @@ Existing immutable records without `limits.budget` retain legacy compatibility: 
 
 ## Team grants and scoped control
 
-Main allocates independent resources before admitting a native-budget Team. `resource_pool` names the complete authorized parent budget; `limits.budget` is the Team's requested share, and `limits.concurrency` reserves its slots including the leader. When no pool is supplied, the Team budget is the whole pool. Main checks cumulative known charges, outstanding allocations and the Main slot before issuing a unique Team budget key. Jobs inherit that key. Unused Team slots and reserved money are unavailable to unrelated work. Time retains the original agreed clock and a Team limit within its parent window; overlapping wall-clock windows are not summed as agent-hours. No nested Team suballocation is implied. External proposal Teams retain their isolated proposal contracts and cannot issue Main's project grants.
+Main allocates independent resources before admitting a native-budget Team. `resource_pool` names the complete authorized parent budget; `limits.budget` is the Team's requested share, and `limits.concurrency` reserves its slots including the leader. When no pool is supplied, the Team budget is the whole pool. Main checks cumulative known charges, outstanding allocations and the Main slot before issuing a unique Team budget key. Jobs inherit that key. Unused Team slots and reserved money are unavailable to unrelated work. Time retains the original agreed clock and a Team limit within its parent window; overlapping wall-clock windows are not summed as agent-hours. No nested Team suballocation is implied. Auxiliary proposal Teams retain their isolated proposal contracts and cannot issue Main's project grants.
 
 Ordinary Team commits take `_Axis/Teams/{team-ID}/control.lock`; Main's shared admissions take `_Axis/Flags/main-control.lock`. The latter serializes Main helper calls, not Team messaging. Legacy shared budgets use Main serialization plus the affected Team guard until explicitly reconciled. Timestamp claims exclude only one candidate ID. Accepted predecessors, operation identities, epochs, placement and exact bytes still decide logical conflicts. Do not infer success from a newer filename.
 

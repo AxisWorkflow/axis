@@ -39,7 +39,7 @@ _FORMAT_SPEC.loader.exec_module(_FORMAT)
 # Compiled from _Axis/Roles/ at release; edit the role files, never this region.
 ROLE_TABLE=(
     {'name': 'Main', 'cls': 'session', 'subject': 'Main: session', 'match': 'exact', 'shape': 'exact4', 'created_by': 'claim', 'exclusive': True, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': None, 'survey_key': None, 'notice': None, 'issuer': 'main', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': None, 'guard': None, 'reference_word': 'Main', 'log_by': 'Main Agent', 'title': 'Main Agent', 'plural': 'Main Agents', 'article': 'the'},
-    {'name': 'External', 'cls': 'session', 'subject': 'External: ', 'match': 'prefix', 'shape': 'single-session-line', 'created_by': 'self', 'exclusive': False, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': 'list', 'survey_key': 'fresh_external', 'notice': 'An External Agent is serving this project ({id}).', 'issuer': 'worker', 'proposal_owner': True, 'proposal_issuer': 'external', 'submit_schema': 'axis.external-submission/v1', 'guard': {'config_key': 'externalAgents', 'flag': '--external', 'block_spawn': True, 'new_files': ('subfolders', '_Axis/Submissions/', '_Temp/')}, 'reference_word': 'External', 'log_by': 'External Agent', 'title': 'External Agent', 'plural': 'External Agents', 'article': 'an'},
+    {'name': 'Auxiliary', 'cls': 'session', 'subject': 'Auxiliary: ', 'match': 'prefix', 'shape': 'single-session-line', 'created_by': 'self', 'exclusive': False, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': 'list', 'survey_key': 'fresh_auxiliary', 'notice': 'An Auxiliary Agent is serving this project ({id}).', 'issuer': 'worker', 'proposal_owner': True, 'proposal_issuer': 'auxiliary', 'submit_schema': 'axis.external-submission/v1', 'guard': {'config_key': 'externalAgents', 'flag': '--external', 'block_spawn': True, 'new_files': ('subfolders', '_Axis/Submissions/', '_Temp/')}, 'reference_word': 'Auxiliary', 'log_by': 'Auxiliary Agent', 'title': 'Auxiliary Agent', 'plural': 'Auxiliary Agents', 'article': 'an'},
     {'name': 'Subagent', 'cls': 'session', 'subject': 'Subagent: ', 'match': 'prefix', 'shape': 'free', 'created_by': 'spawner', 'exclusive': False, 'version_bound': False, 'reply_frame': False, 'blocks_save': True, 'survey': 'count', 'survey_key': 'orphan_subagents', 'notice': '{count} orphaned Subagent record(s) from a crashed spawn; ^refresh can clear them', 'issuer': 'worker', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': None, 'guard': None, 'reference_word': 'Subagent', 'log_by': None, 'title': 'Subagent', 'plural': 'Subagents', 'article': 'a'},
     {'name': 'CX', 'cls': 'delegated', 'token': 'CX', 'carries_blocks': True, 'agent_type': 'axis-cx', 'write_scope': (('_Axis/CX/', True), ('_Temp/', False)), 'deny': None},
     {'name': 'Wiki', 'cls': 'delegated', 'token': 'WIKI', 'carries_blocks': True, 'agent_type': 'axis-wiki', 'write_scope': (('_Wiki/', False), ('_Axis/Wiki/', False), ('_Temp/', False)), 'deny': None},
@@ -50,7 +50,7 @@ ROLE_TABLE=(
     {'name': 'TeamMember', 'cls': 'delegated', 'token': 'GENERAL', 'carries_blocks': True, 'agent_type': None, 'write_scope': None, 'deny': None},
     {'name': 'TeamLeader', 'cls': 'delegated', 'token': 'GENERAL', 'carries_blocks': True, 'agent_type': None, 'write_scope': None, 'deny': None},
 )
-ROLE_LEDGER={'issuers': ('external', 'main', 'worker'), 'submission_schemas': ('axis.external-submission/v1',), 'proposal_member_subject': 'Subagent: External proposal Team', 'survey_keys': ('fresh_external', 'orphan_subagents'), 'proposal_owners': (('External:', 'external'),)}
+ROLE_LEDGER={'issuers': ('auxiliary', 'external', 'main', 'worker'), 'submission_schemas': ('axis.external-submission/v1',), 'proposal_member_subject': 'Subagent: External proposal Team', 'survey_keys': ('fresh_auxiliary', 'fresh_external', 'orphan_subagents'), 'proposal_owners': (('External:', 'external'), ('Auxiliary:', 'auxiliary'))}
 # END GENERATED: role-table
 # Stored records validate against the ledger of everything ever issued; new writes use the current rows.
 ISSUERS = frozenset(ROLE_LEDGER['issuers'])
@@ -957,13 +957,13 @@ class Store:
                     if not checked.with_suffix('.kill').exists() and time.time() - checked.stat().st_mtime < 3600: live += 1
                 need(live < cap, 'project-concurrency')
                 def allocation_body(ident):
-                    return ('External Team member allocation\n\nby: ' + self._proposal_role()['log_by'] + '\nsession: ' + self.session
+                    return ('Auxiliary Team member allocation\n\nby: ' + self._proposal_role()['log_by'] + '\nsession: ' + self.session
                             + '\nteam: ' + team + '\nslot: ' + slot + '\nrole: GENERAL\nstate: allocation-intent\n'
                             + 'Synopsis: Reserve a scoped proposal member; no host or provider has been launched.\n')
                 allocation_log, _ = self.io.record('Logs', allocation_body, renew_lease=False)
                 def body(sid):
                     return (PROPOSAL_MEMBER_SUBJECT + '\n\nparent: ' + self.session + '\nproposal-team: ' + team
-                            + '\nproposal-slot: ' + slot + '\nstarted: ' + sid + '\nlog: _Axis/Logs/' + allocation_log + '.md\nreturn: External owner; Main alone accepts project integration.\n')
+                            + '\nproposal-slot: ' + slot + '\nstarted: ' + sid + '\nlog: _Axis/Logs/' + allocation_log + '.md\nreturn: Auxiliary owner; Main alone accepts project integration.\n')
                 sid, path = self.io.record('Agents', body, renew_lease=False)
             self.event('Teams', team, 'bind_member', {'slot': slot, 'session': sid})
             return {'session': sid, 'path': path, 'team': team, 'slot': slot, 'owner': self.session, 'allocation_log': allocation_log}
@@ -1003,7 +1003,7 @@ class Store:
             need(isinstance(attachments or [], list) and all(isinstance(a, dict) and str(a.get('path', '')).startswith(prefix) for a in (attachments or [])), 'proposal-attachment-scope')
             checked = self.validate_attachments(attachments or [])
             with self.locked(proposal=True):
-                return self._record('Messages', {'subject': 'External Team ' + kind, 'kind': kind,
+                return self._record('Messages', {'subject': 'Auxiliary Team ' + kind, 'kind': kind,
                     'recipient': recipient, 'body': body, 'team': team, 'job': None, 'epoch': self.project('Teams', team)['epoch'],
                     'expires': charter['authority']['expires'], 'correlation': team, 'authority': None,
                     'data': {}, 'delivery': delivery, 'attachments': checked})
@@ -1041,7 +1041,7 @@ class Store:
                         need(message['issuer'] == {'session': self.session, 'role': self._proposal_role()['proposal_issuer']} and message['data'].get('proposal_digest') == fingerprint, 'proposal-submission-conflict')
                         return {'status': 'duplicate', 'id': message['id'], 'record': message}
                 charter = self.read('Teams', team)
-                return self._record('Messages', {'subject': 'External Team submission for Main', 'kind': 'request', 'recipient': 'main',
+                return self._record('Messages', {'subject': 'Auxiliary Team submission for Main', 'kind': 'request', 'recipient': 'main',
                     'body': body, 'team': team, 'job': None, 'epoch': self.project('Teams', team)['epoch'],
                     'expires': charter['authority']['expires'], 'correlation': key, 'authority': None, 'attachments': checked,
                     'data': {'proposal_submission': key, 'proposal_digest': fingerprint, 'integration': 'unaccepted'}})
@@ -1083,10 +1083,10 @@ class Store:
             'DELIVERABLE: The TASK below, as immutable artifact revisions in your workspace and a final result Message to owner.\n'
             'SUCCESS: The TASK is answered by your artifacts and result Message, inside the scope below.\n'
             'CRITICAL RULES: Never create or replace the Marker. Missing, expired or killed owner/member means stop. '
-            'Artifact submission does not end valid discussion. External reviews proposals; only Main accepts project integration.\n'
+            'Artifact submission does not end valid discussion. Auxiliary reviews proposals; only Main accepts project integration.\n'
             'CONSTRAINTS: No shared project writes, settings, indexes, role changes, provider calls, spawning, budget changes or integration. '
             'This carried scope is not OS isolation; ordinary host tools are not constrained by the checked broker.\n'
-            'SCOPE AND AUTHORITY: You are a scoped member of an External-led proposal Team. Owner: ' + self.session + '. Session: ' + sid + '. '
+            'SCOPE AND AUTHORITY: You are a scoped member of an Auxiliary-led proposal Team. Owner: ' + self.session + '. Session: ' + sid + '. '
             'Binding: ' + canonical(binding).decode() + '. Team epoch: ' + str(self.project('Teams', team)['epoch']) + '. Slot: ' + slot + '. '
             'Before each operation verify own lease and live Team/Job/owner authority using CheckedTeamSession. '
             'Use write_draft and delete_draft only for ' + scope + '/work/; publish_artifact creates immutable revisions under ' + scope + '/artifacts/. '
@@ -1109,12 +1109,12 @@ class Store:
         with self._proposal_context(team):
             with self.locked(proposal=True):
                 def log_body(ident):
-                    return ('External Team native launch prepared\n\nby: ' + self._proposal_role()['log_by'] + '\nsession: ' + self.session
+                    return ('Auxiliary Team native launch prepared\n\nby: ' + self._proposal_role()['log_by'] + '\nsession: ' + self.session
                             + '\nteam: ' + team + '\njob: ' + job + '\nmember: ' + sid
                             + '\nroute: native-host-carried-scope\nrole: GENERAL\nmodel: selected by authorized native host\n'
                             + 'task-sha256: ' + digest(task) + '\nprompt-sha256: ' + digest(prompt)
                             + '\nrole-file-sha256: ' + role_sha + '\nguidance-sha256: ' + guidance
-                            + '\ninput-bytes: ' + str(len(prompt.encode())) + '\nSynopsis: Prepare scoped proposal artifacts and return evidence to External owner; Main decides integration.\n')
+                            + '\ninput-bytes: ' + str(len(prompt.encode())) + '\nSynopsis: Prepare scoped proposal artifacts and return evidence to Auxiliary owner; Main decides integration.\n')
                 log_id, _ = self.io.record('Logs', log_body, renew_lease=False)
         dispatch = self.proposal_event('Jobs', job, 'dispatch', data)
         return {'status': 'dispatch-recorded-not-launched', 'dispatch': dispatch['id'], 'session': sid,

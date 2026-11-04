@@ -40,7 +40,7 @@ Axis References point to Workflow files or sections: [File], [File > Section], [
 | [Load-Project-Overlay], [Resources > Load-Project-Overlay] | `_Axis/Resources/Load-Project-Overlay.md` |
 | [Refresh-Project-README], [Resources > Refresh-Project-README] | `_Axis/Resources/Refresh-Project-README.md` |
 | [Start-Project], [Resources > Start-Project] | `_Axis/Resources/Start-Project.md` |
-| [Start-External], [Resources > Start-External] | `_Axis/Resources/Start-External.md` |
+| [Start-Auxiliary], [Resources > Start-Auxiliary] | `_Axis/Resources/Start-Auxiliary.md` |
 | [Start-Session], [Resources > Start-Session] | `_Axis/Resources/Start-Session.md` |
 | [Start-Subagent], [Resources > Start-Subagent] | `_Axis/Resources/Start-Subagent.md` |
 | [Start-Wiki], [Resources > Start-Wiki] | `_Axis/Resources/Start-Wiki.md` |
@@ -63,4 +63,4 @@ Rules of use:
 
 ## Documentation Boundary
 
-The [User Manual] and [Specification] explain Axis; they are never operational authority. Session Start and ordinary work do not load them. Load one relevant section only on User's `^help` request, or when the shipped Commands, Practices and Rules leave a genuine ambiguity and the host establishes a high-capability frontier Main Agent. External Agents and Subagents never use them as a fallback. A validated project overlay does not change this boundary.
+The [User Manual] and [Specification] explain Axis; they are never operational authority. Session Start and ordinary work do not load them. Load one relevant section only on User's `^help` request, or when the shipped Commands, Practices and Rules leave a genuine ambiguity and the host establishes a high-capability frontier Main Agent. Auxiliary Agents and Subagents never use them as a fallback. A validated project overlay does not change this boundary.

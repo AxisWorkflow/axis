@@ -1,7 +1,7 @@
 # Roles: Delegating
 > **Purpose:** The delegating kit for every agent that starts another: role selection, carriers, the task contract and acceptance.
 
-Main, a Team Leader, an External owner of a proposal Team and a parent Main use the same kit. A delegate can only narrow the authority it received; a granted start of another agent passes the same role text and governance unchanged and is reported. [Practices > Delegation] decides whether to delegate; [Start-Subagent] builds and sends the prompt.
+Main, a Team Leader, an Auxiliary owner of a proposal Team and a parent Main use the same kit. A delegate can only narrow the authority it received; a granted start of another agent passes the same role text and governance unchanged and is reported. [Practices > Delegation] decides whether to delegate; [Start-Subagent] builds and sends the prompt.
 
 ## Choose the role
 

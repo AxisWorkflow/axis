@@ -15,7 +15,7 @@ A Flag is a persistent file that records durable workflow state. A Flag remains 
 | `starting` | per-session | `{yyyy.mm.dd.hh.mm.ss.xxxZ}` | < 2 minutes while startup is in flight |
 | `session-id` | per-session | `{yyyy.mm.dd.hh.mm.ss.xxxZ}` | < 60 seconds for the post-start completion check |
 | `project-overlay` | per-session | `{yyyy.mm.dd.hh.mm.ss.xxxZ}` | current Session ID on Line 1; schema 1 has four lines; schema 2 has six lines including Project and overlay SHA-256 |
-| `promote` | per-session | `{yyyy.mm.dd.hh.mm.ss.xxxZ}` | < 10 minutes while a promotion awaits its trusted-surface approval |
+| `promote` | per-session | `{yyyy.mm.dd.hh.mm.ss.xxxZ}` | retired in 3.15 with in-session promotion; a leftover file has no effect, stays ignored by Git and is reported once at startup |
 | `model` | per-session | model name or `unknown` | - |
 | `model-access` | per-session | `subscription` or `api-key` or `unverified` | - |
 | `host-spawn` | per-session | `yes` or `no` | - |

@@ -1,7 +1,7 @@
 # Changelog
 > **Purpose:** Record Axis release identity and the structural migrations needed to update an existing project safely.
 
-current-version: 3.14
+current-version: 3.15
 changelog-format: 1
 self-update-baseline: 26.08.19
 
@@ -39,6 +39,33 @@ update-impact: automatic
 ### Verification
 
 - None.
+
+## 3.15
+
+released: 2026-11-04
+
+update-impact: automatic
+
+### Structural Changes
+
+- The External role is renamed **Auxiliary**, and no External role remains (User decision, 1 November 2026). `_Axis/Roles/Auxiliary.md` replaces `_Axis/Roles/External.md`; `_Axis/Resources/Start-Auxiliary.md`, `_Axis/Rules/AuxiliaryAgents.md`, `_Axis/Practices/AuxiliaryTeams.md` and `_Axis/Resources/auxiliary-team.py` replace their External names. New Auxiliary Markers read `Auxiliary: {host}`, boot reports `AUXILIARY`, and new proposal Teams issue `auxiliary`. Wire identifiers stay as they are, so stored records, in-flight Teams and existing host configuration keep working: `External:` proposal owners and the `external` issuer of stored records; the `axis.external-submission/v1` schema and the `Subagent: External proposal Team` member subject, which new Submissions and proposal-Team members still write; the claim status `external` that boot.py reads as the live-Main fallback; the refusal codes `external-required` and `proposal-external-marker`; and the OpenClaw guard's `externalAgents` key and `--external` flag, which Round B2 migrates per chat. Only role names, labels, files and the new proposal issuer `auxiliary` change.
+- In-session promotion is removed: `^promote`, `^demote` and the promote Flag are gone, and no session changes its own role. An Auxiliary never becomes Main. The User ends a live Main from a terminal with `axis retire`, and the next fresh session becomes Main by the normal rule; the boot-time takeover question for an idle Main stays.
+- New `_Axis/Resources/axis-roles.py`, reached as `axis retire` and `axis start`. User mode shows the target's recent activity and requires the typed word `RETIRE` (or `--yes` from the User's script), writes the `^kill` tombstone, removes the Marker and logs the retirement. Agent mode, required in a recognized agent shell, accepts only a direct child of the caller's project, a valid Main lease and a Log or Supervision record by that session naming the action and the child; it does not verify who asked. `^^stop` fences through it; `^^start` keeps `axis start` with its authority file, and the session-start helper now refuses a project that is not the caller's direct child.
+- The entry files route any declared Axis role other than Main to `Start-Auxiliary.md`, which now runs the standard-model check. A declaration naming a role this version does not provide gets a notice and no service, never Main candidacy. A Tier 3 delegate no longer joins a contested child; it holds and reports.
+
+### Project-State Migrations
+
+- None required. A 3.10 declaration `Axis role: External; ...; promote: refused` keeps working as Auxiliary and its `promote:` field is ignored. Stored records that name External (Logs signed `by: External Agent`, proposal records, Submissions) stay valid history and are not rewritten. A live External session from before the update stops at its next turn, because its Marker role is no longer recognized, and boots again as Auxiliary. An existing `_Axis/Flags/promote` has no effect; startup reports it once so it can be deleted.
+
+### Retired Paths
+
+- `_Axis/Commands/promote.md` and `_Axis/Commands/demote.md` (no replacement inside a session; the User's `axis retire` replaces the role change).
+- `_Axis/Roles/External.md`, `_Axis/Resources/Start-External.md`, `_Axis/Rules/ExternalAgents.md`, `_Axis/Practices/ExternalTeams.md` and `_Axis/Resources/external-team.py` are replaced by their Auxiliary names above.
+- `_Axis/Flags/promote` has no role any more; it stays in the Flag registry, marked retired, only so Git keeps ignoring a leftover file.
+
+### Verification
+
+- No product file names an External role or in-session promotion outside the named migration sentences and released history; the role table has no External row and no promotable session row; `axis retire` and `axis start` pass the mode and authority matrix; the entry files stay under their 4,000-byte budget and first-startup reading stays within 3.09's total.
 
 ## 3.14
 

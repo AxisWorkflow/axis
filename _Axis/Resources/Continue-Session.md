@@ -1,7 +1,7 @@
 # Continue Session
 > **Purpose:** Recover the context of an already booted identity without adopting another session.
 
-Normal visible Main or External boot records use the entry fast path. A Subagent keeps its envelope identity. Never recreate a Marker, infer identity from age, or adopt the shared session-id Flag as your own identity.
+Normal visible Main or Auxiliary boot records use the entry fast path. A Subagent keeps its envelope identity. Never recreate a Marker, infer identity from age, or adopt the shared session-id Flag as your own identity.
 
 ## Identity recovery
 
@@ -11,4 +11,4 @@ Use this procedure only for an existing conversation. Recover your exact own Ses
 2. With Python, run `turn.py --session {own Session ID}` and honor every hold before any renewal or other write. Without Python, use [Displaced-Session] > Persistent hosts and no-shell parity: verify your exact safe Marker, tombstone, foreign Main state, Main ownership and own boot version before renewing only the existing Marker. Do not refresh the shared session-id Flag during continuation.
 3. An OK result permits recovery of missing context through [Load-Starting-Context] and applicable [Load-Project-Overlay] checks. Complete update, Message and overlay checks from the entry fast path before ordinary work. A missing, changed or unverified boot version holds until a User-selected fresh session reloads current instructions.
 
-Say "Resuming session." at most once per conversation, with no new success banner. A resumed External retains its original limits. A displaced identity stays read-only; a fresh identity follows complete current admission rather than this continuation procedure.
+Say "Resuming session." at most once per conversation, with no new success banner. A resumed Auxiliary retains its original limits. A displaced identity stays read-only; a fresh identity follows complete current admission rather than this continuation procedure.

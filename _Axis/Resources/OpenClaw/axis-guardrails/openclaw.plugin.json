@@ -1,7 +1,7 @@
 {
   "id": "axis-guardrails",
   "name": "Axis Guardrails",
-  "description": "Refuses tool calls by Axis External Agents that Axis rules forbid.",
+  "description": "Refuses tool calls by Axis Auxiliary Agents that Axis rules forbid.",
   "configSchema": {
     "type": "object",
     "additionalProperties": false,

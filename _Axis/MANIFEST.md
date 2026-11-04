@@ -129,7 +129,7 @@ Optional project state: `EXCEPTIONS.md` in the Axis control folder, created on f
 - `_Axis/Practices/Messages.md`
 - `_Axis/Practices/Coordination.md`
 - `_Axis/Practices/Teams.md`
-- `_Axis/Practices/ExternalTeams.md`
+- `_Axis/Practices/AuxiliaryTeams.md`
 - `_Axis/Practices/Collaboration.md`
 - `_Axis/Practices/Scheduling.md`
 - `_Axis/Practices/Reminders.md`
@@ -154,7 +154,7 @@ Optional project state: `EXCEPTIONS.md` in the Axis control folder, created on f
 
 - `_Axis/Rules/Budget.md`
 - `_Axis/Rules/Capabilities.md`
-- `_Axis/Rules/ExternalAgents.md`
+- `_Axis/Rules/AuxiliaryAgents.md`
 - `_Axis/Rules/HostAndMeta.md`
 - `_Axis/Rules/Indices.md`
 - `_Axis/Rules/MarkersFlagsAndLocks.md`
@@ -186,7 +186,6 @@ Optional project state: `EXCEPTIONS.md` in the Axis control folder, created on f
 - `_Axis/Commands/team.md`
 - `_Axis/Commands/cx.md`
 - `_Axis/Commands/dashboard.md`
-- `_Axis/Commands/demote.md`
 - `_Axis/Commands/feedback.md`
 - `_Axis/Commands/followups.md`
 - `_Axis/Commands/git.md`
@@ -206,7 +205,6 @@ Optional project state: `EXCEPTIONS.md` in the Axis control folder, created on f
 - `_Axis/Commands/onboard.md`
 - `_Axis/Commands/plan.md`
 - `_Axis/Commands/profile.md`
-- `_Axis/Commands/promote.md`
 - `_Axis/Commands/reminders.md`
 - `_Axis/Commands/refresh.md`
 - `_Axis/Commands/resume.md`
@@ -224,13 +222,14 @@ Optional project state: `EXCEPTIONS.md` in the Axis control folder, created on f
 ### Resources
 
 - `_Axis/Resources/axis-launch.py` - Optional tmux project launcher and reattachment.
+- `_Axis/Resources/axis-roles.py` - `axis retire` and `axis start`: the User's role actions from a terminal, and agent mode for a direct child.
 - `_Axis/Resources/model-access.py` - Shared launch-time subscription/API credential selector.
 - `_Axis/Resources/message-paths.py` - Nested, archived and legacy Message identity lookup.
 - `_Axis/Resources/message-archive.py` - Closed, integrated and settled Message retention.
 - `_Axis/Resources/team-allocation.py` - Main-issued independent Team resource grants and settlement.
 - `_Axis/Resources/adoption-harmonize.py` - Verified adoption's best-effort convention repairs and temporary recovery.
 
-- `_Axis/Resources/external-team.py` - Scoped External proposal Team operations; no provider launch.
+- `_Axis/Resources/auxiliary-team.py` - Scoped Auxiliary proposal Team operations; no provider launch.
 
 - `_Axis/Resources/coordination-layout.py` - Missing-only coordination state layout during owned Main startup.
 - `_Axis/Resources/supervision-tree.py` - Read-only recursive subproject coverage and ancestry.
@@ -257,7 +256,7 @@ Optional project state: `EXCEPTIONS.md` in the Axis control folder, created on f
 - `_Axis/Resources/feedback-format.py` - read-only bug/feature draft format checker; never sends or grants consent.
 - `_Axis/Resources/guardrails.py` - optional host hook (`^install guardrails`) that refuses an Agent's edit to a write-once record or a malformed new record name, and a helper's use of `_Axis/Secrets/`, writes outside its role's folders or to governing files, starting other agents, or running state-changing Axis helpers.
 - `_Axis/Resources/Helpers/axis-cx.claude-agent`, `axis-wiki.claude-agent`, `axis-general.claude-agent`, `axis-lookup.claude-agent` - helper role definitions `^install guardrails` copies into `.claude/agents/` as `.md` files.
-- `_Axis/Resources/OpenClaw/axis-guardrails/openclaw.plugin.json` and `index.ts` - optional OpenClaw plugin (`^install guardrails`) that applies `guardrails.py --external` to agents configured as External Agents.
+- `_Axis/Resources/OpenClaw/axis-guardrails/openclaw.plugin.json` and `index.ts` - optional OpenClaw plugin (`^install guardrails`) that applies `guardrails.py --external` to agents configured as Auxiliary Agents.
 - `_Axis/Resources/team-plan.py` - optional structural plan validator.
 - `_Axis/Resources/Team-Patterns/meta-team.json`, `assistance.json`, `delegated-report.json` - editable examples, never execution authority.
 - `_Axis/Resources/coordination.py`
@@ -286,7 +285,7 @@ Optional project state: `EXCEPTIONS.md` in the Axis control folder, created on f
 - `_Axis/Resources/overlay-identity.py`
 - `_Axis/Resources/Refresh-Project-README.md`
 - `_Axis/Resources/secrets-capsule.sh` - optional encrypted Secrets transport helper.
-- `_Axis/Resources/Start-External.md`
+- `_Axis/Resources/Start-Auxiliary.md`
 - `_Axis/Resources/Start-Project.md`
 - `_Axis/Resources/Start-Session.md`
 - `_Axis/Resources/Start-Subagent.md`
@@ -297,7 +296,7 @@ Optional project state: `EXCEPTIONS.md` in the Axis control folder, created on f
 - `_Axis/Resources/Template-Profiles.md`
 - `_Axis/Resources/split-history.py`
 - `_Axis/Resources/axis-dashboard-meridian.png` - README illustration of the default Dashboard.
-- `_Axis/Roles/Main.md`, `_Axis/Roles/External.md`, `_Axis/Roles/Subagent.md` - session role rows.
+- `_Axis/Roles/Main.md`, `_Axis/Roles/Auxiliary.md`, `_Axis/Roles/Subagent.md` - session role rows.
 - `_Axis/Roles/CX.md`, `_Axis/Roles/Wiki.md`, `_Axis/Roles/Local.md`, `_Axis/Roles/General.md`, `_Axis/Roles/Lookup.md`, `_Axis/Roles/Worker.md`, `_Axis/Roles/TeamMember.md`, `_Axis/Roles/TeamLeader.md` - delegated role rows; all but Wiki and Local carry Role Text.
 - `_Axis/Roles/Common.md` - shared conduct compiled into every delegated Role Text.
 - `_Axis/Roles/Delegating.md` - the delegating kit: role selection, carriers, the Task Contract and acceptance.

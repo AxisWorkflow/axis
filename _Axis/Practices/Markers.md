@@ -1,7 +1,7 @@
 # Markers
 > **Purpose:** Define ephemeral activity Markers and each Agent's lease.
 
-Markers live in `_Axis/Agents/`, named `{yyyy.mm.dd.hh.mm.ss.xxxZ}.md` under [Practices > IndexDetail]. Subjects are `Main: session`, `External: {host}` or `Subagent: {role}`. Create a Marker when activity starts; delete a Subagent's when it returns. Never use Markers for durable state: use Flags. They are ephemeral, not WORM, and gitignored. Never archive a Marker; blocked deletion follows [Rules > HostAndMeta > Deletion Fallback] by clearing or moving to `_Trash/`.
+Markers live in `_Axis/Agents/`, named `{yyyy.mm.dd.hh.mm.ss.xxxZ}.md` under [Practices > IndexDetail]. Subjects are `Main: session`, `Auxiliary: {host}` or `Subagent: {role}`. Create a Marker when activity starts; delete a Subagent's when it returns. Never use Markers for durable state: use Flags. They are ephemeral, not WORM, and gitignored. Never archive a Marker; blocked deletion follows [Rules > HostAndMeta > Deletion Fallback] by clearing or moving to `_Trash/`.
 
 ## Main Marker Shape
 
@@ -24,7 +24,7 @@ An ordinary host close leaves a Marker to age out. Successful `^shutdown` or ver
 
 ## The Lease
 
-READ your own Marker and check its tombstone at every turn start and immediately before every shared write or lock/identifier claim. Judge the read, THEN renew its `mtime` as a SEPARATE action. Never chain renewal to the read or use a bare `touch`: renewal never creates a Marker. The entry executes this for both Main's banner and External's minted boot record. Lock-File and Timestamps own their pre-write checks, including append-only records that take no file lock.
+READ your own Marker and check its tombstone at every turn start and immediately before every shared write or lock/identifier claim. Judge the read, THEN renew its `mtime` as a SEPARATE action. Never chain renewal to the read or use a bare `touch`: renewal never creates a Marker. The entry executes this for both Main's banner and Auxiliary's minted boot record. Lock-File and Timestamps own their pre-write checks, including append-only records that take no file lock.
 
 - A tombstone means KILLED: make no file writes, tell User on your surface and stop this Axis identity permanently.
 - Idle is not lost: an own Marker that is stale but present, with no tombstone, no live foreign Main and (for Main) `session-id` still naming this session, is renewed on the next turn with a one-line notice. If another Main started meanwhile, the session is taken over: no shared writes; tell User.

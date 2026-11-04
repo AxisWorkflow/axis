@@ -356,7 +356,7 @@ class CheckedTeamSession(CheckedSession):
 
     def tools(self):
         string = {'type': 'string'}; nullable = {'type': ['string', 'null']}
-        # A proposal Team returns to its External owner; main is refused there (proposal-return-to-owner).
+        # A proposal Team returns to its Auxiliary owner; main is refused there (proposal-return-to-owner).
         proposal = bool(self.store.read('Teams', self.binding['team']).get('proposal_only'))
         returns = 'owner, which receives your final result (main is refused for a proposal Team)' if proposal else 'main, which receives your final result'
         definitions = [
