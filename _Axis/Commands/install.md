@@ -1,7 +1,7 @@
 # ^install
 > **Purpose:** Install extensions, tools, skills, MCPs, CLIs, functions, etc.
 
-1. Main Agent only. <!-- BEGIN GENERATED: role-gate install -->Auxiliary Agents send a Message to Main; Subagents return the request without acting.<!-- END GENERATED: role-gate install --> Installing changes the current host, not merely the project, so never delegate the trust or approval decision.
+1. Main Agent only. <!-- BEGIN GENERATED: role-gate install -->Auxiliary Agents, Assistants and Group Agents send a Message to Main; Observers refuse this Command; Subagents return the request without acting.<!-- END GENERATED: role-gate install --> Installing changes the current host, not merely the project, so never delegate the trust or approval decision.
 
 2. Resolve the text after the command by intent: `axis` GOTO **Axis terminal launcher**; `model access`, `api key` or `subscription` GOTO **Model access**; `qmd` or local document search GOTO **qmd**; `age`, encrypted Secrets, or Secrets transport GOTO **age**; `ollama`, a supported local model name, or local LLM setup GOTO **Ollama**; `openclaw`, thin harness, Gateway hardening, or an OpenClaw-backed channel such as WhatsApp GOTO **OpenClaw**; `guardrails`, hooks, or write-once protection GOTO **Guardrails**; `cloudflare` (case-insensitive) or Cloudflare agent setup GOTO **Cloudflare**. If User asks for a different local LLM runtime, say in one line that Axis supports Ollama as its sole local runtime, then GOTO **Ollama**. Anything else, including no target, GOTO **Other**. Never run the text as a shell tail.
 
@@ -97,13 +97,13 @@ OpenClaw is Axis's optional channels-and-orchestration Host Harness. Installing 
 2. Preview the exact change:
 	- add this entry to `hooks.PreToolUse` in the project's Claude Code settings, keeping every existing setting and hook:
 
-			{"matcher": "Edit|Write|MultiEdit|NotebookEdit|Read|Grep|Glob|Bash|Agent|Task", "hooks": [{"type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/_Axis/Resources/guardrails.py\"", "timeout": 10}]}
+			{"matcher": "Edit|Write|MultiEdit|NotebookEdit|Read|Grep|Glob|Bash|Agent|Task|WebFetch|WebSearch|mcp__.*", "hooks": [{"type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/_Axis/Resources/guardrails.py\"", "timeout": 10}]}
 
 	- copy `_Axis/Resources/Helpers/axis-cx.claude-agent`, `axis-wiki.claude-agent`, `axis-general.claude-agent` and `axis-lookup.claude-agent` into `.claude/agents/` as `axis-cx.md`, `axis-wiki.md`, `axis-general.md` and `axis-lookup.md`, skipping any file of the same name that differs and saying so.
 
 	Say what it adds for helpers: no file-tool writes to governing files (Principles, Rules, Practices, Roles, Resources, Commands, Directives, Mindset, Glossary, Manifest, Project, Settings, Instructions, entry files), no reading Instructions, no `Agent` or `Task` calls, and no direct command-line calls to state-changing Axis helper scripts or agent CLIs. Say what it does not cover: what a shell command or helper script writes, an agent launched indirectly (Axis's own archive, update and recovery steps run that way), a broad search that reaches `_Axis/Secrets/` through a parent folder, and User's own editing. A hook that fails to run lets the call through. Ask whether the settings should travel with the project in Git (`.claude/settings.json` and `.claude/agents/`, recommended for User's own projects) or stay on this computer (`.claude/settings.local.json`, already ignored by Git, with the helper files still in `.claude/agents/`), and obtain approval.
 3. Write the approved files, preserving valid existing JSON exactly; if the existing settings file is not valid JSON, change nothing and STOP. Read them back and require exactly one Axis guardrail entry.
-4. Tell User the guardrails take effect in a new Claude Code session, where an attempted edit to an existing Log must be refused, and that Main then spawns CX, Wiki, General and Lookup helpers as the `axis-cx`, `axis-wiki`, `axis-general` and `axis-lookup` agent types. A project that installed the guardrails before 3.13 re-runs `^install guardrails` to gain the governing-file, spawn and Lookup protection. Remove the entry and the four files the same way to uninstall. Log the configuration change. STOP.
+4. Tell User the guardrails take effect in a new Claude Code session, where an attempted edit to an existing Log must be refused, and that Main then spawns CX, Wiki, General and Lookup helpers as the `axis-cx`, `axis-wiki`, `axis-general` and `axis-lookup` agent types. A session the `axis` launcher started for a declared role is held to that role's limits, and every agent session is refused the User forms of `axis retire` and `axis start`. A project that installed the guardrails before 3.16 re-runs `^install guardrails` to gain these and the earlier protections. Remove the entry and the four files the same way to uninstall. Log the configuration change. STOP.
 
 **OpenClaw guardrails**
 

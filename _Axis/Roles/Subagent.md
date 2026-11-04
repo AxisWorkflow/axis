@@ -30,7 +30,7 @@
     "proposal_team_owner": false,
     "proposal_issuer_token": null,
     "submit_schema": null,
-    "record_families": "today: any family except Agents and Status (helper enforcement is looser than doctrine; 3.13 tightens it)",
+    "record_families": "delegated",
     "guard": null,
     "tracking_addressee": null,
     "commands": {

@@ -27,4 +27,4 @@ For a strategy, priority, portfolio or completion judgment, including a Team or 
 - Start from `_Axis/PROJECT.md` (mission, primary users, goals), then the whole portfolio in [Initiatives] and the Tasks, not only recent work. Recent incidents are inputs, not the agenda.
 - Compare at least one strong alternative outside the most recent internal work, and name the evidence that would reverse the choice.
 - Deliver the choice asked for; [Directives] > Accept the Decision Promised governs acceptance.
-- A narrow, authorized fix stays narrow: it needs no portfolio review.
+- A narrow, authorized fix stays narrow: it needs no portfolio review. Report it done without explaining the records, reviews or confirmations it did not need.

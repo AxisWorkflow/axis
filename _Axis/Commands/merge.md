@@ -1,7 +1,7 @@
 # ^merge
 > **Purpose:** Absorb a project folder, combining its records, Memos and Wiki into one continuing project.
 
-1. Main Agent only. <!-- BEGIN GENERATED: role-gate merge -->Auxiliary Agents and Subagents return a proposal to Main.<!-- END GENERATED: role-gate merge --> Load [Practices > Merging]. For separate projects, ask which continues and which is imported unless User has already named both roles. For a nested Subproject, its parent continues and its folder stays in place. Ask for an unspecified project path. Treat paths as data. Only the continuing project's genuine Main executes; hand off and quiesce the source if the current project is being absorbed.
+1. Main Agent only. <!-- BEGIN GENERATED: role-gate merge -->Auxiliary Agents, Assistants, Group Agents and Subagents return a proposal to Main; Observers refuse this Command.<!-- END GENERATED: role-gate merge --> Load [Practices > Merging]. For separate projects, ask which continues and which is imported unless User has already named both roles. For a nested Subproject, its parent continues and its folder stays in place. Ask for an unspecified project path. Treat paths as data. Only the continuing project's genuine Main executes; hand off and quiesce the source if the current project is being absorbed.
 
 2. Inspect any existing merge journal or source retirement first. Resume or abort only under the Practice's exact state rules. A retired source is historical; direct ordinary work to the surviving project rather than creating another Main there.
 

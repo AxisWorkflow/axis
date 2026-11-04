@@ -12,7 +12,7 @@
     "marker_subject": "Auxiliary: ",
     "subject_match": "prefix",
     "marker_shape": "single-session-line",
-    "created_by": "self",
+    "created_by": "helper",
     "boot_status": "external",
     "entry": "_Axis/Resources/Start-Auxiliary.md",
     "fallback_beside_live_main": true
@@ -30,7 +30,11 @@
     "proposal_team_owner": true,
     "proposal_issuer_token": "auxiliary",
     "submit_schema": "axis.external-submission/v1",
-    "record_families": "today: any family except Agents and Status (helper enforcement is looser than doctrine; 3.16 tightens it)",
+    "record_families": [
+      "Ideas",
+      "Logs",
+      "Notes"
+    ],
     "guard": {
       "openclaw_config_key": "externalAgents",
       "flag": "--external",
@@ -81,4 +85,4 @@
 }
 ```
 
-An Auxiliary Agent serves User beside a live Main, proposes rather than accepts, and reaches Main through Messages and Submissions. It never becomes Main and keeps its booted role for life. The OpenClaw guard keeps its `externalAgents` configuration key and `--external` flag, wire names written into existing installs, until Round B2 migrates each chat. Guidance for this role remains in Start-Auxiliary and the Rules; this file holds its table row.
+An Auxiliary Agent serves User beside a live Main, or on a surface declared for it, proposes rather than accepts, and reaches Main through Messages and Submissions. It never becomes Main and keeps its booted role for life; the session-start helper writes its session file, and the record helper lets it create only its own Notes, Ideas and Logs. The OpenClaw guard keeps its `externalAgents` configuration key and `--external` flag, wire names written into existing installs, until Round B2 migrates each chat. Guidance for this role remains in Start-Auxiliary and the Rules; this file holds its table row.

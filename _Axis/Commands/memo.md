@@ -1,7 +1,7 @@
 # ^memo
 > **Purpose:** Write or update a Memo for User in `_Memos/`.
 
-1. Main Agent only. <!-- BEGIN GENERATED: role-gate memo -->An Auxiliary Agent proposes the content to Main through a Message under [Practices > Messages] and STOPs.<!-- END GENERATED: role-gate memo -->
+1. Main Agent only. <!-- BEGIN GENERATED: role-gate memo -->An Auxiliary Agent, Assistant or Group Agent proposes the content to Main through a Message under [Practices > Messages] and STOPs; an Observer tells User to ask Main and STOPs.<!-- END GENERATED: role-gate memo -->
 
 2. Load [Practices > Memos]. The text after `^memo` names the subject or what to cover; with no text, cover the current discussion.
 

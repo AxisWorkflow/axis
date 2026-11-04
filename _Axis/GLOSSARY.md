@@ -22,7 +22,7 @@
 
 ### Agents and Roles
 
-- **Agent** - Any LLM instance working on the project: a **Main Agent**, **Auxiliary Agent**, or **Subagent**.
+- **Agent** - Any LLM instance working on the project: a **Main Agent**, **Auxiliary Agent**, declared session role (**Assistant**, **Group Agent**, **Observer**) or **Subagent**.
 - **User** - The human owner and director of the project.
 - **Main Agent** - The singular Agent that starts a **Session** and coordinates **Subagents**.
 - **Supervisor** - The relational function a parent Project's Main Agent performs toward recognized direct child Projects; not a fourth Agent role, Project type, Setting, Flag, or registration.
@@ -71,8 +71,15 @@
 - **Permissions** - The Setting (`Restricted`, `Default`, `Autonomous`) that decides when an Agent confirms a change before making it; it never grants new authority (see [Rules > Permissions]).
 - **Tracking** - Append-only per-agent activity channel in `_Axis/Tracking/` - INTENT, STATUS, ASK, REPLY and DONE lines that let every Agent see what others are doing; telemetry, not evidence (see [Practices > Tracking]).
 - **Auxiliary Agent** - The third Agent role: a restricted always-on agent (read-only, append-only, and Write-new classes) serving beside Main; it never becomes Main - see [Practices > Agents > Auxiliary Agent]. Named External before 3.15.
+- **Assistant** - A declared session role: the User's own agent on a surface the User declared; it serves only the User and never becomes Main (see `_Axis/Roles/Assistant.md`).
+- **Group Agent** - A declared session role serving the User and named participants on a shared surface, within its read scope; it never becomes Main (see `_Axis/Roles/GroupAgent.md`).
+- **Observer** - A declared session role that reads within its read scope and writes nothing, not even a Marker (see `_Axis/Roles/Observer.md`).
+- **Surface** - Where a session is reached: a terminal, a chat or a channel (see [Practices > Surfaces]).
+- **Declaration** - One line in a host's standing configuration, `Axis role: {Role}; surface: {name}`, that gives a surface a declared session role.
+- **Surface table** - `_Axis/SURFACES.md`, the User's list of surfaces with the one role and the read scope each may run; Main changes it only on the User's direct instruction.
+- **Read scope** - The Project Subfolders a role that serves other people may read, named in its surface-table row.
 - **Tombstone** - `_Axis/Agents/{ID}.kill` - the kill signal that revokes an Agent's Marker lease (see [Practices > Markers > The Lease]).
-- **axis retire** - The User's terminal command that ends a project's live Main after the typed word `RETIRE`; no session changes its own role. An agent may run it only on a direct child project, with the User's recorded instruction.
+- **axis retire** - The User's terminal command that ends a project's live Main after the typed word `RETIRE`; no session changes its own role. An agent may run it only on a direct child project, with a record of the owner's instruction.
 - **Protected Content** - Name-suffix access control: `_U` = User-controlled, read-only for Agents; `_X` = excluded, invisible to Agents (see [Practices > Protected]).
 - **Stale** - Past freshness window (locks 10 sec; `starting` 2 min; `session-id` completion check 60 sec; **Markers** 1 hour).
 - **Race Condition** - Two+ Agents writing to same file at same time - see [Lock-File].

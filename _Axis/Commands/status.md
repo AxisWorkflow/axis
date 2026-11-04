@@ -1,7 +1,7 @@
 # ^status
 > **Purpose:** Show where the project stands on one screen; `^status web` for a branded page, `^status deep dive` for more.
 
-Follow [Practices > Status]. `^status` is a quick look built fresh from the project's own records each time. It changes nothing, so any Agent (<!-- BEGIN GENERATED: role-gate status -->Main or Auxiliary<!-- END GENERATED: role-gate status -->) may run it at any time. For a dated report that is kept, use `^review`; for the live view, `^dashboard`.
+Follow [Practices > Status]. `^status` is a quick look built fresh from the project's own records each time. It changes nothing, so any Agent (<!-- BEGIN GENERATED: role-gate status -->Main, Auxiliary, Assistant, Group Agent or Observer<!-- END GENERATED: role-gate status -->) may run it at any time. For a dated report that is kept, use `^review`; for the live view, `^dashboard`.
 
 1. Read User's words after `^status` and infer two choices:
 	- **Detail.** Default is short: one screen. Words asking for more - `deep dive`, `full`, `everything`, `details`, `more`, or a named area such as `tasks` or `initiatives` - select full detail, and a named area means lead with that area.

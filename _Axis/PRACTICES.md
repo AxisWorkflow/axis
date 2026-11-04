@@ -30,8 +30,8 @@ Read before the matching action.
 - [Practices > Delegation] - Choose if, where, how to delegate, validate, accept work.
   *Load before delegating work or accepting a Subagent result.*
 
-- [Practices > Agents] - Full operating detail for all Agents, plus the Host Harness.
-  *Load when you are a Subagent or an Auxiliary Agent, or before coordinating roles, spawns, or parallel work.*
+- [Practices > Agents], [Practices > Surfaces] - Agent detail, Host Harness, declared roles.
+  *Load as a Subagent or Auxiliary Agent, or before coordinating roles, surfaces, spawns or parallel work.*
 
 - [Practices > OpenClaw] - Thin-harness policy for channels, agents, cron, tools, and disabled Host memory/persona layers.
   *Load when running under an OpenClaw Agent Harness - every Agent on that host follows it.*

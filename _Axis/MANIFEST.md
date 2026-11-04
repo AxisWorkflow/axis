@@ -96,6 +96,7 @@ Optional project state: `EXCEPTIONS.md` in the Axis control folder, created on f
 - `_Axis/Repairs/` - optional durable originals for audited cosmetic repairs; created on demand, never release history.
 
 - `_Axis/INITIATIVES.md` - optional shared outcomes and Task groups; absent is valid, and no startup detail load is required.
+- Surface table (`_Axis/SURFACES.md`) - optional and User-owned ([Practices > Surfaces]); Main creates it on the User's first declaration, and absent means no declared surfaces.
 - `_Axis/Branding/` - the product brand package (stylesheet with light and dark themes, WOFF2 fonts, tokens, mark, logo, favicons), shipped read-only and replaced whole by each update; `manifest.json` lists every file with its SHA-256. Its assets are not under the MIT License (see `LICENSE-ASSETS.md`). A project updated by an updater older than 2.01 (from any earlier version) receives it with its next update after 2.01 (updaters before 2.01 cannot install a new folder); absent until then is valid, and the Dashboard and `^status` pages fall back to plain brand colours.
 
 ### Practices
@@ -145,6 +146,7 @@ Optional project state: `EXCEPTIONS.md` in the Axis control folder, created on f
 - `_Axis/Practices/Tasks.md`
 - `_Axis/Practices/Protected.md`
 - `_Axis/Practices/Timestamps.md`
+- `_Axis/Practices/Surfaces.md`
 - `_Axis/Practices/Tracking.md`
 - `_Axis/Practices/Trash.md`
 - `_Axis/Practices/WhatsApp.md`
@@ -256,7 +258,7 @@ Optional project state: `EXCEPTIONS.md` in the Axis control folder, created on f
 - `_Axis/Resources/feedback-format.py` - read-only bug/feature draft format checker; never sends or grants consent.
 - `_Axis/Resources/guardrails.py` - optional host hook (`^install guardrails`) that refuses an Agent's edit to a write-once record or a malformed new record name, and a helper's use of `_Axis/Secrets/`, writes outside its role's folders or to governing files, starting other agents, or running state-changing Axis helpers.
 - `_Axis/Resources/Helpers/axis-cx.claude-agent`, `axis-wiki.claude-agent`, `axis-general.claude-agent`, `axis-lookup.claude-agent` - helper role definitions `^install guardrails` copies into `.claude/agents/` as `.md` files.
-- `_Axis/Resources/OpenClaw/axis-guardrails/openclaw.plugin.json` and `index.ts` - optional OpenClaw plugin (`^install guardrails`) that applies `guardrails.py --external` to agents configured as Auxiliary Agents.
+- `_Axis/Resources/OpenClaw/axis-guardrails/openclaw.plugin.json` and `index.ts` - optional OpenClaw plugin (`^install guardrails`) that applies `guardrails.py --external` to agents configured as Auxiliary Agents, and `--role` for the declared roles' configuration keys.
 - `_Axis/Resources/team-plan.py` - optional structural plan validator.
 - `_Axis/Resources/Team-Patterns/meta-team.json`, `assistance.json`, `delegated-report.json` - editable examples, never execution authority.
 - `_Axis/Resources/coordination.py`
@@ -297,6 +299,7 @@ Optional project state: `EXCEPTIONS.md` in the Axis control folder, created on f
 - `_Axis/Resources/split-history.py`
 - `_Axis/Resources/axis-dashboard-meridian.png` - README illustration of the default Dashboard.
 - `_Axis/Roles/Main.md`, `_Axis/Roles/Auxiliary.md`, `_Axis/Roles/Subagent.md` - session role rows.
+- `_Axis/Roles/Assistant.md`, `_Axis/Roles/GroupAgent.md`, `_Axis/Roles/Observer.md` - declared session role rows with their guidance.
 - `_Axis/Roles/CX.md`, `_Axis/Roles/Wiki.md`, `_Axis/Roles/Local.md`, `_Axis/Roles/General.md`, `_Axis/Roles/Lookup.md`, `_Axis/Roles/Worker.md`, `_Axis/Roles/TeamMember.md`, `_Axis/Roles/TeamLeader.md` - delegated role rows; all but Wiki and Local carry Role Text.
 - `_Axis/Roles/Common.md` - shared conduct compiled into every delegated Role Text.
 - `_Axis/Roles/Delegating.md` - the delegating kit: role selection, carriers, the Task Contract and acceptance.

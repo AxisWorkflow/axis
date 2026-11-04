@@ -11,8 +11,9 @@ Before the first claim, read [Practices > Markers > Main Marker Shape], [Practic
 
 After the preceding `inspect` result permits admission and the canonical contracts are loaded, a verified installed `_Axis/Resources/startup-state.py` may perform ordinary local admission. It requires Python3, POSIX exclusive operations, `fcntl` and existing-descriptor timestamp renewal on the authoritative local filesystem. Do not select it for a confirmed serialized maintenance window, an unverified mixed update or storage without those primitives. It never grants eligibility or update approval. Missing helper/Python or an `unavailable` result before writes takes Manual admission below; missing acceleration never disables ordinary Axis.
 
-Run `python3 _Axis/Resources/startup-state.py --root . claim --initial {entry-timestamp} --host {host-class}`. Use the exact already-minted entry timestamp and a nonempty one-line host class. No model, endpoint, configuration or additional role parameter is accepted.
+Run `python3 _Axis/Resources/startup-state.py --root . claim --initial {entry-timestamp} --host {host-class}`. Use the exact already-minted entry timestamp and a nonempty one-line host class. Add `--declared-role {role}` when the host declared a role; no model, endpoint or configuration parameter is accepted.
 
+- `declared`: the session is declared for a role other than Main (`--declared-role` or the launcher's `AXIS_ROLE`); nothing was written. Follow Start-Auxiliary.
 - `admitted`: retain returned final Session ID, owner nonce and exact Marker path; these were exclusively written and read back. Continue Start-Session with this helper admission. The bounded batch below applies only after admission succeeds.
 - `external`: no Main artifact was written. Follow Start-Auxiliary with its fresh identity and required measured cause/remedy greeting.
 - `ask`: no Main artifact was written. Ask User under [Claim-Session > Takeover]; on yes, claim again adding `--take-over {ID}`. An `admitted` result reports the [Claim-Session > Takeover] sweep in `took_over` and `cleared`.

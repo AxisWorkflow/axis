@@ -1,7 +1,7 @@
 # Changelog
 > **Purpose:** Record Axis release identity and the structural migrations needed to update an existing project safely.
 
-current-version: 3.15
+current-version: 3.16
 changelog-format: 1
 self-update-baseline: 26.08.19
 
@@ -39,6 +39,31 @@ update-impact: automatic
 ### Verification
 
 - None.
+
+## 3.16
+
+released: 2026-11-04
+
+update-impact: automatic
+
+### Structural Changes
+
+- Declared session roles (Round B1, second release). New role files `_Axis/Roles/Assistant.md`, `_Axis/Roles/GroupAgent.md` and `_Axis/Roles/Observer.md` add the Assistant (the User's own agent), the Group Agent (the User and named participants on a shared surface) and the Observer (read-only, writes nothing). None of them may become Main. A surface gets one by the declaration `Axis role: {Role}; surface: {name}` and a matching row in the User's surface table (started through `axis --role`, or with `AXIS_ROLE` set, the helpers refuse Main; a declaration in a host's own settings alone is followed by instruction), _Axis/SURFACES.md (an optional project file), which Main creates on the User's first declaration and changes only on the User's direct instruction. New `_Axis/Practices/Surfaces.md` describes declarations, the table and read scopes.
+- `startup-state.py admit` checks a declaration against the surface table and writes the declared role's session file; `claim` and `boot.py` refuse Main to a session declared for another role (`boot.py --role`, or the launcher's `AXIS_ROLE`). The record helper lets Auxiliary, Assistant and Group Agent sessions create only their own Notes, Ideas and Logs. `turn.py` names a declared role's file and checksum after renewal, for recovery after compaction, and stops a process whose declared role differs from its Marker.
+- `axis --role {Role} --surface {name}` starts a declared session: the child carries `AXIS_ROLE` and `AXIS_SURFACE`, and on Claude Code the declaration and the role's tool limits. The guardrails hook applies the declared role's guard to that session, including the read scope of a role serving other people, and refuses the User-mode `axis retire` and `axis start` from any agent session.
+- Agent-mode `axis retire` requires an instruction record with `requested-by: owner`, `action:` and the exact `target:` child path, and checks the child's merge state before fencing. `^^` commands count only from the verified owner on channel hosts. `axis start` parses its options and never reattaches an open terminal session.
+
+### Project-State Migrations
+
+- None required. Existing projects have no surface table, so a declaration of Assistant, Group Agent or Observer gets a notice and no service until the User adds a row. A terminal declaration of Auxiliary also needs a `surface:` field and a row (3.15 accepted `Axis role: Auxiliary` alone); on an OpenClaw chat an Auxiliary declaration keeps working without one until Round B2. Undeclared sessions behave as in 3.15. An agent-mode instruction Log written before this update lacks the new lines, so its retirement is refused until Main writes a new one.
+
+### Retired Paths
+
+- None.
+
+### Verification
+
+- Declared-role admission matrix, record-helper role checks, guardrails role link and launcher declaration tests pass on native and Linux.
 
 ## 3.15
 

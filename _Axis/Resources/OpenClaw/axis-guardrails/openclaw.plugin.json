@@ -1,12 +1,15 @@
 {
   "id": "axis-guardrails",
   "name": "Axis Guardrails",
-  "description": "Refuses tool calls by Axis Auxiliary Agents that Axis rules forbid.",
+  "description": "Refuses tool calls by Axis Auxiliary Agents, Assistants, Group Agents and Observers that Axis rules forbid.",
   "configSchema": {
     "type": "object",
     "additionalProperties": false,
     "properties": {
-      "externalAgents": { "type": "array", "items": { "type": "string" } }
+      "externalAgents": { "type": "array", "items": { "type": "string" } },
+      "assistantAgents": { "type": "array", "items": { "type": "string" } },
+      "groupAgents": { "type": "array", "items": { "type": "string" } },
+      "observerAgents": { "type": "array", "items": { "type": "string" } }
     }
   }
 }

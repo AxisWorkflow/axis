@@ -1,7 +1,7 @@
 # ^feedback
 > **Purpose:** Send a bug report, feature request or question OUTSIDE this project, to the Axis Workflow developers - prepared here, sent only on your word.
 
-1. Say first, before any other output: "`^feedback` sends a report outside this project, to the Axis Workflow developers on GitHub (`AxisWorkflow/axis`, a public repository). I will prepare it here and show you the exact text. Nothing is sent until you type `send`." Main only: <!-- BEGIN GENERATED: role-gate feedback -->an Auxiliary Agent or Subagent says `^feedback` needs the Main Agent and STOPS.<!-- END GENERATED: role-gate feedback --> A scheduled or unattended turn may prepare a draft but never sends.
+1. Say first, before any other output: "`^feedback` sends a report outside this project, to the Axis Workflow developers on GitHub (`AxisWorkflow/axis`, a public repository). I will prepare it here and show you the exact text. Nothing is sent until you type `send`." Main only: <!-- BEGIN GENERATED: role-gate feedback -->an Auxiliary Agent, Assistant, Group Agent, Observer or Subagent says `^feedback` needs the Main Agent and STOPS.<!-- END GENERATED: role-gate feedback --> A scheduled or unattended turn may prepare a draft but never sends.
 
 2. Classify from the additional text, asking one question if needed: bug, feature request, question, idea, or security problem.
 	- **Security problem** (a way to read Secrets, bypass a confirmation gate, run downloaded code, escape an agent's folder limits, or similar): do not search or draft anything public. Give User https://github.com/AxisWorkflow/axis/security/advisories/new (private vulnerability reporting) and STOP.

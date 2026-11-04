@@ -8,9 +8,11 @@
 User mode is for the person at a terminal: it shows the target session and asks for the typed word RETIRE (or takes
 --yes from the User's own scripts). Agent mode is required when the shell belongs to an agent: the caller names its own
 Main session, the target must be a direct child of the caller's project, and a Log or Supervision record written by that
-session must name the action and the child. Both modes write the same tombstone `^kill` writes and remove the Marker;
+session must carry `requested-by: owner`, `action:` and the exact `target:` child path; Main writes it only for the
+verified owner, never for another allowed sender. Both modes write the same tombstone `^kill` writes and remove the Marker;
 the retired session stops at its next turn check. These checks catch mistakes; an agent with an unrestricted shell
-could still pose as the User, which only host command rules prevent. No session ever changes its own role."""
+could still pose as the User. The guardrails hook refuses User mode from a Claude Code agent shell; elsewhere only the
+host's own command rules prevent it. No session ever changes its own role."""
 import argparse
 import importlib.util
 import json
@@ -24,7 +26,7 @@ SID = re.compile(r'\d{4}(?:\.\d{2}){5}\.\d{3}Z\Z')
 HOUR = 3600
 # Environment markers that agent hosts set in the shells they run; best effort, documented as such.
 AGENT_ENV = ('CLAUDECODE', 'CLAUDE_CODE_ENTRYPOINT', 'CODEX_SANDBOX', 'CODEX_SANDBOX_NETWORK_DISABLED', 'CODEX_THREAD_ID',
-             'GEMINI_CLI', 'OPENCLAW_SESSION_KEY', 'OPENCLAW_AGENT_ID', 'AXIS_AGENT_SESSION')
+             'GEMINI_CLI', 'OPENCLAW_SESSION_KEY', 'OPENCLAW_AGENT_ID', 'AXIS_AGENT_SESSION', 'AXIS_ROLE', 'AXIS_SURFACE')
 ANCHOR = '_Axis/PROJECT.md'
 ACTIONS = {'retire': ('retire', 'stop', 'restart'), 'start': ('start', 'restart')}
 
@@ -68,7 +70,7 @@ def nearest_project(path):
 
 
 def regular(path):
-    return path.is_file() and not path.is_symlink()
+    return path.is_file() and not path.is_symlink() and path.stat().st_nlink == 1
 
 
 def live_mains(root, now=None):
@@ -124,17 +126,28 @@ def own_lease(root, sid):
 
 
 def instruction(root, sid, record, action, child_rel):
-    """A Log or Supervision record by this session that names the action and the child."""
+    """A Log or Supervision record by this session that carries the owner's request: `requested-by: owner`, an
+    `action:` line naming this action and an exact `target:` line naming the child."""
     need(SID.match(record or ''), 'agent mode requires --instruction naming a Log or Supervision record')
     for family in ('Logs', 'Supervision'):
         p = root / '_Axis' / family / (record + '.md')
         if regular(p):
             text = p.read_text(errors='replace')
             need(re.search(r'(?m)^session: ' + re.escape(sid) + r'\s*$', text), 'the instruction record was not written by your session')
-            need(re.search(r'(?<![\w/.-])' + re.escape(child_rel) + r'(?![\w/-]|\.\w)', text), 'the instruction record does not name ' + child_rel)
-            need(any(re.search(r'\b' + w + r'\b', text, re.I) for w in ACTIONS[action]), 'the instruction record does not name the ' + action + ' action')
+            need(re.search(r'(?m)^requested-by: owner\s*$', text), 'the instruction record does not show the verified owner asked (requested-by: owner)')
+            need(re.search(r'(?m)^target: ' + re.escape(child_rel) + r'\s*$', text), 'the instruction record does not name exactly target: ' + child_rel)
+            need(re.search(r'(?m)^action: (?:' + '|'.join(ACTIONS[action]) + r')\s*$', text), 'the instruction record does not name the ' + action + ' action')
             return family + '/' + record
     raise RoleActionError('instruction record not found: ' + record)
+
+
+def merge_ready(root):
+    """A merge source, a retired source or malformed merge state refuses before any fence."""
+    state = module('startup-state')
+    try:
+        state.Startup(str(root)).merge_access()
+    except state.Fault as exc:
+        raise RoleActionError('the project is held by merge state (' + exc.code + '); nothing changed') from None
 
 
 def agent_target(parent, child):
@@ -177,7 +190,7 @@ def log_writer(root):
         sid = 'user'
 
         def guard(self, starting=True, foreign=True):
-            return None
+            self.merge_access()  # no session lease; the merge barrier still applies to every write
 
     try:
         writer = UserWriter(str(root))
@@ -201,6 +214,7 @@ def retire(args):
         own_lease(parent, args.session_of_caller)
         ref = instruction(parent, args.session_of_caller, args.instruction, 'retire', rel)
         target = target_main(child, args.session)
+        merge_ready(child)
         result = tombstone(child, target['session'], args.session_of_caller, args.reason or 'supervisor stop requested by User')
         return {'status': 'retired', 'mode': 'agent', 'agent_shell': shell, 'target': rel, 'session': target['session'], 'instruction': ref, **result}
     root = project(args.project)

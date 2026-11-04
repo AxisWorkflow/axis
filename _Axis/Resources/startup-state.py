@@ -26,9 +26,12 @@ except ImportError:
 # BEGIN GENERATED: role-table
 # Compiled from _Axis/Roles/ at release; edit the role files, never this region.
 ROLE_TABLE=(
-    {'name': 'Main', 'cls': 'session', 'subject': 'Main: session', 'match': 'exact', 'shape': 'exact4', 'created_by': 'claim', 'exclusive': True, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': None, 'survey_key': None, 'notice': None, 'issuer': 'main', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': None, 'guard': None, 'reference_word': 'Main', 'log_by': 'Main Agent', 'title': 'Main Agent', 'plural': 'Main Agents', 'article': 'the'},
-    {'name': 'Auxiliary', 'cls': 'session', 'subject': 'Auxiliary: ', 'match': 'prefix', 'shape': 'single-session-line', 'created_by': 'self', 'exclusive': False, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': 'list', 'survey_key': 'fresh_auxiliary', 'notice': 'An Auxiliary Agent is serving this project ({id}).', 'issuer': 'worker', 'proposal_owner': True, 'proposal_issuer': 'auxiliary', 'submit_schema': 'axis.external-submission/v1', 'guard': {'config_key': 'externalAgents', 'flag': '--external', 'block_spawn': True, 'new_files': ('subfolders', '_Axis/Submissions/', '_Temp/')}, 'reference_word': 'Auxiliary', 'log_by': 'Auxiliary Agent', 'title': 'Auxiliary Agent', 'plural': 'Auxiliary Agents', 'article': 'an'},
-    {'name': 'Subagent', 'cls': 'session', 'subject': 'Subagent: ', 'match': 'prefix', 'shape': 'free', 'created_by': 'spawner', 'exclusive': False, 'version_bound': False, 'reply_frame': False, 'blocks_save': True, 'survey': 'count', 'survey_key': 'orphan_subagents', 'notice': '{count} orphaned Subagent record(s) from a crashed spawn; ^refresh can clear them', 'issuer': 'worker', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': None, 'guard': None, 'reference_word': 'Subagent', 'log_by': None, 'title': 'Subagent', 'plural': 'Subagents', 'article': 'a'},
+    {'name': 'Main', 'cls': 'session', 'subject': 'Main: session', 'match': 'exact', 'shape': 'exact4', 'created_by': 'claim', 'exclusive': True, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': None, 'survey_key': None, 'notice': None, 'issuer': 'main', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': None, 'guard': None, 'reference_word': 'Main', 'log_by': 'Main Agent', 'title': 'Main Agent', 'plural': 'Main Agents', 'article': 'the', 'serves': 'User', 'families': 'all'},
+    {'name': 'Auxiliary', 'cls': 'session', 'subject': 'Auxiliary: ', 'match': 'prefix', 'shape': 'single-session-line', 'created_by': 'helper', 'exclusive': False, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': 'list', 'survey_key': 'fresh_auxiliary', 'notice': 'An Auxiliary Agent is serving this project ({id}).', 'issuer': 'worker', 'proposal_owner': True, 'proposal_issuer': 'auxiliary', 'submit_schema': 'axis.external-submission/v1', 'guard': {'config_key': 'externalAgents', 'flag': '--external', 'block_spawn': True, 'new_files': ('subfolders', '_Axis/Submissions/', '_Temp/')}, 'reference_word': 'Auxiliary', 'log_by': 'Auxiliary Agent', 'title': 'Auxiliary Agent', 'plural': 'Auxiliary Agents', 'article': 'an', 'serves': 'User', 'families': ('Ideas', 'Logs', 'Notes')},
+    {'name': 'Assistant', 'cls': 'session', 'subject': 'Assistant: ', 'match': 'prefix', 'shape': 'single-session-line', 'created_by': 'helper', 'exclusive': False, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': 'list', 'survey_key': 'fresh_assistant', 'notice': 'An Assistant is serving this project ({id}).', 'issuer': 'worker', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': 'axis.external-submission/v1', 'guard': {'config_key': 'assistantAgents', 'flag': None, 'block_spawn': False, 'new_files': ('subfolders', '_Axis/Submissions/', '_Temp/')}, 'reference_word': 'Assistant', 'log_by': 'Assistant', 'title': 'Assistant', 'plural': 'Assistants', 'article': 'an', 'serves': 'User', 'families': ('Ideas', 'Logs', 'Notes')},
+    {'name': 'GroupAgent', 'cls': 'session', 'subject': 'Group Agent: ', 'match': 'prefix', 'shape': 'single-session-line', 'created_by': 'helper', 'exclusive': False, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': 'list', 'survey_key': 'fresh_groupagent', 'notice': 'A Group Agent is serving this project ({id}).', 'issuer': 'worker', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': 'axis.external-submission/v1', 'guard': {'config_key': 'groupAgents', 'flag': None, 'block_spawn': True, 'new_files': ('subfolders', '_Axis/Submissions/', '_Temp/')}, 'reference_word': 'GroupAgent', 'log_by': 'Group Agent', 'title': 'Group Agent', 'plural': 'Group Agents', 'article': 'a', 'serves': 'User and named participants', 'families': ('Ideas', 'Logs', 'Notes')},
+    {'name': 'Observer', 'cls': 'session', 'subject': 'Observer: ', 'match': 'prefix', 'shape': 'single-session-line', 'created_by': 'none', 'exclusive': False, 'version_bound': False, 'reply_frame': True, 'blocks_save': False, 'survey': None, 'survey_key': None, 'notice': None, 'issuer': 'worker', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': None, 'guard': {'config_key': 'observerAgents', 'flag': None, 'block_spawn': True, 'new_files': ()}, 'reference_word': 'Observer', 'log_by': None, 'title': 'Observer', 'plural': 'Observers', 'article': 'an', 'serves': 'anyone on the surface', 'families': ()},
+    {'name': 'Subagent', 'cls': 'session', 'subject': 'Subagent: ', 'match': 'prefix', 'shape': 'free', 'created_by': 'spawner', 'exclusive': False, 'version_bound': False, 'reply_frame': False, 'blocks_save': True, 'survey': 'count', 'survey_key': 'orphan_subagents', 'notice': '{count} orphaned Subagent record(s) from a crashed spawn; ^refresh can clear them', 'issuer': 'worker', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': None, 'guard': None, 'reference_word': 'Subagent', 'log_by': None, 'title': 'Subagent', 'plural': 'Subagents', 'article': 'a', 'serves': 'spawner', 'families': 'delegated'},
     {'name': 'CX', 'cls': 'delegated', 'token': 'CX', 'carries_blocks': True, 'agent_type': 'axis-cx', 'write_scope': (('_Axis/CX/', True), ('_Temp/', False)), 'deny': None},
     {'name': 'Wiki', 'cls': 'delegated', 'token': 'WIKI', 'carries_blocks': True, 'agent_type': 'axis-wiki', 'write_scope': (('_Wiki/', False), ('_Axis/Wiki/', False), ('_Temp/', False)), 'deny': None},
     {'name': 'Local', 'cls': 'delegated', 'token': 'LOCAL', 'carries_blocks': False, 'agent_type': None, 'write_scope': None, 'deny': None},
@@ -38,13 +41,37 @@ ROLE_TABLE=(
     {'name': 'TeamMember', 'cls': 'delegated', 'token': 'GENERAL', 'carries_blocks': True, 'agent_type': None, 'write_scope': None, 'deny': None},
     {'name': 'TeamLeader', 'cls': 'delegated', 'token': 'GENERAL', 'carries_blocks': True, 'agent_type': None, 'write_scope': None, 'deny': None},
 )
-ROLE_LEDGER={'issuers': ('auxiliary', 'external', 'main', 'worker'), 'submission_schemas': ('axis.external-submission/v1',), 'proposal_member_subject': 'Subagent: External proposal Team', 'survey_keys': ('fresh_auxiliary', 'fresh_external', 'orphan_subagents'), 'proposal_owners': (('External:', 'external'), ('Auxiliary:', 'auxiliary'))}
+ROLE_LEDGER={'issuers': ('auxiliary', 'external', 'main', 'worker'), 'submission_schemas': ('axis.external-submission/v1',), 'proposal_member_subject': 'Subagent: External proposal Team', 'survey_keys': ('fresh_assistant', 'fresh_auxiliary', 'fresh_external', 'fresh_groupagent', 'orphan_subagents'), 'proposal_owners': (('External:', 'external'), ('Auxiliary:', 'auxiliary'))}
 # END GENERATED: role-table
 # Session Markers other than the lease holder's, and the Agents records another session may create for a spawn.
 SHARED_PREFIXES = tuple(r['subject'] for r in ROLE_TABLE if r['cls'] == 'session' and not r['exclusive'])
 SPAWNED_PREFIXES = tuple(r['subject'] for r in ROLE_TABLE if r['cls'] == 'session' and r['created_by'] == 'spawner')
 SPAWNED_FAMILIES = {p + r['name']: tuple(f.split('/')[1] for f, new in (r.get('write_scope') or ()) if new and f.startswith('_Axis/'))
                     for p in SPAWNED_PREFIXES for r in ROLE_TABLE if r['cls'] == 'delegated'}
+# 3.16 declared session roles: rows whose session file a helper writes (or that write nothing) and the surface table.
+DECLARABLE = {r['name']: r for r in ROLE_TABLE if r['cls'] == 'session' and r['created_by'] in ('helper', 'none')}
+SURFACES = '_Axis/SURFACES.md'
+SURFACE_NAME = re.compile(r'[A-Za-z0-9][A-Za-z0-9._-]{0,63}')
+FOLDER_NAME = re.compile(r'[A-Za-z0-9][A-Za-z0-9 ._-]{0,127}')
+
+def role_named(value):
+    """The session row a declaration or AXIS_ROLE names (name or title, any case; the ledger's retired name maps to its successor), else None."""
+    key = re.sub(r'\s+', '', str(value or '')).lower()
+    if key == 'external': key = 'auxiliary'
+    return next((r for r in ROLE_TABLE if r['cls'] == 'session' and key in (r['name'].lower(), r['title'].replace(' ', '').lower())), None)
+
+def role_of_subject(first):
+    for r in ROLE_TABLE:
+        if r['cls'] == 'session' and ((first == r['subject']) if r['match'] == 'exact' else first.startswith(r['subject'])):return r
+    return None
+
+def declared_role():
+    """The role the launcher declared for this process (AXIS_ROLE), or None when undeclared."""
+    value = os.environ.get('AXIS_ROLE', '').strip()
+    if not value:return None
+    row = role_named(value)
+    if row is None:raise Fault('declared_role_unknown', 'AXIS_ROLE')
+    return row
 
 ID = re.compile(r'\d{4}(?:\.\d{2}){5}\.\d{3}Z')
 FAMILIES = ('Agents','Audit','CX','Followups','Ideas','Logs','Notes','Reminders','Reviews','Snapshots','Status','Supervision','Tasks','Teams','Messages','Jobs','Schedules','ColdStorage')
@@ -735,6 +762,10 @@ class Session(Startup):
             main=lines[:1]==['Main: session']
             if main:need(len(lines)==4 and lines[1]=='' and lines[2]=='session: '+self.sid and lines[3].startswith('host: ') and lines[3][6:].strip(),'marker_invalid',self.marker_name)
             else:need(bool(lines) and lines[0].startswith(SHARED_PREFIXES),'marker_invalid',self.marker_name)
+            declared=declared_role()
+            row=role_of_subject(lines[0] if lines else '')
+            # A declared process writes only through its own role's session file; helpers it spawns keep their own.
+            need(declared is None or row is declared or (row is not None and row['created_by']=='spawner'),'declared_role_mismatch',self.marker_name)
             self.lease=(text,identity(info),main)
         need(text==self.lease[0] and identity(info)==self.lease[1],'marker_mismatch',self.marker_name)
         need(time.time()-info.st_mtime<3600,'lease_stale',self.marker_name)
@@ -781,8 +812,72 @@ class Session(Startup):
         # _Axis/); its spawner writes every other record.
         subject=self.lease[0].split('\n',1)[0].strip()
         if subject.startswith(SPAWNED_PREFIXES):need(family in SPAWNED_FAMILIES.get(subject,()),'subagent_record',family)
+        # 3.16: a helper-admitted session creates only its row's record families (its own Notes, Ideas and Logs).
+        row=role_of_subject(subject);families=row['families'] if row else None
+        spawn=family=='Agents' and row is not None and row['guard'] is not None and not row['guard']['block_spawn']
+        if isinstance(families,tuple) and not spawn:need(family in families,'role_record',family)
         final,name=self.record(family,lambda _:content)
         return {'status':'created','id':final,'path':name}
+
+class Admission(Startup):
+    """3.16 declared-role admission. The helper checks the declaration against the User's surface table and writes the
+    role's session file; it never takes Main's admission claim and never writes a Main Marker. An Observer writes nothing."""
+    def __init__(self, root):
+        super().__init__(root);self.state={'session':'','phase':'declared'}
+
+    def owner_check(self):
+        # No admission claim: record(bootstrap=True) re-checks merge state, then its own timestamp claim and tombstone.
+        self.merge_access()
+
+    def surfaces(self):
+        """The User's surface table: {surface: (role row, read scope)}; a missing table has no rows."""
+        text=self.read(SURFACES,optional=True,limit=65536)
+        if text is None:return {}
+        rows={};header=None
+        for line in text.splitlines():
+            if not line.startswith('|'):continue
+            cells=[c.strip() for c in line.strip().strip('|').split('|')]
+            if header is None:
+                need([c.lower() for c in cells]==['surface','role','read scope'],'surface_table_invalid',SURFACES);header=cells;continue
+            if all(set(c)<=set('-: ') for c in cells):continue
+            need(len(cells)==3,'surface_table_invalid',SURFACES)
+            name,role,scope=cells;row=role_named(role.strip('`'))
+            need(SURFACE_NAME.fullmatch(name.strip('`')) is not None and row is not None and row['name'] in DECLARABLE and name.strip('`') not in rows,'surface_table_invalid',SURFACES)
+            if scope.lower()=='project':folders=None
+            else:
+                folders=tuple(f.strip().strip('`').rstrip('/') for f in scope.split(',') if f.strip())
+                need(folders and all(FOLDER_NAME.fullmatch(f) and not f.startswith(('_','.')) for f in folders),'surface_table_invalid',SURFACES)
+            need(folders is not None or row['serves']=='User','surface_scope_required',SURFACES)
+            rows[name.strip('`')]=(row,folders)
+        need(header is not None or not rows,'surface_table_invalid',SURFACES)
+        return rows
+
+    def admit(self, role, host, surface=None, cause='declared', legacy_channel=False, initial=None):
+        row=role_named(role)
+        need(row is not None and row['name'] in DECLARABLE,'role_not_declarable',str(role))
+        declared=declared_role()
+        need(declared is None or declared is row,'declared_role_mismatch','AXIS_ROLE')
+        need(isinstance(host,str) and host.strip()==host and 0<len(host)<=120 and all(ord(c)>=32 for c in host),'host')
+        self.merge_access();scope=None
+        if cause=='declared':
+            # Channel hosts keep the 3.15 Auxiliary declaration, with or without a surface, until Round B2 asks each chat its role.
+            legacy=legacy_channel and row['name']=='Auxiliary'
+            need((legacy and surface is None) or (isinstance(surface,str) and SURFACE_NAME.fullmatch(surface) is not None),'surface_name',str(surface))
+            table=self.surfaces()
+            if surface in table:
+                need(table[surface][0] is row,'surface_mismatch',SURFACES);scope=table[surface][1]
+            else:need(legacy,'surface_missing',SURFACES)
+        else:
+            need(cause=='live-main' and row['name']=='Auxiliary' and surface is None,'cause',str(cause))
+            # The claim steps down for a fresh Main, a recently active idle one, or the User's choice to join beside an idle one.
+            need(bool(self.foreign_mains() or self.idle_mains()),'no_live_main','_Axis/Agents')
+        out={'role':row['name'],'title':row['title'],'surface':surface,'cause':cause,'read_scope':'project' if scope is None else list(scope),'role_file':'_Axis/Roles/'+row['name']+'.md'}
+        if row['created_by']=='none':return dict(out,status='observer',writes=False)
+        candidate=initial or stamp();parse_stamp(candidate)
+        need(parse_stamp(candidate)<=dt.datetime.now(dt.timezone.utc),'timestamp_future')
+        where=f'surface: {surface}\n' if surface else ('cause: legacy-channel\n' if cause=='declared' else 'cause: live-main\n')
+        final,name=self.record('Agents',lambda value:f'{row["subject"]}{host}\n\nsession: {value}\n{where}host: {host}\n',candidate,bootstrap=True)
+        return dict(out,status='admitted',session=final,marker=name)
 
 class Parser(argparse.ArgumentParser):
     def error(self, message):raise Fault('arguments')
@@ -800,7 +895,8 @@ def main():
     engine=None
     try:
         parser=Parser();parser.add_argument('--root',required=True);sub=parser.add_subparsers(dest='operation',required=True,parser_class=Parser)
-        claim=sub.add_parser('claim');claim.add_argument('--initial',required=True);claim.add_argument('--host',required=True);claim.add_argument('--take-over',action='append',default=[])
+        claim=sub.add_parser('claim');claim.add_argument('--initial',required=True);claim.add_argument('--host',required=True);claim.add_argument('--take-over',action='append',default=[]);claim.add_argument('--declared-role')
+        admit=sub.add_parser('admit');admit.add_argument('--role',required=True);admit.add_argument('--host',required=True);admit.add_argument('--surface');admit.add_argument('--cause',choices=('declared','live-main'),default='declared');admit.add_argument('--legacy-channel',action='store_true');admit.add_argument('--initial')
         for name in ('initialize','record-capabilities','commit','check-indexes'):
             command=sub.add_parser(name);command.add_argument('--session',required=True);command.add_argument('--owner',required=True)
             if name=='commit':command.add_argument('--starting-log',required=True)
@@ -819,6 +915,16 @@ def main():
         if args.operation=='record':
             content=body_input(args.body_file);engine=Session(args.root,args.session)
             print(json.dumps(engine.create(args.family,content),sort_keys=True));return 0
+        if args.operation=='admit':
+            engine=Admission(args.root);result=engine.admit(args.role,args.host,args.surface,args.cause,args.legacy_channel,args.initial)
+            print(json.dumps(result,sort_keys=True));return 0
+        if args.operation=='claim':
+            # 3.16: a session declared for another role never takes Main's lease; nothing is written.
+            for value in (args.declared_role, os.environ.get('AXIS_ROLE')):
+                if value and value.strip():
+                    row=role_named(value)
+                    if row is None or not row['exclusive']:
+                        print(json.dumps({'status':'declared','role':row['name'] if row else value.strip()},sort_keys=True));return 0
         engine=Startup(args.root)
         if args.operation=='claim':
             for value in args.take_over:parse_stamp(value)
