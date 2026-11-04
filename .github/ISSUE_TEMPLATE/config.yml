@@ -1,0 +1,15 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question
+    url: https://github.com/AxisWorkflow/axis/discussions/new?category=q-a
+    about: Ask how to do something with Axis.
+  - name: Idea
+    url: https://github.com/AxisWorkflow/axis/discussions/new?category=ideas
+    about: Share an open-ended idea for discussion.
+  - name: Security problem
+    url: https://github.com/AxisWorkflow/axis/security/advisories/new
+    about: Report a vulnerability privately. Never in a public issue.
+  - name: How Axis takes contributions
+    url: https://github.com/AxisWorkflow/axis/blob/main/.github/CONTRIBUTING.md
+    about: Fixes are made by the maintainers from reports.
+# axis:production-only - lives only on the public Axis repository; Axis removes it from a new project at first startup.
