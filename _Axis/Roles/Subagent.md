@@ -49,7 +49,8 @@
     "survey": "count",
     "survey_key": "orphan_subagents",
     "promotable": false,
-    "lifetime": "task"
+    "lifetime": "task",
+    "recovery": null
   },
   "presentation": {
     "title": "Subagent",

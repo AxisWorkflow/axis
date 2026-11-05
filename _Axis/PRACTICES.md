@@ -12,6 +12,8 @@
 ## Lazy-Load Practices
 Read before the matching action.
 
+- Only Main makes changes under [Practices > Snapshots], [Practices > Coordination], [Practices > Scheduling], [Practices > Archiving], [Practices > Mindset], [Practices > Directives], [Practices > Splitting], [Practices > Dashboard], [Practices > GIT], [Practices > WhatsApp], merge recovery, `^save` and `^resume`; their triggers are in `_Axis/Roles/Main.md`. Other roles route such changes to Main as their role file says.
+
 - [Practices > IndexDetail] - Index/detail names, Subjects and membership.
   *Load before reading or writing index/detail records, including bootstrap.*
 
@@ -66,9 +68,6 @@ Read before the matching action.
 - [Practices > Context] - What to read per request.
   *Load unless [Settings > Context Management] is `Default`.*
 
-- [Practices > Snapshots] - When and how to save Snapshots.
-  *Load before saving a Snapshot (e.g., `^save`).*
-
 - [Practices > Logs] - What to log and how to write WORM entries.
   *Load before your first Log of a session.*
 
@@ -87,17 +86,8 @@ Read before the matching action.
 - [Practices > Teams], [Practices > Collaboration] - Team setup and methods.
   *Load for setup or method changes.*
 
-- [Practices > Coordination] - Records, lifecycle, sessions and dispatch.
-  *Load before team/Job lifecycle, session reuse or transfer work.*
-
-- [Practices > Scheduling] - Portable definitions and bounded occurrence admission.
-  *Load before schedule creation, revision, evaluation or dispatch.*
-
 - [Practices > Notes] - Writing, renewing, and archiving Notes.
   *Load for `^note`, `^notes`, renewal, or selecting a Note for Archive.*
-
-- [Practices > Archiving] - Moving inactive history out of routine context.
-  *Load for `^archive`, automatic Note overflow, restoration, or Archive checks.*
 
 - [Practices > Trash] - Stage deletions in `_Trash/`; sweeps empty it.
   *Load before deleting a file or when a host blocks deletion.*
@@ -108,16 +98,8 @@ Read before the matching action.
 - [Practices > Inbox] - Filing what User drops into `_Inbox/`.
   *Load when `_Inbox/` holds items, and for `^inbox` or `^refresh`.*
 
-- [Practices > Mindset] - How the behavioral Mindset is generated and followed.
-  *Load when regenerating Mindset.*
-
-- [Practices > Directives] - Conditional Directives and trigger design.
-  *Load when adding or revising a Directive.*
-
 - [Practices > Status] - The quick-look `^status` summary, in the terminal or as a web page.
   *Load for `^status`.*
-
-- [Practices > Splitting] - load for `^split` or its recovery only.
 
 - [Practices > Merging] - Reviewed project consolidation and child absorption, preserved history and recovery.
 - [Practices > Memos] - Dated Markdown messages to User in `_Memos/`, including Reviews.
@@ -129,12 +111,6 @@ Read before the matching action.
 - [Practices > Wiki] - Wiki architecture and procedures.
   *Load before any Wiki work.*
 
-- [Practices > Dashboard] - The Dashboard web app.
-  *Load for `^dashboard` or Dashboard revisions.*
-
-- [Practices > GIT] - Adaptive setup, synchronization, checkpoints, encrypted Secrets transport, and rollback.
-  *Load before any Git action, and during the Git phases of `^save` and `^resume`.*
-
 - [Practices > Subprojects] - Containment, recognition, ownership, inheritance.
   *Load when a Subproject is detected.*
 
@@ -143,9 +119,6 @@ Read before the matching action.
 
 - [Practices > Folders] - Project Subfolder creation and reorganization.
   *Load before creating or reorganizing a Project Subfolder.*
-
-- [Practices > WhatsApp] - Set up text messaging with WhatsApp via OpenClaw.
-  *Load when User asks to set up a text messaging channel with WhatsApp.*
 
 ## Behavioral Guidance
 Route durable guidance by purpose; no extra file to load:

@@ -1,7 +1,7 @@
 # Changelog
 > **Purpose:** Record Axis release identity and the structural migrations needed to update an existing project safely.
 
-current-version: 3.16
+current-version: 3.17
 changelog-format: 1
 self-update-baseline: 26.08.19
 
@@ -39,6 +39,34 @@ update-impact: automatic
 ### Verification
 
 - None.
+
+## 3.17
+
+released: 2026-11-05
+
+update-impact: automatic
+
+### Structural Changes
+
+- Compaction recovery (Context Compression, first release). The entry files gain an `After compaction` section: after the host compacts or summarizes a conversation, a summary is not Axis guidance; the agent runs the per-turn command and re-reads in full every file it lists before its next answer or tool action, makes no shared writes until then, keeps every User hold a summary mentions, takes no approval for a push, publication, spending or deletion from a summary alone, and keeps its Session ID, role, holds and next step word for word when it writes a summary. An Observer re-reads only the startup bundle and its role file. The entry files also tell a delegated Subagent to follow its envelope, and ask for the per-turn command again before a commit, push, spawn, publication or deletion.
+- `_Axis/Roles/Main.md` now carries Main's guidance (what it owns, judgment, holds, recovery, presentation) and the Main-only Practice triggers and Rules that left the shared startup core: Snapshots, Coordination, Scheduling, Archiving, Mindset, Directives, Splitting, Dashboard, GIT and WhatsApp, merge recovery, `^save` and `^resume` portability and Git, Mindset regeneration, terminal Follow-Ups, Log-time Marker renewal, Git and Secrets, and Main's capability bar. The core keeps one boundary line naming those areas, so other roles route such changes to Main, and every other role reads about 1.5 KB less at startup. Main loads its role file on every startup route through `Load-Starting-Context.md`; `boot.py` and `Boot-Manual.md` list it. Each session role row gains a `recovery` set. `turn.py --recover` prints that set with sizes and checksums plus pointers to current state, renews nothing and writes nothing; after renewal `turn.py` prints Main's Role line as it already did for declared roles. New `_Axis/Resources/Context-Check.md` gives every role's recovery set and the path without Python.
+- New optional `_Axis/Resources/context-check.py`, loaded by `turn.py`, can prove that Axis guidance is still in context and order a reload when it is not. It ships off: in this release a compaction mark orders a periodic reload, acknowledged with `turn.py --reloaded`.
+- New optional `_Axis/Resources/host-context.py` and `^install context hooks`: with the User's approval for each host, a Claude Code or Codex hook marks each compaction and gives a resumed or compacted session its Session ID, role and role guidance within the host's limit. `boot.py` and `turn.py` record which host session runs which Axis session, so the hook, and `host-context.py whoami` after a compaction that lost the Session ID, can recover it; nothing is installed by default.
+- `axis --role` on Claude Code passes the declared role's guidance through the host's system-prompt file, so it survives compaction there. The four helper definitions run without the entry file and the User's own CLAUDE.md files, and fail closed without a valid envelope; `envelope.py assemble --save-contract` keeps a pinned copy of a long-running helper's Task Contract, so its spawner can resume it after a compaction.
+- Secrets: an Agent never pastes or quotes a secret value in a reply, record or message, even when the User asks to see it; it points the User to the file instead (`_Axis/Rules/Secrets.md`, User decision of 5 November 2026). Reading a value for a task the User names is unchanged.
+- After compaction, a session whose summary lost its Session ID recovers it with `host-context.py whoami` from the host-session binding instead of stopping, and the floor's summarizer sentence also keeps the rule that `turn.py` runs first on every turn.
+
+### Project-State Migrations
+
+- None required. A session running when the update lands stops at its next per-turn check (version changed), as after every update; the next session gets the floor, the Role line and the recovery lists. Hooks stay uninstalled until the User approves `^install context hooks` for a host. Before removing `_Axis/Resources/host-context.py` from a project, uninstall its hooks.
+
+### Retired Paths
+
+- None.
+
+### Verification
+
+- Offline and sealed startup tests, the first-startup gate (113,664 of 114,596 bytes) and the core-move checks pass; native and Linux suites run at freeze. Live: declared roles refuse Main-only changes on Claude Code and Codex (C9, 10 sessions plus a 3-of-3 rerun after the launcher fix); after forced compaction, 3.17 against 3.16 kept 75.0% against 50.0% of probed guidance on Claude Code (Sonnet) and 55.6% against 51.9% on Codex (Sol), with no secret pasted and no write after a kill signal in the 3.17 runs.
 
 ## 3.16
 

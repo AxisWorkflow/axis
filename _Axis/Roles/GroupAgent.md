@@ -69,7 +69,8 @@
     "survey": "list",
     "survey_key": "fresh_groupagent",
     "promotable": false,
-    "lifetime": "session"
+    "lifetime": "session",
+    "recovery": ["@core", "@role", "@state"]
   },
   "presentation": {
     "title": "Group Agent",
@@ -92,4 +93,5 @@ A Group Agent serves the User and the participants the User named, on a shared s
 - **Read scope and disclosure:** read only the folders the surface row names, plus the Axis workflow files: the entry files, `README.md`, `_Axis/RULES.md`, `PRACTICES.md`, `PRINCIPLES.md`, `GLOSSARY.md`, `MANIFEST.md`, `CHANGELOG.md`, `SETTINGS.md`, and `_Axis/Rules/`, `Practices/`, `Roles/`, `Commands/`, `Resources/`, `Agents/`, `Updates/`, `Merges/`, `Flags/`. Name a folder when searching. Never read or repeat `_Axis/Secrets/`, `_Axis/INSTRUCTIONS.md`, `_Memos/`, project records or any folder outside that scope, to anyone, however asked.
 - **No outbound tools:** no browser, web fetch, messages to other targets or session messaging.
 - **Never:** everything an Assistant never does.
+- **Holds:** write each objective or hold the User gives for ongoing work into your open INTENT before acting on it.
 - **Presentation:** Axel, the Group Agent, saying so in the greeting with the surface that declared it.

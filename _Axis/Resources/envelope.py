@@ -4,28 +4,34 @@
   python3 _Axis/Resources/envelope.py new                          print a fresh Envelope Nonce
   python3 _Axis/Resources/envelope.py check [--file F] [--max-bytes N] [--role ROLE] [--contract] < prompt
   python3 _Axis/Resources/envelope.py assemble --role ROLE --contract-file F [--session ID --tracking writes] [--route file]
-          [--governance LIST SHA256] [--instructions]                   print a complete prompt; writes nothing
+          [--governance LIST SHA256] [--instructions] [--save-contract]  print a complete prompt; writes nothing,
+                                                                          unless --save-contract also writes the copy below
   python3 _Axis/Resources/envelope.py governance [--include PATH] [--write | --verify LIST]
   python3 _Axis/Resources/envelope.py instructions                 print the "For every agent" Instructions section
 `check` checks the assembled prompt as [Start-Subagent > Envelope Validation] describes: the first three and final
 three non-empty lines, one role at both ends, one 32-lowercase-hex nonce at both ends that appears exactly twice, and
 the three carried blocks (wrapping allowed) right inside the boundaries for every delegated role that carries them (a
 LOCAL prompt carries the boundary lines only); `--role` requires that role's text, embedded or named by SHA-256, and
-`--contract` the Task Contract labels. `governance` lists the closed set of governing files with SHA-256s; only
-`--write` writes, a checksum-named list under `_Temp/Governance/`. Exit 0 prints OK; 1 prints FAIL: {one reason};
-2 means the input could not be read; `instructions` exits 3 when the file has no single "For every agent" heading."""
-import argparse,hashlib,os,posixpath,re,secrets,sys
+`--contract` the Task Contract labels. A CONTRACT COPY pin line, when present, must match its file's current
+SHA-256 (CC-17); its absence is accepted unchanged. `governance` lists the closed set of governing files with
+SHA-256s; only `--write` writes, a checksum-named list under `_Temp/Governance/`. `assemble --save-contract` (needs
+`--session`) writes the assembled prompt's content without its nonce-bearing boundaries to
+`_Temp/Envelopes/{Session ID}.contract.md`, prints its SHA-256 to stderr, and pins both into the prompt, so a
+long-running delegate or Team member can re-verify its own contract after a compaction. Exit 0 prints OK; 1 prints
+FAIL: {one reason}; 2 means the input could not be read; `instructions` exits 3 when the file has no single "For
+every agent" heading."""
+import argparse,hashlib,os,posixpath,re,secrets,stat,sys
 from pathlib import Path
 
 # BEGIN GENERATED: role-table
 # Compiled from _Axis/Roles/ at release; edit the role files, never this region.
 ROLE_TABLE=(
-    {'name': 'Main', 'cls': 'session', 'subject': 'Main: session', 'match': 'exact', 'shape': 'exact4', 'created_by': 'claim', 'exclusive': True, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': None, 'survey_key': None, 'notice': None, 'issuer': 'main', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': None, 'guard': None, 'reference_word': 'Main', 'log_by': 'Main Agent', 'title': 'Main Agent', 'plural': 'Main Agents', 'article': 'the', 'serves': 'User', 'families': 'all'},
-    {'name': 'Auxiliary', 'cls': 'session', 'subject': 'Auxiliary: ', 'match': 'prefix', 'shape': 'single-session-line', 'created_by': 'helper', 'exclusive': False, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': 'list', 'survey_key': 'fresh_auxiliary', 'notice': 'An Auxiliary Agent is serving this project ({id}).', 'issuer': 'worker', 'proposal_owner': True, 'proposal_issuer': 'auxiliary', 'submit_schema': 'axis.external-submission/v1', 'guard': {'config_key': 'externalAgents', 'flag': '--external', 'block_spawn': True, 'new_files': ('subfolders', '_Axis/Submissions/', '_Temp/')}, 'reference_word': 'Auxiliary', 'log_by': 'Auxiliary Agent', 'title': 'Auxiliary Agent', 'plural': 'Auxiliary Agents', 'article': 'an', 'serves': 'User', 'families': ('Ideas', 'Logs', 'Notes')},
-    {'name': 'Assistant', 'cls': 'session', 'subject': 'Assistant: ', 'match': 'prefix', 'shape': 'single-session-line', 'created_by': 'helper', 'exclusive': False, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': 'list', 'survey_key': 'fresh_assistant', 'notice': 'An Assistant is serving this project ({id}).', 'issuer': 'worker', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': 'axis.external-submission/v1', 'guard': {'config_key': 'assistantAgents', 'flag': None, 'block_spawn': False, 'new_files': ('subfolders', '_Axis/Submissions/', '_Temp/')}, 'reference_word': 'Assistant', 'log_by': 'Assistant', 'title': 'Assistant', 'plural': 'Assistants', 'article': 'an', 'serves': 'User', 'families': ('Ideas', 'Logs', 'Notes')},
-    {'name': 'GroupAgent', 'cls': 'session', 'subject': 'Group Agent: ', 'match': 'prefix', 'shape': 'single-session-line', 'created_by': 'helper', 'exclusive': False, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': 'list', 'survey_key': 'fresh_groupagent', 'notice': 'A Group Agent is serving this project ({id}).', 'issuer': 'worker', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': 'axis.external-submission/v1', 'guard': {'config_key': 'groupAgents', 'flag': None, 'block_spawn': True, 'new_files': ('subfolders', '_Axis/Submissions/', '_Temp/')}, 'reference_word': 'GroupAgent', 'log_by': 'Group Agent', 'title': 'Group Agent', 'plural': 'Group Agents', 'article': 'a', 'serves': 'User and named participants', 'families': ('Ideas', 'Logs', 'Notes')},
-    {'name': 'Observer', 'cls': 'session', 'subject': 'Observer: ', 'match': 'prefix', 'shape': 'single-session-line', 'created_by': 'none', 'exclusive': False, 'version_bound': False, 'reply_frame': True, 'blocks_save': False, 'survey': None, 'survey_key': None, 'notice': None, 'issuer': 'worker', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': None, 'guard': {'config_key': 'observerAgents', 'flag': None, 'block_spawn': True, 'new_files': ()}, 'reference_word': 'Observer', 'log_by': None, 'title': 'Observer', 'plural': 'Observers', 'article': 'an', 'serves': 'anyone on the surface', 'families': ()},
-    {'name': 'Subagent', 'cls': 'session', 'subject': 'Subagent: ', 'match': 'prefix', 'shape': 'free', 'created_by': 'spawner', 'exclusive': False, 'version_bound': False, 'reply_frame': False, 'blocks_save': True, 'survey': 'count', 'survey_key': 'orphan_subagents', 'notice': '{count} orphaned Subagent record(s) from a crashed spawn; ^refresh can clear them', 'issuer': 'worker', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': None, 'guard': None, 'reference_word': 'Subagent', 'log_by': None, 'title': 'Subagent', 'plural': 'Subagents', 'article': 'a', 'serves': 'spawner', 'families': 'delegated'},
+    {'name': 'Main', 'cls': 'session', 'subject': 'Main: session', 'match': 'exact', 'shape': 'exact4', 'created_by': 'claim', 'exclusive': True, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': None, 'survey_key': None, 'notice': None, 'issuer': 'main', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': None, 'guard': None, 'reference_word': 'Main', 'log_by': 'Main Agent', 'title': 'Main Agent', 'plural': 'Main Agents', 'article': 'the', 'serves': 'User', 'families': 'all', 'recovery': ('@core', '@role', '_Axis/INSTRUCTIONS.md', '_Axis/MINDSET.md', '_Axis/DIRECTIVES.md', '@overlay', '@state')},
+    {'name': 'Auxiliary', 'cls': 'session', 'subject': 'Auxiliary: ', 'match': 'prefix', 'shape': 'single-session-line', 'created_by': 'helper', 'exclusive': False, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': 'list', 'survey_key': 'fresh_auxiliary', 'notice': 'An Auxiliary Agent is serving this project ({id}).', 'issuer': 'worker', 'proposal_owner': True, 'proposal_issuer': 'auxiliary', 'submit_schema': 'axis.external-submission/v1', 'guard': {'config_key': 'externalAgents', 'flag': '--external', 'block_spawn': True, 'new_files': ('subfolders', '_Axis/Submissions/', '_Temp/')}, 'reference_word': 'Auxiliary', 'log_by': 'Auxiliary Agent', 'title': 'Auxiliary Agent', 'plural': 'Auxiliary Agents', 'article': 'an', 'serves': 'User', 'families': ('Ideas', 'Logs', 'Notes'), 'recovery': ('@core', '@role', '_Axis/Practices/Agents.md > Auxiliary Agent', '@state')},
+    {'name': 'Assistant', 'cls': 'session', 'subject': 'Assistant: ', 'match': 'prefix', 'shape': 'single-session-line', 'created_by': 'helper', 'exclusive': False, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': 'list', 'survey_key': 'fresh_assistant', 'notice': 'An Assistant is serving this project ({id}).', 'issuer': 'worker', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': 'axis.external-submission/v1', 'guard': {'config_key': 'assistantAgents', 'flag': None, 'block_spawn': False, 'new_files': ('subfolders', '_Axis/Submissions/', '_Temp/')}, 'reference_word': 'Assistant', 'log_by': 'Assistant', 'title': 'Assistant', 'plural': 'Assistants', 'article': 'an', 'serves': 'User', 'families': ('Ideas', 'Logs', 'Notes'), 'recovery': ('@core', '@role', '@state')},
+    {'name': 'GroupAgent', 'cls': 'session', 'subject': 'Group Agent: ', 'match': 'prefix', 'shape': 'single-session-line', 'created_by': 'helper', 'exclusive': False, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': 'list', 'survey_key': 'fresh_groupagent', 'notice': 'A Group Agent is serving this project ({id}).', 'issuer': 'worker', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': 'axis.external-submission/v1', 'guard': {'config_key': 'groupAgents', 'flag': None, 'block_spawn': True, 'new_files': ('subfolders', '_Axis/Submissions/', '_Temp/')}, 'reference_word': 'GroupAgent', 'log_by': 'Group Agent', 'title': 'Group Agent', 'plural': 'Group Agents', 'article': 'a', 'serves': 'User and named participants', 'families': ('Ideas', 'Logs', 'Notes'), 'recovery': ('@core', '@role', '@state')},
+    {'name': 'Observer', 'cls': 'session', 'subject': 'Observer: ', 'match': 'prefix', 'shape': 'single-session-line', 'created_by': 'none', 'exclusive': False, 'version_bound': False, 'reply_frame': True, 'blocks_save': False, 'survey': None, 'survey_key': None, 'notice': None, 'issuer': 'worker', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': None, 'guard': {'config_key': 'observerAgents', 'flag': None, 'block_spawn': True, 'new_files': ()}, 'reference_word': 'Observer', 'log_by': None, 'title': 'Observer', 'plural': 'Observers', 'article': 'an', 'serves': 'anyone on the surface', 'families': (), 'recovery': ('@core', '@role')},
+    {'name': 'Subagent', 'cls': 'session', 'subject': 'Subagent: ', 'match': 'prefix', 'shape': 'free', 'created_by': 'spawner', 'exclusive': False, 'version_bound': False, 'reply_frame': False, 'blocks_save': True, 'survey': 'count', 'survey_key': 'orphan_subagents', 'notice': '{count} orphaned Subagent record(s) from a crashed spawn; ^refresh can clear them', 'issuer': 'worker', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': None, 'guard': None, 'reference_word': 'Subagent', 'log_by': None, 'title': 'Subagent', 'plural': 'Subagents', 'article': 'a', 'serves': 'spawner', 'families': 'delegated', 'recovery': None},
     {'name': 'CX', 'cls': 'delegated', 'token': 'CX', 'carries_blocks': True, 'agent_type': 'axis-cx', 'write_scope': (('_Axis/CX/', True), ('_Temp/', False)), 'deny': None},
     {'name': 'Wiki', 'cls': 'delegated', 'token': 'WIKI', 'carries_blocks': True, 'agent_type': 'axis-wiki', 'write_scope': (('_Wiki/', False), ('_Axis/Wiki/', False), ('_Temp/', False)), 'deny': None},
     {'name': 'Local', 'cls': 'delegated', 'token': 'LOCAL', 'carries_blocks': False, 'agent_type': None, 'write_scope': None, 'deny': None},
@@ -54,6 +60,8 @@ CONTRACT=('PURPOSE:','REQUEST:','DELIVERABLE:','SUCCESS:','CRITICAL RULES:','CON
 TEXT_BEGIN,TEXT_END='<!-- axis:role-text:begin -->','<!-- axis:role-text:end -->'
 GENERATED=re.compile(r'<!-- (BEGIN|END) GENERATED: [^\n]*-->')
 ROLE_FILE=re.compile(r'ROLE FILE: `?(_Axis/Roles/([A-Z][A-Za-z]*)\.md)`? sha256 ([0-9a-f]{64})')
+CONTRACT_PIN=re.compile(r'CONTRACT COPY: `(_Temp/Envelopes/([^`]+)\.contract\.md)` sha256 ([0-9a-f]{64})')
+SESSION_ID=re.compile(r'\d{4}(?:\.\d{2}){5}\.\d{3}Z')
 CREDENTIAL=re.compile(r'(AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{20,}|sk-(?:ant-|proj-)?[A-Za-z0-9_-]{20,}|xox[abpr]-[A-Za-z0-9-]{10,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|AGE-SECRET-KEY-[0-9A-Z]{20,})')
 FIXED=('_Axis/PRINCIPLES.md','_Axis/RULES.md','_Axis/PRACTICES.md','_Axis/DIRECTIVES.md','_Axis/MINDSET.md','_Axis/GLOSSARY.md','_Axis/MANIFEST.md','_Axis/PROJECT.md','_Axis/Resources/Start-Subagent.md')
 
@@ -117,6 +125,11 @@ def check(text,max_bytes=None,role=None,contract=False,root='.'):
             g=GOVERNANCE_LINE.search(text)
             listed=Path(g[1])/g[2] if g else None
             if not g or g[3]!=g[4] or listed.is_symlink() or not listed.is_file() or hashlib.sha256(listed.read_bytes()).hexdigest()!=g[4]:return 'governance: missing, or the list does not match its SHA-256'
+    # CC-17: a CONTRACT COPY pin, when carried, must still match its file; its absence leaves the prompt unchanged.
+    pin=CONTRACT_PIN.search(text)
+    if pin is not None:
+        copy=Path(root)/pin[1]
+        if copy.is_symlink() or not copy.is_file() or hashlib.sha256(copy.read_bytes()).hexdigest()!=pin[3]:return 'contract pin: missing, or the copy does not match its SHA-256'
     if contract:
         at=text.find('TASK CONTRACT:')
         if at<0:return 'contract: missing TASK CONTRACT:'
@@ -204,21 +217,50 @@ def verify(root,listing,expected=None):
     problems+=['UNLISTED '+n for _,n in governing(root)[0] if n not in listed]
     return problems
 
+def safe_write(root,parts,name,text):
+    """Write text to root/parts/name without following links: each folder below root is a real directory (created
+    when absent), and the file goes in through an exclusive no-follow temporary file and an atomic replace."""
+    folder=Path(root)
+    for part in parts:
+        folder=folder/part
+        try:os.mkdir(folder)
+        except FileExistsError:pass
+        if not stat.S_ISDIR(os.lstat(folder).st_mode):raise ValueError(folder.relative_to(root).as_posix()+' is a link or not a folder')
+    tmp=folder/f'.{name}.{os.getpid()}.{secrets.token_hex(4)}.tmp'
+    fd=os.open(tmp,os.O_WRONLY|os.O_CREAT|os.O_EXCL|getattr(os,'O_NOFOLLOW',0),0o644)
+    try:
+        with os.fdopen(fd,'w',encoding='utf-8') as h:h.write(text)
+        os.replace(tmp,folder/name)
+    except BaseException:
+        try:os.unlink(tmp)
+        except OSError:pass
+        raise
+    return folder/name
+
 def write_governance(project,include=()):
     """Write the checksum-named governance list under the project's _Temp/Governance/; (relative path, sha256, guidance digest)."""
     listing,digest,_=governance_text(project,include)
-    name=hashlib.sha256(listing.encode()).hexdigest();folder=Path(project)/'_Temp/Governance';folder.mkdir(parents=True,exist_ok=True)
-    out=folder/(name+'.txt')
-    if not out.exists():
-        tmp=folder/('.'+name+'.tmp');tmp.write_text(listing,encoding='utf-8');os.replace(tmp,out)
+    name=hashlib.sha256(listing.encode()).hexdigest();out=Path(project)/'_Temp/Governance'/(name+'.txt')
+    if out.is_symlink() or not out.is_file():safe_write(project,('_Temp','Governance'),name+'.txt',listing)
     return f'_Temp/Governance/{name}.txt',name,digest
 
-def assemble(root,role,contract,session=None,tracking=None,route='embedded',governance=None,every=None,project=None):
-    """A complete prompt; role text comes from root's role files, the governance list from project (default root)."""
+def write_contract_copy(project,session,body_parts):
+    """Write the assembled prompt's content without its nonce-bearing boundaries (CC-17: 'the contract without the
+    nonce') to the project's _Temp/Envelopes/{session}.contract.md; (relative path, sha256). `body_parts` is the
+    prompt's parts between the head and foot boundary triples, TEARLINE included."""
+    if not SESSION_ID.fullmatch(session):raise ValueError('--save-contract needs a Session ID, not an arbitrary string')
+    text='\n\n'.join(body_parts)+'\n'
+    safe_write(project,('_Temp','Envelopes'),f'{session}.contract.md',text)
+    return f'_Temp/Envelopes/{session}.contract.md',hashlib.sha256(text.encode()).hexdigest()
+
+def assemble(root,role,contract,session=None,tracking=None,route='embedded',governance=None,every=None,project=None,save_contract=False,max_bytes=None):
+    """A complete prompt; role text comes from root's role files, the governance list from project (default root).
+    save_contract (CC-17): also write the contract copy and pin it into the prompt for later re-verification."""
     project=project or root
     row=role_row(role)
     if row is None or not row['carries_blocks']:raise ValueError('assemble builds prompts for delegated roles that carry role text')
     if credential(contract):raise ValueError('credential-shaped text in the contract')
+    if save_contract and not session:raise ValueError('--save-contract needs the assigned Session ID')
     text,digest=role_text(root,row['name'])
     if route!='embedded' and not governed(row):raise ValueError(row['name']+' role text travels embedded; the helper cannot verify a role file')
     nonce=secrets.token_hex(16);token=row['token']
@@ -234,11 +276,21 @@ def assemble(root,role,contract,session=None,tracking=None,route='embedded',gove
     if tracking in ('writes','verbose') and row['write_scope']!=():
         if not session:raise ValueError('tracking needs the assigned Session ID')
         parts.append(TRACKING.replace('{assigned ID}',session)+(VERBOSE if tracking=='verbose' else ''))
+    if save_contract:
+        if not SESSION_ID.fullmatch(session):raise ValueError('--save-contract needs a Session ID, not an arbitrary string')
+        copy_parts=parts[1:]+[TEARLINE];copy_path=f'_Temp/Envelopes/{session}.contract.md';copy_digest=hashlib.sha256(('\n\n'.join(copy_parts)+'\n').encode()).hexdigest()
+        parts.append(f'CONTRACT COPY: `{copy_path}` sha256 {copy_digest}. Your spawner keeps this copy to resume or re-issue this exact contract. If this prompt\'s closing boundary is ever out of view word for word, such as after a compaction, return what you have and stop; your spawner verifies the copy and re-sends it.')
     parts+=[TEARLINE,foot]
     prompt='\n\n'.join(parts)+'\n'
     if nonce in carried+contract:raise ValueError('nonce collision')
+    if max_bytes is not None and len(prompt.encode())>max_bytes:raise ValueError(f'oversize ({len(prompt.encode())} bytes); use --route file or split the task')
+    if save_contract:write_contract_copy(project,session,copy_parts)  # only for a prompt within its size limit
     reason=check(prompt,role=row['name'],contract=token=='GENERAL',root=root)
-    if reason:raise ValueError(reason)
+    if reason:
+        if save_contract:
+            try:os.unlink(Path(project)/copy_path)
+            except OSError:pass
+        raise ValueError(reason)
     return prompt
 
 def main():
@@ -248,6 +300,7 @@ def main():
     s=sub.add_parser('assemble');s.add_argument('--role',required=True);s.add_argument('--contract-file',required=True);s.add_argument('--root',default='.')
     s.add_argument('--session');s.add_argument('--tracking',choices=('off','commands','writes','verbose'),default='off');s.add_argument('--route',choices=('embedded','file'),default='embedded')
     s.add_argument('--governance',nargs=2,metavar=('LIST','SHA256'));s.add_argument('--instructions',action='store_true');s.add_argument('--max-bytes',type=int,default=32768)
+    s.add_argument('--save-contract',action='store_true')
     g=sub.add_parser('governance');g.add_argument('--root',default='.');g.add_argument('--include',action='append',default=[]);g.add_argument('--write',action='store_true');g.add_argument('--verify');g.add_argument('--sha256')
     i=sub.add_parser('instructions');i.add_argument('--root',default='.')
     a=p.parse_args()
@@ -272,8 +325,11 @@ def main():
             if a.instructions:
                 state,every=instructions(a.root)
                 if state=='unsorted':every=None;print('NOTE: Instructions are unsorted; the prompt carries none of them',file=sys.stderr)
-            prompt=assemble(a.root,a.role,contract,a.session,a.tracking,a.route,a.governance,every)
+            prompt=assemble(a.root,a.role,contract,a.session,a.tracking,a.route,a.governance,every,save_contract=a.save_contract,max_bytes=a.max_bytes)
             if len(prompt.encode())>a.max_bytes:print(f'FAIL: oversize ({len(prompt.encode())} bytes); use --route file or split the task',file=sys.stderr);return 1
+            if a.save_contract:
+                pin=CONTRACT_PIN.search(prompt)
+                if pin:print(f'sha256 {pin[3]} {pin[1]}',file=sys.stderr)
             sys.stdout.write(prompt);return 0
         if a.file:
             with open(a.file,encoding='utf-8') as handle:text=handle.read()

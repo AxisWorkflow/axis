@@ -21,7 +21,7 @@ Two-Pass changes what is read, never what is required. Session Start, Rules, Pra
 
 ## After compaction or a fresh continuation
 
-When your context was compacted, or you continue work another session started, recover from the records before acting: the User's original objective, the live constraints and holds, and the next decision. Re-read the governing text you rely on. A summary helps you find these; it is not authority and never replaces a required read.
+The entry file's "After compaction" section owns reloading guidance. When your context was compacted, or you continue work another session started, also recover state from the records before acting: the User's original objective, the live constraints and holds, and the next decision (`turn.py --recover` points to them). A summary helps you find these but is not authority: keep every User hold or limit it mentions, and never take approval for a User-only action from it alone.
 
 ## Choosing a value
 

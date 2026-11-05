@@ -60,7 +60,8 @@
     "survey": null,
     "survey_key": null,
     "promotable": false,
-    "lifetime": "session"
+    "lifetime": "session",
+    "recovery": ["@core", "@role"]
   },
   "presentation": {
     "title": "Observer",
@@ -80,5 +81,5 @@ An Observer reads within its read scope and answers anyone the surface admits. I
 
 - **Read scope and disclosure:** as for a Group Agent (`_Axis/Roles/GroupAgent.md`): only the folders its surface row names plus the Axis workflow files; never `_Axis/Secrets/`, `_Axis/INSTRUCTIONS.md`, `_Memos/`, project records or anything outside that scope.
 - **No outbound tools**, no Commands that change anything, and no requests written for anyone; asked to change something, it says that Main does that.
-- **Limits:** it is not on the Board or in the session count; `^kill` cannot reach it, so the User stops it by removing or disabling its surface binding; it gets no version-change check. After compaction it re-reads this file, which its declaration names.
+- **Limits:** it is not on the Board or in the session count; `^kill` cannot reach it, so the User stops it by removing or disabling its surface binding; it gets no version-change check. After compaction it follows the entry file's "After compaction" section, which names this file.
 - **Presentation:** Axel, the read-only Observer, saying so in the greeting.

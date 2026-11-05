@@ -236,6 +236,7 @@ Optional project state: `EXCEPTIONS.md` in the Axis control folder, created on f
 - `_Axis/Resources/coordination-layout.py` - Missing-only coordination state layout during owned Main startup.
 - `_Axis/Resources/supervision-tree.py` - Read-only recursive subproject coverage and ancestry.
 - `_Axis/Resources/Displaced-Session.md` - No-write displaced-session recovery and persistent-host restart boundary.
+- `_Axis/Resources/Context-Check.md` - Recovery sets and the no-Python path after compaction.
 - `_Axis/Resources/Check-Remote-Freshness.md`
 - `_Axis/Resources/remote-freshness.py` - optional bounded startup Git check.
 
@@ -249,6 +250,8 @@ Optional project state: `EXCEPTIONS.md` in the Axis control folder, created on f
 - `_Axis/Resources/startup-survey.py` - optional one-call startup survey; the numbered Start-Session steps remain available.
 - `_Axis/Resources/boot.py` - one-command Main startup used by the entry files.
 - `_Axis/Resources/turn.py` - per-turn lease check and renewal used by the entry files.
+- `_Axis/Resources/host-context.py` - Optional compaction hook command (`^install context hooks`): marks a compaction, gives a resumed or compacted session its Session ID, role and role guidance; `bind`, `whoami`, `install` and `uninstall`.
+- `_Axis/Resources/context-check.py` - optional content check loaded by `turn.py`: proves Axis guidance is still in context and orders a reload when it is not; ships off in 3.17, where a compaction mark orders a periodic reload instead.
 - `_Axis/Resources/Boot-Manual.md` - shell-only startup when `boot.py` cannot run.
 - `_Axis/Resources/Entry-Protocol.md` - the complete startup and per-turn protocol; the path for a pending update.
 - `_Axis/Resources/agent-board.py` - optional read-only Tracking board for `^board` and the awareness pass; reading the files directly remains available.

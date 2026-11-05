@@ -22,6 +22,7 @@ The role file `_Axis/Roles/{Role}.md` holds each role's text between its `axis:r
 
 - **Embedded (default).** Copy the role text verbatim into the prompt after the AUTHORITY block. Keep the assembled prompt within the route's budget: 32,768 bytes unless the route's window is known to be larger (`envelope.py check --max-bytes`).
 - **File.** When embedding would exceed the budget, name the role file with its SHA-256 instead. The delegate verifies the checksum before reading it (Python, `shasum -a 256`, `sha256sum` or `openssl dgst -sha256`) and refuses a mismatch like a torn envelope. CX and Lookup helpers have no shell to check a checksum, so their role text is always embedded; split the task instead.
+- **Contract copy.** For a Team member or a contract window over 30 minutes, assemble with `envelope.py assemble --save-contract`: the prompt pins a nonce-free copy of the contract. A delegate that loses sight of its envelope after compaction returns and stops; verify the copy's SHA-256 and re-send its contract in a fresh envelope to resume. Record the printed path and SHA-256 in the Marker.
 - **Host-injected.** Every role file stays within 20,000 characters, so any role can ride a host that injects one file.
 - Embed the role text for CX and Lookup: their Claude Code helper types have no shell to verify a checksum.
 - `envelope.py check --role {Role}` compares the role text with all whitespace collapsed, so a host's indentation and wrapping pass; it checks the text against the role file on disk.

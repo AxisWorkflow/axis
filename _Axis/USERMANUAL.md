@@ -1,6 +1,6 @@
 # Axis Workflow User Manual
 > **Purpose:** How to use the Axis Workflow day to day: setup, commands, the Dashboard, the Wiki, working across tools and machines, and working with Agents and models. For the technical and compliance reference, see [SPECIFICATION](/_Axis/SPECIFICATION.md).
-> **Version:** 3.16
+> **Version:** 3.17
 
 
 
@@ -162,7 +162,7 @@ No. Local models are an optional upgrade for cheaper Subagents and Cross-Examina
 No. Axis has no add-on runtime dependency: its canonical Markdown workflow continues without any of them. Git adds versioned synchronization, Ollama adds local-model delegation, OpenClaw adds always-on channels and schedules, and `age` adds encrypted Secrets transport. When one is unavailable, Axis reports the narrower capability loss and uses the portable file-based or manual fallback; unrelated work continues.
 
 **Where do I put API keys and secrets?**
-In `_Axis/Secrets/`. Plaintext there never enters Git, and Agents only open it when a task needs a credential - and never copy values anywhere else. Optional encrypted transport can commit only a public recipient and verified ciphertext so authorized computers can restore the plaintext with a separate private identity (see Portability and Limitations for the honest caveat).
+In `_Axis/Secrets/`. Plaintext there never enters Git, and Agents only open it when a task needs a credential, never copy values anywhere else, and never show a value in chat even when you ask; they point you to the file so you can view it yourself. Optional encrypted transport can commit only a public recipient and verified ciphertext so authorized computers can restore the plaintext with a separate private identity (see Portability and Limitations for the honest caveat).
 
 **How do I update to a newer Axis?**
 Run `^update`. Your Agent downloads an exact official release into temporary staging, compares it with both your installed release and local project, previews the migration, and proceeds when it is expected and unexceptional. Your `^update` invocation is sufficient; there is no extra `UPDATE` entry. A conflict or exceptional migration asks only for the specific decision needed. After a successful migration, `^update` shuts down the old Axis session itself - do not run `^shutdown` afterward. Close that window (or terminal) and start a new session so the updated Workflow loads.
@@ -633,6 +633,12 @@ The checked Team inbox can wait for substantive answers or observation receipts 
 The baseline supports one-time, daily/weekly calendar, elapsed fixed-rate/completion-relative intervals and verified events. Unsupported recurrence is reported. Defaults skip nonexistent daylight-saving times, select the first repeated time, coalesce missed occurrences to one within expiry, and queue at most one while work is active. Unknown clock changes and external effects are held for reconciliation. Only classified safe failures get at most two retries inside the same deadline. Duplicate triggers do not admit another occurrence; Axis does not promise exactly-once external effects.
 
 Scheduled child-project supervision initially reports status/inspection only. Recurring child starts or changes require a separately approved standing mandate. Reminders continue to mean things you must do, independently of executable schedules.
+
+### Long conversations and compaction
+
+When a conversation grows long, the AI tool may compact it into a summary and drop much of what the Agent read at startup. Axis tells every Agent to treat that summary as a hint: before it answers again it reloads the files its role needs, keeps any hold or limit you set, and does not take an earlier approval for a push, publication, spending or deletion from the summary alone. You need do nothing for this. If an Agent seems to have forgotten an Axis rule after a long session, ask it to run its per-turn check and reload; starting a fresh session is always safe.
+
+On Claude Code and Codex you can also add an optional hook with `^install context hooks`; Axis shows the exact change to the tool's settings file and asks before writing it. The hook reminds a resumed or compacted session of its identity and role straight away. Remove it the same way at any time. Axis helpers on Claude Code run without your own CLAUDE.md files; the Task each helper receives carries what it must follow.
 
 ### Sessions, delivery and migration
 

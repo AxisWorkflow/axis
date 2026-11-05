@@ -1,6 +1,6 @@
 # Axis Workflow Specification
 > **Purpose:** The technical reference behind the Axis Workflow: how every mechanism works, why it was built that way, what it guarantees, where it stops, and what an extender must not break. Written for deep diagnostics, downstream developers extending Axis, IT and compliance reviewers assessing it before adoption, and contributors. For everyday use, see the [User Manual](/_Axis/USERMANUAL.md).
-> **Version:** 3.16
+> **Version:** 3.17
 
 ## How to Read This Document
 
@@ -224,6 +224,7 @@ Every helper operation re-verifies ownership: the same `OWNER` inode, the same b
 | `FOREIGN MAIN` or `TAKEN OVER` | 6 | Another live Main exists, or this Main was idle and another Main started meanwhile (the `session-id` Flag names it): make no shared writes, touch no Flag, tell User |
 | `VERSION CHANGED` or `VERSION UNVERIFIED` | 8 | Installed rules differ from the own-session boot binding, or that binding is unavailable: no renewal or ordinary work; follow Displaced-Session. |
 | `READ-ONLY` | 7 | The host refused the renewal (a permission or read-only file-system error, as in a read-only sandbox) although the Marker is present: make no shared writes, never create or repair a Marker, ask User to rerun with write access. Only a missing Marker reports `LOST LEASE` |
+| `CONTEXT LOST` | 10 | The optional content check failed (off by default in 3.17): re-read the listed files before relying on Axis guidance |
 
 The lease design came from specific failures. A renewal done with a bare `touch` recreated a Marker that had been deleted, so the "is my lease gone?" check could never fail; a renewal chained to the read refreshed a lease whose tombstone had just been read; an 83-minute-old Marker stranded later boots; and an Auxiliary Agent never renewed because the renewal step was keyed to a banner only Main prints. Hence: read and judge first, renew separately, never create by renewing, measure age, treat a tombstone as dead at any age, and key the per-turn check on the Agent's own boot record for every role. Before `turn.py` existed, Sonnet renewed the prose lease on 0 of 3 second turns; with the one-line command and a reminder printed by `boot.py`, 4 of 4.
 
@@ -256,6 +257,17 @@ Axel is the Axis mascot and the Main Agent's persona: the Main Agent introduces 
 ### Continuation after context loss
 
 A session that loses context recovers its identity through [Continue-Session](/_Axis/Resources/Continue-Session.md): it rereads its own Marker and Flags and never re-runs startup or prints a second banner. Role is never re-judged.
+
+### Compaction recovery
+
+A host may compact or summarize a long conversation at any time, and the summary keeps only part of what the Agent read. From 3.17 Axis treats such a summary as a hint, not as guidance:
+
+- **Floor.** The entry files' `After compaction` section tells every role to run the per-turn command and re-read in full the files it lists before the next answer or tool action, with no shared writes, Commands, spawns, pushes, publication or spending until then. User holds and limits a summary mentions stay in force; approvals for a push, publication, spending or deletion are never taken from a summary. A summarizer is asked to keep the Session ID, role, holds, approvals and next step word for word. The entry files are the one source every host reloads after compaction, so the floor works without hooks.
+- **Recovery sets.** Each session role row in `_Axis/Roles/` names what it reloads: `@core` (the startup bundle), `@role` (its role file), named files or sections, `@overlay` and `@state` (pointers to current records). `turn.py --recover` prints the set with sizes and checksums and writes nothing; [Context-Check](/_Axis/Resources/Context-Check.md) gives the same sets without Python. Main's guidance lives in `_Axis/Roles/Main.md`, loaded on every startup route, so Main and every declared role reload a role file the same way. The Main-only Practice triggers and Rules moved there from the shared core in 3.17, by a reviewed ownership table; the core keeps one boundary line naming those areas, so a declared role that meets one routes the change to Main.
+- **Content check.** The optional `context-check.py` asks for the next words of a passage from the recovery set and orders a reload on a miss. It ships off in 3.17; until measurements support it, a compaction mark orders a periodic reload instead.
+- **Identity after compaction.** A summary may drop the Session ID. `boot.py` and `turn.py` bind the host session (Claude Code and Codex expose its ID to the shell) to the Axis Session ID, and `host-context.py whoami` prints the bound ID and role when its Marker is live, so [Continue-Session](/_Axis/Resources/Continue-Session.md) recovers the identity instead of stopping all work; without a binding the session stays read-only.
+- **Hooks.** With the User's approval per host, `host-context.py` marks each compaction and, on a resumed or compacted Claude Code or Codex session, prints the bound Session ID, role and role guidance within the host's limit. A Codex `compact` event gets only a role-neutral line, because a spawned Codex agent's hook carries its parent's session.
+- **Launch and delegation.** `axis --role` on Claude Code carries the role's guidance in the host's system-prompt file. Helper definitions run without the entry file and the User's own CLAUDE.md files, and fail closed without a valid envelope; a long-running helper's spawner keeps a pinned contract copy to resume it after a compaction. The installed hook commands end in `|| true`, so a missing or failing script never blocks the host.
 
 ## Roles and Coordination
 

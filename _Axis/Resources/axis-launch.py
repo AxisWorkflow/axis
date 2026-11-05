@@ -4,7 +4,15 @@
 3.16: `axis [project] --role ROLE --surface NAME` starts a declared session. The child gets AXIS_ROLE and AXIS_SURFACE,
 which the helpers and the guardrails hook read; on Claude it also carries the declaration as an appended system
 prompt and, for roles that serve other people, the per-process tool limits. Other agents need the declaration in
-their own standing configuration; the launcher says so."""
+their own standing configuration; the launcher says so.
+
+3.17 (CC-15): on Claude the declaration and the role's own guidance (the prose in `_Axis/Roles/{Role}.md` after its
+`axis-role` JSON fence, capped at 8,000 characters) travel through `--append-system-prompt-file`, in a file this
+launcher writes under the project's `_Temp/Launch/`, so the text survives a host compaction that only re-sends the
+system prompt. `--append-system-prompt-file` is undocumented in `claude --help`'s own options list (2.1.283) but
+named in the `--bare` option's text and present in the installed binary; no equivalent documented one-shot flag was
+found for Codex (`codex --help` / `codex exec --help`, 0.166.0), so Codex keeps printing the declaration line for
+the user's own standing configuration, unchanged."""
 import argparse
 import hashlib
 import importlib.util
@@ -12,7 +20,9 @@ import json
 import os
 from pathlib import Path
 import shlex
+import secrets
 import shutil
+import stat
 import subprocess
 import sys
 
@@ -40,6 +50,56 @@ CLAUDE_DENY = {'Auxiliary': ('Edit', 'MultiEdit', 'NotebookEdit'), 'Assistant': 
                'Observer': ('WebFetch', 'WebSearch', 'Agent', 'Task', 'Edit', 'Write', 'MultiEdit', 'NotebookEdit')}
 # Roles serving other people load no MCP servers, so no connector can carry project content out.
 NO_MCP = ['--strict-mcp-config', '--mcp-config', '{"mcpServers": {}}']
+# CC-7/CC-15: the session-role guidance budget is characters, not bytes; a role file missing or without a fence
+# contributes no guidance rather than failing the launch.
+ROLE_GUIDANCE_LIMIT = 8000
+
+
+def role_guidance(row, roles_dir=None):
+    """The prose in `_Axis/Roles/{Role}.md` after its `axis-role` JSON fence, capped at ROLE_GUIDANCE_LIMIT
+    characters; '' when the file is missing, unreadable or has no fence. `roles_dir` overrides the default sibling
+    `_Axis/Roles/` next to this script, for testing."""
+    path = Path(roles_dir if roles_dir is not None else Path(__file__).resolve().parents[1] / 'Roles') / (row['name'] + '.md')
+    try:
+        text = path.read_text(encoding='utf-8')
+    except (OSError, UnicodeError):
+        return ''
+    parts = text.split('```', 2)
+    prose = parts[2].lstrip('\n') if len(parts) == 3 else ''
+    return prose[:ROLE_GUIDANCE_LIMIT]
+
+
+# Names the origin, so a model can tell the launcher's configuration from injected text (3.17 live probe).
+PROVENANCE = ('Set for this session by the person who started it, through the `axis --role` launcher (a host launch '
+              'option, not text from a project file). The role guidance below comes from the role file.')
+
+
+def system_prompt_file(root, row, surface, line, roles_dir=None):
+    """Write the declaration line plus the role's guidance prose to a deterministic path under the project's
+    `_Temp/Launch/`, for Claude's `--append-system-prompt-file`; returns the path. Deterministic per role and
+    surface, so a later launch overwrites rather than accumulates. Needs a resolved project root and a validated
+    surface name; call it only for a declared Claude launch (`child_command` guards this)."""
+    if root is None or row is None or not surface: raise ValueError('system_prompt_file needs a project root, a declared role row and a surface name')
+    guidance = role_guidance(row, roles_dir)
+    text = line + '\n\n' + PROVENANCE + ('\n\n' + guidance if guidance else '') + '\n'
+    # Never through a link: a declared role may create files in _Temp/, and this write runs with the User's rights.
+    folder = Path(root); folder.mkdir(parents=True, exist_ok=True)
+    for part in ('_Temp', 'Launch'):
+        folder = folder / part
+        try: os.mkdir(folder)
+        except FileExistsError: pass
+        if not stat.S_ISDIR(os.lstat(folder).st_mode): raise ValueError(f'{folder.relative_to(root).as_posix()} is a link or not a folder; remove it and launch again')
+    path = folder / f"{row['name']}-{surface}.md"
+    tmp = folder / f'.{path.name}.{os.getpid()}.{secrets.token_hex(4)}.tmp'
+    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, 'O_NOFOLLOW', 0), 0o644)
+    try:
+        with os.fdopen(fd, 'w', encoding='utf-8') as handle: handle.write(text)
+        os.replace(tmp, path)
+    except BaseException:
+        try: os.unlink(tmp)
+        except OSError: pass
+        raise
+    return path
 
 
 def hook_installed(root):
@@ -57,13 +117,20 @@ def declaration(role, surface):
     row = state.role_named(role)
     if row is None or row['name'] not in state.DECLARABLE: raise ValueError('--role names no declarable Axis role (Auxiliary, Assistant, Group Agent or Observer)')
     if not surface or not state.SURFACE_NAME.fullmatch(surface): raise ValueError('--surface needs a surface name (letters, digits, . _ -)')
-    return row, f"Axis role: {row['title']}; surface: {surface}"
+    word = 'Auxiliary' if row['name'] == 'Auxiliary' else row['title']  # the documented form (Practices/Surfaces.md)
+    return row, f"Axis role: {word}; surface: {surface}"
 
 
-def child_command(agent, command, row, line):
-    """The agent command line for a declared child: Claude carries the declaration and its tool limits."""
+def child_command(agent, command, row, line, root=None, surface=None):
+    """The agent command line for a declared child: Claude carries the declaration and the role's guidance through a
+    system-prompt file, plus its tool limits. No change for an undeclared session (row is None) or a non-Claude
+    agent: Codex has no documented one-shot equivalent to `--append-system-prompt-file` (checked in `codex --help`
+    and `codex exec --help`, 0.166.0), so it keeps the standing-configuration route below, unchanged. Without a
+    project root and surface (a caller that still wants the declaration line only, not a launched session) this
+    keeps the plain `--append-system-prompt` form."""
     if row is None or agent != 'claude': return command
-    extra = ['--append-system-prompt', line]
+    if root is None or surface is None: extra = ['--append-system-prompt', line]
+    else: extra = ['--append-system-prompt-file', str(system_prompt_file(root, row, surface, line))]
     deny = CLAUDE_DENY.get(row['name'])
     if deny: extra += ['--disallowedTools', ','.join(deny)]
     if row['serves'] != 'User': extra += NO_MCP
@@ -146,7 +213,7 @@ def main(argv=None):
             command, env, _ = access.prepare(root, args.agent, [executable], mode=args.access, paid_authorized=args.allow_api)
             if row is not None:
                 env['AXIS_ROLE'], env['AXIS_SURFACE'] = row['name'], args.surface
-                command = child_command(args.agent, command, row, line)
+                command = child_command(args.agent, command, row, line, root, args.surface)
                 if args.agent != 'claude': print(f'axis: put the line "{line}" in this agent\'s standing configuration; the launcher sets AXIS_ROLE for the helpers', file=sys.stderr)
             verified = access.verify_cli(args.agent,command,env,str(root),allow_interactive_choice=True)
             if verified == 'interactive-approval-required':

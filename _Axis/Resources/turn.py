@@ -3,21 +3,23 @@
 
 Runs from the project root at the start of every later turn (and about every 30 minutes inside a long turn):
   python3 _Axis/Resources/turn.py --session {Session ID}
+With --recover it renews nothing and prints the files to re-read after compaction plus pointers to current state.
 Exit 0 prints OK (plus any items to handle, then the reply-frame reminder for roles with a reply frame); 3 KILLED; 4 LOST LEASE (missing Marker); 6 FOREIGN MAIN or TAKEN OVER;
-7 READ-ONLY (the host refused the renewal); 8 VERSION CHANGED or VERSION UNVERIFIED; 2 or 5 errors. It never recreates a missing Marker, never executes an
-update helper, and never writes anything except the renewed Marker mtime."""
+7 READ-ONLY (the host refused the renewal); 8 VERSION CHANGED or VERSION UNVERIFIED; 10 CONTEXT LOST (a context check failed); 2 or 5 errors. It never recreates a missing Marker, never executes an
+update helper, and never writes anything except the renewed Marker mtime and its own files under _Temp/Context/ (context check
+state and the optional hook binding)."""
 import argparse,datetime as dt,errno,hashlib,importlib.util,json,os,re,stat,sys,time
 from pathlib import Path
 
 # BEGIN GENERATED: role-table
 # Compiled from _Axis/Roles/ at release; edit the role files, never this region.
 ROLE_TABLE=(
-    {'name': 'Main', 'cls': 'session', 'subject': 'Main: session', 'match': 'exact', 'shape': 'exact4', 'created_by': 'claim', 'exclusive': True, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': None, 'survey_key': None, 'notice': None, 'issuer': 'main', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': None, 'guard': None, 'reference_word': 'Main', 'log_by': 'Main Agent', 'title': 'Main Agent', 'plural': 'Main Agents', 'article': 'the', 'serves': 'User', 'families': 'all'},
-    {'name': 'Auxiliary', 'cls': 'session', 'subject': 'Auxiliary: ', 'match': 'prefix', 'shape': 'single-session-line', 'created_by': 'helper', 'exclusive': False, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': 'list', 'survey_key': 'fresh_auxiliary', 'notice': 'An Auxiliary Agent is serving this project ({id}).', 'issuer': 'worker', 'proposal_owner': True, 'proposal_issuer': 'auxiliary', 'submit_schema': 'axis.external-submission/v1', 'guard': {'config_key': 'externalAgents', 'flag': '--external', 'block_spawn': True, 'new_files': ('subfolders', '_Axis/Submissions/', '_Temp/')}, 'reference_word': 'Auxiliary', 'log_by': 'Auxiliary Agent', 'title': 'Auxiliary Agent', 'plural': 'Auxiliary Agents', 'article': 'an', 'serves': 'User', 'families': ('Ideas', 'Logs', 'Notes')},
-    {'name': 'Assistant', 'cls': 'session', 'subject': 'Assistant: ', 'match': 'prefix', 'shape': 'single-session-line', 'created_by': 'helper', 'exclusive': False, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': 'list', 'survey_key': 'fresh_assistant', 'notice': 'An Assistant is serving this project ({id}).', 'issuer': 'worker', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': 'axis.external-submission/v1', 'guard': {'config_key': 'assistantAgents', 'flag': None, 'block_spawn': False, 'new_files': ('subfolders', '_Axis/Submissions/', '_Temp/')}, 'reference_word': 'Assistant', 'log_by': 'Assistant', 'title': 'Assistant', 'plural': 'Assistants', 'article': 'an', 'serves': 'User', 'families': ('Ideas', 'Logs', 'Notes')},
-    {'name': 'GroupAgent', 'cls': 'session', 'subject': 'Group Agent: ', 'match': 'prefix', 'shape': 'single-session-line', 'created_by': 'helper', 'exclusive': False, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': 'list', 'survey_key': 'fresh_groupagent', 'notice': 'A Group Agent is serving this project ({id}).', 'issuer': 'worker', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': 'axis.external-submission/v1', 'guard': {'config_key': 'groupAgents', 'flag': None, 'block_spawn': True, 'new_files': ('subfolders', '_Axis/Submissions/', '_Temp/')}, 'reference_word': 'GroupAgent', 'log_by': 'Group Agent', 'title': 'Group Agent', 'plural': 'Group Agents', 'article': 'a', 'serves': 'User and named participants', 'families': ('Ideas', 'Logs', 'Notes')},
-    {'name': 'Observer', 'cls': 'session', 'subject': 'Observer: ', 'match': 'prefix', 'shape': 'single-session-line', 'created_by': 'none', 'exclusive': False, 'version_bound': False, 'reply_frame': True, 'blocks_save': False, 'survey': None, 'survey_key': None, 'notice': None, 'issuer': 'worker', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': None, 'guard': {'config_key': 'observerAgents', 'flag': None, 'block_spawn': True, 'new_files': ()}, 'reference_word': 'Observer', 'log_by': None, 'title': 'Observer', 'plural': 'Observers', 'article': 'an', 'serves': 'anyone on the surface', 'families': ()},
-    {'name': 'Subagent', 'cls': 'session', 'subject': 'Subagent: ', 'match': 'prefix', 'shape': 'free', 'created_by': 'spawner', 'exclusive': False, 'version_bound': False, 'reply_frame': False, 'blocks_save': True, 'survey': 'count', 'survey_key': 'orphan_subagents', 'notice': '{count} orphaned Subagent record(s) from a crashed spawn; ^refresh can clear them', 'issuer': 'worker', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': None, 'guard': None, 'reference_word': 'Subagent', 'log_by': None, 'title': 'Subagent', 'plural': 'Subagents', 'article': 'a', 'serves': 'spawner', 'families': 'delegated'},
+    {'name': 'Main', 'cls': 'session', 'subject': 'Main: session', 'match': 'exact', 'shape': 'exact4', 'created_by': 'claim', 'exclusive': True, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': None, 'survey_key': None, 'notice': None, 'issuer': 'main', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': None, 'guard': None, 'reference_word': 'Main', 'log_by': 'Main Agent', 'title': 'Main Agent', 'plural': 'Main Agents', 'article': 'the', 'serves': 'User', 'families': 'all', 'recovery': ('@core', '@role', '_Axis/INSTRUCTIONS.md', '_Axis/MINDSET.md', '_Axis/DIRECTIVES.md', '@overlay', '@state')},
+    {'name': 'Auxiliary', 'cls': 'session', 'subject': 'Auxiliary: ', 'match': 'prefix', 'shape': 'single-session-line', 'created_by': 'helper', 'exclusive': False, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': 'list', 'survey_key': 'fresh_auxiliary', 'notice': 'An Auxiliary Agent is serving this project ({id}).', 'issuer': 'worker', 'proposal_owner': True, 'proposal_issuer': 'auxiliary', 'submit_schema': 'axis.external-submission/v1', 'guard': {'config_key': 'externalAgents', 'flag': '--external', 'block_spawn': True, 'new_files': ('subfolders', '_Axis/Submissions/', '_Temp/')}, 'reference_word': 'Auxiliary', 'log_by': 'Auxiliary Agent', 'title': 'Auxiliary Agent', 'plural': 'Auxiliary Agents', 'article': 'an', 'serves': 'User', 'families': ('Ideas', 'Logs', 'Notes'), 'recovery': ('@core', '@role', '_Axis/Practices/Agents.md > Auxiliary Agent', '@state')},
+    {'name': 'Assistant', 'cls': 'session', 'subject': 'Assistant: ', 'match': 'prefix', 'shape': 'single-session-line', 'created_by': 'helper', 'exclusive': False, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': 'list', 'survey_key': 'fresh_assistant', 'notice': 'An Assistant is serving this project ({id}).', 'issuer': 'worker', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': 'axis.external-submission/v1', 'guard': {'config_key': 'assistantAgents', 'flag': None, 'block_spawn': False, 'new_files': ('subfolders', '_Axis/Submissions/', '_Temp/')}, 'reference_word': 'Assistant', 'log_by': 'Assistant', 'title': 'Assistant', 'plural': 'Assistants', 'article': 'an', 'serves': 'User', 'families': ('Ideas', 'Logs', 'Notes'), 'recovery': ('@core', '@role', '@state')},
+    {'name': 'GroupAgent', 'cls': 'session', 'subject': 'Group Agent: ', 'match': 'prefix', 'shape': 'single-session-line', 'created_by': 'helper', 'exclusive': False, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': 'list', 'survey_key': 'fresh_groupagent', 'notice': 'A Group Agent is serving this project ({id}).', 'issuer': 'worker', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': 'axis.external-submission/v1', 'guard': {'config_key': 'groupAgents', 'flag': None, 'block_spawn': True, 'new_files': ('subfolders', '_Axis/Submissions/', '_Temp/')}, 'reference_word': 'GroupAgent', 'log_by': 'Group Agent', 'title': 'Group Agent', 'plural': 'Group Agents', 'article': 'a', 'serves': 'User and named participants', 'families': ('Ideas', 'Logs', 'Notes'), 'recovery': ('@core', '@role', '@state')},
+    {'name': 'Observer', 'cls': 'session', 'subject': 'Observer: ', 'match': 'prefix', 'shape': 'single-session-line', 'created_by': 'none', 'exclusive': False, 'version_bound': False, 'reply_frame': True, 'blocks_save': False, 'survey': None, 'survey_key': None, 'notice': None, 'issuer': 'worker', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': None, 'guard': {'config_key': 'observerAgents', 'flag': None, 'block_spawn': True, 'new_files': ()}, 'reference_word': 'Observer', 'log_by': None, 'title': 'Observer', 'plural': 'Observers', 'article': 'an', 'serves': 'anyone on the surface', 'families': (), 'recovery': ('@core', '@role')},
+    {'name': 'Subagent', 'cls': 'session', 'subject': 'Subagent: ', 'match': 'prefix', 'shape': 'free', 'created_by': 'spawner', 'exclusive': False, 'version_bound': False, 'reply_frame': False, 'blocks_save': True, 'survey': 'count', 'survey_key': 'orphan_subagents', 'notice': '{count} orphaned Subagent record(s) from a crashed spawn; ^refresh can clear them', 'issuer': 'worker', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': None, 'guard': None, 'reference_word': 'Subagent', 'log_by': None, 'title': 'Subagent', 'plural': 'Subagents', 'article': 'a', 'serves': 'spawner', 'families': 'delegated', 'recovery': None},
     {'name': 'CX', 'cls': 'delegated', 'token': 'CX', 'carries_blocks': True, 'agent_type': 'axis-cx', 'write_scope': (('_Axis/CX/', True), ('_Temp/', False)), 'deny': None},
     {'name': 'Wiki', 'cls': 'delegated', 'token': 'WIKI', 'carries_blocks': True, 'agent_type': 'axis-wiki', 'write_scope': (('_Wiki/', False), ('_Axis/Wiki/', False), ('_Temp/', False)), 'deny': None},
     {'name': 'Local', 'cls': 'delegated', 'token': 'LOCAL', 'carries_blocks': False, 'agent_type': None, 'write_scope': None, 'deny': None},
@@ -37,7 +39,8 @@ def role_of(first):
         if (first==r['subject']) if r['match']=='exact' else re.fullmatch(re.escape(r['subject'])+r'[^\r\n]+',first):return r
     return None
 
-a=argparse.ArgumentParser(description='Axis per-turn lease check');a.add_argument('--session',required=True);a.add_argument('--boot-version');o=a.parse_args()
+a=argparse.ArgumentParser(description='Axis per-turn lease check');a.add_argument('--session',required=True);a.add_argument('--boot-version');a.add_argument('--recover',action='store_true',help='read-only: list the recovery set and state pointers; renews nothing')
+a.add_argument('--prove',nargs=2,metavar=('CHECK_ID','ANSWERS'),help="answer a context check: 'a | b | c'");a.add_argument('--reloaded',action='store_true',help='record a reload the context check ordered');a.add_argument('--gate',action='store_true',help='before a commit, push, spawn, publication or deletion: a context check is due after 10 minutes');o=a.parse_args()
 root=Path.cwd().resolve();agents=root/'_Axis/Agents'
 if not re.fullmatch(r'\d{4}(\.\d{2}){5}\.\d{3}Z',o.session):print('ERROR: not a Session ID.');sys.exit(2)
 marker=agents/f'{o.session}.md'
@@ -179,7 +182,7 @@ try:
         if (current.st_dev,current.st_ino)!=(marker_info.st_dev,marker_info.st_ino) or current.st_nlink!=1 or os.read(fd,len(marker_bytes)+1)!=marker_bytes:
             held('LOST LEASE',4,'Your Marker changed during validation.')
         if (agents/f'{o.session}.kill').exists():held('KILLED',3,'User stopped this Axis identity; it must not resume.')
-        os.utime(fd)
+        if not o.recover:os.utime(fd)
         after=marker.stat()
         if (agents/f'{o.session}.kill').exists():held('KILLED',3,'User stopped this Axis identity during renewal; it must not resume.')
         if (after.st_dev,after.st_ino)!=(current.st_dev,current.st_ino):held('LOST LEASE',4,'Your Marker changed during renewal.')
@@ -250,13 +253,115 @@ if role['version_bound']:
             if n.is_file() and not n.is_symlink() and n.stat().st_mtime>since:changed.append(n.relative_to(root).as_posix())
         if changed:items.append('guidance changed since your last turn ('+', '.join(changed[:4])+(f', +{len(changed)-4} more' if len(changed)>4 else '')+'): re-read it before relying on it')
     except (OSError,ValueError):pass
+def digest(path):
+    try:return (path.stat().st_size,hashlib.sha256(path.read_bytes()).hexdigest()[:8]) if safe_file(path) else None
+    except OSError:return None
+def recovery_files():
+    # The role row's recovery set as project paths for the context check; '@state' is pointers, not files.
+    files=[]
+    for x in role['recovery'] or ():
+        if x=='@core':files.append('_Axis/Resources/Starting-Context.md')
+        elif x=='@role':files.append('_Axis/Roles/'+role['name']+'.md')
+        elif x=='@overlay':
+            try:lines=(root/'_Axis/Flags/project-overlay').read_text().splitlines() if safe_file(root/'_Axis/Flags/project-overlay') else []
+            except OSError:lines=[]
+            if len(lines)>=4 and lines[0].strip()==o.session:files.append(lines[3].strip())
+        elif x!='@state':files.append(x)
+    return files
+def context_check():
+    # The optional content check (3.17 ships it off); a fault in it never changes a lease outcome.
+    try:
+        helper=root/'_Axis/Resources/context-check.py'
+        if not safe_file(helper):return None
+        spec=importlib.util.spec_from_file_location('axis_context_check',helper);cc=importlib.util.module_from_spec(spec);spec.loader.exec_module(cc);return cc
+    except (Exception,SystemExit):return None
+def bind_host():
+    # 3.17: map this host session to its Axis Session ID for the optional compaction hooks (outside startup, N9); silent.
+    try:
+        helper=root/'_Axis/Resources/host-context.py'
+        if not safe_file(helper):return
+        spec=importlib.util.spec_from_file_location('axis_host_context',helper);hc=importlib.util.module_from_spec(spec);spec.loader.exec_module(hc)
+        values=[v for v in (os.environ.get(x,'').strip() for x in hc.HOST_SESSION.values()) if v]
+        if len(values)==1 and hc.bound(root,values[0])!=o.session:hc.bind(root,o.session)
+    except (Exception,SystemExit):pass
+def recover(exit=True):
+    # 3.17: the exact recovery set from the role row, then pointers to current state; read-only and at most 2,000 bytes.
+    out=['RECOVER: re-read in full before answering; Practices and Commands read before this point count as unread.'];total=0
+    for x in role['recovery'] or ():
+        if x=='@state':continue
+        if x=='@overlay':
+            flag=root/'_Axis/Flags/project-overlay'
+            try:lines=flag.read_text().splitlines() if safe_file(flag) else []
+            except OSError:lines=[]
+            if len(lines)>=4 and lines[0].strip()==o.session:out.append(f'- overlay: revalidate under _Axis/Resources/Load-Project-Overlay.md (activate), then read {lines[3].strip()}')
+            continue
+        name={'@core':'_Axis/Resources/Starting-Context.md','@role':'_Axis/Roles/'+role['name']+'.md'}.get(x,x)
+        path=name.split(' > ')[0];d=digest(root/path)
+        if d:total+=d[0]
+        note=' via _Axis/Resources/Load-Starting-Context.md' if x=='@core' else ''
+        out.append(f'- {name}{note} ({d[0]} bytes, sha256 {d[1]})' if d else f'- {name}: unavailable; say so and continue read-only')
+    if '@state' in (role['recovery'] or ()):
+        state=[]
+        try:
+            own=root/'_Axis/Tracking'/f'{o.session}.md'
+            mine=[l for l in own.read_text().splitlines() if ' - INTENT [' in l or ' - STATUS [' in l] if safe_file(own) else []
+            if mine:state.append('your last: '+mine[-1].split(' - ',2)[2][:160])
+        except OSError:pass
+        if role['exclusive'] or role['name'] in ('Auxiliary','Assistant'):
+            try:
+                logs=sorted(p for p in (root/'_Axis/Logs').glob('*Z.md') if safe_file(p))[-3:]
+                state+=['Log '+p.stem+': '+(p.read_text().splitlines() or [''])[0][:80] for p in reversed(logs)]
+            except OSError:pass
+        if role['exclusive']:
+            try:
+                tasks=(root/'_Axis/TASKS.md').read_text() if safe_file(root/'_Axis/TASKS.md') else ''
+                found=re.findall(r'^status: (Active|Blocked)\ncreated: (\S+)',tasks,re.M)
+                active=[c for s,c in found if s=='Active'];state.append('Tasks Active: '+(', '.join(active[:8])+(f' (+{len(active)-8} more)' if len(active)>8 else '') if active else 'none')+f'; Blocked: {sum(1 for s,c in found if s=="Blocked")}')
+                fus=[p for p in (root/'_Axis/Followups').glob('*Z.md') if safe_file(p) and 'resolved: N/A' in p.read_text()]
+                snaps=sorted(p.stem for p in (root/'_Axis/Snapshots').glob('*Z.md'))
+                state.append(f'open Follow-Ups: {len(fus)}; newest Snapshot: '+(snaps[-1] if snaps else 'none'))
+            except OSError:pass
+            try:
+                settings=(root/'_Axis/SETTINGS.md').read_text()
+                pairs=[(k,re.search(r'^### '+re.escape(k)+r'\n(?:(?!\n### ).)*?\*\*Value:\*\* ([^\n]+)',settings,re.M|re.S)) for k in ('Permissions','Tracking','Working Language','Context Management','Budget','Fault Tolerance')]
+                state.append('Settings: '+'; '.join(f'{k} {m[1]}' for k,m in pairs if m))
+            except OSError:pass
+        out.append('State: '+' | '.join(state) if state else 'State: no own records found')
+        out.append('Keep every User hold or limit a summary mentions; never take approval for a User-only action from a summary alone.')
+    if total>65536:out.append(f'This set is {total//1024} KB; if reloads repeat, save and recommend a fresh session.')
+    if exit:out+=['Handle before answering: '+x for x in items if not x.startswith('this session was idle')]
+    keep,size=[],0
+    for n,x in enumerate(out):
+        if size+len(x)+1>1950:keep.append(f'(+{len(out)-n} more lines; run turn.py without --recover for every item)');break
+        keep.append(x);size+=len(x)+1
+    print('\n'.join(keep))
+    if exit:sys.exit(0)
+if o.recover:recover()
+if o.prove or o.reloaded:
+    cc=context_check()
+    if cc is None:print('CHECK REFUSED: context check unavailable; re-read your recovery set before relying on Axis guidance.');sys.exit(2)
+    try:r=cc.prove(root,o.session,o.prove[0],o.prove[1],recovery_files(),role=role['name']) if o.prove else cc.reloaded(root,o.session,recovery_files(),role=role['name'])
+    except (Exception,SystemExit):print('CHECK REFUSED: context check unavailable; re-read your recovery set before relying on Axis guidance.');sys.exit(2)
+    for x in r.get('lines',[]):print(x)
+    if r.get('code')==10:recover(exit=False)
+    for x in r.get('tail',[]):print(x)
+    sys.exit(r.get('code',0))
 print('OK: lease renewed.')
-if role['created_by']=='helper':
-    # Compaction recovery for a declared role: the role file it serves under, pinned by checksum.
+if role['created_by'] in ('helper','claim'):
+    # Compaction recovery for Main and each declared role: the role file it serves under, pinned by checksum.
     guide=root/'_Axis/Roles'/(role['name']+'.md')
     try:pin=hashlib.sha256(guide.read_bytes()).hexdigest()[:16] if safe_file(guide) else 'unavailable'
     except OSError:pin='unavailable'
-    print(f"Role: {role['title']}; you serve under _Axis/Roles/{role['name']}.md (sha256 {pin}); after any compaction, re-read it before answering.")
+    print(f"Role: {role['title']}; you serve under _Axis/Roles/{role['name']}.md (sha256 {pin}); after compaction, reload what turn.py --recover lists.")
+    bind_host()
+    cc=context_check()
+    if cc is not None and role['recovery']:
+        try:
+            r=cc.status(root,o.session,recovery_files(),role=role['name'],gate=o.gate)
+            for x in r.get('lines',[]):print(x)
+            if r.get('action')=='reload':recover(exit=False)
+            for x in r.get('tail',[]):print(x)
+        except (Exception,SystemExit):print('Handle before answering: context check unavailable; re-read your recovery set before relying on Axis guidance.')
 for x in items:print('Handle before answering: '+x)
 if role['reply_frame']:
     home=os.path.expanduser('~');folder=str(root);folder='~'+folder[len(home):] if folder==home or folder.startswith(home+'/') else folder

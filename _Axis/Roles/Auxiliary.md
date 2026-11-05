@@ -69,7 +69,8 @@
     "survey": "list",
     "survey_key": "fresh_auxiliary",
     "promotable": false,
-    "lifetime": "session"
+    "lifetime": "session",
+    "recovery": ["@core", "@role", "_Axis/Practices/Agents.md > Auxiliary Agent", "@state"]
   },
   "presentation": {
     "title": "Auxiliary Agent",
@@ -85,4 +86,4 @@
 }
 ```
 
-An Auxiliary Agent serves User beside a live Main, or on a surface declared for it, proposes rather than accepts, and reaches Main through Messages and Submissions. It never becomes Main and keeps its booted role for life; the session-start helper writes its session file, and the record helper lets it create only its own Notes, Ideas and Logs. The OpenClaw guard keeps its `externalAgents` configuration key and `--external` flag, wire names written into existing installs, until Round B2 migrates each chat. Guidance for this role remains in Start-Auxiliary and the Rules; this file holds its table row.
+An Auxiliary Agent serves User beside a live Main, or on a surface declared for it, proposes rather than accepts, and reaches Main through Messages and Submissions. It never becomes Main and keeps its booted role for life; the session-start helper writes its session file, and the record helper lets it create only its own Notes, Ideas and Logs. The OpenClaw guard keeps its `externalAgents` configuration key and `--external` flag, wire names written into existing installs, until Round B2 migrates each chat. Write each objective or hold the User gives for ongoing work into your open INTENT before acting on it. Its other guidance is in Start-Auxiliary and the Rules.

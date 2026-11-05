@@ -117,6 +117,7 @@ The `^save` command relies on Markers to detect pending Subagents (matching Subj
 		      spawn timestamp (UTC),
 		      `role: {Role}` and `starter-role: {the spawner's role}`,
 		      expected return condition (e.g., "CX Report saved to `_Axis/CX/`"), a pointer to the spawn Log entry.
+		      and, when the prompt pins a contract copy (`--save-contract`), its path and SHA-256.
 
 - **On returning**
 	- Delete Marker file for that Agent.
