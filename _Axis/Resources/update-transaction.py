@@ -158,6 +158,39 @@ def authorization(root,p,frozen=None,engine=None):
     require(engine_fields==['engine_sha256: '+expected],'engine differs from independent authorization')
     return data
 
+CORE='_Axis/Resources/Starting-Context.md'
+
+def core_matches_plan(root,p):
+    """An unchanged bundle may be reinstalled only when its complete body matches the proposed local selections."""
+    changes={v['path']:v for v in p['changes']}
+    def proposed(name):
+        v=changes.get(name)
+        if v is None:return read(safe(root,name)).decode('utf-8')
+        require(v['after'] is not None,'core input retired')
+        return read(safe(root,v['staged'])).decode('utf-8')
+    try:
+        loader=proposed('_Axis/Resources/Load-Starting-Context.md')
+        require(loader.count('## Source table\n')==1 and loader.count('## Steps\n')==1,'core table boundary')
+        lines=[line for line in loader.split('## Source table\n',1)[1].split('## Steps\n',1)[0].splitlines() if line.startswith('|')]
+        require(lines[:2]==['| Source | Selection |','| --- | --- |'],'core table header')
+        rows=[]
+        for line in lines[2:]:
+            m=re.fullmatch(r'\| `(_Axis/(?:Practices/)?[A-Za-z-]+\.md)` \| (whole|Reading Flags) \|',line)
+            require(m is not None,'core selector');rows.append((m[1],m[2]))
+        require(rows and len(set(rows))==len(rows),'core table membership')
+        bundle=proposed(CORE);head=bundle.split('\n',4)
+        require(len(head)==5 and head[0]=='# Starting-Context' and head[1].startswith('> **Purpose:** ') and head[2]=='' and re.fullmatch(r'<!-- compiled: '+ID+' -->',head[3]),'core header')
+        parts=head[:4]
+        for name,section in rows:
+            text=proposed(name).rstrip('\n');label=name
+            if section!='whole':
+                heading='## '+section+'\n';require(text.count(heading)==1,'core section')
+                text=heading+text.split(heading,1)[1].split('\n## ',1)[0];label+=' > '+section
+            parts.extend(['','<!-- BEGIN '+label+' -->',text,'<!-- END '+label+' -->'])
+        parts.extend(['','<!-- axis:starting-context:end -->'])
+        return bundle=='\n'.join(parts)+'\n'
+    except (OSError,UnicodeError,ValueError,KeyError,TypeError):return False
+
 def validate_plan(root,p):
     require(classification(p)['classification'] in ('routine','approved-exception'),'update requires resolved authority and preconditions')
     authorization(root,p)
@@ -167,7 +200,7 @@ def validate_plan(root,p):
     log=[v for v in p['changes'] if isinstance(v,dict) and v.get('path')=='_Axis/CHANGELOG.md' and isinstance(v.get('staged'),str) and v['staged'].startswith('_Temp/')]
     extra=declared(read(safe(root,log[0]['staged'])).decode(),p['from_version'],p['to_version']) if len(log)==1 else set()
     for v in p['changes']:
-        require(set(v)=={'path','before','after','staged'},'invalid change fields');n=v['path'];safe(root,n);require(n in TOP or n in MANAGED or n.startswith(PREFIX) or n in extra or any(x.endswith('/') and n.startswith(x) for x in extra) or n in migrations or n=='.github/README.md' and v['after'] is None,'unmanaged or protected mutation target');require(n.casefold() not in seen,'duplicate target');seen.add(n.casefold());valid_identity(v['before']);valid_identity(v['after']);require(v['before']!=v['after'],'no-op change')
+        require(set(v)=={'path','before','after','staged'},'invalid change fields');n=v['path'];safe(root,n);require(n in TOP or n in MANAGED or n.startswith(PREFIX) or n in extra or any(x.endswith('/') and n.startswith(x) for x in extra) or n in migrations or n=='.github/README.md' and v['after'] is None,'unmanaged or protected mutation target');require(n.casefold() not in seen,'duplicate target');seen.add(n.casefold());valid_identity(v['before']);valid_identity(v['after']);require(v['before']!=v['after'] or (n==CORE and v['after'] is not None and not p.get('updater_only') and core_matches_plan(root,p)),'no-op change (only an exact source-matching startup core may refresh)')
         if v['after'] is None:require(v['staged'] is None,'deletion has payload')
         else:require(v['staged'].startswith('_Temp/'),'payload must be reviewed local staging');require(identity(safe(root,v['staged']))==v['after'],'staged bytes changed')
     for field in ('preserved','source_checks'):
@@ -199,7 +232,7 @@ def validate_plan(root,p):
         if 'archive_to' in rules:
             target=rules['archive_to'];require(n.startswith('_Axis/Followups/') and target in ('_Axis/Archive/Followups/'+Path(n).name,'_Axis/Followups/Archive/'+Path(n).name),'invalid reconciliation archive');safe(root,target);require(target not in p['preserved'] and not any(v['path']==target for v in p['changes']),'archive destination has conflicting ownership')
 
-def ordered(p):return sorted(p['changes'],key=lambda v:(2 if v['path']=='_Axis/CHANGELOG.md' else 1 if v['path'] in ENTRIES else 0,v['path']))
+def ordered(p):return sorted(p['changes'],key=lambda v:(3 if v['path']=='_Axis/CHANGELOG.md' else 2 if v['path'] in ENTRIES else 1 if v['path']==CORE else 0,v['path']))
 def live(root,p,which):return all(identity(safe(root,v['path']))==v[which] for v in p['changes'])
 def preserved(root,p,reconciling=False):return all(identity(safe(root,n))==v for n,v in p['preserved'].items() if not (reconciling and n in p['reconciliation']))
 def strict_path(n):

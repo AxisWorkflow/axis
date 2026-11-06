@@ -1,7 +1,7 @@
 # Changelog
 > **Purpose:** Record Axis release identity and the structural migrations needed to update an existing project safely.
 
-current-version: 3.18
+current-version: 3.19
 changelog-format: 1
 self-update-baseline: 26.08.19
 
@@ -39,6 +39,34 @@ update-impact: automatic
 ### Verification
 
 - None.
+
+## 3.19
+
+released: 2026-11-06
+
+update-impact: automatic
+
+### Structural Changes
+
+- Group Agents and Observers no longer read `_Axis/SURFACES.md` through the guardrails hook or their role instructions. Admission returns only the matching surface and read scope. Without Python, those roles need a trusted row-only reader; other roles retain manual admission. No surface-table migration is required.
+
+- The updater can reinstall a byte-identical `_Axis/Resources/Starting-Context.md` after a loader or source edit only when its complete contents still match the proposed local selections. The bundle is written after its sources; runtime freshness checks remain unchanged. Divergent local sources retain the direct-source fallback. No other no-op write is permitted.
+
+- Optional context-hook maintenance recognizes only exact published OpenCode plugin bytes at `.opencode/plugins/axis-context.js`, retains verified recovery bytes plus a path/hash/mode operation record before mutation, and verifies rollback after failure or interruption. Modified or unknown files stay untouched. `host-context.py audit` reports known hook paths and content matches; installing-release attribution requires a matching installation record. Hook configuration remains outside ordinary managed update paths.
+
+### Project-State Migrations
+
+- None.
+
+### Retired Paths
+
+- None.
+
+### Verification
+
+- Verify known plugin removal/upgrade, preview purity, retained bytes and mode, failed rollback and concurrent-edit preservation; audit remains read-only and redacts settings. Check historical payload matches separately from installer provenance.
+
+- Group Agent and Observer table reads/searches are refused while their own admission and allowed-folder reads remain available; Assistant and Main access is unchanged. OpenClaw role-context behavior is unchanged; its comment states the existing 8,000-character cap.
 
 ## 3.18
 

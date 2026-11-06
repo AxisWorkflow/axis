@@ -39,6 +39,9 @@ Subcommands:
       Print the exact change to the host's file (TARGET below); without --dry-run, apply it (exactly one Axis entry per
       event, every other byte kept; for OpenCode, Axis's own plugin file, never another file of that name) and read it
       back. Exit 0 done or unchanged, 2 refused. `_Axis/Resources/Host-Channels.md` records each host's channels.
+  audit [--host claude|codex|gemini|copilot|cursor|devin|opencode]
+      Read only the known project hook paths. Report matching payload releases, not an inferred installing release;
+      correlate the file hash with the installation Log to identify the release that wrote it. Never print settings.
 Without hooks, the entry file's after-compaction rule and turn.py recover on every host. Standard library only."""
 import argparse, datetime as dt, hashlib, json, os, re, stat, sys
 from pathlib import Path
@@ -312,6 +315,23 @@ export const AxisContext = async () => ({
   },
 })
 '''
+# Exact published payloads at exact published paths. A header or script-name match is not plugin ownership.
+# 3.18 freeze a3e10a875e3635894efafbe83193429b92304d6b; 3.17 shipped no OpenCode plugin.
+PLUGIN_RELEASES = {'.opencode/plugins/axis-context.js': {
+    '9d1360b412b5bffe71526f7561cee5e5106e578138cf04ced87c38138a73b955': ('3.18',),
+}}
+ENTRY_RELEASES = {'claude': {'PreCompact': {'f27dad92cd99b07a4c075ecdc41f606ba66c6f1b994ee824c47fde45b634ccaf': ['3.17',
+                                                                                                '3.18']},
+            'SessionStart': {'73e74935356413dac94d0bd06574cd4a180c1435b6d9fe6a545277db8f9cc4a0': ['3.17',
+                                                                                                  '3.18']}},
+ 'codex': {'PostCompact': {'72b8f84800b4693b785eb3e1137de6014c2dd0a70c60f451e8d492e6d6fd7abd': ['3.17'],
+                           '9964ced3c6b75153d1a241a40fea7dff6bb0009c62eaa39de5142d60d69f1f55': ['3.18']},
+           'SessionStart': {'1e7dda4002e2aeb5c7122009baab7a56a4407d58c51520786cda90fa7c230910': ['3.18'],
+                            '879186a038324aac003e521f9bd5c0d51db74434b0cd5ca22f35b8425b59638e': ['3.17']}},
+ 'copilot': {'preCompact': {'50e1651548fcaa207d5df07128a4f6eda79ac32ee98372326c85e9fd64d93427': ['3.18']}},
+ 'cursor': {'preCompact': {'d89e601fa30d51d5656163129a637f4d9d619db53ba425bf86cfb65dbe986708': ['3.18']}},
+ 'devin': {'PostCompaction': {'df80e480182e0b0c9fb30a20f5c3d83d6144e767c8d320f9f83dd96093a6e9f6': ['3.18']}},
+ 'gemini': {'PreCompress': {'b3e2690693e1313122d0753b000829b51a1a099f973d6a2ff8b83e44cdf5a4a7': ['3.18']}}}
 DECODER = json.JSONDecoder()
 
 
@@ -525,12 +545,114 @@ def write_settings(path, text, mode):
         os.unlink(temp); raise
 
 
+def text_hash(text):
+    return hashlib.sha256(text.encode('utf-8')).hexdigest() if text is not None else None
+
+
+def plugin_releases(text, rel):
+    return PLUGIN_RELEASES.get(rel, {}).get(text_hash(text), ())
+
+
 def plugin_plan(old, install, changes, rel):
-    """OpenCode: the plugin file's next text (None: absent); ValueError refuses a different file of that name."""
-    if old is not None and old != OPENCODE_PLUGIN: raise ValueError('a different file of that name is there; Axis neither replaces nor removes it')
+    """OpenCode: accept current or exact known shipped bytes at the canonical path; preserve everything else."""
+    if rel != TARGET['opencode']: raise ValueError('the path is not an approved Axis plugin path')
+    if not plugin_releases(old, rel):
+        if old is not None and old != OPENCODE_PLUGIN: raise ValueError('a different file of that name is there; Axis neither replaces nor removes it')
     if install and old is None: changes.append(f'create {rel} ({len(OPENCODE_PLUGIN.encode())} bytes):\n' + OPENCODE_PLUGIN.rstrip('\n'))
-    if not install and old is not None: changes.append(f'remove {rel}, which holds exactly the plugin Axis writes')
+    if install and old is not None and old != OPENCODE_PLUGIN:
+        changes.append(f'replace {rel}, matching release {", ".join(plugin_releases(old, rel))}, with ({len(OPENCODE_PLUGIN.encode())} bytes):\n' + OPENCODE_PLUGIN.rstrip('\n'))
+    if not install and old is not None: changes.append(f'remove {rel}, which holds exactly a known Axis plugin')
     return OPENCODE_PLUGIN if install else None
+
+
+def retain_plugin(root, old):
+    """Keep and verify the known plugin preimage outside the host's loader; never overwrite a retained copy."""
+    if old is None: return None
+    folder = context_dir(root, 'hook-rollback', create=True)
+    if folder is None: raise ValueError('the plugin rollback folder is not a plain directory')
+    path = folder / (text_hash(old) + '.plugin')
+    if not os.path.lexists(path):
+        fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | NOFOLLOW, 0o600)
+        try:
+            data = old.encode('utf-8')
+            while data: data = data[os.write(fd, data):]
+            os.fsync(fd)
+        finally: os.close(fd)
+    if small(path) != old: raise ValueError('the retained plugin rollback copy does not match; the host file is unchanged')
+    return path.relative_to(root).as_posix()
+
+
+def retain_plugin_operation(root, rel, old, new, mode):
+    """Persist recovery identity before mutation, including absence and the original permissions."""
+    backup = retain_plugin(root, old)
+    folder = context_dir(root, 'hook-rollback', create=True)
+    if folder is None: raise ValueError('the plugin rollback folder is not a plain directory')
+    record = {'schema': 1, 'host': 'opencode', 'path': rel,
+              'before': {'sha256': text_hash(old), 'mode': mode, 'backup': backup} if old is not None else None,
+              'after': {'sha256': text_hash(new), 'mode': mode} if new is not None else None}
+    text = json.dumps(record, sort_keys=True, separators=(',', ':')) + '\n'
+    path = folder / ('operation-' + os.urandom(16).hex() + '.json')
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | NOFOLLOW, 0o600)
+    try:
+        data = text.encode('utf-8')
+        while data: data = data[os.write(fd, data):]
+        os.fsync(fd)
+    finally: os.close(fd)
+    if small(path) != text: raise ValueError('the retained plugin operation does not match; the host file is unchanged')
+    fd = os.open(folder, os.O_RDONLY | NOFOLLOW)
+    try: os.fsync(fd)
+    finally: os.close(fd)
+    return path.relative_to(root).as_posix()
+
+
+def installer_release(root):
+    matches = re.findall(r'^current-version: ([0-9]+\.[0-9]+)$', small(root / '_Axis/CHANGELOG.md', 1 << 20) or '', re.M)
+    return matches[0] if len(matches) == 1 else 'unknown'
+
+
+def audit_main(argv):
+    parser = argparse.ArgumentParser(prog='host-context.py audit', description='read-only inventory of known project context-hook paths')
+    parser.add_argument('--host', choices=sorted(TARGET))
+    o = parser.parse_args(argv)
+    def unique_object(pairs):
+        obj = {}
+        for key, value in pairs:
+            if key in obj: raise ValueError('duplicate setting key')
+            obj[key] = value
+        return obj
+    for host in ([o.host] if o.host else sorted(TARGET)):
+        rel = TARGET[host]
+        row = {'host': host, 'path': rel, 'installer_release': 'unknown; correlate an installation Log by this file hash'}
+        try:
+            old = read_settings(ROOT / rel)
+            row['sha256'] = text_hash(old)
+            if old is None: row['state'] = 'absent'
+            elif host == 'opencode':
+                row['payload_releases'] = list(plugin_releases(old, rel))
+                row['state'] = 'current payload' if old == OPENCODE_PLUGIN else 'known earlier payload' if row['payload_releases'] else 'unknown or modified; preserved'
+            else:
+                data = json.loads(old, object_pairs_hook=unique_object)
+                if not isinstance(data, dict): raise ValueError('settings is not an object')
+                hooks = data.get('hooks')
+                if hooks is not None and not isinstance(hooks, dict): raise ValueError('hooks is not an object')
+                row['entries'] = []
+                for event, groups in (hooks or {}).items():
+                    if not isinstance(groups, list): raise ValueError('a hook event is not a list')
+                    for group in groups:
+                        kind = axis_group(group, host in FLAT)
+                        if kind is False: continue
+                        current = entries(host).get(event)
+                        signature = hashlib.sha256(json.dumps(group, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+                        releases = ENTRY_RELEASES.get(host, {}).get(event, {}).get(signature, [])
+                        # Never echo a user-controlled event name, handler, command or setting.
+                        row['entries'].append({'event': event if event in COMPACTION or event in entries(host) or event == 'UserPromptSubmit' else 'other',
+                                               'state': 'current entry' if group == current else 'known earlier entry' if releases else 'unrecognized reference; review by hand',
+                                               'payload_releases': releases})
+                row['state'] = 'entries found' if row['entries'] else 'no Axis references found'
+        except (OSError, ValueError):
+            row['state'] = 'unreadable or malformed; preserved'
+        print(json.dumps(row, sort_keys=True))
+    return 0
 
 
 def install_main(action, argv):
@@ -556,13 +678,21 @@ def install_main(action, argv):
     for change in changes: print(change)
     if install and o.host in NOTE: print(NOTE[o.host])
     if install and o.host == 'codex': print(codex_note(ROOT))
-    print('No other file changes.' if plugin else 'Every other setting and hook stays byte for byte.')
+    print('No other host file changes.' if plugin else 'Every other setting and hook stays byte for byte.')
+    if plugin:
+        if old is None: print('Rollback: the prior plugin was absent; remove only the exact newly installed bytes.')
+        else: print(f'Rollback copy: _Temp/Context/hook-rollback/{text_hash(old)}.plugin; retained and verified before changing the host file.')
     if o.dry_run:
         print('Dry run: nothing was written.'); return 0
     written = False
     try:
         if read_settings(path) != old: raise ValueError('it changed while the change was prepared; run the command again')
         mode = stat.S_IMODE(os.lstat(path).st_mode) if old is not None else 0o644
+        if plugin:
+            operation = retain_plugin_operation(ROOT, rel, old, new, mode)
+            print(f'Recovery operation: {operation}; retained and verified before mutation.', flush=True)
+        if read_settings(path) != old or (plugin and old is not None and stat.S_IMODE(os.lstat(path).st_mode) != mode):
+            raise ValueError('it changed while rollback was prepared; run the command again')
         write_settings(path, new, mode)
         written = True
         back = read_settings(path)
@@ -571,17 +701,22 @@ def install_main(action, argv):
     except (OSError, ValueError) as error:
         reason = str(error) if isinstance(error, ValueError) else 'the file could not be written'
         if not written:
-            print(f'REFUSED: {rel}: {reason}. Nothing was changed.'); return 2
+            print(f'REFUSED: {rel}: {reason}. The host file is unchanged; any rollback copy is retained.'); return 2
         try:
+            if read_settings(path) != new: raise ValueError('the file changed again; preserve it for manual recovery')
             write_settings(path, old, mode)
-            print(f'REFUSED: {rel}: {reason}. The previous file was restored.')
+            if read_settings(path) != old or (old is not None and stat.S_IMODE(os.lstat(path).st_mode) != mode):
+                raise ValueError('rollback readback differs')
+            print(f'REFUSED: {rel}: {reason}. The previous file was restored and read back.')
         except (OSError, ValueError):
             print(f'REFUSED: {rel}: {reason}. Check the file by hand: the previous version could not be restored.')
         return 2
     if plugin:
-        print('Written and read back: ' + ("Axis's plugin file is in place" if install else "Axis's plugin file is removed") + '; no other file changed.')
+        print('Written and read back: ' + ("Axis's plugin file is in place" if install else "Axis's plugin file is removed") + '; no other host file changed.')
+        print(f'Installation Log: declared release {installer_release(ROOT)}; helper {text_hash(small(ROOT / SCRIPT, 1 << 20)) or "unknown"}; host {o.host}; path {rel}; before {text_hash(old) or "absent"}; after {text_hash(new) or "absent"}; prior mode {mode:o}.')
         return 0
     print(f'Written and read back: {"exactly one Axis entry" if install else "no Axis entry"} for {" and ".join(entries(o.host))}; every other setting and hook unchanged.')
+    print(f'Installation Log: declared release {installer_release(ROOT)}; helper {text_hash(small(ROOT / SCRIPT, 1 << 20)) or "unknown"}; host {o.host}; path {rel}; before {text_hash(old) or "absent"}; after {text_hash(new) or "absent"}; prior mode {mode:o}.')
     return 0
 
 
@@ -625,6 +760,7 @@ def bind_main(argv):
 def main(argv):
     if argv[:1] == ['bind']: return bind_main(argv[1:])
     if argv[:1] == ['whoami']: return whoami_main(argv[1:])
+    if argv[:1] == ['audit']: return audit_main(argv[1:])
     if argv[:1] in (['install'], ['uninstall']): return install_main(argv[0], argv[1:])
     try:
         host = argv[argv.index('--host') + 1] if '--host' in argv[:-1] else 'unknown'

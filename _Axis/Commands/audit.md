@@ -24,6 +24,8 @@
 
 8. Capability downgrades. Find live or archived Log Subjects beginning `Capability downgrade:` and summarize the five most recent without duplicating identical live/archive identities. For each, report `feature`, `missing-capability`, `behavior-used`, `work-skipped`, and `user-impact`; flag any missing field as an incomplete audit record. Say plainly when no downgrade has been recorded. An absent local endpoint without requested Local Subagent work is neutral and must not be reported as a downgrade.
 
+For a full audit, also read `_Axis/Resources/Host-Channels.md` > **Hook lifecycle** and run `python3 _Axis/Resources/host-context.py audit`. Report each present context hook, its content classification, and the installing release only when an installation Log matches its exact path and current hash; otherwise say `installer release unknown`. Distinguish matching published bytes from a verified host load. Preserve unknown or modified plugins and retained rollback copies. Do not install, upgrade, remove, activate or probe a host here. Without Python, use the read-only fallback in that section or report the inventory unverified.
+
 9. Cross-Examination coverage. Report when the last live or archived CX report was written, compare against [Settings > CX Frequency], and flag major deliverables or decisions (from live or archived Logs) that went un-examined.
 
 10. Task staleness. Read durable `updated:` from every Task entry. Flag an invalid value, `updated < created`, an Active Task whose exact update is older than 7 days, a Blocked Task without a stated reason, and migrated `Unknown` recency for review. Never use detail-file `mtime` as Task freshness.

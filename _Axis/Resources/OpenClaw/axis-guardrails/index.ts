@@ -68,8 +68,8 @@ export function roleGuidance(root: string, name: string): string {
   } catch { return ""; }
 }
 
-// What a run adds to the system prompt: the listed agent's role guidance, whole, or nothing. When the run reports its
-// context window in tokens, guidance longer than a quarter of it (at one character per token) is left out, never cut.
+// roleGuidance first caps the role prose at 8,000 characters. The resulting contribution is added whole or omitted.
+// When a run reports its context window, omit a contribution longer than a quarter of it (one character per token).
 export function roleContext(listed: (agentId: string) => string | null, event: any, ctx: any, root: string | null): PromptContext {
   const name = listed(String(ctx?.agentId ?? ""));
   const key = ctx?.sessionKey;

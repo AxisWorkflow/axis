@@ -9,7 +9,7 @@
 - **`_Axis/Secrets/`** - Secrets (keys, tokens, credentials).
 - **`_Inbox/`** - Drop folder for new material; Main Agent files each item into its home.
 - **`_Memos/`** - Memos to User: decisions, next steps, findings and Reviews; finished ones move to `_Memos/Archive/`.
-- **`_Temp/`** - Scratch space for regenerable files.
+- **`_Temp/`** - Scratch space for regenerable files and protected recovery. Preserve active recovery, including verified context-hook preimages in `_Temp/Context/hook-rollback/`, until its operation and any rollback are verified.
 - **`_Trash/`** - Deletion staging - each item is kept at least 2 days, then an automatic sweep deletes it.
 - **`_Wiki/`** - Knowledge base for project.
 
@@ -250,7 +250,7 @@ Optional project state: `EXCEPTIONS.md` in the Axis control folder, created on f
 - `_Axis/Resources/startup-survey.py` - optional one-call startup survey; the numbered Start-Session steps remain available.
 - `_Axis/Resources/boot.py` - one-command Main startup used by the entry files.
 - `_Axis/Resources/turn.py` - per-turn lease check and renewal used by the entry files.
-- `_Axis/Resources/host-context.py` - Optional compaction hook command (`^install context hooks`): marks a compaction, gives a resumed or compacted session its Session ID, role and role guidance, a Codex compaction the startup core, and each Claude Code prompt the per-turn command; `bind`, `whoami`, `install` and `uninstall`.
+- `_Axis/Resources/host-context.py` - Optional compaction hook command (`^install context hooks`): marks a compaction, gives a resumed or compacted session its Session ID, role and role guidance, a Codex compaction the startup core, and each Claude Code prompt the per-turn command; `bind`, `whoami`, `install`, `uninstall` and read-only `audit`. Plugin replacement/removal accepts only exact known bytes at listed paths and retains verified rollback bytes.
 - `_Axis/Resources/Host-Channels.md` - dated register of each host's persistent channel, compaction event, hook injection and trust model, and the `^install context hooks` route it allows; read by that route, never at startup.
 - `_Axis/Resources/context-check.py` - optional content check loaded by `turn.py`: proves Axis guidance is still in context and orders a reload when it is not; ships off in 3.17, where a compaction mark orders a periodic reload instead.
 - `_Axis/Resources/Boot-Manual.md` - shell-only startup when `boot.py` cannot run.

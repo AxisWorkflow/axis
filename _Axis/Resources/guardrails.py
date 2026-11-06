@@ -73,7 +73,7 @@ SCRIPT_CALL=re.compile(r'(?:\bpython3?|\bsh|\bbash|(?:^|[\s;&|(])\.)(?:\s+-[A-Za
 ROLE_ACTION=re.compile(r'(?:^|[;&|(\n]|\bthen|\bdo|\bexec)\s*(?:env\s+(?:\S+=\S*\s+)*)?(?:(?:\S*/)?python3?\s+(?:-\S+\s+)*)?(?:\S*/)?(?:axis|axis-roles\.py)\s+(retire|start)\b([^;&|\n]*)')
 # Declared roles serving other people: the Axis workflow files they may read besides their surface's read scope.
 WORKFLOW_READ=('_Axis/RULES.md','_Axis/PRACTICES.md','_Axis/PRINCIPLES.md','_Axis/GLOSSARY.md','_Axis/MANIFEST.md','_Axis/CHANGELOG.md','_Axis/SETTINGS.md',
-               '_Axis/SURFACES.md','_Axis/Rules/','_Axis/Practices/','_Axis/Roles/','_Axis/Commands/','_Axis/Resources/','_Axis/Agents/','_Axis/Updates/',
+               '_Axis/Rules/','_Axis/Practices/','_Axis/Roles/','_Axis/Commands/','_Axis/Resources/','_Axis/Agents/','_Axis/Updates/',
                '_Axis/Merges/','_Axis/Flags/','AGENTS.md','CLAUDE.md','GEMINI.md','README.md')
 # Their shell runs only Axis's own per-turn and record helpers; a role that writes nothing runs only its own admission check.
 ROLE_SCRIPTS={'turn.py':('',),'startup-state.py':('admit','track','record'),'record-check.py':('names','links','write-once')}
