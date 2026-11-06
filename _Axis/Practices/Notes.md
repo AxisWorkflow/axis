@@ -42,7 +42,7 @@ Do not add numeric priority or review fields to Notes. Keep their record shape s
 - A newer Note always overrides and/or takes precedence over an older Note.
 - Renew a Note by renaming it with a current timestamp.
 - If a Note is wrong or no longer accurate, write a new entry that supersedes it.
-- When **Max Notes** is exceeded, move the oldest excess Notes unchanged into `_Axis/Notes/Archive/`; do not delete them.
+- When **Max Notes** is exceeded, Main moves the oldest excess Notes unchanged into `_Axis/Notes/Archive/`; do not delete them. Every other role asks Main instead (`^note` step 5).
 - Before selecting overflow, check whether an old Note is still valid and important. If so, renew it with a current timestamp.
 - Retain the most recent **Max Notes** in `_Axis/Notes/`. There is no time-based expiry; overflow is purely count-based.
 - Sessions that do not need active Notes can set **Max Notes** to zero; all Notes then move to the Archive.

@@ -1,18 +1,32 @@
 #!/usr/bin/env python3
 """Optional host hook: mark a context compaction, and give a resumed or compacted session its Axis identity back.
 
-`^install context hooks` makes this the one hook command on each host: Claude Code SessionStart (startup|resume|compact) and
-PreCompact; Codex SessionStart and PostCompact. It reads the host's hook JSON on stdin.
+`^install context hooks` makes this the one hook command on each host: Claude Code SessionStart (startup|resume|compact)
+and PreCompact; Codex SessionStart and PostCompact; Gemini CLI PreCompress; Copilot CLI and Cursor
+preCompact; Devin PostCompaction; OpenCode `session.compacted` through a small plugin. It reads the host's hook JSON on
+stdin (the event from `hook_event_name`, else from `--event`; the host session from `session_id`, `sessionId` or
+`conversation_id`).
 - A compaction event (PreCompact, PostCompact, SessionStart `compact`, or another host's compaction event) appends
   `{UTC identifier timestamp} {host} {12 hex of sha256(host session ID) or -}` to `_Temp/Context/compactions.log`.
+  Cursor and Copilot CLI also run the project's Claude Code hooks; there the host's own entry stays silent while Axis's
+  Claude Code PreCompact entry is in `.claude/settings.json` or `.claude/settings.local.json` and CLAUDE_PROJECT_DIR names
+  this project, so each compaction is marked once. Hosts other than Claude Code and Codex get the mark only: none of
+  them adds a compaction hook's output to the model's context.
 - SessionStart `resume` or `compact` prints the Card (the bound Axis Session ID, its role, and the instruction to run
   turn.py and reload before answering), then that role's guidance from `_Axis/Roles/{Role}.md`, when both fit the
-  host's cap: on Claude Code one string of at most 9,500 characters, on Codex the 4,000-token additionalContextLimit
+  host's cap: on Claude Code one string of at most 9,500 characters, on Codex the 10,000-token additionalContextLimit
   its entry sets. Over the cap it prints the Card only, never cut text.
-- Without a binding it prints one role-neutral line. A Codex `compact` always gets only that line, because a spawned
-  agent's hook carries its parent's session ID; a Claude Code call from a spawned agent (agent_id) gets nothing.
-- `startup` prints nothing. Every call exits 0, blocks nothing, never prints Secrets or absolute paths, and stays
-  silent on a missing Marker, a kill tombstone, an unknown role or malformed input.
+- Without a binding it prints one role-neutral line. A Codex `compact` always gets that line, never role text, because
+  a spawned agent's hook carries its parent's session ID; a Claude Code call from a spawned agent (agent_id) gets nothing.
+- On a Codex compaction, with the entry installed by 3.18 or later (`--core`), the role-neutral line is followed by
+  the compiled startup core `_Axis/Resources/Starting-Context.md`, verbatim, when the core is whole (ends with its end
+  marker), current (no loader or source in the loader's table is newer) and the whole output fits the limit; otherwise
+  the line alone. A resume never gets the core.
+- Claude Code UserPromptSubmit prints one line naming `turn.py --session {bound ID}` whenever this host session is
+  bound, also after a kill or takeover (turn.py then reports it); nothing otherwise, and nothing for a spawned agent.
+  3.18 does not install this entry: in its live check, sessions with it followed fewer planted rules before compaction.
+- `startup` prints nothing. Every call exits 0, blocks nothing, never prints Secrets or absolute paths, and, apart from
+  the per-turn line, stays silent on a missing Marker, a kill tombstone, an unknown role or malformed input.
 
 Subcommands:
   bind --session {Session ID} [--host claude|codex]
@@ -21,9 +35,10 @@ Subcommands:
   whoami [--host claude|codex]
       Print the Axis Session ID and role bound to this host session when its Marker is live (exit 0); otherwise UNBOUND
       (exit 4). This binding is the verified native-session binding Continue-Session.md accepts.
-  install|uninstall --host claude|codex [--dry-run]
-      Print the exact change to `.claude/settings.json` or `.codex/hooks.json`; without --dry-run, apply it (exactly one
-      Axis entry per event, every other byte kept) and read it back. Exit 0 done or unchanged, 2 refused.
+  install|uninstall --host claude|codex|gemini|copilot|cursor|devin|opencode [--dry-run]
+      Print the exact change to the host's file (TARGET below); without --dry-run, apply it (exactly one Axis entry per
+      event, every other byte kept; for OpenCode, Axis's own plugin file, never another file of that name) and read it
+      back. Exit 0 done or unchanged, 2 refused. `_Axis/Resources/Host-Channels.md` records each host's channels.
 Without hooks, the entry file's after-compaction rule and turn.py recover on every host. Standard library only."""
 import argparse, datetime as dt, hashlib, json, os, re, stat, sys
 from pathlib import Path
@@ -34,11 +49,15 @@ SESSION = re.compile(r'\d{4}(\.\d{2}){5}\.\d{3}Z')
 HOST = re.compile(r'[a-z][a-z0-9-]{0,31}')
 HOST_SESSION = {'claude': 'CLAUDE_CODE_SESSION_ID', 'codex': 'CODEX_THREAD_ID'}
 CLAUDE_CAP = 9500     # characters (UTF-16 units) in the one printed string; Claude Code's own cap is 10,000
-CODEX_TOKENS = 4000   # the additionalContextLimit the Codex entry sets; printed text is counted at 3 bytes per token
-COMPACTION = ('precompact', 'postcompact', 'precompress', 'postcompaction')
+CODEX_TOKENS = 10000  # the additionalContextLimit the Codex entry sets; printed text is counted at 3 bytes per token
+COMPACTION = ('precompact', 'postcompact', 'precompress', 'postcompaction', 'session.compacted')
+EVENT = re.compile(r'[A-Za-z][A-Za-z0-9._-]{0,63}')
+SHARES_CLAUDE = ('cursor', 'copilot')  # hosts that also run the project's Claude Code PreCompact hooks
 ROLE_ROW = re.compile(r'^```axis-role\n(.*?)^```$', re.M | re.S)
 NOFOLLOW, NONBLOCK = getattr(os, 'O_NOFOLLOW', 0), getattr(os, 'O_NONBLOCK', 0)
 NEUTRAL = 'if you serve this project under an Axis Session ID, run turn.py with it before answering; if you no longer know it, follow _Axis/Resources/Continue-Session.md; a delegated helper follows its envelope instead.'
+TURN = 'Axis: run `python3 _Axis/Resources/turn.py --session {}` first.'
+CORE, LOADER, CORE_END = '_Axis/Resources/Starting-Context.md', '_Axis/Resources/Load-Starting-Context.md', '<!-- axis:starting-context:end -->'
 
 
 def card(session, title, name, compacted):
@@ -54,6 +73,26 @@ def neutral(compacted):
 def fits(host, text):
     if host == 'claude': return len(text.encode('utf-16-le')) // 2 <= CLAUDE_CAP
     return (len(text.encode('utf-8')) + 2) // 3 <= CODEX_TOKENS
+
+
+def core(root):
+    """The compiled startup core as written, when it ends with its end marker and neither its loader nor a source in the
+    loader's table is newer (Load-Starting-Context.md's own freshness test); '' otherwise."""
+    text, loader = small(root / CORE), small(root / LOADER)
+    if not text or not loader or text.rstrip('\n').rsplit('\n', 1)[-1] != CORE_END: return ''
+    sources = re.findall(r'^\| `([^`]+)` \|', loader, re.M)
+    try:
+        made = os.lstat(root / CORE).st_mtime
+        if not sources or any(os.lstat(root / rel).st_mtime > made for rel in [LOADER] + sources): return ''
+    except OSError: return ''
+    return text[:-1] if text.endswith('\n') else text
+
+
+def with_core(root, line):
+    """Codex: the role-neutral line, then the startup core when the whole fits the entry's limit; the line alone otherwise."""
+    text = core(root)
+    full = f'{line}\n{text}'
+    return full if text and fits('codex', full + '\n') else line
 
 
 def plain_dir(path):
@@ -151,22 +190,42 @@ def mark(root, host, host_session):
     finally: os.close(fd)
 
 
-def hook(root, host, raw):
-    """What to print for one hook call ('' for nothing); a compaction event also appends its mark."""
+def claude_marks(root):
+    """True when this host also runs Axis's Claude Code PreCompact entry: a project Claude settings file holds it and
+    CLAUDE_PROJECT_DIR, which its command needs, names this project."""
+    folder = os.environ.get('CLAUDE_PROJECT_DIR', '')
+    try:
+        if not folder or os.path.realpath(folder) != os.path.realpath(root): return False
+        for rel in ('.claude/settings.json', '.claude/settings.local.json'):
+            data = json.loads(read_settings(root / rel, root) or '{}')
+            hooks = data.get('hooks') if isinstance(data, dict) else None
+            groups = hooks.get('PreCompact') if isinstance(hooks, dict) else None
+            if isinstance(groups, list) and any(axis_group(g) is not False for g in groups): return True
+    except (OSError, ValueError): return False
+    return False
+
+
+def hook(root, host, raw, fallback=None, with_startup=False):
+    """What to print for one hook call ('' for nothing); a compaction event also appends its mark. with_startup: the Codex
+    entry was installed with --core (3.18 or later), so a compaction also gets the startup core."""
     try: event = json.loads(raw)
     except ValueError: return ''
-    name = event.get('hook_event_name') if isinstance(event, dict) else None
+    name = event.get('hook_event_name', fallback) if isinstance(event, dict) else None
     if not isinstance(name, str) or not (plain_dir(root / '_Axis') and plain_dir(root / '_Axis/Agents')): return ''
     source = event.get('source') if name == 'SessionStart' else None
     compacted = name.lower() in COMPACTION or source == 'compact'
-    host_session = event.get('session_id') if isinstance(event.get('session_id'), str) and event['session_id'].strip() else None
+    host_session = next((v for v in map(event.get, ('session_id', 'sessionId', 'conversation_id')) if isinstance(v, str) and v.strip()), None)
     spawned = host == 'claude' and bool(event.get('agent_id'))
+    if name == 'UserPromptSubmit':  # Claude Code: the per-turn step before each prompt of a bound session
+        session = bound(root, host_session) if host == 'claude' and host_session and not spawned else None
+        return TURN.format(session) if session else ''  # also when killed or replaced: turn.py then says so
+    if compacted and host in SHARES_CLAUDE and claude_marks(root): return ''  # Axis's Claude Code entry marks it there
     if compacted and not spawned:  # a spawned agent's compaction is not its parent's
         try: mark(root, host, host_session)
         except OSError: pass
     if source not in ('resume', 'compact') or host not in HOST_SESSION: return ''
     if spawned: return ''
-    if host == 'codex' and compacted: return neutral(True)
+    if host == 'codex' and compacted: return with_core(root, neutral(True)) if with_startup else neutral(True)
     session = bound(root, host_session) if host_session else None
     if session is None: return neutral(compacted)
     found = identity(root, session)
@@ -203,27 +262,79 @@ def bind(root, session, host=None, environ=None):
 
 
 # Install and uninstall: one Axis hook group per event, spliced into the settings text so every other byte stays.
-TARGET = {'claude': '.claude/settings.json', 'codex': '.codex/hooks.json'}
-TITLE = {'claude': 'Claude Code', 'codex': 'Codex'}
+TARGET = {'claude': '.claude/settings.json', 'codex': '.codex/hooks.json', 'gemini': '.gemini/settings.json',
+          'copilot': '.github/hooks/axis.json', 'cursor': '.cursor/hooks.json', 'devin': '.devin/config.json',
+          'opencode': '.opencode/plugins/axis-context.js'}
+TITLE = {'claude': 'Claude Code', 'codex': 'Codex', 'gemini': 'Gemini CLI', 'copilot': 'Copilot CLI', 'cursor': 'Cursor',
+         'devin': 'Devin', 'opencode': 'OpenCode'}
+FLAT = ('copilot', 'cursor')  # each event lists handlers, not groups; a new file starts with "version": 1
 # '|| true': a missing or broken script must never block the host; Claude Code reads exit 2 on PreCompact as "block".
 CLAUDE_COMMAND = 'python3 "$CLAUDE_PROJECT_DIR/_Axis/Resources/host-context.py" --host claude || true'
-CODEX_COMMAND = 'python3 _Axis/Resources/host-context.py --host codex || true'
+CODEX_COMMAND = 'python3 _Axis/Resources/host-context.py --host codex --core || true'  # --core: an install from 3.17 (4,000 tokens) never gets the core
+COMMAND = {'gemini': 'python3 "$GEMINI_PROJECT_DIR/_Axis/Resources/host-context.py" --host gemini || true',
+           'copilot': 'python3 _Axis/Resources/host-context.py --host copilot --event preCompact || true',
+           'cursor': 'python3 "$CURSOR_PROJECT_DIR/_Axis/Resources/host-context.py" --host cursor || true',
+           'devin': 'python3 "$DEVIN_PROJECT_DIR/_Axis/Resources/host-context.py" --host devin || true'}
+NOTE = {h: f'{TITLE[h]} also runs the project\'s Claude Code hooks: while Axis\'s Claude Code PreCompact entry is in .claude/settings.json '
+           'and CLAUDE_PROJECT_DIR names this project, this entry stays silent, so each compaction is marked once.' for h in SHARES_CLAUDE}
+
+
+def codex_note(root):
+    """The Codex preview's statement of its SessionStart limit and what the startup core costs per request."""
+    head = f'Codex SessionStart additionalContextLimit: {CODEX_TOKENS:,} tokens. '
+    text = with_core(root, neutral(True))
+    if text == neutral(True): return head + f'{CORE} is missing, stale or over that limit here, so a compaction gets the role-neutral line alone.'
+    tokens = (len((text + '\n').encode('utf-8')) + 2) // 3
+    return head + (f'After each compaction the role-neutral line and {CORE} (about {tokens:,} tokens at 3 bytes per token) join the '
+                   f'context, so every later model request carries about {tokens:,} more input tokens until the next compaction.')
+
+
+OPENCODE_PLUGIN ='''// Axis context hook for OpenCode, written by `python3 _Axis/Resources/host-context.py install --host opencode`.
+// After each compaction it runs that script, which appends one line to _Temp/Context/compactions.log. It prints
+// nothing, blocks nothing and ignores every error. Remove it with the same command's `uninstall`.
+import { spawnSync } from "node:child_process"
+import { fileURLToPath } from "node:url"
+
+const root = fileURLToPath(new URL("../../", import.meta.url))
+
+export const AxisContext = async () => ({
+  event: async ({ event }) => {
+    if (event?.type !== "session.compacted") return
+    try {
+      const id = event.properties?.sessionID
+      spawnSync("python3", ["_Axis/Resources/host-context.py", "--host", "opencode"], {
+        cwd: root,
+        input: JSON.stringify({ hook_event_name: "session.compacted", session_id: typeof id === "string" ? id : "" }),
+        stdio: ["pipe", "ignore", "ignore"],
+        timeout: 10000,
+      })
+    } catch {}
+  },
+})
+'''
 DECODER = json.JSONDecoder()
 
 
 def entries(host):
     if host == 'claude':
         handler = {'type': 'command', 'command': CLAUDE_COMMAND, 'timeout': 10}
+        # No UserPromptSubmit entry: with it, Claude Code sessions missed L4 (pre-compaction compliance) in the 3.18 live check.
         return {'SessionStart': {'matcher': 'startup|resume|compact', 'hooks': [handler]}, 'PreCompact': {'hooks': [handler]}}
+    if host == 'gemini': return {'PreCompress': {'hooks': [{'name': 'axis-context', 'type': 'command', 'command': COMMAND[host], 'timeout': 10000}]}}
+    if host == 'copilot': return {'preCompact': {'type': 'command', 'bash': COMMAND[host], 'cwd': '.', 'timeoutSec': 10}}
+    if host == 'cursor': return {'preCompact': {'type': 'command', 'command': COMMAND[host], 'timeout': 10}}
+    if host == 'devin': return {'PostCompaction': {'matcher': '', 'hooks': [{'type': 'command', 'command': COMMAND[host], 'timeout': 10}]}}
     handler = {'type': 'command', 'command': CODEX_COMMAND}
     return {'SessionStart': {'matcher': 'startup|resume|compact', 'hooks': [dict(handler, additionalContextLimit=CODEX_TOKENS)]},
             'PostCompact': {'hooks': [handler]}}
 
 
-def axis_group(group):
-    """True when every handler in this hook group runs this script, None when only some do, False otherwise."""
-    handlers = group.get('hooks') if isinstance(group, dict) else None
-    ours = [isinstance(h, dict) and isinstance(h.get('command'), str) and SCRIPT in h['command'] for h in handlers] if isinstance(handlers, list) else []
+def axis_group(group, flat=False):
+    """True when every handler in this hook group (on a flat host, this one handler) runs this script, None when only
+    some do, False otherwise."""
+    handlers = [group] if flat else (group.get('hooks') if isinstance(group, dict) else None)
+    keys = ('command', 'bash', 'powershell') if flat else ('command',)
+    ours = [isinstance(h, dict) and any(isinstance(h.get(k), str) and SCRIPT in h[k] for k in keys) for h in handlers] if isinstance(handlers, list) else []
     return (True if all(ours) else None) if any(ours) else False
 
 
@@ -297,7 +408,7 @@ def plan(text, host, install, changes):
     adds = [f'add to hooks.{e}: {json.dumps(g)}' for e, g in want.items()]
     if text is None or not text.strip():
         if install: changes += ['create the file'] + adds
-        return json.dumps({'hooks': {e: [g] for e, g in want.items()}}, indent=2) + '\n' if install else text
+        return json.dumps(dict(fresh(host), hooks={e: [g] for e, g in want.items()}), indent=2) + '\n' if install else text
     data = json.loads(text)
     if not isinstance(data, dict): raise ValueError('the file is not a JSON object')
     top = Box(text, skip(text, 0))
@@ -324,7 +435,7 @@ def plan(text, host, install, changes):
         k = found[0]
         groups = data['hooks'][event]
         if not isinstance(groups, list): raise ValueError(f'"{event}" is not a list')
-        kinds = [axis_group(g) for g in groups]
+        kinds = [axis_group(g, host in FLAT) for g in groups]
         if None in kinds: raise ValueError(f'an Axis handler shares a {event} group with other handlers; edit it by hand')
         mine = [i for i, kind in enumerate(kinds) if kind]
         if (install and len(mine) == 1 and groups[mine[0]] == group) or (not install and not mine): continue
@@ -346,14 +457,19 @@ def plan(text, host, install, changes):
     return text[:top.start] + top.render() + text[top.end:]
 
 
-def normal(data):
+def fresh(host):
+    """What a new file holds besides Axis's entries."""
+    return {'version': 1} if host in FLAT else {}
+
+
+def normal(data, flat=False):
     """The settings without Axis's hook groups and the empty lists and "hooks" object they leave."""
     data = json.loads(json.dumps(data))
     hooks = data.get('hooks') if isinstance(data, dict) else None
     if isinstance(hooks, dict):
         for event in list(hooks):
             if isinstance(hooks[event], list):
-                hooks[event] = [g for g in hooks[event] if not axis_group(g)]
+                hooks[event] = [g for g in hooks[event] if not axis_group(g, flat)]
                 if not hooks[event]: del hooks[event]
         if not hooks: del data['hooks']
     return data
@@ -363,19 +479,26 @@ def check(old, new, host, install):
     """Refuse a text unless it holds exactly one current Axis group per event (none after uninstall) and nothing else changed."""
     try: data = json.loads(new) if new is not None and new.strip() else {}
     except ValueError: raise ValueError('the result is not valid JSON') from None
-    hooks = data.get('hooks') if isinstance(data, dict) else None
+    hooks, flat = data.get('hooks') if isinstance(data, dict) else None, host in FLAT
     for event, group in entries(host).items():
         groups = hooks.get(event) if isinstance(hooks, dict) else None
-        mine = [g for g in groups if axis_group(g)] if isinstance(groups, list) else []
+        mine = [g for g in groups if axis_group(g, flat)] if isinstance(groups, list) else []
         if mine != ([group] if install else []):
             raise ValueError(f'the result does not hold exactly {"one current" if install else "no"} Axis {event} entry')
-    if normal(json.loads(old) if old is not None and old.strip() else {}) != normal(data):
+    if normal(json.loads(old) if old is not None and old.strip() else fresh(host), flat) != normal(data, flat):
         raise ValueError('the result changes more than the Axis entries')
 
 
-def read_settings(path):
+def folders(path, root):
+    """Each folder from the project root down to the file's own, outermost first, with its project-relative name."""
+    parts = path.parent.relative_to(root).parts
+    return [(root.joinpath(*parts[:i]), '/'.join(parts[:i])) for i in range(1, len(parts) + 1)]
+
+
+def read_settings(path, root=None):
     """The settings text, or None when the file is absent; ValueError for a link or a file that is not UTF-8 text."""
-    if os.path.lexists(path.parent) and not plain_dir(path.parent): raise ValueError(f'{path.parent.name}/ is a link or not a folder')
+    for folder, name in folders(path, ROOT if root is None else root):
+        if os.path.lexists(folder) and not plain_dir(folder): raise ValueError(f'{name}/ is a link or not a folder')
     if not os.path.lexists(path): return None
     text = small(path, 1 << 20)
     if text is None: raise ValueError('it is a link, not a regular file, or not UTF-8 text')
@@ -386,8 +509,9 @@ def write_settings(path, text, mode):
     """Replace the file atomically with text (None removes it), never through a link."""
     if text is None:
         os.unlink(path); return
-    if not os.path.lexists(path.parent): os.mkdir(path.parent)
-    if not plain_dir(path.parent): raise ValueError(f'{path.parent.name}/ is a link or not a folder')
+    for folder, name in folders(path, ROOT):
+        if not os.path.lexists(folder): os.mkdir(folder)
+        if not plain_dir(folder): raise ValueError(f'{name}/ is a link or not a folder')
     temp = path.parent / f'.{path.name}.{os.getpid()}.axis-tmp'
     fd = os.open(temp, os.O_WRONLY | os.O_CREAT | os.O_EXCL | NOFOLLOW, 0o600)
     try:
@@ -401,25 +525,38 @@ def write_settings(path, text, mode):
         os.unlink(temp); raise
 
 
+def plugin_plan(old, install, changes, rel):
+    """OpenCode: the plugin file's next text (None: absent); ValueError refuses a different file of that name."""
+    if old is not None and old != OPENCODE_PLUGIN: raise ValueError('a different file of that name is there; Axis neither replaces nor removes it')
+    if install and old is None: changes.append(f'create {rel} ({len(OPENCODE_PLUGIN.encode())} bytes):\n' + OPENCODE_PLUGIN.rstrip('\n'))
+    if not install and old is not None: changes.append(f'remove {rel}, which holds exactly the plugin Axis writes')
+    return OPENCODE_PLUGIN if install else None
+
+
 def install_main(action, argv):
     parser = argparse.ArgumentParser(prog=f'host-context.py {action}', description=f'{action} the Axis context hooks for one host')
     parser.add_argument('--host', required=True, choices=sorted(TARGET))
     parser.add_argument('--dry-run', action='store_true', help='print the exact change and write nothing')
     o = parser.parse_args(argv)
-    install, rel = action == 'install', TARGET[o.host]
+    install, rel, plugin = action == 'install', TARGET[o.host], o.host == 'opencode'
     path = ROOT / rel
     print(f'{"Install" if install else "Uninstall"} Axis context hooks for {TITLE[o.host]} in {rel}.')
     try:
         old, changes = read_settings(path), []
-        try: new = plan(old, o.host, install, changes)
-        except json.JSONDecodeError as error: raise ValueError(f'it is not valid JSON ({error.msg}, line {error.lineno})') from None
-        check(old, new, o.host, install)
+        if plugin: new = plugin_plan(old, install, changes, rel)
+        else:
+            try: new = plan(old, o.host, install, changes)
+            except json.JSONDecodeError as error: raise ValueError(f'it is not valid JSON ({error.msg}, line {error.lineno})') from None
+            check(old, new, o.host, install)
     except ValueError as error:
         print(f'REFUSED: {rel}: {error}. Nothing was changed.'); return 2
     if new == old:
+        if plugin: print('No change: ' + ("Axis's plugin file is already there." if install else 'no Axis plugin file is there.')); return 0
         print('No change: ' + ('exactly one current Axis entry per event is already there.' if install else 'no Axis entry is there.')); return 0
     for change in changes: print(change)
-    print('Every other setting and hook stays byte for byte.')
+    if install and o.host in NOTE: print(NOTE[o.host])
+    if install and o.host == 'codex': print(codex_note(ROOT))
+    print('No other file changes.' if plugin else 'Every other setting and hook stays byte for byte.')
     if o.dry_run:
         print('Dry run: nothing was written.'); return 0
     written = False
@@ -430,7 +567,7 @@ def install_main(action, argv):
         written = True
         back = read_settings(path)
         if back != new: raise ValueError('the file read back differs from the change')
-        check(old, back, o.host, install)
+        if not plugin: check(old, back, o.host, install)
     except (OSError, ValueError) as error:
         reason = str(error) if isinstance(error, ValueError) else 'the file could not be written'
         if not written:
@@ -441,6 +578,9 @@ def install_main(action, argv):
         except (OSError, ValueError):
             print(f'REFUSED: {rel}: {reason}. Check the file by hand: the previous version could not be restored.')
         return 2
+    if plugin:
+        print('Written and read back: ' + ("Axis's plugin file is in place" if install else "Axis's plugin file is removed") + '; no other file changed.')
+        return 0
     print(f'Written and read back: {"exactly one Axis entry" if install else "no Axis entry"} for {" and ".join(entries(o.host))}; every other setting and hook unchanged.')
     return 0
 
@@ -488,7 +628,9 @@ def main(argv):
     if argv[:1] in (['install'], ['uninstall']): return install_main(argv[0], argv[1:])
     try:
         host = argv[argv.index('--host') + 1] if '--host' in argv[:-1] else 'unknown'
-        out = hook(ROOT, host if HOST.fullmatch(host) else 'unknown', sys.stdin.buffer.read(1 << 20))
+        event = argv[argv.index('--event') + 1] if '--event' in argv[:-1] else None
+        out = hook(ROOT, host if HOST.fullmatch(host) else 'unknown', sys.stdin.buffer.read(1 << 20), event if event and EVENT.fullmatch(event) else None,
+                   '--core' in argv)
         if out:
             sys.stdout.buffer.write((out + '\n').encode('utf-8')); sys.stdout.flush()
     except BaseException:

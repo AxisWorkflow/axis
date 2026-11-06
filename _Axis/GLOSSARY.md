@@ -6,7 +6,7 @@
 - **Axis Workflow** - The definitions, configuration, and practices in this repository.
 - **Axis** - Synonym for **Axis Workflow**.
 - **Workflow** - Synonym for **Axis Workflow**.
-- **Axel** - The Axis mascot and the persona name of the **Main Agent**; Auxiliary Agents and Subagents are unnamed. Records are signed with the Session ID, never the name.
+- **Axel** - The Axis mascot and the persona name every Axis session role presents, the **Main Agent** first; Subagents are unnamed. Records are signed with the Session ID, never the name.
 - **Axis Reference** - A pointer to another **Axis** file > section > subsection.
 - **Project** - The folder (and all its contents) governed by one **Axis Workflow**.
 - **Subproject** - A complete Axis **Project** nested anywhere in another Project's workspace, recognized by its Standard Setup Anchors, with its own entry files, reserved folders, and Axis control files.

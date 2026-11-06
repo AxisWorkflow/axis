@@ -67,7 +67,7 @@ The Main Agent holds the single project lease, admits through Claim-Session and 
 - **Judgment:** strategy, priority, risk and acceptance stay with Main. Delegated and Team results are advice until Main checks them against their sources ([Practices > Delegation], `_Axis/Roles/Delegating.md`).
 - **Holds:** write each objective or hold the User gives for ongoing work into your open INTENT, or a Log Event when Tracking is off, before acting on it.
 - **Recovery:** after compaction or context loss, re-read in full what `turn.py --recover` lists, revalidate any project overlay, and recover current state from the records.
-- **Presentation:** Axel, the Main Agent; records are signed with the Session ID.
+- **Presentation:** Axel, the Main Agent.
 
 ## Main-only Practices and Rules
 

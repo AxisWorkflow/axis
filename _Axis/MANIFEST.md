@@ -250,7 +250,8 @@ Optional project state: `EXCEPTIONS.md` in the Axis control folder, created on f
 - `_Axis/Resources/startup-survey.py` - optional one-call startup survey; the numbered Start-Session steps remain available.
 - `_Axis/Resources/boot.py` - one-command Main startup used by the entry files.
 - `_Axis/Resources/turn.py` - per-turn lease check and renewal used by the entry files.
-- `_Axis/Resources/host-context.py` - Optional compaction hook command (`^install context hooks`): marks a compaction, gives a resumed or compacted session its Session ID, role and role guidance; `bind`, `whoami`, `install` and `uninstall`.
+- `_Axis/Resources/host-context.py` - Optional compaction hook command (`^install context hooks`): marks a compaction, gives a resumed or compacted session its Session ID, role and role guidance, a Codex compaction the startup core, and each Claude Code prompt the per-turn command; `bind`, `whoami`, `install` and `uninstall`.
+- `_Axis/Resources/Host-Channels.md` - dated register of each host's persistent channel, compaction event, hook injection and trust model, and the `^install context hooks` route it allows; read by that route, never at startup.
 - `_Axis/Resources/context-check.py` - optional content check loaded by `turn.py`: proves Axis guidance is still in context and orders a reload when it is not; ships off in 3.17, where a compaction mark orders a periodic reload instead.
 - `_Axis/Resources/Boot-Manual.md` - shell-only startup when `boot.py` cannot run.
 - `_Axis/Resources/Entry-Protocol.md` - the complete startup and per-turn protocol; the path for a pending update.
@@ -259,9 +260,9 @@ Optional project state: `EXCEPTIONS.md` in the Axis control folder, created on f
 - `_Axis/Resources/Default-Directives.md` - the shipped default Directives; startup adds any missing from the project's `DIRECTIVES.md`.
 - `_Axis/Resources/merge-project.py` - optional local merge preview, preservation, approved apply/abort and durable retirement support.
 - `_Axis/Resources/feedback-format.py` - read-only bug/feature draft format checker; never sends or grants consent.
-- `_Axis/Resources/guardrails.py` - optional host hook (`^install guardrails`) that refuses an Agent's edit to a write-once record or a malformed new record name, and a helper's use of `_Axis/Secrets/`, writes outside its role's folders or to governing files, starting other agents, or running state-changing Axis helpers.
+- `_Axis/Resources/guardrails.py` - optional host hook (`^install guardrails`) that refuses an Agent's edit to a write-once record or a malformed new record name, and a helper's use of `_Axis/Secrets/`, writes outside its role's folders or to governing files, starting other agents, or running state-changing Axis helpers, and a declared role's shell Git changes.
 - `_Axis/Resources/Helpers/axis-cx.claude-agent`, `axis-wiki.claude-agent`, `axis-general.claude-agent`, `axis-lookup.claude-agent` - helper role definitions `^install guardrails` copies into `.claude/agents/` as `.md` files.
-- `_Axis/Resources/OpenClaw/axis-guardrails/openclaw.plugin.json` and `index.ts` - optional OpenClaw plugin (`^install guardrails`) that applies `guardrails.py --external` to agents configured as Auxiliary Agents, and `--role` for the declared roles' configuration keys.
+- `_Axis/Resources/OpenClaw/axis-guardrails/openclaw.plugin.json` and `index.ts` - optional OpenClaw plugin (`^install guardrails`) that applies `guardrails.py --external` to agents configured as Auxiliary Agents, and `--role` for the declared roles' configuration keys, and appends each listed agent's role guidance to its system prompt on every run.
 - `_Axis/Resources/team-plan.py` - optional structural plan validator.
 - `_Axis/Resources/Team-Patterns/meta-team.json`, `assistance.json`, `delegated-report.json` - editable examples, never execution authority.
 - `_Axis/Resources/coordination.py`

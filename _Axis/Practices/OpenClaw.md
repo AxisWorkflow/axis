@@ -28,7 +28,7 @@ Operational session state is not semantic memory. OpenClaw must retain enough se
 
 Axis supplies identity from its own files, not from OpenClaw persona files.
 
-1. As Main your conversational name is Axel; Auxiliary Agents and Subagents are unnamed. Identity comes from Axis files, never OpenClaw persona files. Records are signed with the Session ID, never the name.
+1. As Main, Auxiliary, Assistant, Group Agent or Observer your conversational name is Axel; Subagents are unnamed. Identity comes from Axis files, never OpenClaw persona files. Records are signed with the Session ID, never the name.
 2. Your role is whatever the entry protocol assigned at boot, for the session's life. A standing role declaration introduced after boot governs the next boot, and the queued change never passes silently. No session changes its own role; User ends a Main with `axis retire` from a terminal.
 3. `_Axis/MINDSET.md` sets the project's conversational stance. `_Axis/PROJECT.md`, `_Axis/INSTRUCTIONS.md`, Settings, Notes, and project records supply User and project context.
 4. One OpenClaw agent workspace maps to one Axis Project. Multiple channels may reach that same presence; they do not create additional authority.
@@ -60,6 +60,7 @@ The semantic hardening target is:
 | Memory plugins | Memory slot `none`; `memory-core` and `active-memory` disabled when independently exposed |
 | Memory automation | `session-memory` hook, the pre-compaction memory flush (it writes into the project folder), and dreaming/background consolidation with its managed job disabled; inferred commitments/follow-up extraction too where a release still has it |
 | Bootstrap hooks | `boot-md`, `bootstrap-extra-files`, and any other hook that injects non-Axis instructions disabled |
+| Role guidance | Only `axis-guardrails` adds system-prompt text (`before_prompt_build`): its listed agents' role guidance, nothing for Main, sub-agents or other agents; any conversation-access grant the schema requires goes to `axis-guardrails` alone |
 | Proactive check | The `Proactive check` automation that first setup creates once for the owner agent (normally every 30 minutes, in that agent's main conversation) disabled where it exists; on a release that still has a heartbeat setting, the generic heartbeat interval disabled (`0m` or the schema-equivalent) |
 | Standing intents | The `intent` tool denied; standing intents have no configuration switch |
 | Skills | Empty for each Axis agent unless User approves one named capability for one project |
@@ -89,7 +90,7 @@ Exclude memory and plugin-management groups, the `intent` tool, and the Skill Wo
 
 Cross-agent access is open by default: any session can read other agents' transcripts, and any agent can message any other. Narrow session visibility to `tree`, and turn agent-to-agent messaging off unless a doorbell needs it. When one does, keep it on with an exact allowlist of target Axis agent IDs that also names the requester, and give the requester a send list naming only its targets, because narrowed visibility blocks sends without one. Never grant `*`, every agent, or an ambiguous name. Removing an agent can empty an allowlist, which then admits every agent; re-check after any agent change. [Practices > Messages > Boundary delivery] remains controlling: persist the sender Message and read back its direct-neighbour Submissions envelope first, then send only a fixed pointer as a best-effort OpenClaw notification. A failed or unavailable Host message leaves the persisted envelope queued; only receiver import proves receipt and carries no authorization.
 
-The optional `axis-guardrails` plugin (`^install guardrails`) catches an Auxiliary Agent's mistakes in file-tool calls: it refuses spawning, `_Axis/Secrets/`, changes to existing files and new files outside Project Subfolders, `_Axis/Submissions/` and `_Temp/` for the agent IDs it lists. It is not a security boundary: it sees file-tool paths only, so shell commands pass. The boundary on OpenClaw is its permission modes and sandboxing.
+The optional `axis-guardrails` plugin (`^install guardrails`) catches mistakes in file-tool calls by the Auxiliary Agents, Assistants, Group Agents and Observers it lists by agent ID: it refuses spawning, `_Axis/Secrets/` and the writes their role rows forbid. It is not a security boundary: it sees file-tool paths only, so shell commands pass. The boundary on OpenClaw is its permission modes and sandboxing. On every run of a listed agent it also appends that role's guidance (the prose of `_Axis/Roles/{Role}.md` after its role block, at most 8,000 characters) to the system prompt, so the guidance survives compaction; a sub-agent run, recognized by a `:subagent:` or `:acp:` session key, or a run without a session key gets none. This is untested on an installed OpenClaw until the chat-surfaces round qualifies it.
 
 ## Schedules
 

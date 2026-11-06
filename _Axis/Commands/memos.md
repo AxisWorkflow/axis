@@ -1,7 +1,7 @@
 # ^memos
 > **Purpose:** List live Memos, read User's replies, and archive finished ones.
 
-1. Main Agent only for changes. <!-- BEGIN GENERATED: role-gate memos -->An Auxiliary Agent, Assistant, Group Agent or Observer lists only, and STOPs.<!-- END GENERATED: role-gate memos -->
+1. Main Agent only for changes. <!-- BEGIN GENERATED: role-gate memos -->An Auxiliary Agent or Assistant lists only, and STOPs; a Group Agent or Observer lists nothing, tells User to ask Main and STOPs.<!-- END GENERATED: role-gate memos -->
 
 2. Load [Practices > Memos]. List `_Memos/` (not `Archive/`): name, Status, and Updated time from each header. Mark a memo `waiting on you` that was edited after its Updated time as replied.
 

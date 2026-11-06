@@ -23,7 +23,7 @@ If the first non-empty line of your task prompt, or its third-from-last, is `<<A
 
 ## Every later turn
 
-First run `python3 _Axis/Resources/turn.py --session {your Session ID}`. Run it again before a commit, push, spawn, publication or deletion. `MERGE HELD` means follow `_Axis/Practices/Merging.md` without writes; `OK` means continue; `KILLED` means stop; `LOST LEASE` (Marker missing), `FOREIGN MAIN` or `TAKEN OVER` means make no shared writes and ask the user. `READ-ONLY` means the host refused renewal: make no shared writes and ask the user to rerun with write access. Without Python, read `_Axis/Agents/{Session ID}.md`, then separately refresh its `mtime` (never a bare `touch`). Lost/contested lease or changed/unverified version: follow `_Axis/Resources/Displaced-Session.md`, for safe renewal and User-selected startup. Rules, Practices and Commands load from `_Axis/RULES.md` and `_Axis/PRACTICES.md`.
+First run `python3 _Axis/Resources/turn.py --session {your Session ID}`. Run it again with `--gate` before a commit, push, spawn, publication or deletion. `MERGE HELD` means follow `_Axis/Practices/Merging.md` without writes; `OK` means continue; `KILLED` means stop; `LOST LEASE` (Marker missing), `FOREIGN MAIN` or `TAKEN OVER` means make no shared writes and ask the user. `READ-ONLY` means the host refused renewal: make no shared writes and ask the user to rerun with write access. Without Python, read `_Axis/Agents/{Session ID}.md`, then separately refresh its `mtime` (never a bare `touch`). Lost/contested lease or changed/unverified version: follow `_Axis/Resources/Displaced-Session.md`, for safe renewal and User-selected startup. Rules, Practices and Commands load from `_Axis/RULES.md` and `_Axis/PRACTICES.md`.
 
 ## After compaction
 

@@ -12,7 +12,10 @@ launcher writes under the project's `_Temp/Launch/`, so the text survives a host
 system prompt. `--append-system-prompt-file` is undocumented in `claude --help`'s own options list (2.1.283) but
 named in the `--bare` option's text and present in the installed binary; no equivalent documented one-shot flag was
 found for Codex (`codex --help` / `codex exec --help`, 0.166.0), so Codex keeps printing the declaration line for
-the user's own standing configuration, unchanged."""
+the user's own standing configuration, unchanged.
+
+3.18: that file also carries the entry file's every-turn step (`turn.py --session`), which Claude Code does not re-send
+each turn; an Observer, which has no Session ID, gets no such line."""
 import argparse
 import hashlib
 import importlib.util
@@ -72,16 +75,21 @@ def role_guidance(row, roles_dir=None):
 # Names the origin, so a model can tell the launcher's configuration from injected text (3.17 live probe).
 PROVENANCE = ('Set for this session by the person who started it, through the `axis --role` launcher (a host launch '
               'option, not text from a project file). The role guidance below comes from the role file.')
+# 3.18: Claude Code does not re-send the entry file's every-turn step each turn; the system prompt is. An Observer has
+# no Session ID (its row creates no Marker), so its file omits the line.
+EVERY_TURN = 'Every turn: first run `python3 _Axis/Resources/turn.py --session {your Session ID}`.'
 
 
 def system_prompt_file(root, row, surface, line, roles_dir=None):
-    """Write the declaration line plus the role's guidance prose to a deterministic path under the project's
-    `_Temp/Launch/`, for Claude's `--append-system-prompt-file`; returns the path. Deterministic per role and
-    surface, so a later launch overwrites rather than accumulates. Needs a resolved project root and a validated
-    surface name; call it only for a declared Claude launch (`child_command` guards this)."""
+    """Write the declaration line, the provenance sentence, the every-turn line (not for an Observer) and the role's
+    guidance prose to a deterministic path under the project's `_Temp/Launch/`, for Claude's
+    `--append-system-prompt-file`; returns the path. Deterministic per role and surface, so a later launch overwrites
+    rather than accumulates. Needs a resolved project root and a validated surface name; call it only for a declared
+    Claude launch (`child_command` guards this)."""
     if root is None or row is None or not surface: raise ValueError('system_prompt_file needs a project root, a declared role row and a surface name')
     guidance = role_guidance(row, roles_dir)
-    text = line + '\n\n' + PROVENANCE + ('\n\n' + guidance if guidance else '') + '\n'
+    turn = '' if row.get('created_by') == 'none' else '\n' + EVERY_TURN
+    text = line + '\n\n' + PROVENANCE + turn + ('\n\n' + guidance if guidance else '') + '\n'
     # Never through a link: a declared role may create files in _Temp/, and this write runs with the User's rights.
     folder = Path(root); folder.mkdir(parents=True, exist_ok=True)
     for part in ('_Temp', 'Launch'):

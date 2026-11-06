@@ -1,7 +1,7 @@
 # Changelog
 > **Purpose:** Record Axis release identity and the structural migrations needed to update an existing project safely.
 
-current-version: 3.17
+current-version: 3.18
 changelog-format: 1
 self-update-baseline: 26.08.19
 
@@ -39,6 +39,33 @@ update-impact: automatic
 ### Verification
 
 - None.
+
+## 3.18
+
+released: 2026-11-06
+
+update-impact: automatic
+
+### Structural Changes
+
+- `^install context hooks` also offers a compaction mark on Gemini CLI (PreCompress in `.gemini/settings.json`), Copilot CLI (preCompact in `.github/hooks/axis.json`), Cursor (preCompact in `.cursor/hooks.json`), Devin (PostCompaction in `.devin/config.json`) and OpenCode (`session.compacted`, through Axis's own plugin file `.opencode/plugins/axis-context.js`), with the same preview, approval, insertion-only install, readback and uninstall. These hooks only mark, because none of those hosts gives a compaction hook's output to the model. Cursor and Copilot CLI also run the project's Claude Code hooks, so their own entry stays silent while Axis's Claude Code entry is there and each compaction is marked once. New `_Axis/Resources/Host-Channels.md` records, with dates and sources, each host's persistent channel, compaction event, hook injection and trust model, and is read only by that route.
+- Declared-role gaps closed (3.18). `^memos` in a Group Agent or Observer session lists nothing and sends the User to Main, because Memo file names carry subjects outside their read scope. Note overflow from an Auxiliary Agent, Assistant or Group Agent goes to Main as a request; only Main moves Notes to the Archive. The holds line in the Auxiliary, Assistant and Group Agent role files falls back to a Log Event when Tracking is off, as Main's does. The signing rule is no longer repeated in `Roles/Main.md`. The OpenClaw Practice names every session role Axel. The entry files' re-run sentence names `turn.py --gate`.
+- `_Axis/Resources/guardrails.py` (installed guardrails hook): a declared role on Claude Code is refused shell Git commands that change state (commit, push, add, reset, checkout, merge, rebase, tag, stash and every other non-read form), while `git log`, `status`, `diff` and `show` pass; it reads the command text, so it catches mistakes rather than deliberate bypasses, and some other read-only forms are refused too. Main is unaffected. An Observer's shell runs only its own admission check (`startup-state.py admit --role Observer`), which now passes with a quoted host name, and a Group Agent or Observer may read `_Axis/SURFACES.md`, which Start-Auxiliary's admission step reads.
+- The `axis-guardrails` OpenClaw plugin appends a listed agent's role guidance (the prose of `_Axis/Roles/{Role}.md` after its role block, at most 8,000 characters) to the system prompt on every run through `before_prompt_build`, so it survives compaction; Main, unlisted agents, sub-agent runs and runs without a session key get nothing. `^install guardrails` on OpenClaw grants any conversation access that hook needs to `axis-guardrails` alone. Untested on an installed OpenClaw until the chat-surfaces round.
+- Claude Code per-turn check (3.18). Claude Code does not re-send the entry file's every-turn step each turn, and sessions there skipped `turn.py` on ordinary later turns. `axis --role` now writes "Every turn: first run `python3 _Axis/Resources/turn.py --session {your Session ID}`." into the system-prompt file after its provenance sentence (not for an Observer, which has no Session ID). `host-context.py` can also answer a Claude Code `UserPromptSubmit` event with "Axis: run `python3 _Axis/Resources/turn.py --session {ID}` first." for a bound session, also after a kill or takeover, but `^install context hooks` does not install that entry: in the 3.18 live check, Claude Code sessions with it followed fewer planted rules before compaction (64% against 83% without hooks), while the same hooks without it kept 91%. Start-Auxiliary no longer says the host re-sends that step every turn. The entry file stays the form for every host.
+- Codex startup core after compaction (3.18, opt-in). With `^install context hooks` on Codex (the entry now carries `--core`), a compaction gets the role-neutral line followed by the compiled startup core `_Axis/Resources/Starting-Context.md` verbatim, when the core is whole, current and the output fits; otherwise the line alone, never cut text. The core is the same for every role, so a spawned agent whose hook carries its parent's session gains no role. The Codex SessionStart entry's `additionalContextLimit` rises from 4000 to 10000 tokens (line and core are about 9,060 tokens at 3 bytes per token), and the install preview states the limit and that each later request carries about that many more input tokens until the next compaction. A Codex entry installed by 3.17 keeps its 4,000-token limit and gets no core until `^install context hooks` runs again, and a resume never gets it. No compliance gain is claimed: the live Codex check found none over 3.18 without the core.
+
+### Project-State Migrations
+
+- None required. Hooks installed earlier keep their entries until `^install context hooks` runs again for that host, which replaces the Codex SessionStart entry (Codex then asks to review that hook in `/hooks`). Declared roles pick up the role-file changes at their next session.
+
+### Retired Paths
+
+- None.
+
+### Verification
+
+- Offline and sealed startup tests, the first-startup gate (113,638 of 114,596 bytes) and the focused Candidate tests pass; native and Linux suites run at freeze. Live against 3.16 on Claude Code (Sonnet) and Codex (Sol): after forced compaction 3.18 kept 57.4% against 50.0% of probed guidance on Claude Code and 79.6% against 66.7% on Codex, and with the context hooks 83.3% and 75.9%; before compaction it stayed within 5 points of 3.16 or above on both hosts, with and without hooks; no secret was shown and nothing was written after a stop signal; the hooks delivered their text after every compaction. With the Claude Code per-turn reminder, sessions kept only 64% of planted rules before compaction, so that entry is not installed. Two Codex sub-agents stayed in scope, one across a forced compaction, and the Codex core reached neither.
 
 ## 3.17
 

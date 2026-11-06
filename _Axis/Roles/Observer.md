@@ -46,7 +46,7 @@
       "followups": "tells User to ask Main",
       "inbox": "tells User to ask Main and STOPs",
       "memo": "tells User to ask Main and STOPs",
-      "memos": "lists only, and STOPs",
+      "memos": "lists nothing, tells User to ask Main and STOPs",
       "merge": "refuse this Command",
       "update": "refuse this Command",
       "kill": "refuses this command and writes nothing",

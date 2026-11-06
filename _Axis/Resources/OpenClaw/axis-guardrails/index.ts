@@ -4,13 +4,21 @@
 // its row allows). Other agents are untouched. If this hook throws or times out, OpenClaw blocks the call; if
 // guardrails.py itself fails or times out, the hook lets the call through. It catches file-tool mistakes; it is not a
 // security boundary, because shell commands pass.
+// Role context (3.18): on every run of a listed agent, append its role's guidance (the prose of _Axis/Roles/{Role}.md
+// after the axis-role block, at most 8,000 characters, as the axis launcher caps it) to the system prompt, so it
+// survives compaction. A sub-agent run (a session key with :subagent: or :acp:), a run without a session key, an
+// unlisted agent and a missing role file get nothing.
 import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
 import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, isAbsolute, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const SPAWN = /^(agent|task|spawn_agent|sessions_spawn|subagent|subagents)$/i;
 const SECRETS = "_Axis/Secrets";
+const ROLE_GUIDANCE_LIMIT = 8000;
+const SUBAGENT_SESSION = /:(subagent|acp):/;
+type PromptContext = { appendSystemContext?: string };
 
 type Guard = { agents: (api: any) => Set<string>; spawn: string | null; secrets: string; args: (tool: string, path: string) => string[] };
 // BEGIN GENERATED: role-table
@@ -33,6 +41,46 @@ function projectRoot(path: string): string | null {
     dir = up;
   }
   return null;
+}
+
+// The role a guarded entry serves, from its guardrails.py call: `--role {name}`, or the Auxiliary wire flag.
+function roleName(g: Guard): string {
+  const call = g.args("", "");
+  return call[0] === "--role" ? call[1] : "auxiliary";
+}
+
+// The plugin's own project: it is installed from {project}/_Axis/Resources/OpenClaw/axis-guardrails/.
+function pluginProject(): string | null {
+  try { return resolve(dirname(fileURLToPath(import.meta.url)), "../../../.."); } catch { return null; }
+}
+
+// The prose of _Axis/Roles/{Role}.md after its axis-role block, cut at the launcher's cap; "" when missing.
+export function roleGuidance(root: string, name: string): string {
+  try {
+    const dir = join(root, "_Axis/Roles");
+    const file = readdirSync(dir).find((f) => f.toLowerCase() === name.toLowerCase() + ".md");
+    if (!file) return "";
+    const text = readFileSync(join(dir, file), "utf8");
+    const open = text.indexOf("```");
+    const close = open < 0 ? -1 : text.indexOf("```", open + 3);
+    if (close < 0) return "";
+    return Array.from(text.slice(close + 3).replace(/^\n+/, "")).slice(0, ROLE_GUIDANCE_LIMIT).join("");
+  } catch { return ""; }
+}
+
+// What a run adds to the system prompt: the listed agent's role guidance, whole, or nothing. When the run reports its
+// context window in tokens, guidance longer than a quarter of it (at one character per token) is left out, never cut.
+export function roleContext(listed: (agentId: string) => string | null, event: any, ctx: any, root: string | null): PromptContext {
+  const name = listed(String(ctx?.agentId ?? ""));
+  const key = ctx?.sessionKey;
+  if (!name || typeof key !== "string" || !key || SUBAGENT_SESSION.test(key)) return {};
+  const workspace = typeof ctx?.workspaceDir === "string" && existsSync(join(ctx.workspaceDir, "_Axis/Roles")) ? ctx.workspaceDir : root;
+  const guidance = workspace ? roleGuidance(workspace, name) : "";
+  if (!guidance) return {};
+  const window = Number(event?.contextWindow ?? ctx?.contextWindow ?? 0);
+  const text = `Axis role guidance for this agent, added by the axis-guardrails plugin from _Axis/Roles/ on every run:\n\n${guidance}`;
+  if (window > 0 && Array.from(text).length > window / 4) return {};
+  return { appendSystemContext: text };
 }
 
 function targetPaths(params: any): string[] {
@@ -64,6 +112,14 @@ export default definePluginEntry({
         if (r.status === 2) return { block: true, blockReason: (r.stdout || r.stderr || "Axis guardrail refused this call.").trim() };
       }
       return {};
+    });
+    const root = pluginProject();
+    const listed = (agentId: string): string | null => {
+      const g = guarded.find((x) => x.listed.has(agentId));
+      return g ? roleName(g) : null;
+    };
+    api.on("before_prompt_build", (event: any, ctx: any): PromptContext => {
+      try { return roleContext(listed, event, ctx, root); } catch { return {}; }
     });
   },
 });

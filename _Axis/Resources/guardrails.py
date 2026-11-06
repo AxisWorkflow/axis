@@ -15,13 +15,14 @@ Python 3 standard library only; reads paths and status lines, never prints file 
 shell command or helper script writes. Adoption repairs run only through the verified, scope-bound update engine; they do not disable this hook for ordinary edits. During an adoption's reconciliation, Main may edit the Tasks and Follow-Ups its frozen plan names. It never affects User's own editing.
 
 3.16 role link: a Claude Code session the `axis` launcher started for a declared role carries AXIS_ROLE (and
-AXIS_SURFACE); the hook then applies that role's guard to the session's own calls. A role serving other people also
-reads only its surface's read scope and the Axis workflow files, has no outbound tools and runs only Axis's own
-per-turn helpers in the shell; an Observer writes nothing. Every agent session: the User-mode `axis retire` and
-`axis start` are refused (they are for the User's own terminal); agent mode passes.
+AXIS_SURFACE); the hook then applies that role's guard to the session's own calls, and every declared role runs only
+read-only git (log, status, diff, show and listing forms). A role serving other people also reads only its surface's
+read scope and the Axis workflow files, has no outbound tools and runs only Axis's own per-turn helpers in the shell;
+an Observer writes nothing, and its shell runs only its own admission check. Every agent session: the User-mode
+`axis retire` and `axis start` are refused (they are for the User's own terminal); agent mode passes.
 
 Self-test without a host: python3 _Axis/Resources/guardrails.py --check {project-relative path} [--new] [--agent {type}]"""
-import importlib.util,json,os,re,sys
+import importlib.util,json,os,re,shlex,sys
 from pathlib import Path
 
 # BEGIN GENERATED: role-table
@@ -72,12 +73,20 @@ SCRIPT_CALL=re.compile(r'(?:\bpython3?|\bsh|\bbash|(?:^|[\s;&|(])\.)(?:\s+-[A-Za
 ROLE_ACTION=re.compile(r'(?:^|[;&|(\n]|\bthen|\bdo|\bexec)\s*(?:env\s+(?:\S+=\S*\s+)*)?(?:(?:\S*/)?python3?\s+(?:-\S+\s+)*)?(?:\S*/)?(?:axis|axis-roles\.py)\s+(retire|start)\b([^;&|\n]*)')
 # Declared roles serving other people: the Axis workflow files they may read besides their surface's read scope.
 WORKFLOW_READ=('_Axis/RULES.md','_Axis/PRACTICES.md','_Axis/PRINCIPLES.md','_Axis/GLOSSARY.md','_Axis/MANIFEST.md','_Axis/CHANGELOG.md','_Axis/SETTINGS.md',
-               '_Axis/Rules/','_Axis/Practices/','_Axis/Roles/','_Axis/Commands/','_Axis/Resources/','_Axis/Agents/','_Axis/Updates/','_Axis/Merges/','_Axis/Flags/',
-               'AGENTS.md','CLAUDE.md','GEMINI.md','README.md')
-# Their shell runs only Axis's own per-turn and record helpers.
+               '_Axis/SURFACES.md','_Axis/Rules/','_Axis/Practices/','_Axis/Roles/','_Axis/Commands/','_Axis/Resources/','_Axis/Agents/','_Axis/Updates/',
+               '_Axis/Merges/','_Axis/Flags/','AGENTS.md','CLAUDE.md','GEMINI.md','README.md')
+# Their shell runs only Axis's own per-turn and record helpers; a role that writes nothing runs only its own admission check.
 ROLE_SCRIPTS={'turn.py':('',),'startup-state.py':('admit','track','record'),'record-check.py':('names','links','write-once')}
+READ_ONLY_SCRIPTS={'startup-state.py':('admit',)}
 # One helper call per command: no separators, newlines, redirections, substitutions or environment changes.
-ROLE_COMMAND=re.compile(r'[ \t]*python3?[ \t]+(?:-B[ \t]+)?_Axis/Resources/[A-Za-z-]+\.py(?:[ \t]+[A-Za-z0-9._:/@=+,-]+|[ \t]+\'[^\'\r\n]*\')*[ \t]*')
+ROLE_COMMAND=re.compile(r'[ \t]*python3?[ \t]+(?:-B[ \t]+)?_Axis/Resources/[A-Za-z-]+\.py(?:[ \t]+[A-Za-z0-9._:/@=+,-]+|[ \t]+\'[^\'\r\n]*\'|[ \t]+"[^"$`\\\r\n]*")*[ \t]*')
+# Git for a declared role: read-only subcommands pass; every other subcommand is Main's. Listing forms of branch, tag,
+# remote, stash, worktree and reflog pass too.
+GIT_READ=('log','status','diff','show','blame','shortlog','describe','rev-parse','rev-list','ls-files','ls-tree','cat-file','grep','help','version')
+GIT_LIST_FLAGS={'branch':('-a','-r','-v','-vv','-l','--list','--all','--remotes','--verbose','--show-current'),'tag':('-l','--list'),'remote':('-v','--verbose'),'reflog':()}
+GIT_LIST_FIRST={'stash':('list','show'),'worktree':('list',),'reflog':('show',)}
+GIT_VALUE_OPTS=('-C','-c','--git-dir','--work-tree','--namespace','--exec-path','--config-env')
+WRAPPERS=('env','command','exec','sudo','nohup','time','nice','xargs','builtin','then','do','else','!')
 OUTBOUND=('WebFetch','WebSearch')
 AGENT_LAUNCH=re.compile(r'(?:^|[;&|(]|\bthen|\bdo|\bexec)\s*(?:env\s+(?:\S+=\S*\s+)*)?(?:\S*/)?(?:claude|codex|openclaw|gemini)(?:\s|$)')
 
@@ -252,6 +261,43 @@ def secret(rel):
     """Secrets, compared without case: a case-insensitive volume reaches the same folder by any spelling."""
     return rel.lower()==SECRETS.lower() or rel.lower().startswith(SECRETS.lower()+'/')
 
+def git_change(command,depth=0):
+    """The first git subcommand in a shell command that may change state (anything outside the read-only forms), or
+    None. A mistake-catcher: it reads the command text, not what the shell finally runs."""
+    for line in command.splitlines():
+        try:tokens=list(shlex.shlex(line,posix=True,punctuation_chars=True))
+        except ValueError:tokens=re.findall(r'[^\s;&|()`<>]+|[;&|()`<>]+',line)
+        words=[]
+        for t in tokens+[';']:
+            if t and all(ch in ';&|()`<>' for ch in t):
+                hit=git_words(words,depth)
+                if hit:return hit
+                words=[]
+            else:words.append(t)
+    return None
+
+def git_words(words,depth):
+    """git_change for one simple command's words."""
+    i=0;wrapped=False
+    while i<len(words):
+        w=words[i]
+        if w in WRAPPERS or re.fullmatch(r'[A-Za-z_]\w*=.*',w):wrapped=wrapped or w in WRAPPERS;i+=1
+        elif wrapped and w.startswith('-'):i+=1+(w in ('-u','-n'))
+        else:break
+    if i>=len(words):return None
+    name=os.path.basename(words[i])
+    if name in ('sh','bash','zsh','dash','eval') and depth<3:
+        text=words[words.index('-c',i+1)+1] if '-c' in words[i+1:-1] else ' '.join(words[i+1:]) if name=='eval' else ''
+        return git_change(text,depth+1) if text else None
+    if name!='git':return None
+    j=i+1
+    while j<len(words) and words[j].startswith('-'):j+=1+(words[j] in GIT_VALUE_OPTS)
+    if j>=len(words):return None
+    sub,rest=words[j],words[j+1:]
+    if sub in GIT_READ or (sub in GIT_LIST_FLAGS and all(w in GIT_LIST_FLAGS[sub] for w in rest)):return None
+    if sub in GIT_LIST_FIRST and rest[:1] and rest[0] in GIT_LIST_FIRST[sub]:return None
+    return sub
+
 def role_refusal(root,row,tool,ti,event):
     """A refusal reason for a declared session's own call under its role row, or None."""
     others=row['serves']!='User';who=row['article']+' '+row['title']
@@ -261,12 +307,20 @@ def role_refusal(root,row,tool,ti,event):
         command=ti.get('command') if isinstance(ti.get('command'),str) else ''
         if SECRETS.lower() in command.lower():return who+' never uses _Axis/Secrets/'
         if re.search(r'_Axis/Resources/boot\.py',command):return who+' never starts as Main'
+        sub=git_change(command)
+        if sub:return f'{who} makes no Git changes (git {sub}); Main does, and read-only git (log, status, diff, show) passes'
         if others:
             m=SCRIPT_CALL.match(command.strip())
             if not ROLE_COMMAND.fullmatch(command) or m is None:return who+' runs only Axis\'s own per-turn helpers in the shell, one call per command'
-            words=[w for w in m[3].split() if w];i=0
+            words=[w.strip('"\'') for w in m[3].split() if w];i=0
             while i<len(words) and words[i].startswith('-'):i+=1+(words[i] in ('--root',))
             sub=words[i] if i<len(words) else ''
+            if not row['guard']['new_files']:
+                # A role that writes nothing runs only its own admission check, which writes nothing for it.
+                role=words[words.index('--role')+1].replace(' ','').lower() if '--role' in words[:-1] else ''
+                if sub not in READ_ONLY_SCRIPTS.get(m[2],()) or role not in (row['name'].lower(),row['title'].replace(' ','').lower()):
+                    return who+' runs only its own admission check in the shell (startup-state.py admit --role '+row['name']+')'
+                return None
             if m[2] not in ROLE_SCRIPTS or (ROLE_SCRIPTS[m[2]]!=('',) and sub not in ROLE_SCRIPTS[m[2]]):return who+' runs only Axis\'s own per-turn helpers in the shell, one call per command'
         return None
     if tool not in PATH_TOOLS:return None

@@ -1,6 +1,6 @@
 # Axis Workflow User Manual
 > **Purpose:** How to use the Axis Workflow day to day: setup, commands, the Dashboard, the Wiki, working across tools and machines, and working with Agents and models. For the technical and compliance reference, see [SPECIFICATION](/_Axis/SPECIFICATION.md).
-> **Version:** 3.17
+> **Version:** 3.18
 
 
 
@@ -147,7 +147,7 @@ Before a download approval prompt, the default **Explain Download Permissions** 
 **Who coordinates my project?**
 **Who is Axel?**
 
-Axel is the Axis mascot and the name your Main Agent introduces itself with - the persona of the Agent that coordinates your project. Auxiliary Agents and the Subagents it spawns (for cross-examination or Wiki work) are unnamed. Records are always signed with the Session ID, never the name. The startup block shows the project, folder, Agent role and Session ID.
+Axel is the Axis mascot and the name your Main Agent introduces itself with - the persona of the Agent that coordinates your project. An Auxiliary Agent, Assistant, Group Agent or Observer also greets as Axel and names its role; the Subagents Main spawns (for cross-examination or Wiki work) are unnamed. Records are always signed with the Session ID, never the name. The startup block shows the project, folder, Agent role and Session ID.
 
 **Is my data local?**
 By default. Axis is just files in your project folder - no remote Axis backend, account, or telemetry. The optional Dashboard uses a loopback-only server on your own computer. If you choose a Git remote for portability, tracked project state is also stored by that provider; plaintext Secrets remain excluded unless you deliberately enable the encrypted capsule. Whatever your AI tool sends to its model is governed by that tool, not by Axis.
@@ -604,7 +604,7 @@ Beyond Main and Auxiliary, you can give a surface (a terminal, a chat or a chann
 - **Group Agent** - serves you and the people you name on a shared chat. It reads only the folders you list for that surface, never your Secrets, Instructions, Memos or records, and has no web or messaging tools. A colleague's request becomes an answer or a request to Main unless you adopt it.
 - **Observer** - read-only within the folders you list; it writes nothing, not even a session record. Stop it by removing its binding.
 
-To set one up, tell Main in this project, for example "declare my laptop terminal as an Assistant". Main adds the surface to your surface table (`_Axis/SURFACES.md`), with the folders a Group Agent or Observer may read, and logs the change. Then start the surface with the declaration `Axis role: Assistant; surface: laptop` in the agent's standing configuration, or from a terminal with `axis --agent claude --role Assistant --surface laptop`. On Claude Code the launcher also passes the declaration and the role's tool limits and withholds MCP connectors from a Group Agent or Observer, and the guardrails hook (`^install guardrails`, which the launcher requires for those two roles) enforces the role's limits and read scope; elsewhere the limits hold through the role's instructions. A declaration without a matching row gets a one-line notice and no service. Changes take effect at the surface's next session. OpenClaw chats keep their current roles until the next round of chat-surface work asks you about each chat.
+To set one up, tell Main in this project, for example "declare my laptop terminal as an Assistant". Main adds the surface to your surface table (`_Axis/SURFACES.md`), with the folders a Group Agent or Observer may read, and logs the change. Then start the surface with the declaration `Axis role: Assistant; surface: laptop` in the agent's standing configuration, or from a terminal with `axis --agent claude --role Assistant --surface laptop`. On Claude Code the launcher also passes the declaration and the role's tool limits and withholds MCP connectors from a Group Agent or Observer, and the guardrails hook (`^install guardrails`, which the launcher requires for those two roles) enforces the role's limits and read scope, and refuses Git changes from any declared role (reading history still works; Main commits); elsewhere the limits hold through the role's instructions. A Group Agent or Observer never lists your Memos; `^memos` there sends you to Main. On OpenClaw the `axis-guardrails` plugin re-adds each listed agent's role guidance to its system prompt on every run, so the guidance survives compaction. A declaration without a matching row gets a one-line notice and no service. Changes take effect at the surface's next session. OpenClaw chats keep their current roles until the next round of chat-surface work asks you about each chat.
 
 ### An Axis Team of Agents and its Jobs
 
@@ -638,7 +638,7 @@ Scheduled child-project supervision initially reports status/inspection only. Re
 
 When a conversation grows long, the AI tool may compact it into a summary and drop much of what the Agent read at startup. Axis tells every Agent to treat that summary as a hint: before it answers again it reloads the files its role needs, keeps any hold or limit you set, and does not take an earlier approval for a push, publication, spending or deletion from the summary alone. You need do nothing for this. If an Agent seems to have forgotten an Axis rule after a long session, ask it to run its per-turn check and reload; starting a fresh session is always safe.
 
-On Claude Code and Codex you can also add an optional hook with `^install context hooks`; Axis shows the exact change to the tool's settings file and asks before writing it. The hook reminds a resumed or compacted session of its identity and role straight away. Remove it the same way at any time. Axis helpers on Claude Code run without your own CLAUDE.md files; the Task each helper receives carries what it must follow.
+On Claude Code and Codex you can also add an optional hook with `^install context hooks`; Axis shows the exact change to the tool's settings file and asks before writing it. The hook reminds a resumed or compacted session of its identity and role straight away. On Claude Code it also reminds the Agent before each of your messages to run its per-turn check. On Codex it also gives the startup rules back after a compaction; they stay in the conversation, so each later request carries about 9,000 more input tokens until the next compaction, and the preview states the figure for your project. On Gemini CLI, Copilot CLI, Cursor, Devin and OpenCode the same command adds a smaller hook that only records each compaction, so Axis knows to check its guidance; those tools do not let a hook speak to the Agent after a compaction. `_Axis/Resources/Host-Channels.md` lists what each tool supports and when that was last checked. Remove a hook the same way at any time. Axis helpers on Claude Code run without your own CLAUDE.md files; the Task each helper receives carries what it must follow.
 
 ### Sessions, delivery and migration
 
