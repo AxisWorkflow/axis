@@ -1,47 +1,58 @@
 # Axis Workflow
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-2ea44f.svg)](/_Axis/LICENSE)
-[![Version](https://img.shields.io/badge/Version-3.19-blue.svg)](https://github.com/AxisWorkflow/axis)
+[![Version](https://img.shields.io/badge/Version-3.20-blue.svg)](https://github.com/AxisWorkflow/axis)
 [![Works with](https://img.shields.io/badge/Works%20with-Claude%20Cowork%20%7C%20Claude%20Code%20%7C%20ChatGPT%20Work%20%7C%20Codex%20%7C%20Cursor%20%7C%20Gemini%20CLI-6f42c1.svg)](https://github.com/AxisWorkflow/axis)
 
 The [**Axis Workflow™**](https://github.com/AxisWorkflow/axis) is an open-source project developed by [Kenneth Younge Advisory](https://kennethyounge.com), released under the [MIT License](/_Axis/LICENSE). The license grants no trademark rights. If you like **Axis**, [please buy us a coffee](https://buymeacoffee.com/axisworkflow). Please **[star the repo](https://github.com/AxisWorkflow/axis)** - it helps others to find it.
 
 > **How to use Axis:** read the **[User Manual](/_Axis/USERMANUAL.md)**. Technical, security and compliance details are in the **[Specification](/_Axis/SPECIFICATION.md)**.
+>
+> **Looking for something?** Jump to the [Topic Index](#topic-index) at the end of this page, or open the complete [Help Index](/_Axis/HELPINDEX.md).
 
 
 
 ## Quick Start
 
+**Updating an existing project?** This release is the compatibility bridge for older installations: it keeps the three entry files identical, and its updater also accepts a later entry layout. Update to this exact release first, complete the update and start a fresh session before selecting any later release. See the [update guidance](/_Axis/USERMANUAL.md#faq).
+
 1. [Download Axis](https://github.com/AxisWorkflow/axis/releases/latest/download/axis-project.zip) and unzip - now you have a project folder.
 2. Open the folder with Cowork, Claude Code, Codex, Cursor, Gemini, etc...
 3. Type `Start Axis`. Your Agent finds the Workflow and helps you get started.
 
-	That's it. **60 seconds** to go time!
+You can now start Axis. Download, host startup and project setup time depend on your environment and the project.
 
 
 
 ## What is the Axis Workflow?
 
-**Axis** is a simple but disciplined way to work with AI Agents. Drop Axis into your project (just a few folders of instructions), open your project folder with your AI (e.g., Claude Code, Codex, Cowork, etc.), and Agents will automatically start to plan, track tasks, keep records, hold memory between sessions, and cross-check everything you do. Best of all, the canonical project files stay in your own project folder.
+**Axis** is a file-based workflow for working with AI Agents. Open an Axis project folder in a compatible AI host to plan work, track tasks, retain decisions and review results. The canonical project files stay in your project folder; the Agent and its host determine what can actually run.
 
-You do not need to open an account, install an app, or set up a server. Axis is free - simply download the Axis files, drop them in, and go.
+Axis itself needs no account or server and is free to download. You supply a compatible AI host; its access, installation requirements and costs are separate. Optional integrations have their own requirements.
 
-![An Axis project folder: your own work sits beside the _Axis control folder, which holds the Plan, Tasks, Notes, Logs, Snapshots, Wiki and Dashboard as plain Markdown files](/_Axis/Resources/axis-folders.svg)
+![Selected Axis project folders: your work and _Wiki sit beside _Axis, which contains the workflow, Plan, Tasks, records and optional Dashboard](/_Axis/Resources/axis-folders.svg)
 
-Open the live Dashboard with `^dashboard` to see the whole project at a glance, read directly from those files:
+The picture shows a typical project folder: your own folders and the `_Wiki/` knowledge base sit beside `_Axis/`, which holds the Plan, Tasks, record folders, the optional Dashboard and the User Manual. Two more folders you will use, `_Inbox/` for new material and `_Memos/` for reports addressed to you, are not drawn.
 
-![The Axis Dashboard on the Meridian example project - Configuration, Mindset, Agents, Project, activity queues, Plan, Tasks, and the newest Review](/_Axis/Resources/axis-dashboard-meridian.png)
+Open the live Dashboard with `^dashboard` to see your project state read from its files. The [Dashboard guide](/_Axis/USERMANUAL.md#reading-the-dashboard) explains its views and requirements.
+
+![Axis Dashboard showing the fictional Meridian Demo project](/_Axis/Resources/axis-dashboard-meridian.png)
+
+The Dashboard illustration uses fictional project records and example settings.
 
 ### Features at a Glance
 
-- **Memory between sessions.** The Agent reads your Plan, Tasks, Follow-Ups, Snapshots and Notes at startup, so it knows where you left off without being prompted.
-- **Planning and tracking.** A Plan, Tasks with status and history, Follow-Ups for the things only you can do, time-based Reminders, and optional Initiatives that group related Tasks.
-- **A permanent record.** Logs, Snapshots, Reviews and Cross-Examinations are written once and never edited, so the history of your project can be audited.
+- **Continuity between sessions.** The Agent loads recorded context and relevant details from your Plan, Tasks, Follow-Ups, Snapshots and Notes. Save work before a handoff; files cannot recover an unsaved conversation.
+- **Planning and tracking.** A Plan, Tasks with status and history, Follow-Ups for the things only you can do, time-based Reminders, and optional Initiatives that group related Tasks. An optional [guided setup](/_Axis/USERMANUAL.md#guided-project-setup) turns your goal and constraints into a draft for your review.
+- **An auditable history.** Logs, Snapshots and review records preserve decisions and results. Corrections normally add a new record; narrowly defined maintenance exceptions are documented in the [Specification](/_Axis/SPECIFICATION.md#records-and-data-model).
 - **Cross-examination.** A separate Agent can challenge key decisions and deliverables before you rely on them.
 - **A knowledge wiki.** The Agent builds and cross-links a Wiki from your sources, readable in Obsidian or any Markdown editor.
 - **A live Dashboard.** `^dashboard` shows the Plan, Tasks, queues, activity and reports, read directly from your files.
-- **Simple commands.** Type `^help` for the list: save and resume, notes, ideas, status, archive and more.
+- **An inbox and memos.** Drop new material into `_Inbox/` and your Agent [files it](/_Axis/USERMANUAL.md#inbox). Decisions, findings and Reviews you will want to read later arrive as dated [Memos](/_Axis/USERMANUAL.md#memos).
+- **Simple commands.** Type `^help` for the list: save and resume, notes, ideas, status, archive and more. `^help <topic>` finds the section that covers a topic.
 - **Portability.** Switch AI tools or computers mid-project; optional Git support checkpoints and moves your work.
+- **More than one Agent or project.** A second session joins as a bounded helper beside the one Main Agent. An optional [Axis Team of Agents](/_Axis/USERMANUAL.md#an-axis-team-of-agents-and-its-jobs) works under a charter with recorded Jobs, and a parent project can [supervise the Axis projects nested inside it](/_Axis/USERMANUAL.md#supervising-child-projects). What runs depends on your AI host.
+- **Reach it from another device.** Optional routes let you use a session on your own computer from a [laptop or phone](/_Axis/USERMANUAL.md#remote-access-from-a-laptop-or-phone), or talk to a project through a messaging channel with [OpenClaw](/_Axis/USERMANUAL.md#openclaw-integration). Each has its own setup and limits.
 - **Cost control.** Routine work can go to cheaper or local models while stronger models handle judgment.
 
 
@@ -82,15 +93,9 @@ Open the live Dashboard with `^dashboard` to see the whole project at a glance, 
 
 
 
-### Compare Alternatives
+### Choosing a workflow
 
-| Capability               | Axis | Chat projects  | NotebookLM     | Obsidian <br> + Agent |
-| ------------------------ | ---- | -------------- | -------------- | --------------------- |
-| Control<br>your content  | Yes  | Tied to vendor | Tied to vendor | Yes                   |
-| Switch AI<br>mid-project | Yes  | No             | No             | Only if you are ready |
-| Versioning<br>& Rollback | Yes  | No             | No             | Only if you know how  |
-| Knowledge<br>Base        | Yes  | Retrieval only | Retrieval only | Only if you build it  |
-| Cross Examination        | Yes  | No             | No             | Only if you build it  |
+Axis fits work that benefits from local, inspectable project files, recorded decisions and continuity across compatible AI hosts. Its file workflow can complement an editor, chat service or document system. Optional Git, model routing and integrations need configuration; shared folders and channels do not by themselves provide distributed collaboration or a security boundary. Compare those needs with the [documented limits](/_Axis/SPECIFICATION.md#known-limitations-and-open-issues).
 
 
 
@@ -107,12 +112,7 @@ Open the live Dashboard with `^dashboard` to see the whole project at a glance, 
 - Parents keeping the family-life on track.
 - Anyone who is just doing life (filing taxes, managing mail, etc.).
 
-**Axis** is **not** the best solution for:
-
-- Programming - Cursor and Visual Studio are better for building software.
-- Complex collaboration - Asana, Trello, and Slack are better for coordinating teams.
-- Knowledge sharing - Confluence and Notion are better for enterprise platforms.
-- Skim [Limitations](/_Axis/SPECIFICATION.md#limitations) before you commit a large project to the Axis Workflow - we want you to find the right fit for your particular project.
+Before adopting Axis for a large project, review its [known limitations](/_Axis/SPECIFICATION.md#known-limitations-and-open-issues), host requirements and data-handling boundaries. It supplies a project workflow; your editor, communication tools and organization-wide publishing or access controls remain separate choices.
 
 
 
@@ -120,6 +120,7 @@ Open the live Dashboard with `^dashboard` to see the whole project at a glance, 
 
 - **[User Manual](/_Axis/USERMANUAL.md)** - how to use Axis day to day: setup, commands, the Dashboard, the Wiki, portability, and working with Agents and models.
 - **[Specification](/_Axis/SPECIFICATION.md)** - the technical reference for IT, security and compliance reviews, and for Agents: system design, security model, limitations and every key file.
+- **[Help Index](/_Axis/HELPINDEX.md)** - every topic in these documents, the words people use for it, and links to the sections that cover it. In a project, `^help <topic>` searches it for you.
 
 
 
@@ -157,5 +158,34 @@ This release is licensed under the **MIT License**. Anyone may use, copy, modify
 ## Copyright
 
 Copyright 2026 Kenneth A. Younge. All rights reserved except as expressly licensed.
+
+## Topic Index
+
+<!-- BEGIN GENERATED: topic-index -->
+20 topics covered in this document, in alphabetical order. The [Help Index](/_Axis/HELPINDEX.md) lists every topic across the Axis documents with the words people use for it; in a project, `^help <topic>` searches it.
+
+| Topic | In this introduction | In the User Manual and Specification |
+| --- | --- | --- |
+| Adoption assessment for organizations | [Who needs the Axis Workflow?](#who-needs-the-axis-workflow) | [Specification: Adoption Assessment](/_Axis/SPECIFICATION.md#adoption-assessment) |
+| Axis Team of Agents | [Features at a Glance](#features-at-a-glance) | [User Manual: An Axis Team of Agents and its Jobs](/_Axis/USERMANUAL.md#an-axis-team-of-agents-and-its-jobs); [Specification: Teams, Messages, Jobs and Scheduling](/_Axis/SPECIFICATION.md#teams-messages-jobs-and-scheduling) |
+| Copyright | [Copyright](#copyright) | [User Manual: Copyright](/_Axis/USERMANUAL.md#copyright) |
+| Extending Axis | [Why use the Axis Workflow?](#why-use-the-axis-workflow) | [Specification: Extending Axis](/_Axis/SPECIFICATION.md#extending-axis) |
+| Features at a glance | [Features at a Glance](#features-at-a-glance) |  |
+| Folders and file layout | [What is the Axis Workflow?](#what-is-the-axis-workflow) | [User Manual: Setup](/_Axis/USERMANUAL.md#setup); [Specification: Layout](/_Axis/SPECIFICATION.md#layout) |
+| Help and where to read more | [Learn More](#learn-more) | [User Manual: Commands](/_Axis/USERMANUAL.md#commands); [Specification: How to Read This Document](/_Axis/SPECIFICATION.md#how-to-read-this-document) |
+| Installing Axis | [Quick Start](#quick-start) | [User Manual: Setup](/_Axis/USERMANUAL.md#setup) |
+| Known limitations | [Choosing a workflow](#choosing-a-workflow) | [Specification: Known Limitations and Open Issues](/_Axis/SPECIFICATION.md#known-limitations-and-open-issues) |
+| License | [License](#license) | [User Manual: License](/_Axis/USERMANUAL.md#license); [Specification: License, contributions and contact](/_Axis/SPECIFICATION.md#license-contributions-and-contact) |
+| OpenClaw | [Features at a Glance](#features-at-a-glance) | [User Manual: OpenClaw Integration](/_Axis/USERMANUAL.md#openclaw-integration); [Specification: OpenClaw Integration](/_Axis/SPECIFICATION.md#openclaw-integration) |
+| Portability | [Features at a Glance](#features-at-a-glance) | [User Manual: Working Across Tools and Machines](/_Axis/USERMANUAL.md#working-across-tools-and-machines); [Specification: Portability, Git and Secrets Transport](/_Axis/SPECIFICATION.md#portability-git-and-secrets-transport) |
+| Quick start | [Quick Start](#quick-start) | [User Manual: Getting Started](/_Axis/USERMANUAL.md#getting-started) |
+| Remote access from a laptop or phone | [Features at a Glance](#features-at-a-glance) | [User Manual: Remote access from a laptop or phone](/_Axis/USERMANUAL.md#remote-access-from-a-laptop-or-phone) |
+| Supervising child projects | [Features at a Glance](#features-at-a-glance) | [User Manual: Supervising Child Projects](/_Axis/USERMANUAL.md#supervising-child-projects); [Specification: Multi-Project Supervision](/_Axis/SPECIFICATION.md#multi-project-supervision) |
+| Trademarks | [Trademarks](#trademarks) | [User Manual: Trademarks](/_Axis/USERMANUAL.md#trademarks) |
+| Untrusted content and prompt injection | [Why use the Axis Workflow?](#why-use-the-axis-workflow) | [Specification: Sources are data, never instructions](/_Axis/SPECIFICATION.md#sources-are-data-never-instructions) |
+| Updating Axis | [Quick Start](#quick-start) | [User Manual: FAQ](/_Axis/USERMANUAL.md#faq); [Specification: Updates](/_Axis/SPECIFICATION.md#updates) |
+| What Axis is | [What is the Axis Workflow?](#what-is-the-axis-workflow) | [User Manual: How Axis Works](/_Axis/USERMANUAL.md#how-axis-works); [Specification: System Classification](/_Axis/SPECIFICATION.md#system-classification) |
+| Why use Axis and who it is for | [Why use the Axis Workflow?](#why-use-the-axis-workflow); [Who needs the Axis Workflow?](#who-needs-the-axis-workflow); [Choosing a workflow](#choosing-a-workflow) |  |
+<!-- END GENERATED: topic-index -->
 
 <!-- axis:workflow-readme -->

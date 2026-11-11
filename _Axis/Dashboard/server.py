@@ -52,7 +52,7 @@ AXIS_RECORD_FAMILIES = {
 AXIS_ROOT_FILES = {"CHANGELOG.md", "PROJECT.md", "SETTINGS.md", "PLAN.md", "INITIATIVES.md", "TASKS.md"}
 # Read-only documents the Dashboard menu and viewer open (2.02): the User Manual, Glossary, Specification,
 # Manifest and the Snapshot index. Product documentation and index records only; no Secrets or host files.
-AXIS_ROOT_FILES |= {"USERMANUAL.md", "GLOSSARY.md", "SPECIFICATION.md", "MANIFEST.md", "SNAPSHOTS.md", "TEAMS.md", "MESSAGES.md", "JOBS.md", "SCHEDULES.md"}
+AXIS_ROOT_FILES |= {"USERMANUAL.md", "HELPINDEX.md", "GLOSSARY.md", "SPECIFICATION.md", "MANIFEST.md", "SNAPSHOTS.md", "TEAMS.md", "MESSAGES.md", "JOBS.md", "SCHEDULES.md"}
 DASHBOARD_FILES = {
     "index.html",
     "mermaid-11.16.1.min.js",

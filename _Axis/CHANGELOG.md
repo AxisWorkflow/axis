@@ -1,7 +1,7 @@
 # Changelog
 > **Purpose:** Record Axis release identity and the structural migrations needed to update an existing project safely.
 
-current-version: 3.19
+current-version: 3.20
 changelog-format: 1
 self-update-baseline: 26.08.19
 
@@ -39,6 +39,41 @@ update-impact: automatic
 ### Verification
 
 - None.
+
+## 3.20
+
+released: 2026-11-12
+
+update-impact: automatic
+
+### Structural Changes
+
+- Terminal response headers use 27 ASCII hyphens above and below the Axis Workflow title. WhatsApp, SMS and equivalent discrete-message channels use the title alone, blank lines between paragraphs and no final READY prompt, including its background-task variant. Required startup identity/status fields, lifecycle gates and exact-output exceptions remain in force.
+- The three entry files stay complete and byte-identical. The same-project, same-conversation guard skips repeated processing only with complete current unchanged entry text, completed startup and exact own identity; turn checks, compaction recovery and all holds remain mandatory. No host loader or token-saving claim follows from this guidance.
+- This release is the compatibility bridge. Its updater keeps three equal entry files through this release and, for any later release, requires a complete `AGENTS.md` with `CLAUDE.md` and `GEMINI.md` each holding exactly `@./AGENTS.md`. An updater-only step keeps the origin layout. Existing installations through 3.19 update to this release first, complete its full update and fresh-session consumption, and only then select a later release. Preserve customized entry content for review.
+
+- Add managed Resources `Guided-Project.md` and `Connect-Sources.md`. The existing onboard Command offers optional guided Project/Plan/Tasks setup; Inbox filing conditionally connects material sources to existing work. Both retain normal records, permissions and source immutability; neither adds a startup or per-turn probe.
+- Add managed `_Axis/HELPINDEX.md`, the Help Index: every topic of the README, User Manual and Specification, the words people use for it, and links to the sections that cover it. `^help <topic>` searches it and adds the matching topics and section links to its answer. The User Manual and the Specification open with a jump link to a Topic Index at their end, generated from the Help Index. The file is explanatory and lazy-loaded; startup and ordinary turns never read it.
+- Add `turn.py --check-only` for validation without renewing the session or writing context and host state. Ordinary served turns keep their existing renewal behavior.
+- Add Testing Calibration to `_Axis/DIRECTIVES.md` and `_Axis/Resources/Default-Directives.md`; regenerate its trigger in General, Worker, TeamMember and TeamLeader Role Text.
+- Distinguish hard bounds, agreed deadlines, advisory targets and forecasts in Budget guidance and delegation contracts; preserve cumulative usage and existing authority through interruption and compaction.
+
+### Project-State Migrations
+
+- Entry changes are managed Workflow replacements; project instructions remain preserved.
+- Existing startup default synchronization appends Testing Calibration only when absent and not opted out. Preserve existing and customized Directives; no test acceptance criterion changes during update.
+
+### Retired Paths
+
+- None.
+
+### Verification
+
+- The three entry files stay byte-identical; each retains its terminal marker and the 5,536-byte Fast Boot cap. The first-startup reading allowance grows by 1,601 bytes for the Testing Calibration Directive in `_Axis/DIRECTIVES.md`; no other allowance changes. Subagent refusal, turn checks, recovery, update/merge admission and role scope checks remain in force. Check old-release and updater-only compatibility as well as links and partial migration. Historical evidence remains unchanged.
+- `_Axis/HELPINDEX.md` is present after the update and listed in the Manifest; every Help Index and Topic Index link names an existing section.
+- Check fresh and idle sessions, incompatible options, revocation, missing or changed sessions, version and merge holds, unchanged files and timestamps, and ordinary renewal. Validation alone grants no authority to notify or act.
+- Verify template/default equality, fresh and existing-project delivery, opt-out, idempotence, generated role triggers and budgets, and activation/non-activation behavior. Retain existing failures and User decision boundaries.
+- Verify budget and contract explanations against their owning guidance; retain hard bounds, existing completion grace, actual usage and acceptance criteria.
 
 ## 3.19
 

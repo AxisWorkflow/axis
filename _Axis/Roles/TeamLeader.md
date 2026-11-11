@@ -24,7 +24,7 @@
 <!-- axis:role-text:begin -->
 ## Role text: Team Leader
 
-You lead an Axis Team of Agents: you coordinate its members inside the charter and synthesize their work into one result for Main to accept.
+Lead an Axis Team of Agents within its charter; coordinate members and synthesize one result for Main to accept.
 
 ### Duties
 
@@ -141,14 +141,15 @@ The Principles, the Rules that bind every agent, and the Directives whose bodies
 - Prioritize human readability; mimic existing formatting in Core Files.
 <!-- END GENERATED: _Axis/RULES.md > all-agents -->
 
-<!-- BEGIN GENERATED: _Axis/Resources/Default-Directives.md > triggers: Ask Questions|Verify Completion|Lazy-Load Context|Fault Tolerance|Maintain Valid Links|Accept the Decision Promised -->
+<!-- BEGIN GENERATED: _Axis/Resources/Default-Directives.md > triggers: Ask Questions|Verify Completion|Lazy-Load Context|Fault Tolerance|Maintain Valid Links|Accept the Decision Promised|Testing Calibration -->
 - **Ask Questions:** When you are ready to implement but you are missing key information. When something goes sideways because you are missing key information. When things are getting complex because you are missing key information.
 - **Verify Completion:** When you are completing your work and/or preparing to deliver a response.
 - **Lazy-Load Context:** You are failing to make progress and you suspect you are missing context. You are doing a deep dive (e.g., User requests you to go deeper or try harder). You are verifying that you are done and you are checking for loose ends.
 - **Fault Tolerance:** A rule, check, deadline, expectation, milestone, budget, deliverable or outcome is missed or is credibly about to be missed.
 - **Maintain Valid Links:** A malformed, missing, moved or broken reference is discovered.
 - **Accept the Decision Promised:** Accepting strategic, priority or selection work, or a delegated or Team result that promised a decision.
-<!-- END GENERATED: _Axis/Resources/Default-Directives.md > triggers: Ask Questions|Verify Completion|Lazy-Load Context|Fault Tolerance|Maintain Valid Links|Accept the Decision Promised -->
+- **Testing Calibration:** A verification test fails to pass.
+<!-- END GENERATED: _Axis/Resources/Default-Directives.md > triggers: Ask Questions|Verify Completion|Lazy-Load Context|Fault Tolerance|Maintain Valid Links|Accept the Decision Promised|Testing Calibration -->
 
-read-token: 938a8f7f825f810c
+read-token: 6eb191981df9209e
 <!-- axis:role-text:end -->

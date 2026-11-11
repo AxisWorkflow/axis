@@ -19,7 +19,7 @@ ENTRIES=('AGENTS.md','CLAUDE.md','GEMINI.md')
 PROJECT=('_Axis/PROJECT.md','_Axis/SETTINGS.md','_Axis/MINDSET.md','_Axis/DIRECTIVES.md','_Axis/ENVIRONMENT.md')
 MUTABLE=('_Axis/PLAN.md','_Axis/INITIATIVES.md','_Axis/TASKS.md','_Axis/SNAPSHOTS.md',*PROJECT)
 TOP=('.gitattributes','.gitignore','README.md','LICENSE',*ENTRIES)
-MANAGED=('_Axis/CHANGELOG.md','_Axis/CLA.md','_Axis/CONTRIBUTING.md','_Axis/LICENSE','_Axis/README.md','_Axis/USERMANUAL.md','_Axis/SPECIFICATION.md','_Axis/GLOSSARY.md','_Axis/MANIFEST.md','_Axis/PRACTICES.md','_Axis/PRINCIPLES.md','_Axis/RULES.md')
+MANAGED=('_Axis/CHANGELOG.md','_Axis/CLA.md','_Axis/CONTRIBUTING.md','_Axis/LICENSE','_Axis/README.md','_Axis/USERMANUAL.md','_Axis/SPECIFICATION.md','_Axis/HELPINDEX.md','_Axis/GLOSSARY.md','_Axis/MANIFEST.md','_Axis/PRACTICES.md','_Axis/PRINCIPLES.md','_Axis/RULES.md')
 PREFIX=('_Axis/Commands/','_Axis/Practices/','_Axis/Rules/','_Axis/Resources/','_Axis/Dashboard/','_Axis/Branding/','_Axis/Roles/')
 DECLARABLE=r'_Axis/[A-Z][A-Z0-9_-]*(?:\.md)?'
 # 2.01: a release may also declare a new Workflow machinery folder (for example `_Axis/Branding/`), so updaters
@@ -99,6 +99,18 @@ def version(s):
     if s.count('.')==1:
         major,minor=map(int,s.split('.'));return 1,major,minor,0,0
     d,sep,n=s.partition('-');y,m,day=map(int,d.split('.'));datetime.date(2000+y,m,day);return 0,y,m,day,int(n) if sep else 1
+
+def entry_contract(reader,p):
+    """3.20 and earlier keep parity; later releases have one canonical entry and two exact sibling imports.
+    An updater-only step leaves entries at from_version. The caller supplies safe, plan-bound byte reads;
+    this validates the literal pointer without expanding arbitrary paths or executing entry instructions."""
+    raw=[reader(n) for n in ENTRIES]
+    installed=p['from_version'] if p.get('updater_only') else p['to_version']
+    if version(installed)<=version('3.20'):return len(set(raw))==1
+    canonical=raw[0]
+    return (canonical.startswith(b'<!-- axis:begin -->\n') and canonical.endswith(b'<!-- axis:end -->\n')
+            and canonical.count(b'<!-- axis:begin -->')==canonical.count(b'<!-- axis:end -->')==1
+            and len(canonical)<18500 and raw[1:]==[b'@./AGENTS.md\n']*2)
 
 def declared(changelog,origin,target):
     """Top-level _Axis/ files named literally under Structural Changes or Retired Paths of releases after origin through target."""
@@ -213,7 +225,7 @@ def validate_plan(root,p):
         v=replacements.get(name)
         if v is None:return read(safe(root,name))
         require(v['after'] is not None,'required core file cannot retire');return read(safe(root,v['staged']))
-    require(len({proposed(n) for n in ENTRIES})==1,'planned entry mismatch')
+    require(entry_contract(proposed,p),'planned entry mismatch')
     if not p.get('updater_only'):require(re.search(r'^current-version: '+re.escape(p['to_version'])+r'$',proposed('_Axis/CHANGELOG.md').decode(),re.M),'planned target version mismatch')
     if '_Axis/SETTINGS.md' in replacements:
         require(re.search(r'### Storage Policy\n(?:(?!\n### ).)*?\*\*Value:\*\* auto(?:\n|$)',proposed('_Axis/SETTINGS.md').decode(),re.S),'storage-policy transition requires reviewed manual migration')
@@ -244,12 +256,12 @@ def adopted(root,p,reconciling=False):
     drift=[n for n,v in p['preserved'].items() if not (reconciling and n in p['reconciliation']) and identity(safe(root,n))!=v]
     strict=sorted(n for n in drift if strict_path(n))
     require(not strict,'preserved Axis state changed after apply: '+', '.join(strict[:5])+(' and more' if len(strict)>5 else '')+'; restore the recorded content to continue adoption')
-    require(len({read(safe(root,n)) for n in ENTRIES})==1,'entry parity failed')
+    require(entry_contract(lambda n:read(safe(root,n)),p),'entry parity failed')
     require(p.get('updater_only') or re.search(r'^current-version: '+re.escape(p['to_version'])+r'$',read(safe(root,'_Axis/CHANGELOG.md')).decode(),re.M),'installed version mismatch')
     return sorted(n for n in drift if not strict_path(n))
 def after(root,p,reconciling=False):
     require(live(root,p,'after') and preserved(root,p,reconciling),'applied or preserved state drift')
-    require(len({read(safe(root,n)) for n in ENTRIES})==1,'entry parity failed')
+    require(entry_contract(lambda n:read(safe(root,n)),p),'entry parity failed')
     require(p.get('updater_only') or re.search(r'^current-version: '+re.escape(p['to_version'])+r'$',read(safe(root,'_Axis/CHANGELOG.md')).decode(),re.M),'installed version mismatch')
 
 def recovery_directory(root,tx):

@@ -1,7 +1,7 @@
 # Version Control
 > **Purpose:** Define safe, adaptive Git setup, synchronization, checkpoints, encrypted Secrets transport, and rollback.
 
-Git is optional but recommended. A local repository gives the project an undo history; a configured remote also gives `^git`, `^save`, and `^resume` one shared transport. Creating the remote is the User's decision. After User connects one, invoking those Commands is standing authorization for their documented fetch, fast-forward, ordinary push, and encrypted-capsule actions - never for a merge, rebase, reset, force-push, visibility change, or new remote.
+Git is optional but recommended. A local repository gives the project an undo history; a configured remote also gives `^git`, `^save`, and `^resume` one shared transport. Creating the remote is the User's decision. After User connects one, invoking those Commands is standing authorization for their documented fetch, fast-forward, verified disjoint-path merge, ordinary push, and encrypted-capsule actions. A merge is allowed only by the Diverged procedure below; overlapping or uncertain paths require reviewed reconciliation. This grants no rebase, reset, force-push, visibility change, or new remote.
 
 ## Admission and Repository Boundary
 
@@ -67,7 +67,7 @@ After a successful fetch, classify `HEAD...@{upstream}` by commit ancestry, neve
 | 0 | 0 | equal | None unless local files need a checkpoint |
 | positive | 0 | local ahead | ordinary push |
 | 0 | positive | remote ahead | fast-forward only when the receiving gate passes |
-| positive | positive | diverged | STOP; preserve both sides and propose reconciliation |
+| positive | positive | diverged | Use the verified disjoint-path procedure below; overlap or uncertainty stops for reconciliation |
 
 Use `git rev-list --left-right --count HEAD...@{upstream}` or an equivalent ancestry check. Never call a state merely ahead or behind from a stale tracking reference.
 

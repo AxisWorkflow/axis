@@ -1,6 +1,8 @@
 # ^onboard
 > **Purpose:** Guide a new User through a five-minute tour - one Note, one Idea, one Review.
 
+For `^onboard setup` or an explicit request for guided Project, Plan and Tasks, load [Guided Project](../Resources/Guided-Project.md) only after User selects it, then STOP when it returns. If that resource is unavailable, say so and offer the existing tour or `^plan`; do not claim guided setup ran. For bare `^onboard`, mention the optional setup route while offering the tour below; follow it only if selected. Declining loads no guided procedure.
+
 1. Offer the tour in two lines: you will capture one Note, one Idea, and generate the project's first Review - about five minutes, and everything lands in the project for keeps. If User declines: STOP.
 
 2. Note. Explain in one line: a Note is a short-term fact the project should remember between sessions. Ask User for one real fact worth keeping (a deadline, a preference, a constraint). Save it per [Practices > Notes], and tell User where it landed (`_Axis/Notes/`).

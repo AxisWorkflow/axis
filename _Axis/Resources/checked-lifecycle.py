@@ -35,7 +35,7 @@ ROLE_LEDGER={'issuers': ('auxiliary', 'external', 'main', 'worker'), 'submission
 # Fresh Markers of these roles hold an ordinary save until they return.
 SAVE_BLOCKING = tuple(r['subject'].rstrip() for r in ROLE_TABLE if r['cls'] == 'session' and r['blocks_save'])
 
-HEADER = '━━━━━━━━━━━━━━━━━━━━━━━━━━━\n A X I S   W O R K F L O W\n━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+HEADER = '---------------------------\n A X I S   W O R K F L O W\n---------------------------'
 INDEX = '_Axis/SNAPSHOTS.md'
 
 
@@ -230,7 +230,7 @@ class Lifecycle:
         version = versions[0] if len(versions) == 1 else 'Unavailable'
         context = 'Two-pass' if self.io.setting('Context Management') == 'Two-Pass' else 'Default'
         return HEADER + '\n\n' + '\n'.join(('  Project:  ' + title, '  Folder:   ' + self.folder(), '  Session:  ' + self.io.sid,
-                '  Version:  ' + version, '  Context:  ' + context, '  Status:   Stopped', '  Agent:    Main')) + '\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nThis session has stopped. Start a new session to continue.'
+                '  Version:  ' + version, '  Context:  ' + context, '  Status:   Stopped', '  Agent:    Main')) + '\n---------------------------\n\nThis session has stopped. Start a new session to continue.'
 
     def retire_session(self):
         # A distinct fixed launcher grant represents explicit shutdown authority.

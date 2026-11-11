@@ -233,3 +233,18 @@ Chat scrolls away and loses its formatting. A Memo in `_Memos/` keeps what User 
 - Load [Practices > Memos] and write or update the memo.
 - Record decisions, tasks and open asks canonically first; the memo links to them.
 - Reply with the outcome in a few lines and a link to the memo.
+
+## Testing Calibration
+
+#### Keywords
+verification, test failure, acceptance criteria, timeout, false positive, repeated testing
+#### Description
+Keep verification aligned with the test's original purpose and avoid uninformative reruns.
+#### Triggers
+- A verification test fails to pass.
+#### Behavior
+- Before repeating or changing the test, establish its original intended requirement and compare the failed condition with that requirement. Distinguish a substantive defect, a setup or observation failure, and an unnecessarily or arbitrarily strict test. Cost or inconvenience alone does not make a requirement unnecessary.
+- If the evidence indicates that the test is too strict and its failure does not signal a substantive failure of the intended requirement, explain this to User and discuss concrete revision options, their consequences and a recommendation. Route the discussion through Main when your role requires it. If the original intent is unclear, ask rather than assume.
+- Obtain User's decision before relaxing, removing or bypassing an acceptance criterion. Ordinary repairs that preserve the intended criterion follow existing authority. Continue unrelated authorized work while a decision is pending.
+- Do not repeat an unchanged test without a concrete reason the rerun could yield new evidence. State what changed or what uncertainty another run will resolve.
+- Preserve the original failed result. Record any agreed revision and verify it against the intended requirement; report the revised result separately. Reassessing the test does not itself turn a failure into a pass.

@@ -244,7 +244,7 @@ def adopt(sid):
         if miss or bad or 'archive_to' in rules:edits.append({'path':n,'must_contain':miss,'must_not_contain':bad,**({'archive_to':rules['archive_to']} if 'archive_to' in rules else {})})
     if edits:
         print(json.dumps({'axis_boot':'ADOPT','session':sid,'transaction':tx,'from':plan['from_version'],'to':plan['to_version'],'edits':edits}))
-        print(f"ADOPT: this startup is adopting the finished update {plan['from_version']} -> {plan['to_version']}. Make the listed edits to those records (keep them true to the project), then run: python3 _Axis/Resources/boot.py --finish-adoption {sid} --host {o.host!r} --model {o.model!r} --harness {o.harness} --spawn {o.spawn} --parallel {o.parallel}. Do not answer or start other work until it prints READY.")
+        print(f"ADOPT: this startup is adopting the finished update {plan['from_version']} -> {plan['to_version']}. Make the listed edits to those records (keep them true to the project), then run: python3 _Axis/Resources/boot.py --finish-adoption {sid} --host {o.host!r} --model {o.model!r} --harness {o.harness} --interaction {o.interaction!r} --spawn {o.spawn} --parallel {o.parallel}. Do not answer or start other work until it prints READY.")
         sys.exit(4)
     records={}
     for n in plan['reconciliation']:
@@ -702,18 +702,24 @@ try:
   if (R/'host-context.py').is_file():run(R/'host-context.py','bind','--session',sid,*(('--host',{'claude-code':'claude','codex':'codex'}[o.harness]) if o.harness in ('claude-code','codex') else ()))
  except BaseException:pass  # optional; turn.py binds on the next renewed lease
 
- bar='━'*27
+ bar='-'*27
  print(json.dumps({'axis_boot':'READY','session':sid,'notices':notices,'pending':pending,'later':later}))
  print('Banner for the user (start your reply with it, as is, after any pending items; it repeats the header so the complete block shows together):')
  # Four blank lines set the block apart from any text the model printed during startup (User design, 2026-10-08).
- print(f"```text\n\n\n\n\n{bar}\n A X I S   W O R K F L O W\n{bar}\n  Project:  {name}\n  Folder:   {folder}\n  Session:  {sid}\n  Version:  {ver}\n  Context:  {context_label}\n  Status:   Ready\n  Agent:    Main\n{bar}\n```")
+ if o.interaction=='channel':
+  print(f"A X I S   W O R K F L O W\n\n  Project:  {name}\n  Folder:   {folder}\n  Session:  {sid}\n  Version:  {ver}\n  Context:  {context_label}\n  Status:   Ready\n  Agent:    Main")
+ else:
+  print(f"```text\n\n\n\n\n{bar}\n A X I S   W O R K F L O W\n{bar}\n  Project:  {name}\n  Folder:   {folder}\n  Session:  {sid}\n  Version:  {ver}\n  Context:  {context_label}\n  Status:   Ready\n  Agent:    Main\n{bar}\n```")
  print('Greeting: one blank line under the banner, greet the user in one line and introduce yourself as Axel, the Main Agent (for example "Hi, Axel here.").')
  for x in notices:print('Notice for the user: '+x)
  for x in pending:print('Pending before the first answer: '+x)
  print('Before any answer other than the greeting or a requested exact reply: read _Axis/Resources/Load-Starting-Context.md (core rules), _Axis/Roles/Main.md, _Axis/INSTRUCTIONS.md, _Axis/MINDSET.md, _Axis/DIRECTIVES.md, _Axis/PLAN.md, _Axis/TASKS.md, the newest Snapshots and the Notes index'+('; and: '+'; '.join(later) if later else '')+'.')
  print(f'On every later turn, first run: python3 _Axis/Resources/turn.py --session {sid}')
- print('Reply frame, required on every reply that hands the turn back to the user, this one included (exceptions: _Axis/Rules/Speaking.md > Final response boundary): this reply opens with the banner instead of the header; every later reply starts with the header, with nothing before it, not even a sentence; every reply ends with the closing; progress notes during a turn get neither. A later reply looks like this (the fence only marks the example; never print the fence itself):')
- print(f'```text\n{bar}\n A X I S   W O R K F L O W\n{bar}\n\n{{the answer, leading with the outcome}}\n\n> READY {folder}:\n```')
+ print('Reply frame, required on every reply that hands the turn back to the user, this one included (exceptions: _Axis/Rules/Speaking.md > Final response boundary): this reply opens with the banner instead of the header; every later reply starts with the header, with nothing before it, not even a sentence; on WhatsApp, SMS and equivalent messaging channels use only A X I S   W O R K F L O W followed by a blank line, without dividers; on terminals every reply ends with the closing; on WhatsApp, SMS and equivalent discrete-message channels that already identify the turn, omit the closing including its background-task variant; progress notes during a turn get neither. A later terminal reply looks like this (the fence only marks the example; never print the fence itself):')
+ if o.interaction=='channel':
+  print('Later messaging reply: A X I S   W O R K F L O W, one blank line, then the answer with blank lines between paragraphs; no closing prompt.')
+ else:
+  print(f'```text\n{bar}\n A X I S   W O R K F L O W\n{bar}\n\n{{the answer, leading with the outcome}}\n\n> READY {folder}:\n```')
 except SystemExit:raise
 except StartupStall as e:interrupted('suspected hang in '+e.args[0]['operation']+'; the stalled helper was stopped and its journal is retained for recovery',stall=e.args[0])
 except BaseException as e:interrupted(type(e).__name__)

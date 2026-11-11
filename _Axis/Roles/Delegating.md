@@ -40,7 +40,7 @@ Every General-token contract has these labelled parts, in this order. `envelope.
 - `CRITICAL RULES:` how critical rules apply here, for example which checks may not change.
 - `CONSTRAINTS:` holds and constraints that bind, and the Working Language when it is not English.
 - `SCOPE AND AUTHORITY:` read and write scope; any grant (writes, helpers, starting agents); whether host temporary space may be used, with unique names; tools that carry the User's sign-ins are off limits, even for reading, unless granted.
-- `LIMITS:` the exact Marker path and its `.kill` path, time and usage limits.
+- `LIMITS:` the exact Marker path and its `.kill` path; classify each time or usage figure as a hard bound, deadline, target or forecast under [Rules > Budget]; state hard time bounds in absolute UTC. Carry cumulative usage through interruption and compaction, which renew neither authority nor limits; require the existing envelope and guidance recovery before continuation.
 - `SOURCES:` what to read, and how to ask for a missing source.
 - `RETURN:` the return shape; cite your own Tracking lines by time, never by quoting identifiers.
 - `DEVIATIONS:` any declared departure from the role text, such as a substituted stance, with its reason; or `none`.

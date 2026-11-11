@@ -250,6 +250,7 @@
     <nav id="menu" role="menu" hidden>
       <div class="menu-head">Read</div>
       <a href="./#doc=../USERMANUAL.md" target="_blank" rel="noopener" role="menuitem">User Manual</a>
+      <a href="./#doc=../HELPINDEX.md" target="_blank" rel="noopener" role="menuitem">Help Index</a>
       <a href="./#doc=../GLOSSARY.md" target="_blank" rel="noopener" role="menuitem">Glossary</a>
       <a href="./#doc=../PROJECT.md" target="_blank" rel="noopener" role="menuitem">Project</a>
       <a href="./#doc=../PLAN.md" target="_blank" rel="noopener" role="menuitem">Plan</a>
@@ -1295,12 +1296,12 @@ function subjectOf(md, fallback){
 }
 function dashPath(href, base){                      // a served project path as seen from _Axis/Dashboard/, or null
   const raw = String(href || "").trim();
-  if (!raw || raw.startsWith("#") || /^[a-z][a-z0-9+.-]*:/i.test(raw)) return null;
+  if (!raw || /^[a-z][a-z0-9+.-]*:/i.test(raw)) return null;
   try {
     const root = "http://axis.invalid/_Axis/Dashboard/";
     const url = new URL(raw, new URL(base || "./", root));
     if (url.origin !== "http://axis.invalid" || !url.pathname.startsWith("/_Axis/") || !/\.md$/i.test(url.pathname)) return null;
-    return ".." + decodeURIComponent(url.pathname).slice("/_Axis".length);
+    return ".." + decodeURIComponent(url.pathname).slice("/_Axis".length) + url.hash;
   } catch(e){ return null; }
 }
 function mdInline(text, base){                      // escape first, then a small safe subset of inline Markdown
@@ -1310,14 +1311,19 @@ function mdInline(text, base){                      // escape first, then a smal
     const target = href.replace(/&amp;/g, "&");
     if (/^https?:\/\//i.test(target)) return `<a href="${esc(target)}" target="_blank" rel="noopener">${label}</a>`;
     const path = dashPath(target, base);
-    return path ? `<a href="${esc(path)}" data-doc="${esc(path)}">${label}</a>` : `<span class="muted">${label}</span>`;
+    return path ? `<a href="./#doc=${encodeURIComponent(path)}" data-doc="${esc(path)}">${label}</a>` : `<span class="muted">${label}</span>`;
   });
   s = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>").replace(/(^|[\s(])\*([^*\s][^*]*)\*/g, "$1<em>$2</em>").replace(/(^|[\s(])_([^_\s][^_]*)_(?=[\s).,;:]|$)/g, "$1<em>$2</em>");
   return s.replace(/\u0000(\d+)\u0000/g, (_, i) => `<code>${codes[+i]}</code>`);
 }
+function headingSlug(text){
+  return String(text).replace(/\[([^\]]+)\]\([^)]*\)/g, "$1").replace(/`/g, "")
+    .replace(/\*\*([^*]+)\*\*/g, "$1").replace(/(?<![\w*])\*([^*]+)\*(?![\w*])/g, "$1")
+    .trim().toLowerCase().replace(/[^\p{L}\p{N}\p{M}\p{Pc} _-]/gu, "").replace(/ /g, "-");
+}
 function mdToHtml(md, base){                        // headings, lists, tables, quotes, code, rules, paragraphs
   const lines = String(md || "").replace(/\r\n/g, "\n").split("\n");
-  const out = []; let para = [], i = 0;
+  const out = [], anchors = new Set(); let para = [], i = 0;
   const flush = () => { if (para.length) { out.push(`<p>${mdInline(para.join(" "), base)}</p>`); para = []; } };
   const cells = l => l.trim().replace(/^\||\|$/g, "").split("|").map(c => c.trim());
   while (i < lines.length) {
@@ -1325,9 +1331,13 @@ function mdToHtml(md, base){                        // headings, lists, tables, 
     if (/^```/.test(t)) { flush(); const code = []; i++;
       while (i < lines.length && !/^```/.test(lines[i].trim())) code.push(lines[i++]);
       out.push(`<pre><code>${esc(code.join("\n"))}</code></pre>`); i++; continue; }
+    if (/^<!--\s*(?:BEGIN|END) GENERATED:.*-->$/.test(t)) { flush(); i++; continue; }
     if (!t) { flush(); i++; continue; }
     const h = t.match(/^(#{1,6})\s+(.*)$/);
-    if (h) { flush(); out.push(`<h${h[1].length}>${mdInline(h[2], base)}</h${h[1].length}>`); i++; continue; }
+    if (h) { flush(); const stem = headingSlug(h[2]); let anchor = stem, suffix = 0;
+      while (anchors.has(anchor)) anchor = stem + "-" + (++suffix);
+      anchors.add(anchor);
+      out.push(`<span id="${esc(anchor)}" data-doc-anchor="${esc(anchor)}" aria-hidden="true"></span><h${h[1].length}>${mdInline(h[2], base)}</h${h[1].length}>`); i++; continue; }
     if (/^(-{3,}|\*{3,}|_{3,})$/.test(t)) { flush(); out.push("<hr>"); i++; continue; }
     if (t.startsWith("|") && i + 1 < lines.length && /^\|?\s*:?-{3,}/.test(lines[i + 1].trim())) {
       flush(); const head = cells(t); i += 2; const rows = [];
@@ -1360,7 +1370,16 @@ function mdToHtml(md, base){                        // headings, lists, tables, 
   flush();
   return out.join("\n");
 }
+function scrollDocSection(container, path){
+  const fragment = String(path || "").split("#").slice(1).join("#");
+  if (!fragment) return;
+  let wanted; try { wanted = decodeURIComponent(fragment); } catch(e) { return; }
+  const anchor = Array.from(container.querySelectorAll("[data-doc-anchor]"))
+    .find(node => node.getAttribute("data-doc-anchor") === wanted);
+  if (anchor) anchor.scrollIntoView({block:"start"});
+}
 async function docView(path){
+  path = path.split("#")[0];
   try { const md = await read(path), title = subjectOf(md, path.split("/").pop());
         const lines = md.replace(/\r\n/g, "\n").split("\n"), first = lines.findIndex(l => l.trim());
         if (first >= 0 && !/^#/.test(lines[first].trim())) lines.splice(first, 1);   // a plain subject line repeats the title
@@ -1399,6 +1418,7 @@ async function showView(view, push=true){
   el("modalTitle").textContent = view.title || shown.title;
   el("modalBody").innerHTML = shown.html;
   el("modalBody").scrollTop = 0;
+  if (view.kind === "doc") scrollDocSection(el("modalBody"), view.path);
   const open = view.kind === "doc" ? "./#doc=" + view.path : view.kind === "family" ? "./#family=" + view.family : view.open;
   el("modalOpen").hidden = !open;
   if (open) el("modalOpen").setAttribute("href", open);
@@ -1422,11 +1442,12 @@ function readerTarget(){
   const hash = String((typeof location !== "undefined" && location.hash) || "");
   const m = hash.match(/^#(doc|family)=(.+)$/);
   if (!m) return null;
-  const value = decodeURIComponent(m[2]);
+  let value; try { value = decodeURIComponent(m[2]); } catch(e) { return null; }
   if (m[1] === "family") return FAMILY_DIRS[value] ? {kind:"family", family:value} : null;
   const path = dashPath(value, "./");
   return path ? {kind:"doc", path} : null;
 }
+let readerPosition = null;
 async function renderReader(target, partial){       // a reader tab: one document or record list, full page, same live refresh
   el("reader").hidden = false; el("cards").hidden = true;
   const shown = target.kind === "doc" ? await docView(target.path) : await familyView(target.family);
@@ -1436,6 +1457,11 @@ async function renderReader(target, partial){       // a reader tab: one documen
   try { const m = (await read(F.project)).match(/^#\s+Project:\s*(.+)/m);
         el("projname").textContent = m && !m[1].includes("{{") ? m[1].trim() : "Not set"; } catch(e){}
   await renderMetrics(partial);
+  const position = target.kind === "doc" ? target.path : "family=" + target.family;
+  if (position !== readerPosition) {
+    if (target.kind === "doc") scrollDocSection(el("reader"), target.path);
+    readerPosition = position;
+  }
 }
 function onDashboardClick(event){
   const wrap = el("menuwrap");
@@ -1443,10 +1469,13 @@ function onDashboardClick(event){
   const link = event.target && event.target.closest ? event.target.closest("a") : null;
   if (!link || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button === 1) return;
   const family = link.getAttribute("data-family");
-  const path = link.getAttribute("data-doc") || (link.getAttribute("target") ? null : dashPath((link.getAttribute("href") || "").split("#")[0], "./"));
+  const path = link.getAttribute("data-doc") || (link.getAttribute("target") ? null : dashPath(link.getAttribute("href") || "", "./"));
   if (!family && !path) return;
   event.preventDefault();
-  if (readerTarget()) { location.hash = family ? "family=" + family : "doc=" + path; return; }
+  if (readerTarget()) {
+    if (path && readerTarget().path === path) scrollDocSection(el("reader"), path);
+    location.hash = family ? "family=" + family : "doc=" + encodeURIComponent(path); return;
+  }
   showView(family ? {kind:"family", family} : {kind:"doc", path});
 }
 async function renderSnapshots(partial){           // the last five Snapshot summaries from the Snapshot index, newest first

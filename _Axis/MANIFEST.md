@@ -29,7 +29,7 @@
 
 - `_Axis/Agents/`
 - `_Axis/Tracking/`
-- `_Axis/Archive/` - the default Archive root; keeps its `.gitkeep` even when [Settings > Archive Location] names another folder.
+- `_Axis/Archive/` - legacy archive lookup; retain existing contents and its `.gitkeep`. New history uses family-local `Archive/` directories; approved cold history follows its catalog and receipts.
 - `_Axis/Audit/`
 - `_Axis/Commands/`
 - `_Axis/CX/`
@@ -52,7 +52,7 @@
 - `_Axis/Snapshots/`
 - `_Axis/Supervision/`
 - `_Axis/Tasks/`
-- `_Axis/Updates/` - the update journal: one folder per `^update` transaction (plan, preimages, receipts), kept as history; once a newer release is adopted an older one is compacted to its receipts and `compacted.json`, plus the stable `operation.lck` (ignored by Git). A `.DS_Store` file that macOS Finder leaves there is ignored.
+- `_Axis/Updates/` - durable update recovery pointers and compact completion receipts, plus stable `operation.lck` (ignored by Git). Protected unfinished recovery lives under `_Temp/Update-{ID}/`; retention and retirement follow the verified update transaction. A `.DS_Store` file that macOS Finder leaves there is ignored.
 
 ### Files
 
@@ -62,6 +62,7 @@
 - `_Axis/LICENSE` - Canonical MIT License for Axis-authored Workflow files.
 - `_Axis/USERMANUAL.md` - The User Manual: how to use Axis; explanatory and lazy-loaded during ordinary operation.
 - `_Axis/SPECIFICATION.md` - The technical and compliance reference; explanatory and lazy-loaded during ordinary operation.
+- `_Axis/HELPINDEX.md` - The Help Index: every documented topic, the words people use for it and its section links; explanatory, read only for `^help`.
 - `_Axis/DIRECTIVES.md`
 - `_Axis/ENVIRONMENT.md`
 - `_Axis/GLOSSARY.md`
@@ -239,6 +240,7 @@ Optional project state: `EXCEPTIONS.md` in the Axis control folder, created on f
 - `_Axis/Resources/Context-Check.md` - Recovery sets and the no-Python path after compaction.
 - `_Axis/Resources/Check-Remote-Freshness.md`
 - `_Axis/Resources/remote-freshness.py` - optional bounded startup Git check.
+- `_Axis/Resources/Connect-Sources.md` - conditional material relevance after Inbox filing; existing Wiki and decision records.
 
 - `_Axis/Resources/Continue-Session.md`
 - `_Axis/Resources/Load-Starting-Context.md`
@@ -293,6 +295,7 @@ Optional project state: `EXCEPTIONS.md` in the Axis control folder, created on f
 - `_Axis/Resources/secrets-capsule.sh` - optional encrypted Secrets transport helper.
 - `_Axis/Resources/Start-Auxiliary.md`
 - `_Axis/Resources/Start-Project.md`
+- `_Axis/Resources/Guided-Project.md` - Optional Project, Plan and Tasks interview, loaded only when selected through onboarding.
 - `_Axis/Resources/Start-Session.md`
 - `_Axis/Resources/Start-Subagent.md`
 - `_Axis/Resources/Start-Wiki.md`
@@ -301,7 +304,7 @@ Optional project state: `EXCEPTIONS.md` in the Axis control folder, created on f
 - `_Axis/Resources/Template-Mindset.md`
 - `_Axis/Resources/Template-Profiles.md`
 - `_Axis/Resources/split-history.py`
-- `_Axis/Resources/axis-dashboard-meridian.png` - README illustration of the default Dashboard.
+- `_Axis/Resources/axis-dashboard-meridian.png` - README illustration of the default Dashboard, shown on a fictional demo project.
 - `_Axis/Roles/Main.md`, `_Axis/Roles/Auxiliary.md`, `_Axis/Roles/Subagent.md` - session role rows.
 - `_Axis/Roles/Assistant.md`, `_Axis/Roles/GroupAgent.md`, `_Axis/Roles/Observer.md` - declared session role rows with their guidance.
 - `_Axis/Roles/CX.md`, `_Axis/Roles/Wiki.md`, `_Axis/Roles/Local.md`, `_Axis/Roles/General.md`, `_Axis/Roles/Lookup.md`, `_Axis/Roles/Worker.md`, `_Axis/Roles/TeamMember.md`, `_Axis/Roles/TeamLeader.md` - delegated role rows; all but Wiki and Local carry Role Text.

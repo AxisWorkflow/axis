@@ -3,6 +3,7 @@
 
 Runs from the project root at the start of every later turn (and about every 30 minutes inside a long turn):
   python3 _Axis/Resources/turn.py --session {Session ID}
+With --check-only it validates without renewing or writing context/host state; it does not authorize a notification or effect.
 With --recover it renews nothing and prints the files to re-read after compaction plus pointers to current state.
 Exit 0 prints OK (plus any items to handle, then the reply-frame reminder for roles with a reply frame); 3 KILLED; 4 LOST LEASE (missing Marker); 6 FOREIGN MAIN or TAKEN OVER;
 7 READ-ONLY (the host refused the renewal); 8 VERSION CHANGED or VERSION UNVERIFIED; 10 CONTEXT LOST (a context check failed); 2 or 5 errors. It never recreates a missing Marker, never executes an
@@ -40,7 +41,10 @@ def role_of(first):
     return None
 
 a=argparse.ArgumentParser(description='Axis per-turn lease check');a.add_argument('--session',required=True);a.add_argument('--boot-version');a.add_argument('--recover',action='store_true',help='read-only: list the recovery set and state pointers; renews nothing')
+a.add_argument('--check-only',action='store_true',help='validate the existing lease without renewing it or writing context/host state')
 a.add_argument('--prove',nargs=2,metavar=('CHECK_ID','ANSWERS'),help="answer a context check: 'a | b | c'");a.add_argument('--reloaded',action='store_true',help='record a reload the context check ordered');a.add_argument('--gate',action='store_true',help='before a commit, push, spawn, publication or deletion: a context check is due after 10 minutes');o=a.parse_args()
+if o.check_only and (o.recover or o.prove or o.reloaded or o.gate):a.error('--check-only cannot combine with --recover, --prove, --reloaded or --gate')
+if o.check_only:sys.dont_write_bytecode=True
 root=Path.cwd().resolve();agents=root/'_Axis/Agents'
 if not re.fullmatch(r'\d{4}(\.\d{2}){5}\.\d{3}Z',o.session):print('ERROR: not a Session ID.');sys.exit(2)
 marker=agents/f'{o.session}.md'
@@ -167,7 +171,7 @@ if role['exclusive']:
 # Idle is not lost (2.01): a Marker at or over one hour old counts as dead for OTHER sessions deciding whether they may
 # become Main, but its own session may resume when nothing replaced it - no tombstone (checked above), no live foreign
 # Main (checked above), and for Main the session-id Flag still names this session.
-if age>=3600:
+if age>=3600 and not o.check_only:
     items.append(f'this session was idle {int(age//60)} minutes; its lease was renewed because no other session replaced it - mention it to the user in one line')
 # Renewal refused by a read-only host (sandbox or file system) is not a missing Marker: report it, fail closed.
 readonly='READ-ONLY: this host refused to renew your Marker (read-only sandbox or file system); the Marker is still present. Make no shared writes and do not create or repair any Marker; ask the user to rerun this session with write access.'
@@ -182,7 +186,7 @@ try:
         if (current.st_dev,current.st_ino)!=(marker_info.st_dev,marker_info.st_ino) or current.st_nlink!=1 or os.read(fd,len(marker_bytes)+1)!=marker_bytes:
             held('LOST LEASE',4,'Your Marker changed during validation.')
         if (agents/f'{o.session}.kill').exists():held('KILLED',3,'User stopped this Axis identity; it must not resume.')
-        if not o.recover:os.utime(fd)
+        if not (o.recover or o.check_only):os.utime(fd)
         after=marker.stat()
         if (agents/f'{o.session}.kill').exists():held('KILLED',3,'User stopped this Axis identity during renewal; it must not resume.')
         if (after.st_dev,after.st_ino)!=(current.st_dev,current.st_ino):held('LOST LEASE',4,'Your Marker changed during renewal.')
@@ -336,6 +340,11 @@ def recover(exit=True):
         keep.append(x);size+=len(x)+1
     print('\n'.join(keep))
     if exit:sys.exit(0)
+if o.check_only:
+    print('OK: lease validated; not renewed.')
+    if age>=3600:print(f'Idle: {int(age//60)} minutes; this check did not renew the lease.')
+    for x in items:print('Handle before answering: '+x)
+    sys.exit(0)
 if o.recover:recover()
 if o.prove or o.reloaded:
     cc=context_check()
@@ -365,4 +374,4 @@ if role['created_by'] in ('helper','claim'):
 for x in items:print('Handle before answering: '+x)
 if role['reply_frame']:
     home=os.path.expanduser('~');folder=str(root);folder='~'+folder[len(home):] if folder==home or folder.startswith(home+'/') else folder
-    print(f'Reply frame: start your reply with the Axis header, with nothing before it, and end with one blank line, no divider, then > READY {folder}: (or > READY {folder} (background tasks running): while background tasks run) - progress notes get neither.')
+    print(f'Reply frame: start your reply with the Axis header, with nothing before it, and on terminals end with one blank line, no divider, then > READY {folder}: (or > READY {folder} (background tasks running): while background tasks run). On WhatsApp, SMS and equivalent messaging channels, open with only A X I S   W O R K F L O W followed by a blank line, without dividers, and omit the closing including its background-task variant. Separate paragraphs with blank lines. Progress notes get neither.')

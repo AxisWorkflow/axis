@@ -33,3 +33,5 @@ Filing new arrivals is not a reorganization of existing content, so it needs no 
 
 - Log one Event per run: each item and its destination, plus each held item and the reason.
 - Tell User in one short line: how many items were filed, where they went, and what is waiting for an answer.
+
+After filing and its short report, if content already read could materially affect a known goal, constraint, decision or Task, or User asks how a filed item relates to current work, load [Connect Sources to Decisions](../Resources/Connect-Sources.md). Otherwise stop at the filing report; do not add a project-wide or every-turn relevance scan.
