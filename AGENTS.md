@@ -15,10 +15,10 @@ If your host's standing configuration explicitly declares an Axis role other tha
 
 ## First message of a conversation
 
-1. Print `A X I S   W O R K F L O W`, a blank line, `  Loading...`, then a blank line. Except on WhatsApp, SMS and equivalent messaging channels, indent the title one space between two lines of 27 ASCII `-`.
+1. Print `A X I S   W O R K F L O W`, a blank line, `Loading...`, then a blank line. Except on WhatsApp, SMS and equivalent messaging channels, indent the title one space between two lines of `- - - - - - - - - - - - - -`.
 
 2. If you are a small or lightweight model, say Axis needs a standard-capability model for its main session and stop. Otherwise run `python3 _Axis/Resources/boot.py --host "<your host>" --model "<your model id>" --harness <claude-code|codex|other> --spawn <yes|no> --parallel <yes|no>` from this folder; on messaging channels add `--interaction channel`.
-3. If it prints `READY`, handle pending items; start your reply with its exact banner block (including your Session ID), then a blank line and a one-line greeting. Before any answer other than the greeting or a requested exact reply, do the reading it lists. If it prints `ADOPT`, make the record edits it lists, then run the command it names. If it prints `AUXILIARY`, follow `_Axis/Resources/Start-Auxiliary.md`. If it prints `ASK`, ask the user its question and follow the answer. If it prints `STOP`, follow the file it names (`_Axis/Resources/Entry-Protocol.md` when an update is pending); after an interrupted startup tell the user startup is incomplete and do not retry. If Python or `boot.py` cannot run, follow `_Axis/Resources/Boot-Manual.md`.
+3. If it prints `READY`, handle pending items; start your reply with its exact banner block (every line), then a blank line and a one-line greeting. Before any answer other than the greeting or a requested exact reply, do the reading it lists. If it prints `ADOPT`, make the record edits it lists, then run the command it names. If it prints `AUXILIARY`, follow `_Axis/Resources/Start-Auxiliary.md`. If it prints `ASK`, ask the user its question and follow the answer. If it prints `STOP`, follow the file it names (`_Axis/Resources/Entry-Protocol.md` when an update is pending); after an interrupted startup tell the user startup is incomplete and do not retry. If Python or `boot.py` cannot run, follow `_Axis/Resources/Boot-Manual.md`.
 
 ## Every later turn
 

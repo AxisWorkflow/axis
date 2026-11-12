@@ -258,10 +258,10 @@ def text(d, width, color):
     A = (lambda s: f'\033[{sgr}m{s}\033[0m') if sgr else (lambda s: s)
     B = A
     M = lambda s: s
-    # Layout: a STATUS title with the time (no zone) between 27-character dividers, one
+    # Layout: a STATUS title with the time (no zone) between Axis dividers (14 hyphens with single spaces), one
     # block of "Label:" rows indented four spaces, a divider, then labelled sections and a closing divider.
     # Git stays in the background, so it is not shown.
-    rule = '━' * 27
+    rule = ' '.join('-' * 14)
     out = [rule, ' ' + B('STATUS') + '   ' + d['generated'], rule, '']
     t = d['tasks']
     home = os.path.expanduser('~'); path = d['root']

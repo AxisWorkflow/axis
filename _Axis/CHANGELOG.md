@@ -1,7 +1,7 @@
 # Changelog
 > **Purpose:** Record Axis release identity and the structural migrations needed to update an existing project safely.
 
-current-version: 3.20
+current-version: 3.21
 changelog-format: 1
 self-update-baseline: 26.08.19
 
@@ -39,6 +39,43 @@ update-impact: automatic
 ### Verification
 
 - None.
+
+## 3.21
+
+released: 2026-11-13
+
+update-impact: automatic
+
+### Structural Changes
+
+- Complete entry instructions live only in `AGENTS.md`. `CLAUDE.md` and `GEMINI.md` each contain exactly `@./AGENTS.md` plus a final newline, resolved relative to the containing file. A host that reads `AGENTS.md` itself needs no import. A host that finds only `CLAUDE.md` or `GEMINI.md` and does not expand the import receives only the pointer and may not start Axis after this update; ask it to read and follow `AGENTS.md`. No such host was observed, and Claude Cowork has not been tried with the pointer.
+- No updater file changes. An installation at 3.20 reaches this release in one update: its installed updater already requires this entry layout for any release after 3.20. An installation through 3.19 updates to 3.20 first, completes that update and its fresh session, and only then selects this release.
+- Every Axis divider is one line: 14 ASCII hyphens with single spaces between them, 27 characters (`- - - - - - - - - - - - - -`). It replaces the line of 27 unbroken hyphens in the startup banner, the reply header and the stopped and updated blocks, and the 27 heavy-rule characters of the `^status` page. Carried by the entry file, `_Axis/Resources/Lifecycle-Presentation.md`, `_Axis/Rules/Speaking.md`, `_Axis/Resources/boot.py`, `_Axis/Resources/checked-lifecycle.py`, `_Axis/Resources/status.py` and `_Axis/Commands/status.md`.
+- The startup banner and the stopped and updated blocks on terminal and Markdown surfaces: divider, the title `A X I S   W O R K F L O W` indented one space, divider, then the rows at the left margin in the order Session, Project, Folder, Model, Context, Agent, Version, Status, with every value starting at position 11, then a divider. The loading line is no longer indented.
+- New `Model:` row: the model the Agent reports to `boot.py` as `--model`, in readable form (for example `claude-fable-5-2` as `Fable 5.2` and `gpt-6.1-sol` as `GPT-6.1 Sol`). An unrecognized form is shown unchanged, and `Unknown` when none is reported. The stopped block reads the same value from the `model` Flag.
+- The closing line of a reply in a terminal or a desktop app is `> READY | {folder}:`; a desktop app counts as a terminal surface for the header and the closing. While background work the Agent started still runs, that line is followed by two spaces and `(Still working in the background)`; this replaces the bracket `(background tasks running)` before the colon. Carried by `_Axis/Rules/Speaking.md`, `_Axis/Resources/boot.py`, `_Axis/Resources/turn.py` and `_Axis/Resources/checked-lifecycle.py`.
+- WhatsApp, SMS and equivalent messaging channels open every message, the first included, with three lines and a blank line: the title at the left margin, then ` > ` with the Project name and ` > ` with the project folder, each with one leading space. They show no dividers, no session rows and no closing line. The opening is the same for every role and in chats shared with other people, where everyone in the chat sees the Project name and the folder. Before startup finishes the title line stands alone above the loading line. The per-turn reminder of `turn.py` names the Project and the folder for this opening.
+- Entry file, step 3: the Agent starts its reply with every line of the banner block `boot.py` prints; the sentence no longer names the Session ID, which a messaging channel does not show.
+- The optional `axis` terminal utility prints its help when run with no arguments, `help`, `--help` or `-h`, and starts nothing; `axis .` opens the session of the current folder. A wrapper installed by `^install axis` calls the project's own `_Axis/Resources/axis-launch.py`, so it follows this change without reinstallation.
+- Project setup (`_Axis/Resources/Start-Project.md`) offers `^install axis` once when the host has a POSIX shell and Python 3 and no `axis` command is found. Nothing is installed without the User's yes.
+- Host names: the documents name the Antigravity CLI (`agy`) where they named the Gemini CLI as a supported host. `GEMINI.md` remains the 13-byte pointer; a host that reads `AGENTS.md` needs nothing else. In the trial for this release Grok Build (`grok`) 1.0.77 loaded a project's entry files only in a folder it trusted, a condition its documentation does not state; `grok inspect` shows which files it loads. The guardrails hook also refuses `agy` and `grok` command lines from helper agents. The `gemini` context-hook route is unchanged.
+- OpenClaw guidance: a group declaration may name Auxiliary, Assistant, Group Agent or Observer, as the admission helper accepts. `_Axis/Practices/OpenClaw.md` gains "Main on a Chat" and `_Axis/Practices/WhatsApp.md` a step for signing a paired bot account in again. Both additions are untested on an installed OpenClaw.
+
+### Project-State Migrations
+
+- Entry changes are managed Workflow replacements: the update writes the complete entry to `AGENTS.md` and the pointer to `CLAUDE.md` and `GEMINI.md`. Surface local divergence in an entry file, and move standing guidance from it into `_Axis/INSTRUCTIONS.md` only with User approval. Project instructions remain preserved.
+
+### Retired Paths
+
+- None.
+
+### Verification
+
+- `AGENTS.md` retains its terminal marker and 5,536-byte Fast Boot cap; both pointer files match all 13 bytes. The first-startup measurement counts the pointer and canonical text without increasing any allowance.
+- A terminal Ready block has three dividers, each exactly 14 hyphens with single spaces, the title as its only indented line, and the eight rows in order with the Model row between Folder and Context.
+- A later terminal reply ends with a blank line and `> READY | {folder}:` as its last line.
+- A messaging start shows the title, the Project line and the folder line, then the greeting, and no row, divider or closing line.
+- `axis` with no arguments prints the help and exits 0 without creating a terminal session; `axis .` opens the current folder.
 
 ## 3.20
 

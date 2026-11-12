@@ -12,7 +12,7 @@ Main Agent only. Load after Inbox filing when its conditional branch applies, or
 
 ## Explain and record
 
-Use a short paragraph for one effect, or this manual form when several facts need comparison. It needs no terminal, installation or new record type:
+Use a short paragraph for one effect, or this manual form when several facts need comparison:
 
 | Field | Content |
 | --- | --- |

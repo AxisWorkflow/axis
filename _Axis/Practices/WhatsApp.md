@@ -16,6 +16,12 @@ Where these steps describe live configuration writes, the fallback owner, per-ac
 
   `openclaw config get commands.ownerAllowFrom`
 
+- **Sign a paired bot account in again.** If the channel no longer reports linked and connected while the Owner list still carries its `whatsapp:` entry, User signs in again with the bot number's WhatsApp, and you rerun the check above:
+
+  `openclaw channels login --channel whatsapp`
+
+  Do not repeat the Owner pairing. Whether the Owner entry, the group gates and the bindings survive a logout is untested on an installed OpenClaw: read each back (`commands.ownerAllowFrom`, `channels.whatsapp.groupAllowFrom`, `channels.whatsapp.groups`, `channels.whatsapp.groupPolicy`, `bindings`) and repair only what is missing, by the steps of this Practice. When both checks hold, SKIP to **Harden an already-enabled install**.
+
 - Confirm that the OpenClaw installation and onboarding process is complete. Onboarding sets the full tool profile when none is configured and may set up memory, skills, persona, the Proactive check, and other assistant features; decline those optional layers for the Axis profile, and treat the profile as unsafe until the hardening readback below passes:
 
   `openclaw onboard`
@@ -55,7 +61,7 @@ Arrive here either by working through the section above or by skipping it. The s
 
 - **Thin-harness audit.** Follow `^audit openclaw` read-only. If it reports `Degraded` or `Unverified`, preview and obtain approval for `^install openclaw` to apply only the resolved semantic controls in [Practices > OpenClaw]. Do not authenticate, mutate, restart, move legacy files, or erase old state merely because the audit found it.
 
-- **Outbound tools.** Session Start delivers the early loading notice to the channel explicitly ([Practices > OpenClaw]); the validated Session ID banner rides the final greeting. Confirm the effective tool surface includes the narrow messaging/session-send capability and explicitly does not use `tools.profile: full`. A session already running may not see a changed policy until it restarts.
+- **Outbound tools.** Session Start delivers the early loading notice to the channel explicitly ([Practices > OpenClaw]); the validated opening rides the final greeting. Confirm the effective tool surface includes the narrow messaging/session-send capability and explicitly does not use `tools.profile: full`. A session already running may not see a changed policy until it restarts.
 
 ## Pair a WhatsApp Group
 > **Purpose:** Register an OpenClaw Agent to receive/send via a WhatsApp Group. You must first enable WhatsApp (see section above) before you can pair a particular Agent to a WhatsApp group (the purpose of this section).

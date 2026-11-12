@@ -156,18 +156,40 @@ def discover(roots):
 
 
 SUPERVISION = ('--source-root', '--session', '--authority', '--execute', '--explicit-start', '--operation', '--access-evidence')
+# One line per form a User may run. Printed for no arguments, `help`, `--help` or `-h`; printing it starts nothing.
+HELP = """axis - optional terminal add-on for Axis Workflow. Python 3 is needed; the session forms also need tmux.
+
+  axis . [--agent codex|claude|none]        open or reattach the terminal session of the current folder
+  axis PROJECT [--agent codex|claude|none]  the same for the Axis project folder PROJECT
+  axis PROJECT --detach                     create or keep that session without attaching to it
+  axis PROJECT --role ROLE --surface NAME   start a session in a declared role, which is never Main
+  axis start [PROJECT]                      open a fresh session; refused beside a live Main
+  axis retire [PROJECT]                     end the live Main after you type RETIRE
+  axis ls                                   list the open Axis terminal sessions
+  axis projects [FOLDER ...]                list the Axis projects in those folders
+  axis help                                 print this text; so do --help, -h and no arguments
+
+`start` and `retire` use the current folder when PROJECT is omitted. --agent defaults to codex.
+--access subscription|api-key|either and --allow-api choose the model access for one launch.
+ROLE is Auxiliary, Assistant, "Group Agent" or Observer.
+Without this utility, end a Main from its project folder: python3 _Axis/Resources/axis-roles.py retire
+"""
 
 
 def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
+    if not argv or argv[0] in ('help', '--help', '-h'):
+        print(HELP, end=''); return 0
     if argv and argv[0] == 'retire':
         return module('axis-roles').main(argv)
     if argv and argv[0] == 'start' and not any(a.split('=')[0] in SUPERVISION for a in argv[1:]):
         # User mode: a fresh session in a project without a live Main. Agents start children through ^^start.
+        rest = argv[1:]
+        if any(a in ('--help', '-h') for a in rest):
+            print(HELP, end=''); return 0
         roles = module('axis-roles')
         if roles.agent_shell():
             print('axis: an agent starts a child project only through ^^start, which passes --source-root, --session and --authority', file=sys.stderr); return 2
-        rest = argv[1:]
         if any(a.split('=')[0] in ('--role', '--surface') for a in rest):
             print('axis: start opens a Main session; start a declared role with `axis [project] --role ROLE --surface NAME`', file=sys.stderr); return 2
         valued = {'--agent', '--access'}
@@ -178,11 +200,12 @@ def main(argv=None):
         # A fresh session: never reattach a terminal session an earlier run left open for this project.
         tmux = shutil.which('tmux')
         if tmux and subprocess.run([tmux, 'has-session', '-t', '=' + name(project(target))], capture_output=True).returncode == 0:
-            print('axis: a terminal session for this project is still open; attach with `axis`, or close it first, then run `axis start` again', file=sys.stderr); return 2
-        return main(rest)
+            print('axis: a terminal session for this project is still open; attach with `axis ' + shlex.quote(target) + '`, or close it first, then run `axis start` again', file=sys.stderr); return 2
+        return main(rest or ['.'])
     if argv and argv[0] in {'probe', 'status', 'start'}:
         return subprocess.call([sys.executable, str(Path(__file__).with_name('session-adapters.py')), *argv])
-    parser = argparse.ArgumentParser(description='axis [project] [--agent codex|claude|none]; axis start [project]; axis retire [project]; axis ls; axis projects [roots]')
+    parser = argparse.ArgumentParser(prog='axis', add_help=False)
+    parser.add_argument('-h', '--help', action='store_true')
     parser.add_argument('target', nargs='?', default='.')
     parser.add_argument('roots', nargs='*')
     parser.add_argument('--agent', default='codex', choices=('codex', 'claude', 'none'))
@@ -193,6 +216,8 @@ def main(argv=None):
     parser.add_argument('--surface', help='the surface name the role is declared for; it needs a row in the surface table')
     parser.add_argument('--run-child', action='store_true', help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
+    if args.help:
+        print(HELP, end=''); return 0
     try:
         if args.target == 'projects':
             print('\n'.join(discover(args.roots or os.environ.get('AXIS_PROJECT_ROOTS', str(Path.cwd())).split(os.pathsep))))

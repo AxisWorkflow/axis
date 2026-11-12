@@ -30,6 +30,20 @@ ROLE_TABLE=(
 ROLE_LEDGER={'issuers': ('auxiliary', 'external', 'main', 'worker'), 'submission_schemas': ('axis.external-submission/v1',), 'proposal_member_subject': 'Subagent: External proposal Team', 'survey_keys': ('fresh_assistant', 'fresh_auxiliary', 'fresh_external', 'fresh_groupagent', 'orphan_subagents'), 'proposal_owners': (('External:', 'external'), ('Auxiliary:', 'auxiliary'))}
 # END GENERATED: role-table
 
+def model_label(model):
+    """The `Model:` row: the reported model id in readable form; an unrecognized form unchanged; Unknown when none is reported."""
+    m = re.sub(r'\[[^\]]*\]$', '', (model or '').strip()).strip()
+    if not m or '<' in m or m.lower() in ('unknown', 'cleared', 'none', 'n/a') or any(ord(c) < 32 or ord(c) == 127 for c in m):
+        return 'Unknown'
+    x = re.fullmatch(r'claude-([a-z]+)-(\d+)(?:-(\d{1,2}))?(?:-\d{8})?', m.lower())
+    if x:
+        return x[1].title() + ' ' + x[2] + ('.' + x[3] if x[3] else '')
+    x = re.fullmatch(r'(gpt|gemini|grok)-(\d[0-9a-z.]*)((?:-[0-9a-z.]+)*)', m.lower())
+    if x:
+        head = 'GPT-' + x[2] if x[1] == 'gpt' else x[1].title() + ' ' + x[2]
+        return ' '.join([head] + [w.title() for w in x[3].split('-') if w])
+    return m
+
 a=argparse.ArgumentParser(description='Axis one-command boot')
 a.add_argument('--host',required=True);a.add_argument('--model',required=True)
 a.add_argument('--harness',default='other');a.add_argument('--interaction',default='interactive')
@@ -702,24 +716,24 @@ try:
   if (R/'host-context.py').is_file():run(R/'host-context.py','bind','--session',sid,*(('--host',{'claude-code':'claude','codex':'codex'}[o.harness]) if o.harness in ('claude-code','codex') else ()))
  except BaseException:pass  # optional; turn.py binds on the next renewed lease
 
- bar='-'*27
+ bar=' '.join('-'*14)
  print(json.dumps({'axis_boot':'READY','session':sid,'notices':notices,'pending':pending,'later':later}))
  print('Banner for the user (start your reply with it, as is, after any pending items; it repeats the header so the complete block shows together):')
  # Four blank lines set the block apart from any text the model printed during startup (User design, 2026-10-08).
  if o.interaction=='channel':
-  print(f"A X I S   W O R K F L O W\n\n  Project:  {name}\n  Folder:   {folder}\n  Session:  {sid}\n  Version:  {ver}\n  Context:  {context_label}\n  Status:   Ready\n  Agent:    Main")
+  print(f"A X I S   W O R K F L O W\n > {name}\n > {folder}")
  else:
-  print(f"```text\n\n\n\n\n{bar}\n A X I S   W O R K F L O W\n{bar}\n  Project:  {name}\n  Folder:   {folder}\n  Session:  {sid}\n  Version:  {ver}\n  Context:  {context_label}\n  Status:   Ready\n  Agent:    Main\n{bar}\n```")
+  print(f"```text\n\n\n\n\n{bar}\n A X I S   W O R K F L O W\n{bar}\nSession:  {sid}\nProject:  {name}\nFolder:   {folder}\nModel:    {model_label(o.model)}\nContext:  {context_label}\nAgent:    Main\nVersion:  {ver}\nStatus:   Ready\n{bar}\n```")
  print('Greeting: one blank line under the banner, greet the user in one line and introduce yourself as Axel, the Main Agent (for example "Hi, Axel here.").')
  for x in notices:print('Notice for the user: '+x)
  for x in pending:print('Pending before the first answer: '+x)
  print('Before any answer other than the greeting or a requested exact reply: read _Axis/Resources/Load-Starting-Context.md (core rules), _Axis/Roles/Main.md, _Axis/INSTRUCTIONS.md, _Axis/MINDSET.md, _Axis/DIRECTIVES.md, _Axis/PLAN.md, _Axis/TASKS.md, the newest Snapshots and the Notes index'+('; and: '+'; '.join(later) if later else '')+'.')
  print(f'On every later turn, first run: python3 _Axis/Resources/turn.py --session {sid}')
- print('Reply frame, required on every reply that hands the turn back to the user, this one included (exceptions: _Axis/Rules/Speaking.md > Final response boundary): this reply opens with the banner instead of the header; every later reply starts with the header, with nothing before it, not even a sentence; on WhatsApp, SMS and equivalent messaging channels use only A X I S   W O R K F L O W followed by a blank line, without dividers; on terminals every reply ends with the closing; on WhatsApp, SMS and equivalent discrete-message channels that already identify the turn, omit the closing including its background-task variant; progress notes during a turn get neither. A later terminal reply looks like this (the fence only marks the example; never print the fence itself):')
+ print('Reply frame, required on every reply that hands the turn back to the user, this one included (exceptions: _Axis/Rules/Speaking.md > Final response boundary): this reply opens with the banner instead of the header; every later reply starts with the header, with nothing before it, not even a sentence; on WhatsApp, SMS and equivalent messaging channels open every message with three lines instead (A X I S   W O R K F L O W, then " > " and the Project name, then " > " and the folder) followed by a blank line, without dividers; on terminals every reply ends with the closing; on WhatsApp, SMS and equivalent discrete-message channels that already identify the turn, omit the closing including its background-task variant; progress notes during a turn get neither. A later terminal reply looks like this (the fence only marks the example; never print the fence itself):')
  if o.interaction=='channel':
-  print('Later messaging reply: A X I S   W O R K F L O W, one blank line, then the answer with blank lines between paragraphs; no closing prompt.')
+  print(f'Later messaging reply: the same three lines (A X I S   W O R K F L O W, then " > {name}", then " > {folder}"), one blank line, then the answer with blank lines between paragraphs; no closing prompt.')
  else:
-  print(f'```text\n{bar}\n A X I S   W O R K F L O W\n{bar}\n\n{{the answer, leading with the outcome}}\n\n> READY {folder}:\n```')
+  print(f'```text\n{bar}\n A X I S   W O R K F L O W\n{bar}\n\n{{the answer, leading with the outcome}}\n\n> READY | {folder}:\n```')
 except SystemExit:raise
 except StartupStall as e:interrupted('suspected hang in '+e.args[0]['operation']+'; the stalled helper was stopped and its journal is retained for recovery',stall=e.args[0])
 except BaseException as e:interrupted(type(e).__name__)

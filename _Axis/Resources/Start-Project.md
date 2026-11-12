@@ -118,7 +118,8 @@ Version control gives the project an undo history; a private remote can also car
 ## Step 10: Wrap Up
 
 1. Quietly verify the `project-ready` Flag is valid and the root README lifecycle from Step 8 was resolved. If either check fails, return to Step 8 and do not claim setup completed.
-2. Close with a short hint card:
+2. If `host-shell` is valid `yes`, `python3` runs and `command -v axis` finds nothing, offer `^install axis` once in one line (an optional terminal utility); run it only on User's yes. Otherwise stay silent.
+3. Close with a short hint card:
 	- Type `^help` to list all commands.
 	- The Project README is `README.md`; the User Manual is `_Axis/USERMANUAL.md` (`^help manual` browses it by section; `^help <topic>` finds where a topic is explained) and the technical reference is `_Axis/SPECIFICATION.md`.
 	- Drop new material into `_Inbox/` - Main Agent files it into Project Subfolders or the Wiki at the next session start or `^inbox`; files dropped anywhere else are organized too; suffix a folder `_U` for Agent-read-only or `_X` to exclude it; a complete nested Axis Project anywhere in the workspace is a Subproject; Wiki sources go to immutable `_Wiki/_Inbox/`; keep originals outside the project when they need operating-system-enforced protection.

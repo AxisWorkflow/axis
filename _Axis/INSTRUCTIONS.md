@@ -5,7 +5,7 @@ Write here, in your own words, what Agents on this project should know and follo
 
 ## Why here and not in the entry files
 
-The entry-point files (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`) are **reserved for the Axis Workflow and must not be edited or added to**. Hosts load the entry file into every Agent's context, some re-sending it only at session start and some under a size cap (20,000 characters on one measured host) that silently truncates rather than rejects. The three files must also stay identical, and `^update` replaces them, so an addition there would be cut off or overwritten without notice.
+The entry-point files (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`) are **reserved for the Axis Workflow and must not be edited or added to**. Hosts load the entry file into every Agent's context, some re-sending it only at session start and some under a size cap (20,000 characters on one measured host) that silently truncates rather than rejects. `AGENTS.md` holds the complete protocol; the other two import it. `^update` replaces all three, so additions can be truncated or overwritten.
 
 This file has no such limit. Main reads it at Session Start, like the Plan and the Directives.
 

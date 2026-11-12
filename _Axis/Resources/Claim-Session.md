@@ -39,7 +39,7 @@ The complete original file-tool procedure below remains available without Python
 
 A foreign `Main: session` Marker at or over 1 hour old with no tombstone is an idle Main. Its last activity is the newest of its `mtime`, its last `_Axis/Tracking/{ID}.md` line and any later `_Axis/Logs/` record holding `session: {ID}`. The takeover limit is 24 hours at [Settings > Permissions] `Restricted`, 7 at `Default` (also when unset) and 3 at `Autonomous`.
 
-- Active under 1 hour: it is live. Join as Auxiliary; its greeting names `axis retire`, which User runs from a terminal to end that Main.
+- Active under 1 hour: it is live. Join as Auxiliary; its greeting names the retire command, which User runs from a terminal to end that Main.
 - Under the limit: write nothing, release only your own claim, and ask User in one line, naming the session and its idle time and recommending takeover. On yes, claim again and take it over; otherwise join as Auxiliary.
 - At or over the limit, or taken over at User's word: become Main.
 

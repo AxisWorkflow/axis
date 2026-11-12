@@ -140,10 +140,10 @@ Cloudflare is optional. Setup equips the current Agent for Cloudflare developmen
 
 ## Axis terminal launcher
 
-1. Offer the optional `axis` terminal command for macOS, Linux or WSL. Normal Axis continues without it. Check Python 3 and tmux; explain any missing dependency and apply Installation Contract before installing host software.
+1. Offer the `axis` terminal utility as an opt-in add-on for macOS, Linux or WSL. Axis works without it, and `python3 _Axis/Resources/axis-roles.py retire` ends a Main without it. Check Python 3 and tmux; explain any missing dependency and apply Installation Contract before installing host software.
 2. Preview the chosen user-owned executable directory and a small POSIX wrapper invoking the exact project's `_Axis/Resources/axis-launch.py` through Python 3. Use shell-quoted literal paths, never copy credential values or overwrite an existing command without reviewing it. A wrapper, rather than a symlink to `axis`, preserves the helper location. Install only under User's request and the Installation Contract.
-3. Explain `axis [project path] --agent codex|claude|none`, `axis ls`, `axis projects [root ...]`, `axis start [path]` (refused beside a live Main) and `axis retire [path]` (ends the live Main after the User types `RETIRE`). Optional `AXIS_PROJECT_ROOTS` is a path-separated search list; discovery examines those roots and their direct children. Reattach uses the same canonical project session; it does not start another agent. Detach with tmux's normal prefix then `d`. Use `--detach` to create/reattach without opening a terminal client.
-4. Verify syntax and a disposable `--agent none --detach` session, its working directory and repeat attachment. Remove only that owned test session. Record installation under Installation Contract. STOP.
+3. Explain that `axis` alone prints its help and starts nothing and that `axis .` opens the session of the current folder; then `axis {project path} --agent codex|claude|none` (default `codex`), `axis ls`, `axis projects [root ...]`, `axis start [path]` (refused beside a live Main) and `axis retire [path]` (ends the live Main after the User types `RETIRE`). Optional `AXIS_PROJECT_ROOTS` is a path-separated search list; discovery examines those roots and their direct children. Reattach uses the same canonical project session; it does not start another agent. Detach with tmux's normal prefix then `d`. Use `--detach` to create/reattach without opening a terminal client.
+4. Verify syntax, that `axis` alone prints its help and exits 0, and a disposable `--agent none --detach` session, its working directory and repeat attachment. Remove only that owned test session. Record installation under Installation Contract. STOP.
 
 ## Model access
 

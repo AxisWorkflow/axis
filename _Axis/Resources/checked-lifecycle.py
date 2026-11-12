@@ -35,8 +35,23 @@ ROLE_LEDGER={'issuers': ('auxiliary', 'external', 'main', 'worker'), 'submission
 # Fresh Markers of these roles hold an ordinary save until they return.
 SAVE_BLOCKING = tuple(r['subject'].rstrip() for r in ROLE_TABLE if r['cls'] == 'session' and r['blocks_save'])
 
-HEADER = '---------------------------\n A X I S   W O R K F L O W\n---------------------------'
+HEADER = '- - - - - - - - - - - - - -\n A X I S   W O R K F L O W\n- - - - - - - - - - - - - -'
 INDEX = '_Axis/SNAPSHOTS.md'
+
+
+def model_label(model):
+    """The `Model:` row: the reported model id in readable form; an unrecognized form unchanged; Unknown when none is reported."""
+    m = re.sub(r'\[[^\]]*\]$', '', (model or '').strip()).strip()
+    if not m or '<' in m or m.lower() in ('unknown', 'cleared', 'none', 'n/a') or any(ord(c) < 32 or ord(c) == 127 for c in m):
+        return 'Unknown'
+    x = re.fullmatch(r'claude-([a-z]+)-(\d+)(?:-(\d{1,2}))?(?:-\d{8})?', m.lower())
+    if x:
+        return x[1].title() + ' ' + x[2] + ('.' + x[3] if x[3] else '')
+    x = re.fullmatch(r'(gpt|gemini|grok)-(\d[0-9a-z.]*)((?:-[0-9a-z.]+)*)', m.lower())
+    if x:
+        head = 'GPT-' + x[2] if x[1] == 'gpt' else x[1].title() + ' ' + x[2]
+        return ' '.join([head] + [w.title() for w in x[3].split('-') if w])
+    return m
 
 
 def digest(text):
@@ -212,8 +227,8 @@ class Lifecycle:
         self.need(not re.search(r'(?m)^\s*>?\s*READY\b', body) and HEADER not in body, 'duplicate-frame')
         self.need(not any(ord(c) < 32 and c not in '\n\t' for c in body), 'response-body')
         self.b.guard()
-        suffix = ' (background tasks running)' if background_tasks_running else ''
-        return {'text': HEADER + '\n\n' + body + '\n\n> READY ' + self.folder() + suffix + ':',
+        suffix = '  (Still working in the background)' if background_tasks_running else ''
+        return {'text': HEADER + '\n\n' + body + '\n\n> READY | ' + self.folder() + ':' + suffix,
                 'relay': 'Return text verbatim as the final application response; no additional frame.'}
 
     def metadata(self, name, limit=65536):
@@ -229,8 +244,9 @@ class Lifecycle:
         versions = re.findall(r'^current-version: (\S+)$', self.metadata('_Axis/CHANGELOG.md', limit=4194304), re.M)
         version = versions[0] if len(versions) == 1 else 'Unavailable'
         context = 'Two-pass' if self.io.setting('Context Management') == 'Two-Pass' else 'Default'
-        return HEADER + '\n\n' + '\n'.join(('  Project:  ' + title, '  Folder:   ' + self.folder(), '  Session:  ' + self.io.sid,
-                '  Version:  ' + version, '  Context:  ' + context, '  Status:   Stopped', '  Agent:    Main')) + '\n---------------------------\n\nThis session has stopped. Start a new session to continue.'
+        model = model_label((self.metadata('_Axis/Flags/model').splitlines() or [''])[0])
+        return HEADER + '\n' + '\n'.join(('Session:  ' + self.io.sid, 'Project:  ' + title, 'Folder:   ' + self.folder(), 'Model:    ' + model,
+                'Context:  ' + context, 'Agent:    Main', 'Version:  ' + version, 'Status:   Stopped')) + '\n- - - - - - - - - - - - - -\n\nThis session has stopped. Start a new session to continue.'
 
     def retire_session(self):
         # A distinct fixed launcher grant represents explicit shutdown authority.

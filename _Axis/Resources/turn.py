@@ -6,7 +6,7 @@ Runs from the project root at the start of every later turn (and about every 30 
 With --check-only it validates without renewing or writing context/host state; it does not authorize a notification or effect.
 With --recover it renews nothing and prints the files to re-read after compaction plus pointers to current state.
 Exit 0 prints OK (plus any items to handle, then the reply-frame reminder for roles with a reply frame); 3 KILLED; 4 LOST LEASE (missing Marker); 6 FOREIGN MAIN or TAKEN OVER;
-7 READ-ONLY (the host refused the renewal); 8 VERSION CHANGED or VERSION UNVERIFIED; 10 CONTEXT LOST (a context check failed); 2 or 5 errors. It never recreates a missing Marker, never executes an
+7 READ-ONLY (the host refused the renewal); 8 VERSION CHANGED or VERSION UNVERIFIED; 9 MERGE HELD (a merge is pending or unverified); 10 CONTEXT LOST (a context check failed); 2 an error (a malformed or refused call). It never recreates a missing Marker, never executes an
 update helper, and never writes anything except the renewed Marker mtime and its own files under _Temp/Context/ (context check
 state and the optional hook binding)."""
 import argparse,datetime as dt,errno,hashlib,importlib.util,json,os,re,stat,sys,time
@@ -374,4 +374,10 @@ if role['created_by'] in ('helper','claim'):
 for x in items:print('Handle before answering: '+x)
 if role['reply_frame']:
     home=os.path.expanduser('~');folder=str(root);folder='~'+folder[len(home):] if folder==home or folder.startswith(home+'/') else folder
-    print(f'Reply frame: start your reply with the Axis header, with nothing before it, and on terminals end with one blank line, no divider, then > READY {folder}: (or > READY {folder} (background tasks running): while background tasks run). On WhatsApp, SMS and equivalent messaging channels, open with only A X I S   W O R K F L O W followed by a blank line, without dividers, and omit the closing including its background-task variant. Separate paragraphs with blank lines. Progress notes get neither.')
+    project='Not set'  # the messaging opening names the Project as the startup banner does
+    try:
+        if safe_file(root/'_Axis/PROJECT.md'):
+            with open(root/'_Axis/PROJECT.md',encoding='utf-8',errors='replace') as handle:found=re.match(r'# Project: (.+)',handle.readline(400))
+            if found and found.group(1).strip() and '{{' not in found.group(1) and all(ord(c)>=32 for c in found.group(1).strip()):project=found.group(1).strip()
+    except OSError:pass
+    print(f'Reply frame: start your reply with the Axis header, with nothing before it, and on terminals end with one blank line, no divider, then > READY | {folder}: (or > READY | {folder}:  (Still working in the background) while background work you started still runs). On WhatsApp, SMS and equivalent messaging channels, open instead with the three lines A X I S   W O R K F L O W, " > {project}" and " > {folder}", then a blank line, without dividers, and omit the closing including its background-task variant. Separate paragraphs with blank lines. Progress notes get neither.')

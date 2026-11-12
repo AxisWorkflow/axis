@@ -6,7 +6,7 @@ User can invoke a Command by typing `^<command> <optional additional text>` (e.g
 - A Command requires a `^` prefix followed by a valid `<command>` token, at the START of the message.
 - A Supervision Command requires a `^^` prefix followed by one of the exact tokens in [Practices > Supervision > Dispatch]. A single-caret Command never aliases a double-caret Command, and `^^shutdown` is invalid - use `^^stop`.
 - The `^` **prefix** is a strong but not deterministic signal for a Command. A caret elsewhere - math like `x^2`, or quoted control-notation like `^C` - is not a Command.
-- The prefix is `^` (caret) because REPL hosts capture the obvious alternatives: Claude Code and Gemini CLI both intercept a leading `!` as shell input, and `/`, `@`, `:`, and `?` are claimed too - a `!command` never even reaches the Agent there.
+- The prefix is `^` (caret) because REPL hosts capture the obvious alternatives: Claude Code intercepts a leading `!` as shell input, and `/`, `@`, `:`, and `?` are claimed too - a `!command` never even reaches the Agent there.
 - Command tokens are case-insensitive, a singular word (hyphens allowed), and no internal whitespace.
 - Commands **can** be followed by whitespace and then additional text; in that case, the additional text is interpreted by the command for purposes related to the command.
 - When you see a strong trigger in the form `^<command> <optional addition text>`, lazy-load and run the procedure in the associated file - no semantic interpretation needed. When the trigger begins `^^`, lazy-load [Practices > Supervision] and dispatch there instead.

@@ -88,7 +88,7 @@ GIT_LIST_FIRST={'stash':('list','show'),'worktree':('list',),'reflog':('show',)}
 GIT_VALUE_OPTS=('-C','-c','--git-dir','--work-tree','--namespace','--exec-path','--config-env')
 WRAPPERS=('env','command','exec','sudo','nohup','time','nice','xargs','builtin','then','do','else','!')
 OUTBOUND=('WebFetch','WebSearch')
-AGENT_LAUNCH=re.compile(r'(?:^|[;&|(]|\bthen|\bdo|\bexec)\s*(?:env\s+(?:\S+=\S*\s+)*)?(?:\S*/)?(?:claude|codex|openclaw|gemini)(?:\s|$)')
+AGENT_LAUNCH=re.compile(r'(?:^|[;&|(]|\bthen|\bdo|\bexec)\s*(?:env\s+(?:\S+=\S*\s+)*)?(?:\S*/)?(?:claude|codex|openclaw|gemini|agy|grok)(?:\s|$)')
 
 def field(text,key):
     for line in text.splitlines():

@@ -79,7 +79,7 @@
 - **Surface table** - `_Axis/SURFACES.md`, the User's list of surfaces with the one role and the read scope each may run; Main changes it only on the User's direct instruction.
 - **Read scope** - The Project Subfolders a role that serves other people may read, named in its surface-table row.
 - **Tombstone** - `_Axis/Agents/{ID}.kill` - the kill signal that revokes an Agent's Marker lease (see [Practices > Markers > The Lease]).
-- **axis retire** - The User's terminal command that ends a project's live Main after the typed word `RETIRE`; no session changes its own role. An agent may run it only on a direct child project, with a record of the owner's instruction.
+- **axis retire** - Short form, after `^install axis`, of `python3 _Axis/Resources/axis-roles.py retire`: the User's terminal command that ends a project's live Main after the typed word `RETIRE`; no session changes its own role. An agent may run it only on a direct child project, with a record of the owner's instruction.
 - **Protected Content** - Name-suffix access control: `_U` = User-controlled, read-only for Agents; `_X` = excluded, invisible to Agents (see [Practices > Protected]).
 - **Stale** - Past freshness window (locks 10 sec; `starting` 2 min; `session-id` completion check 60 sec; **Markers** 1 hour).
 - **Race Condition** - Two+ Agents writing to same file at same time - see [Lock-File].

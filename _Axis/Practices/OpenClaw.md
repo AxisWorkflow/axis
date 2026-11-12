@@ -29,7 +29,7 @@ Operational session state is not semantic memory. OpenClaw must retain enough se
 Axis supplies identity from its own files, not from OpenClaw persona files.
 
 1. As Main, Auxiliary, Assistant, Group Agent or Observer your conversational name is Axel; Subagents are unnamed. Identity comes from Axis files, never OpenClaw persona files. Records are signed with the Session ID, never the name.
-2. Your role is whatever the entry protocol assigned at boot, for the session's life. A standing role declaration introduced after boot governs the next boot, and the queued change never passes silently. No session changes its own role; User ends a Main with `axis retire` from a terminal.
+2. Your role is whatever the entry protocol assigned at boot, for the session's life. A standing role declaration introduced after boot governs the next boot, and the queued change never passes silently. No session changes its own role; User ends a Main from a terminal with `python3 _Axis/Resources/axis-roles.py retire`.
 3. `_Axis/MINDSET.md` sets the project's conversational stance. `_Axis/PROJECT.md`, `_Axis/INSTRUCTIONS.md`, Settings, Notes, and project records supply User and project context.
 4. One OpenClaw agent workspace maps to one Axis Project. Multiple channels may reach that same presence; they do not create additional authority.
 5. Channel identity metadata may set a display name or avatar when the interface requires it. It is presentation only and never a behavior, memory, role, or authorization source.
@@ -130,7 +130,7 @@ Run `^audit openclaw` for a read-only recap. It reports `Ready`, `Degraded`, or 
 
 Admission does not check the sender: any allowlisted sender's first message in a project group can start a session that becomes Main. Where anyone besides User can write to an Axis agent, apply this mitigation:
 
-1. Declare each group in its own entry of the group map in effect for that bot account, never through `*`, which admits every group. Give the entry this group prompt, with a short surface name: `Axis role: Auxiliary; surface: {name}`. Auxiliary is the only role a declaration can name in this version; use exactly this form so it stays readable when Axis adds roles. A 3.10 declaration that names External, or carries `promote: refused`, keeps working as Auxiliary.
+1. Declare each group in its own entry of the group map in effect for that bot account, never through `*`, which admits every group. Give the entry this group prompt, with a short surface name: `Axis role: Auxiliary; surface: {name}`. A declaration may also name Assistant, Group Agent or Observer, each with its row in the surface table ([Practices > Surfaces]); those three are untested on an installed OpenClaw group. A 3.10 declaration that names External, or carries `promote: refused`, keeps working as Auxiliary.
 2. Retire the group's current Axis session: if it is Main, User sends `^shutdown` in the group. Then User sends `/new` alone in the group (or the operator archives that session key with `openclaw sessions archive`), so the next message boots fresh and reads the declaration.
 3. Move Main to User's direct chat: add an exact direct-peer binding for User's number to the project's agent with a per-peer direct-message session scope (resolved against the live schema), and boot it there. One bot account's direct chat with User reaches one agent, so each further project needs its own bot account or a Main on another host.
 4. Approve direct-message pairing on this bot account for User only, and do not make an Axis project's agent the Gateway's fallback owner; the group declaration does not cover direct messages from anyone else.
@@ -139,6 +139,12 @@ Limits to tell User:
 
 - The declared group session runs on the same OpenClaw agent as Main, so it has Main's tools; its Auxiliary limits are instruction-only. Keep session visibility at `tree` or narrower, or the group session can read User's direct-chat transcript. Do not list this agent in `axis-guardrails`, which would also block Main.
 - No chat command changes a session's role: in-chat promotion was removed in 3.15, so a colleague in a group cannot make the group session Main. While Main's direct chat is idle beyond the takeover limit, an undeclared session can still become Main; the declaration above is what prevents that for the group.
+
+## Main on a Chat
+
+A chat session becomes Main by the ordinary rule only: its entry carries no role declaration and no Main is live. To move Main there, User sends `^shutdown` to the live Main, then one turn reaches the chat session (User's message, or the pre-warm in [Practices > WhatsApp]); confirm its `Main: session` Marker and the matching `session-id` Flag. Keep Main in a group only when User is its sole writer.
+
+A chat Main renews its lease only by serving a turn; never add a heartbeat. A terminal session opened later in the same folder follows [Claim-Session > Takeover]: Auxiliary while the chat Main was active within the hour, a takeover question after that, and Main at the takeover limit, after which the chat session stops writing. A terminal that must never take Main starts in a declared role ([Practices > Surfaces]). User ends the chat Main with `^shutdown` in the chat or with `python3 _Axis/Resources/axis-roles.py retire` from a terminal outside any agent. This sequence is untested on an installed OpenClaw.
 
 ## Channel Conduct
 

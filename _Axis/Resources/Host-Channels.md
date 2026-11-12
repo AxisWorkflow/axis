@@ -1,7 +1,7 @@
 # Host Channels
 > **Purpose:** Record, per host, what survives a compaction, which hook can mark it, and the Axis route that uses it.
 
-`^install context hooks` reads this register; startup never does. Each host's own documentation decides; a row is only as current as its Checked date. No feature depends on a row: on every host the entry file's `After compaction` section and `turn.py` recover without hooks, and `_Axis/Resources/Context-Check.md` recovers without Python.
+`^install context hooks` reads this register; startup never does. Each host's own documentation decides; a row is only as current as its Checked date. No feature depends on a row: with the complete canonical entry available, its `After compaction` section and `turn.py` recover without hooks, and `_Axis/Resources/Context-Check.md` recovers without Python. Missing entry text requires the direct-read fallback below.
 
 Columns:
 
@@ -23,13 +23,21 @@ Columns:
 | OpenClaw | `AGENTS.md` in every run's system prompt | `after_compaction` (plugin hook, observe only) | Yes, through a plugin's `before_prompt_build`, which adds prompt context on every run (its `appendSystemContext` field and 25% window cap are from the 4 Nov research, not re-checked) | Non-bundled plugins need `allowConversationAccess` for conversation hooks | None here: OpenClaw goes through `^install openclaw` and its `axis-guardrails` plugin | no route | 5 Nov 2026 | [plugin hooks](https://docs.openclaw.ai/plugins/hooks), [hook reference](https://docs.openclaw.ai/plugins/hooks/reference), [compaction](https://docs.openclaw.ai/concepts/compaction) |
 | Claude Cowork | As Claude Code, by its documentation (not re-checked) | Unverified | Unverified | Unverified | None: Cowork hooks are not documented | no route | 4 Nov 2026 | [memory](https://code.claude.com/docs/en/memory) |
 
-Any other host (a raw API, a chat surface without files, or a host whose hooks were declined) has no row and no route: the entry file and `turn.py` carry recovery there.
+Any other host (the Antigravity CLI, Grok Build, a raw API, a chat surface without files, or a host whose hooks were declined) has no row and no route: the entry file and `turn.py` carry recovery there.
 
 - **Card and role text** go only to Claude Code and Codex, where a session's host ID can be bound to its Axis Session ID. Every other route marks and prints nothing, because none of those hosts adds a compaction hook's output to the model's context.
 - **The startup core** (`_Axis/Resources/Starting-Context.md`) goes only to Codex, after the role-neutral line on `compact` through an entry installed with `--core`, never on `resume`, when it is whole, current and fits the 10,000-token limit; it is role-neutral, so a spawned agent that receives it gains no role. It stays in context, so each later request carries it until the next compaction.
 - **The per-turn line** is not installed: the script answers Claude Code's `UserPromptSubmit` with it, but in the 3.18 live check sessions with that entry followed fewer planted rules before compaction, so `^install context hooks` leaves it out.
 - **Marks from other hosts** carry an unbound session hash, so `turn.py` treats them like a mark without a session ID. Gemini CLI exposes `GEMINI_SESSION_ID` to hooks, which a later binding could use.
 - **One mark per compaction.** On Cursor and Copilot CLI, `host-context.py` checks the project's Claude Code settings before marking; a host that runs both entries marks once.
+
+## Entry imports
+
+`AGENTS.md` is the complete entry source. `CLAUDE.md` and `GEMINI.md` contain only `@./AGENTS.md` plus a final newline. Imports resolve relative to their containing file. An unavailable import needs the portable fallback: ask the host to read and follow the ordinary project-root `AGENTS.md` directly. Do not substitute a link, parent search, absolute path or another discovery filename.
+
+[Claude Code memory documentation](https://code.claude.com/docs/en/memory) describes relative imports and native import deduplication (documentation checked 9 Nov 2026). This does not establish import or deduplication behavior in Cowork, Grok Build, or every installed host version. A host that reads `AGENTS.md` itself, as the Antigravity CLI does, needs no import. Grok Build discovering both AGENTS and CLAUDE does not prove it expands imports. The hook observations in the table above are separate evidence.
+
+The canonical entry's repeated-processing guard cannot stop a host inserting text before the model sees it. It suppresses only repeated startup processing with complete current context; turn checks and context recovery remain mandatory. No token saving is claimed.
 
 ## Hook lifecycle
 

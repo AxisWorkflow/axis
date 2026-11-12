@@ -1,8 +1,8 @@
 # Axis Workflow
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-2ea44f.svg)](/_Axis/LICENSE)
-[![Version](https://img.shields.io/badge/Version-3.20-blue.svg)](https://github.com/AxisWorkflow/axis)
-[![Works with](https://img.shields.io/badge/Works%20with-Claude%20Cowork%20%7C%20Claude%20Code%20%7C%20ChatGPT%20Work%20%7C%20Codex%20%7C%20Cursor%20%7C%20Gemini%20CLI-6f42c1.svg)](https://github.com/AxisWorkflow/axis)
+[![Version](https://img.shields.io/badge/Version-3.21-blue.svg)](https://github.com/AxisWorkflow/axis)
+[![Works with](https://img.shields.io/badge/Works%20with-Claude%20Cowork%20%7C%20Claude%20Code%20%7C%20ChatGPT%20Work%20%7C%20Codex%20%7C%20Cursor%20%7C%20Antigravity%20CLI-6f42c1.svg)](https://github.com/AxisWorkflow/axis)
 
 The [**Axis Workflow™**](https://github.com/AxisWorkflow/axis) is an open-source project developed by [Kenneth Younge Advisory](https://kennethyounge.com), released under the [MIT License](/_Axis/LICENSE). The license grants no trademark rights. If you like **Axis**, [please buy us a coffee](https://buymeacoffee.com/axisworkflow). Please **[star the repo](https://github.com/AxisWorkflow/axis)** - it helps others to find it.
 
@@ -14,11 +14,13 @@ The [**Axis Workflow™**](https://github.com/AxisWorkflow/axis) is an open-sour
 
 ## Quick Start
 
-**Updating an existing project?** This release is the compatibility bridge for older installations: it keeps the three entry files identical, and its updater also accepts a later entry layout. Update to this exact release first, complete the update and start a fresh session before selecting any later release. See the [update guidance](/_Axis/USERMANUAL.md#faq).
+**Updating an existing project?** The `Version:` row of the startup banner shows the installed release. An installation at 3.20 or later updates in one step: type `^update`. An installation at 3.19 or earlier must update to 3.20 first: type `^update v3.20`, let that update finish, close the session and start a fresh one, and only then type `^update` for the latest release. See the [update guidance](/_Axis/USERMANUAL.md#faq).
 
 1. [Download Axis](https://github.com/AxisWorkflow/axis/releases/latest/download/axis-project.zip) and unzip - now you have a project folder.
-2. Open the folder with Cowork, Claude Code, Codex, Cursor, Gemini, etc...
+2. Open the folder with Cowork, Claude Code, Codex, Cursor, the Antigravity CLI, etc...
 3. Type `Start Axis`. Your Agent finds the Workflow and helps you get started.
+
+If your tool does not load the entry import, ask it: **Read and follow AGENTS.md in this project folder, then start Axis.** The complete instructions live there; `CLAUDE.md` and `GEMINI.md` only point to it. A tool that cannot read that file cannot start Axis.
 
 You can now start Axis. Download, host startup and project setup time depend on your environment and the project.
 

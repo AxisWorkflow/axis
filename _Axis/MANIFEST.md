@@ -17,9 +17,9 @@
 
 - **`.gitignore`** - Git exclusions.
 - **`.gitattributes`** - Narrow LF text rules for Axis-owned protocol files.
-- **`AGENTS.md`** - Entry-point file (AGENTS convention: Codex, etc.); master copy.
-- **`CLAUDE.md`** - Entry-point file (Claude Code / Cowork); synced from `AGENTS.md`.
-- **`GEMINI.md`** - Entry-point file (Gemini CLI); synced from `AGENTS.md`.
+- **`AGENTS.md`** - Sole complete entry instruction source (AGENTS convention: Codex, etc.).
+- **`CLAUDE.md`** - Claude entry pointer; exactly `@./AGENTS.md` plus a final newline.
+- **`GEMINI.md`** - Entry pointer; exactly `@./AGENTS.md` plus a final newline. A host that reads `AGENTS.md` needs nothing else.
 - **`README.md`** - Created by Project Setup as the User-owned Project README with one bounded Axis summary block. It is not in the release download, so before setup its absence is normal and is never reported as missing; a cloned repository carries the Axis GitHub introduction instead.
 - **`LICENSE`** - Before setup, generated display copy of the Axis MIT License; after setup, User-owned or absent. Project Setup removes only the pristine Axis copy.
 

@@ -1,5 +1,5 @@
 # Entry Protocol
-> **Purpose:** The complete Axis startup and per-turn protocol. The entry files route here for a pending update; it remains the full reference behind `boot.py`, `turn.py` and `Boot-Manual.md`.
+> **Purpose:** The complete Axis startup and per-turn protocol. The canonical `AGENTS.md` routes here for a pending update; it remains the full reference behind `boot.py`, `turn.py` and `Boot-Manual.md`.
 
 Before admission or ordinary work, inspect `_Axis/Flags/merge-pending` and `_Axis/Merges/` under [Practices > Merging] (or run the installed `merge-project.py --root . status`). A retired source or source-side barrier stops startup; do not create a Marker there. An incomplete destination journal permits Main admission only for merge recovery before unrelated work. Malformed state holds; Auxiliary Agents never perform that recovery.
 
@@ -30,13 +30,13 @@ A Subagent candidate comes only from these latest task-prompt boundaries:
 - Otherwise you are a **MAIN candidate** - proceed to Section 3. After notice/timestamp, under the exclusive claim, [Claim-Session] measures every foreign `Main: session` Marker against now: `mtime` under 1 hour is live; a `.kill` sibling is DEAD; an older one is idle and judged under [Claim-Session > Takeover]. Any live foreign Main routes to Start-Auxiliary without Main artifacts/banner; its greeting names the cause, that Main's ID and measured age, and the `axis retire` remedy. Never use whether a User seems present as an input. ONE project has ONE Main.
 
 
-Role is fixed once: Main commits under Claim-Session; Auxiliary and Subagent routes above are binding for the session's life. No session changes its own role; the User ends a Main with `axis retire` from a terminal, and the next fresh session takes its role by the normal rule. A persona or declaration noticed later never reassigns it. If an explicit standing declaration appears after Main boot, tell User once: "A standing role declaration appeared in this workspace after boot: I remain Main this session; it takes effect at the next boot."
+Role is fixed once: Main commits under Claim-Session; Auxiliary and Subagent routes above are binding for the session's life. No session changes its own role; the User ends a Main from a terminal with `python3 _Axis/Resources/axis-roles.py retire`, and the next fresh session takes its role by the normal rule. A persona or declaration noticed later never reassigns it. If an explicit standing declaration appears after Main boot, tell User once: "A standing role declaration appeared in this workspace after boot: I remain Main this session; it takes effect at the next boot."
 
 ## 3. Startup for Main Agent
 
 1. Judge from system context and host configuration whether you are a standard-capability model (this is your own assessment; nothing else enforces it). Smaller-capability models are bounded Subagents only. Without eligibility, print neither startup output, read no project file and create no state; tell User to select a standard-capability model and STOP.
 
-2. First print this loading notice verbatim as your first visible output: `Loading...`, after one blank line, indented by two spaces, with one blank line after it. Emit it before any tool call or other words, preceded only by the brand section of [Lifecycle-Presentation] (divider, spaced title, divider). Only Start-Session owns the later missing-notice visibility fallback.
+2. First print this loading notice verbatim as your first visible output: `Loading...`, after one blank line, without indent, with one blank line after it. Emit it before any tool call or other words, preceded only by the brand section of [Lifecycle-Presentation] (divider, spaced title, divider). Only Start-Session owns the later missing-notice visibility fallback.
 
 3. Mint the initial Session ID with this exact command. The timestamp command is the first and ONLY tool call permitted immediately after the loading notice. No narration or Session ID banner yet:
 
