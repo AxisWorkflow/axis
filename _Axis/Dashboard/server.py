@@ -15,6 +15,20 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import quote, unquote, urlsplit
 
+# BEGIN GENERATED: project-files
+PROJECT_FILES=('PROJECT.md','PLAN.md','INITIATIVES.md','TASKS.md','INSTRUCTIONS.md','SETTINGS.md','MINDSET.md','DIRECTIVES.md')
+def project_file(root,name):
+    """Path of project file NAME: in _Config/ once moved, in _Axis/ before. Two differing copies are an error, never a choice."""
+    import pathlib
+    if name not in PROJECT_FILES:raise ValueError('not a project file: '+str(name))
+    new=pathlib.Path(root)/'_Config'/name;old=pathlib.Path(root)/'_Axis'/name
+    if new.is_file() and old.is_file() and new.read_bytes()!=old.read_bytes():raise ValueError('project file differs between _Config and _Axis: '+name)
+    return new if new.is_file() or not old.is_file() else old
+def project_name(root,name):
+    """Project-relative name of project file NAME, by the same rule: `_Config/NAME` or `_Axis/NAME`."""
+    import pathlib
+    return project_file(root,name).relative_to(pathlib.Path(root)).as_posix()
+# END GENERATED: project-files
 
 BLOCKED_PARTS = {
     "Secrets",
@@ -49,10 +63,13 @@ AXIS_RECORD_FAMILIES = {
     "Jobs",
     "Schedules",
 }
-AXIS_ROOT_FILES = {"CHANGELOG.md", "PROJECT.md", "SETTINGS.md", "PLAN.md", "INITIATIVES.md", "TASKS.md"}
+AXIS_ROOT_FILES = {"CHANGELOG.md"}
 # Read-only documents the Dashboard menu and viewer open (2.02): the User Manual, Glossary, Specification,
 # Manifest and the Snapshot index. Product documentation and index records only; no Secrets or host files.
 AXIS_ROOT_FILES |= {"USERMANUAL.md", "HELPINDEX.md", "GLOSSARY.md", "SPECIFICATION.md", "MANIFEST.md", "SNAPSHOTS.md", "TEAMS.md", "MESSAGES.md", "JOBS.md", "SCHEDULES.md"}
+# The project files the Dashboard reads, served from _Config/ by exact name, never the folder: the Instructions,
+# Mindset and Directives stay outside the read contract.
+CONFIG_FILES = {"PROJECT.md", "SETTINGS.md", "PLAN.md", "INITIATIVES.md", "TASKS.md"}
 DASHBOARD_FILES = {
     "index.html",
     "mermaid-11.16.1.min.js",
@@ -137,6 +154,8 @@ def is_allowed_file(parts: tuple[str, ...]) -> bool:
         return True
     if len(parts) == 2 and parts[0] == "_Axis" and parts[1] in AXIS_ROOT_FILES:
         return True
+    if len(parts) == 2 and parts[0] == "_Config" and parts[1] in CONFIG_FILES:
+        return True
     if len(parts) == 3 and parts[:2] == ("_Axis", "Dashboard") and parts[2] in DASHBOARD_FILES:
         return True
     if len(parts) == 3 and parts[:2] == ("_Axis", "Flags") and parts[2] in FLAG_FILES:
@@ -167,12 +186,12 @@ def is_lock_directory(parts: tuple[str, ...]) -> bool:
     if not parts or not parts[-1].endswith(".lock"):
         return False
     parent = parts[:-1]
-    return parent in {(), ("_Axis",)} or is_record_directory(parent)
+    return parent in {(), ("_Axis",), ("_Config",)} or is_record_directory(parent)
 
 
 def is_browsable_directory(parts: tuple[str, ...]) -> bool:
     if message_record_directory(parts) or parts in {('_Axis','Messages','Teams'),('_Axis','Messages','Archive'),('_Axis','Messages','Archive','Teams')}:return True
-    if parts in {(), ("_Axis",)} or is_record_directory(parts):
+    if parts in {(), ("_Axis",), ("_Config",)} or is_record_directory(parts):
         return True
     if parts == ("_Axis", "Dashboard"):
         return True
@@ -210,6 +229,13 @@ def resolve_under_root(root: Path, parts: tuple[str, ...]) -> Path:
 
 def is_allowed_file_for_root(root: Path, parts: tuple[str, ...]) -> bool:
     return is_allowed_file(parts)
+
+
+def project_file_parts(root: Path, parts: tuple[str, ...]) -> tuple[str, ...]:
+    """Where a served project file is: until the first start after an update has moved it, still in _Axis/."""
+    if len(parts) == 2 and parts[0] == "_Config" and parts[1] in CONFIG_FILES:
+        return project_file(root, parts[1]).parts[-2:]
+    return parts
 
 
 def visible_directory_entries(root: Path, parts: tuple[str, ...]) -> list[tuple[str, bool]]:
@@ -353,6 +379,12 @@ class AxisDashboardHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def _serve_file(self, parts: tuple[str, ...], head_only: bool) -> None:
+        try:
+            parts = project_file_parts(self.project_root, parts)
+        except ValueError as exc:
+            # Two differing copies of a project file: that error, never one of them.
+            self.send_error(409, str(exc))
+            return
         path = resolve_under_root(self.project_root, parts)
         if not path.is_file():
             raise FileNotFoundError

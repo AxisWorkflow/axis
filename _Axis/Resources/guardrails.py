@@ -28,7 +28,7 @@ from pathlib import Path
 # BEGIN GENERATED: role-table
 # Compiled from _Axis/Roles/ at release; edit the role files, never this region.
 ROLE_TABLE=(
-    {'name': 'Main', 'cls': 'session', 'subject': 'Main: session', 'match': 'exact', 'shape': 'exact4', 'created_by': 'claim', 'exclusive': True, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': None, 'survey_key': None, 'notice': None, 'issuer': 'main', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': None, 'guard': None, 'reference_word': 'Main', 'log_by': 'Main Agent', 'title': 'Main Agent', 'plural': 'Main Agents', 'article': 'the', 'serves': 'User', 'families': 'all', 'recovery': ('@core', '@role', '_Axis/INSTRUCTIONS.md', '_Axis/MINDSET.md', '_Axis/DIRECTIVES.md', '@overlay', '@state')},
+    {'name': 'Main', 'cls': 'session', 'subject': 'Main: session', 'match': 'exact', 'shape': 'exact4', 'created_by': 'claim', 'exclusive': True, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': None, 'survey_key': None, 'notice': None, 'issuer': 'main', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': None, 'guard': None, 'reference_word': 'Main', 'log_by': 'Main Agent', 'title': 'Main Agent', 'plural': 'Main Agents', 'article': 'the', 'serves': 'User', 'families': 'all', 'recovery': ('@core', '@role', '_Config/INSTRUCTIONS.md', '_Config/MINDSET.md', '_Config/DIRECTIVES.md', '@overlay', '@state')},
     {'name': 'Auxiliary', 'cls': 'session', 'subject': 'Auxiliary: ', 'match': 'prefix', 'shape': 'single-session-line', 'created_by': 'helper', 'exclusive': False, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': 'list', 'survey_key': 'fresh_auxiliary', 'notice': 'An Auxiliary Agent is serving this project ({id}).', 'issuer': 'worker', 'proposal_owner': True, 'proposal_issuer': 'auxiliary', 'submit_schema': 'axis.external-submission/v1', 'guard': {'config_key': 'externalAgents', 'flag': '--external', 'block_spawn': True, 'new_files': ('subfolders', '_Axis/Submissions/', '_Temp/')}, 'reference_word': 'Auxiliary', 'log_by': 'Auxiliary Agent', 'title': 'Auxiliary Agent', 'plural': 'Auxiliary Agents', 'article': 'an', 'serves': 'User', 'families': ('Ideas', 'Logs', 'Notes'), 'recovery': ('@core', '@role', '_Axis/Practices/Agents.md > Auxiliary Agent', '@state')},
     {'name': 'Assistant', 'cls': 'session', 'subject': 'Assistant: ', 'match': 'prefix', 'shape': 'single-session-line', 'created_by': 'helper', 'exclusive': False, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': 'list', 'survey_key': 'fresh_assistant', 'notice': 'An Assistant is serving this project ({id}).', 'issuer': 'worker', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': 'axis.external-submission/v1', 'guard': {'config_key': 'assistantAgents', 'flag': None, 'block_spawn': False, 'new_files': ('subfolders', '_Axis/Submissions/', '_Temp/')}, 'reference_word': 'Assistant', 'log_by': 'Assistant', 'title': 'Assistant', 'plural': 'Assistants', 'article': 'an', 'serves': 'User', 'families': ('Ideas', 'Logs', 'Notes'), 'recovery': ('@core', '@role', '@state')},
     {'name': 'GroupAgent', 'cls': 'session', 'subject': 'Group Agent: ', 'match': 'prefix', 'shape': 'single-session-line', 'created_by': 'helper', 'exclusive': False, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': 'list', 'survey_key': 'fresh_groupagent', 'notice': 'A Group Agent is serving this project ({id}).', 'issuer': 'worker', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': 'axis.external-submission/v1', 'guard': {'config_key': 'groupAgents', 'flag': None, 'block_spawn': True, 'new_files': ('subfolders', '_Axis/Submissions/', '_Temp/')}, 'reference_word': 'GroupAgent', 'log_by': 'Group Agent', 'title': 'Group Agent', 'plural': 'Group Agents', 'article': 'a', 'serves': 'User and named participants', 'families': ('Ideas', 'Logs', 'Notes'), 'recovery': ('@core', '@role', '@state')},
@@ -61,6 +61,7 @@ FLAGS={r['guard']['flag']:r for r in GUARDED.values() if r['guard']['flag']}
 SECRETS='_Axis/Secrets'
 # Governing files: what delegated agents follow. Helpers never write them; Main applies a granted change.
 GOVERNING=('_Axis/PRINCIPLES.md','_Axis/RULES.md','_Axis/Rules/','_Axis/PRACTICES.md','_Axis/Practices/','_Axis/DIRECTIVES.md','_Axis/MINDSET.md',
+           '_Config/DIRECTIVES.md','_Config/MINDSET.md','_Config/INSTRUCTIONS.md','_Config/PROJECT.md','_Config/SETTINGS.md',
            '_Axis/GLOSSARY.md','_Axis/MANIFEST.md','_Axis/Roles/','_Axis/Resources/','_Axis/Commands/','_Axis/INSTRUCTIONS.md','_Axis/PROJECT.md',
            '_Axis/SETTINGS.md','_Axis/SURFACES.md','AGENTS.md','CLAUDE.md','GEMINI.md')
 SPAWN_TOOLS=('Agent','Task')
@@ -72,7 +73,7 @@ SCRIPT_CALL=re.compile(r'(?:\bpython3?|\bsh|\bbash|(?:^|[\s;&|(])\.)(?:\s+-[A-Za
 # User-mode role actions belong to the User's own terminal; agent mode names --session-of-caller or --source-root.
 ROLE_ACTION=re.compile(r'(?:^|[;&|(\n]|\bthen|\bdo|\bexec)\s*(?:env\s+(?:\S+=\S*\s+)*)?(?:(?:\S*/)?python3?\s+(?:-\S+\s+)*)?(?:\S*/)?(?:axis|axis-roles\.py)\s+(retire|start)\b([^;&|\n]*)')
 # Declared roles serving other people: the Axis workflow files they may read besides their surface's read scope.
-WORKFLOW_READ=('_Axis/RULES.md','_Axis/PRACTICES.md','_Axis/PRINCIPLES.md','_Axis/GLOSSARY.md','_Axis/MANIFEST.md','_Axis/CHANGELOG.md','_Axis/SETTINGS.md',
+WORKFLOW_READ=('_Axis/RULES.md','_Axis/PRACTICES.md','_Axis/PRINCIPLES.md','_Axis/GLOSSARY.md','_Axis/MANIFEST.md','_Axis/CHANGELOG.md','_Config/SETTINGS.md','_Axis/SETTINGS.md',
                '_Axis/Rules/','_Axis/Practices/','_Axis/Roles/','_Axis/Commands/','_Axis/Resources/','_Axis/Agents/','_Axis/Updates/',
                '_Axis/Merges/','_Axis/Flags/','AGENTS.md','CLAUDE.md','GEMINI.md','README.md')
 # Their shell runs only Axis's own per-turn and record helpers; a role that writes nothing runs only its own admission check.
@@ -185,7 +186,7 @@ def helper_command(command):
 
 def verdict(root,rel,exists,agent,tool):
     if agent and secret(rel):return 'helpers never read or write _Axis/Secrets/'
-    if agent and rel=='_Axis/INSTRUCTIONS.md':return 'helpers never read the User\'s Instructions; the contract carries the part meant for them'
+    if agent and rel in ('_Config/INSTRUCTIONS.md','_Axis/INSTRUCTIONS.md'):return 'helpers never read the User\'s Instructions; the contract carries the part meant for them'
     if tool not in WRITE_TOOLS:return None
     if agent and governing(rel):return 'helpers never write governing files; the spawner applies a change the contract grants'
     refusal=write_once(root,rel,exists)

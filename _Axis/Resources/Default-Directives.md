@@ -1,5 +1,5 @@
 # Default Directives
-> **Purpose:** The Directives every Axis project should have, as shipped with this version. Managed: each update replaces this file. At startup `boot.py` appends any Directive listed here that `_Axis/DIRECTIVES.md` lacks, unless that file opts out of it with a line `<!-- axis:omit-directive: {Directive name} -->`. Existing Directives are never edited or removed.
+> **Purpose:** The Directives every Axis project should have, as shipped with this version. Managed: each update replaces this file. At startup `boot.py` appends any Directive listed here that `_Config/DIRECTIVES.md` lacks, unless that file opts out of it with a line `<!-- axis:omit-directive: {Directive name} -->`. Existing Directives are never edited or removed.
 
 ## Fault Tolerance
 
@@ -103,7 +103,7 @@ It is important to not load information into the context window until it is need
 #### Behavior
 - Stop working and reason about state of project.
 - Read index of Snapshots at `_Axis/SNAPSHOTS.md`
-- Read index of Tasks at `_Axis/TASKS.md`
+- Read index of Tasks at `_Config/TASKS.md`
 - Read index of Follow-Ups - i.e., read the Subject and structured fields of files in `_Axis/Followups/`.
 - Read index of Reminders - i.e., read the Subject and structured fields of files in `_Axis/Reminders/`.
 - Read index of Logs - i.e., read first-line of files (the subject) in `_Axis/Logs/`.
@@ -178,13 +178,13 @@ Close a surfaced Follow-Up when User clearly supplies the answer, decision, or c
 #### Keywords
 behavior change, setting change, profile change, tone adjustment, mindset change
 #### Description
-A behavior change User asks for lasts only when it is saved in `_Axis/SETTINGS.md` and `_Axis/MINDSET.md` is regenerated; otherwise it is lost after this reply.
+A behavior change User asks for lasts only when it is saved in `_Config/SETTINGS.md` and `_Config/MINDSET.md` is regenerated; otherwise it is lost after this reply.
 #### Triggers
 - User asks to change Agent's tone, posture, stance, mindset, or thinking style.
 - User asks to change Profile ("switch to Deep," "make this a Fast project").
 #### Behavior
 - Briefly confirm: "I'll update SETTINGS and regenerate my MINDSET. OK?"
-- If yes, update the relevant Setting(s) in `_Axis/SETTINGS.md`, then follow `_Axis/Resources/Draft-Mindset.md`.
+- If yes, update the relevant Setting(s) in `_Config/SETTINGS.md`, then follow `_Axis/Resources/Draft-Mindset.md`.
 - If no, do not write to disk, but do inform User that you will try to follow the new behavior for the current tasks/work, and on into the remainder of the current session - but that the change could be reset at any time, and will definitely be reset on the next session.
 
 ## Act at the Permissions Level

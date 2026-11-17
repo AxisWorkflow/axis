@@ -47,7 +47,7 @@ Sweep after your Marker and `starting` are written: delete each taken-over Main 
 
 ## Admitted loading batch
 
-After successful helper or manual admission, retrieve `_Axis/Resources/Start-Session.md`, `_Axis/Resources/Load-Starting-Context.md` and `_Axis/INSTRUCTIONS.md` together in one bounded batch when the host supports independent file reads. Keep file boundaries visible and require complete outputs; split any oversized or truncated result. This groups retrieval only: follow Start-Session's execution order, and apply standing guidance before probes. Use ordinary sequential file tools when batching is unavailable. Never preload these project instructions before admission or skip required fresh state rereads.
+After successful helper or manual admission, retrieve `_Axis/Resources/Start-Session.md`, `_Axis/Resources/Load-Starting-Context.md` and `_Config/INSTRUCTIONS.md` together in one bounded batch when the host supports independent file reads. Keep file boundaries visible and require complete outputs; split any oversized or truncated result. This groups retrieval only: follow Start-Session's execution order, and apply standing guidance before probes. Use ordinary sequential file tools when batching is unavailable. Never preload these project instructions before admission or skip required fresh state rereads.
 
 ## Persistent-host displacement evidence
 

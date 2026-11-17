@@ -11,7 +11,7 @@ Read what the Practices and Commands direct, and lazy-load detail records when a
 
 For every request that depends on project records:
 
-1. **Pass one - index only.** Work from index-level information: the entries in `_Axis/TASKS.md` and `_Axis/SNAPSHOTS.md`, the Plan, and the first line (Subject) of each Log, Note, Idea, Follow-Up and Reminder (for example `head -n 1` across a family). Do not open record bodies yet.
+1. **Pass one - index only.** Work from index-level information: the entries in `_Config/TASKS.md` and `_Axis/SNAPSHOTS.md`, the Plan, and the first line (Subject) of each Log, Note, Idea, Follow-Up and Reminder (for example `head -n 1` across a family). Do not open record bodies yet.
 2. **Write the shortlist.** Name the record IDs the request needs, newest first when they may conflict. Keep it short; a shortlist that grows past about 15 records means the request should be narrowed or split.
 3. **Pass two - open exactly those.** Read the shortlisted records and answer or act from them. When records disagree, the newest record wins.
 4. **Widen only on evidence.** If pass two shows a missing piece, such as a record pointing to another, add that record and say so. Never bulk-read a whole family "to be safe".

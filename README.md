@@ -1,7 +1,8 @@
 # Axis Workflow
+> **Purpose:** Introduce Axis, start a project, and find the user and technical guides.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-2ea44f.svg)](/_Axis/LICENSE)
-[![Version](https://img.shields.io/badge/Version-3.21-blue.svg)](https://github.com/AxisWorkflow/axis)
+[![Version](https://img.shields.io/badge/Version-3.22-blue.svg)](https://github.com/AxisWorkflow/axis)
 [![Works with](https://img.shields.io/badge/Works%20with-Claude%20Cowork%20%7C%20Claude%20Code%20%7C%20ChatGPT%20Work%20%7C%20Codex%20%7C%20Cursor%20%7C%20Antigravity%20CLI-6f42c1.svg)](https://github.com/AxisWorkflow/axis)
 
 The [**Axis Workflow™**](https://github.com/AxisWorkflow/axis) is an open-source project developed by [Kenneth Younge Advisory](https://kennethyounge.com), released under the [MIT License](/_Axis/LICENSE). The license grants no trademark rights. If you like **Axis**, [please buy us a coffee](https://buymeacoffee.com/axisworkflow). Please **[star the repo](https://github.com/AxisWorkflow/axis)** - it helps others to find it.
@@ -10,7 +11,20 @@ The [**Axis Workflow™**](https://github.com/AxisWorkflow/axis) is an open-sour
 >
 > **Looking for something?** Jump to the [Topic Index](#topic-index) at the end of this page, or open the complete [Help Index](/_Axis/HELPINDEX.md).
 
+The badges show the license, document version and example Agent hosts. The [host compatibility guidance](/_Axis/SPECIFICATION.md#host-and-model-compatibility) states the requirements and limits.
 
+
+## Contents
+
+- [Quick Start](#quick-start)
+- [What is the Axis Workflow?](#what-is-the-axis-workflow)
+- [Why use the Axis Workflow?](#why-use-the-axis-workflow)
+- [Who needs the Axis Workflow?](#who-needs-the-axis-workflow)
+- [Learn More](#learn-more)
+- [Trademarks](#trademarks)
+- [License](#license)
+- [Copyright](#copyright)
+- [Topic Index](#topic-index)
 
 ## Quick Start
 
@@ -32,9 +46,9 @@ You can now start Axis. Download, host startup and project setup time depend on 
 
 Axis itself needs no account or server and is free to download. You supply a compatible AI host; its access, installation requirements and costs are separate. Optional integrations have their own requirements.
 
-![Selected Axis project folders: your work and _Wiki sit beside _Axis, which contains the workflow, Plan, Tasks, records and optional Dashboard](/_Axis/Resources/axis-folders.svg)
+![Selected Axis project folders: your work and _Wiki sit beside _Config, which holds the Plan and Tasks, and _Axis, which contains the workflow, records and optional Dashboard](/_Axis/Resources/axis-folders.svg)
 
-The picture shows a typical project folder: your own folders and the `_Wiki/` knowledge base sit beside `_Axis/`, which holds the Plan, Tasks, record folders, the optional Dashboard and the User Manual. Two more folders you will use, `_Inbox/` for new material and `_Memos/` for reports addressed to you, are not drawn.
+The picture shows a typical project folder: your own folders and the `_Wiki/` knowledge base sit beside `_Config/`, which holds your project's own files such as the Plan and the Task list, and `_Axis/`, which holds the record folders, the optional Dashboard and the User Manual. Two more folders you will use, `_Inbox/` for new material and `_Memos/` for reports addressed to you, are not drawn.
 
 Open the live Dashboard with `^dashboard` to see your project state read from its files. The [Dashboard guide](/_Axis/USERMANUAL.md#reading-the-dashboard) explains its views and requirements.
 
@@ -63,7 +77,7 @@ The Dashboard illustration uses fictional project records and example settings.
 
 - **Control your content.**
 
-  **Axis** captures everything about your project and stores it on **your computer:** Plans, Tasks, Follow-Ups, Notes, Ideas, Logs, Snapshots, Wiki content, etc.
+  **Axis** stores your recorded Plans, Tasks, Follow-Ups, Notes, Ideas, Logs, Snapshots and Wiki content on **your computer**. Unsaved conversation content is not a project record.
 
 - **Avoid lock-in.**
 
@@ -79,7 +93,7 @@ The Dashboard illustration uses fictional project records and example settings.
 
 - **Cross-examine results.**
 
-  **Axis** does not just oversell the first solution - it can spin up a devil's advocate to cross-examine results. When a local model is used (see [Settings > CX Model](/_Axis/SETTINGS.md#cx-model)), that additional critique has no per-token provider charge, so you can use it on routine work as well as final deliverables.
+  **Axis** does not just oversell the first solution - it can spin up a devil's advocate to cross-examine results. When a local model is used (see [Settings > CX Model](/_Config/SETTINGS.md#cx-model)), that additional critique has no per-token provider charge, so you can use it on routine work as well as final deliverables.
 
 - **Improve security.**
 

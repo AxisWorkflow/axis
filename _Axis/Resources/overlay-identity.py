@@ -8,6 +8,21 @@ Without Python, Load-Project-Overlay.md defines the same file-only procedure.
 from pathlib import Path
 import argparse,hashlib,json,re,stat,sys,time
 
+# BEGIN GENERATED: project-files
+PROJECT_FILES=('PROJECT.md','PLAN.md','INITIATIVES.md','TASKS.md','INSTRUCTIONS.md','SETTINGS.md','MINDSET.md','DIRECTIVES.md')
+def project_file(root,name):
+    """Path of project file NAME: in _Config/ once moved, in _Axis/ before. Two differing copies are an error, never a choice."""
+    import pathlib
+    if name not in PROJECT_FILES:raise ValueError('not a project file: '+str(name))
+    new=pathlib.Path(root)/'_Config'/name;old=pathlib.Path(root)/'_Axis'/name
+    if new.is_file() and old.is_file() and new.read_bytes()!=old.read_bytes():raise ValueError('project file differs between _Config and _Axis: '+name)
+    return new if new.is_file() or not old.is_file() else old
+def project_name(root,name):
+    """Project-relative name of project file NAME, by the same rule: `_Config/NAME` or `_Axis/NAME`."""
+    import pathlib
+    return project_file(root,name).relative_to(pathlib.Path(root)).as_posix()
+# END GENERATED: project-files
+
 def require(value,message):
     if not value:raise ValueError(message)
 
@@ -29,6 +44,10 @@ def safe(root,name):
 def read(root,name):
     p=safe(root,name);require(p.is_file(),'missing file');return p.read_bytes()
 
+def read_project(root):
+    for folder in ('_Config','_Axis'):safe(root,folder+'/PROJECT.md')
+    return read(root,project_name(root,'PROJECT.md'))
+
 def lease(root,sid,phase):
     require(re.fullmatch(r'\d{4}(?:\.\d{2}){5}\.\d{3}Z',sid),'invalid session identity')
     name=f'_Axis/Agents/{sid}.md';p=safe(root,name);lines=read(root,name).decode().splitlines()
@@ -46,7 +65,7 @@ def lease(root,sid,phase):
 def validate(root,sid,phase,expected):
     lease(root,sid,phase)
     if expected is not None:require(re.fullmatch('[0-9a-f]{64}',expected),'invalid independent content pin')
-    project=read(root,'_Axis/PROJECT.md');lines=project.decode().splitlines();begin='<!-- axis:project-overlay:begin -->';end='<!-- axis:project-overlay:end -->'
+    project=read_project(root);lines=project.decode().splitlines();begin='<!-- axis:project-overlay:begin -->';end='<!-- axis:project-overlay:end -->'
     if begin not in lines and end not in lines:
         require(b'axis:project-overlay:' not in project,'malformed declaration marker');return {'state':'absent','presentation':'standard'}
     require(lines.count(begin)==lines.count(end)==1 and lines.index(begin)<lines.index(end),'malformed declaration')
@@ -68,7 +87,7 @@ def validate(root,sid,phase,expected):
     if schema==2:require(values[3]==digest,'declaration content mismatch')
     if schema==1 or rsi:require(expected is not None,'independent content pin required')
     if expected is not None:require(expected==digest,'independent content mismatch')
-    lease(root,sid,phase);require(read(root,'_Axis/PROJECT.md')==project and read(root,name)==source,'identity changed during validation')
+    lease(root,sid,phase);require(read_project(root)==project and read(root,name)==source,'identity changed during validation')
     return {'state':'valid','schema':schema,'id':oid,'path':name,'project_sha256':hashlib.sha256(project).hexdigest(),'sha256':digest,'presentation':'rsi' if rsi else 'standard'}
 
 def main():

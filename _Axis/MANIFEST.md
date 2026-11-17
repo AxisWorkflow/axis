@@ -7,6 +7,7 @@
 
 - **`_Axis/`** - Control folder for Axis Workflow.
 - **`_Axis/Secrets/`** - Secrets (keys, tokens, credentials).
+- **`_Config/`** - The project's own files: Project, Plan, Initiatives, Task index, Instructions, Settings, Mindset and Directives.
 - **`_Inbox/`** - Drop folder for new material; Main Agent files each item into its home.
 - **`_Memos/`** - Memos to User: decisions, next steps, findings and Reviews; finished ones move to `_Memos/Archive/`.
 - **`_Temp/`** - Scratch space for regenerable files and protected recovery. Preserve active recovery, including verified context-hook preimages in `_Temp/Context/hook-rollback/`, until its operation and any rollback are verified.
@@ -22,6 +23,16 @@
 - **`GEMINI.md`** - Entry pointer; exactly `@./AGENTS.md` plus a final newline. A host that reads `AGENTS.md` needs nothing else.
 - **`README.md`** - Created by Project Setup as the User-owned Project README with one bounded Axis summary block. It is not in the release download, so before setup its absence is normal and is never reported as missing; a cloned repository carries the Axis GitHub introduction instead.
 - **`LICENSE`** - Before setup, generated display copy of the Axis MIT License; after setup, User-owned or absent. Project Setup removes only the pristine Axis copy.
+
+### Project files
+
+- `_Config/DIRECTIVES.md`
+- `_Config/INSTRUCTIONS.md`
+- `_Config/MINDSET.md`
+- `_Config/PLAN.md`
+- `_Config/PROJECT.md`
+- `_Config/SETTINGS.md`
+- `_Config/TASKS.md`
 
 ## Axis
 
@@ -63,20 +74,13 @@
 - `_Axis/USERMANUAL.md` - The User Manual: how to use Axis; explanatory and lazy-loaded during ordinary operation.
 - `_Axis/SPECIFICATION.md` - The technical and compliance reference; explanatory and lazy-loaded during ordinary operation.
 - `_Axis/HELPINDEX.md` - The Help Index: every documented topic, the words people use for it and its section links; explanatory, read only for `^help`.
-- `_Axis/DIRECTIVES.md`
 - `_Axis/ENVIRONMENT.md`
 - `_Axis/GLOSSARY.md`
-- `_Axis/INSTRUCTIONS.md`
 - `_Axis/MANIFEST.md`
-- `_Axis/MINDSET.md`
-- `_Axis/PLAN.md`
 - `_Axis/PRACTICES.md`
 - `_Axis/PRINCIPLES.md`
-- `_Axis/PROJECT.md`
 - `_Axis/RULES.md`
-- `_Axis/SETTINGS.md`
 - `_Axis/SNAPSHOTS.md`
-- `_Axis/TASKS.md`
 - `_Axis/TEAMS.md`
 - `_Axis/MESSAGES.md`
 - `_Axis/JOBS.md`
@@ -96,7 +100,7 @@ Optional project state: `EXCEPTIONS.md` in the Axis control folder, created on f
 - `_Axis/Splits/` - created on demand for approved split provenance and recovery; never template history.
 - `_Axis/Repairs/` - optional durable originals for audited cosmetic repairs; created on demand, never release history.
 
-- `_Axis/INITIATIVES.md` - optional shared outcomes and Task groups; absent is valid, and no startup detail load is required.
+- `_Config/INITIATIVES.md` - optional shared outcomes and Task groups; absent is valid, and no startup detail load is required.
 - Surface table (`_Axis/SURFACES.md`) - optional and User-owned ([Practices > Surfaces]); Main creates it on the User's first declaration, and absent means no declared surfaces.
 - `_Axis/Branding/` - the product brand package (stylesheet with light and dark themes, WOFF2 fonts, tokens, mark, logo, favicons), shipped read-only and replaced whole by each update; `manifest.json` lists every file with its SHA-256. Its assets are not under the MIT License (see `LICENSE-ASSETS.md`). A project updated by an updater older than 2.01 (from any earlier version) receives it with its next update after 2.01 (updaters before 2.01 cannot install a new folder); absent until then is valid, and the Dashboard and `^status` pages fall back to plain brand colours.
 
@@ -257,6 +261,7 @@ Optional project state: `EXCEPTIONS.md` in the Axis control folder, created on f
 - `_Axis/Resources/context-check.py` - optional content check loaded by `turn.py`: proves Axis guidance is still in context and orders a reload when it is not; ships off in 3.17, where a compaction mark orders a periodic reload instead.
 - `_Axis/Resources/Boot-Manual.md` - shell-only startup when `boot.py` cannot run.
 - `_Axis/Resources/Entry-Protocol.md` - the complete startup and per-turn protocol; the path for a pending update.
+- `_Axis/Resources/Move-Project-Files.md` - manual move of the project files from `_Axis/` to `_Config/`; loaded only while one is still in `_Axis/`.
 - `_Axis/Resources/agent-board.py` - optional read-only Tracking board for `^board` and the awareness pass; reading the files directly remains available.
 - `_Axis/Resources/Claim-Session.md`
 - `_Axis/Resources/Default-Directives.md` - the shipped default Directives; startup adds any missing from the project's `DIRECTIVES.md`.

@@ -74,6 +74,7 @@ _Axis/Flags/host-storage
 _Axis/Flags/reminder-check
 _Axis/Flags/environment-binding
 _Axis/Flags/local-aptitude
+_Axis/Flags/config-move
 # END GENERATED: flag-ignore
 
 # Local scheduler placement; portable intent stays in Schedules.

@@ -1,15 +1,15 @@
 # Axis Workflow User Manual
 > **Purpose:** How to use the Axis Workflow day to day: setup, commands, the Dashboard, the Wiki, working across tools and machines, and working with Agents and models. For the technical and compliance reference, see [SPECIFICATION](/_Axis/SPECIFICATION.md).
-> **Version:** 3.21
+> **Version:** 3.22
 
 **Looking for something?** Jump to the [Topic Index](#topic-index) at the end of this manual, or ask your Agent `^help <topic>`.
 
 ## Contents
 
-- [Getting Started](#getting-started): [Setup](#setup), [Guided project setup](#guided-project-setup), [How Axis Works](#how-axis-works), [Tips](#tips) and the [FAQ](#faq)
-- [Everyday Use](#everyday-use): [Commands](#commands), the [Dashboard](#reading-the-dashboard), [Inbox](#inbox), [Memos](#memos), the [Wiki](#wiki), [Settings](#settings), [archiving](#archiving-policy-and-cold-history) and [child projects](#supervising-child-projects)
-- [Working Across Tools and Machines](#working-across-tools-and-machines): [Portability](#portability), [file sharing](#file-sharing), [terminal sessions](#terminal-sessions-and-model-access) and [remote access from a laptop or phone](#remote-access-from-a-laptop-or-phone)
-- [Agents and Models](#agents-and-models): roles, an [Axis Team of Agents](#an-axis-team-of-agents-and-its-jobs), [Scheduling](#scheduling), [Subagents](#subagents) and [Delegation](#delegation)
+- [Getting Started](#getting-started)
+- [Everyday Use](#everyday-use)
+- [Working Across Tools and Machines](#working-across-tools-and-machines)
+- [Agents and Models](#agents-and-models)
 - [OpenClaw Integration](#openclaw-integration)
 - [Integrations](#integrations)
 - [Trademarks](#trademarks), [License](#license) and [Copyright](#copyright)
@@ -28,7 +28,7 @@
 - Mount your AI tool (Claude Cowork, ChatGPT Work, Codex, Antigravity CLI, Claude Code, ...) to the folder.
 - **Note:** For the complete shell-backed feature set on Windows, use **WSL** or **Git Bash**. Without a POSIX-like shell, Axis keeps its canonical file workflow and degrades shell-dependent enhancements.
 
-Axis reserves six underscore-prefixed folders in your project: `_Axis/`, `_Inbox/`, `_Memos/`, `_Temp/`, `_Trash/` and the readable `_Wiki/`. Drop new material in `_Inbox/`, read reports and decisions in `_Memos/`, and browse knowledge in `_Wiki/`. You can generally ignore the others and work with your Agent. One exception: deposit secret files into `_Axis/Secrets/` by hand so they never go through chat.
+Axis reserves seven underscore-prefixed folders in your project: `_Axis/`, `_Config/`, `_Inbox/`, `_Memos/`, `_Temp/`, `_Trash/` and the readable `_Wiki/`. `_Config/` holds your project's own files: the Project, the Plan, the Task list, your Instructions and the Settings. Drop new material in `_Inbox/`, read reports and decisions in `_Memos/`, and browse knowledge in `_Wiki/`. You can generally ignore the others and work with your Agent. One exception: deposit secret files into `_Axis/Secrets/` by hand so they never go through chat.
 
 Your own content lives in normal folders that your Agent creates and organizes as the work develops; add `_U` to a folder name to make it read-only for Agents, or `_X` to hide it from Agents completely.
 
@@ -41,7 +41,7 @@ Your own content lives in normal folders that your Agent creates and organizes a
 **Set up your project** (allow time to review the goal and plan):
 
 - Type `Start Axis` in a compatible host attached to the project folder. Most supported entry routes also treat any first message as a start request; some desktop apps treat a plain greeting as small talk. If the host has not loaded the entry instructions, follow its folder/instruction setup before continuing.
-- Your Agent can help you set up a [Project](/_Axis/PROJECT.md) (background, objectives, deliverables, ...).
+- Your Agent can help you set up a [Project](/_Config/PROJECT.md) (background, objectives, deliverables, ...).
 - The download has no `README.md`. During setup Axis creates a short one for your project (or replaces the Axis README if you cloned the repository instead of downloading). This User Manual stays at [`_Axis/USERMANUAL.md`](/_Axis/USERMANUAL.md) and the technical reference at [`_Axis/SPECIFICATION.md`](/_Axis/SPECIFICATION.md). Start with this manual for any question or problem; the Specification is rarely needed - it is for deep diagnostics, extending Axis, technical or compliance reviews, and contributors. The root Axis license is removed unless you already chose a project license; Axis itself remains covered by [`_Axis/LICENSE`](/_Axis/LICENSE). Use `^help manual` whenever you want to browse this manual, or `^help` followed by a word or question to find a topic.
 
 
@@ -74,12 +74,12 @@ For example: “I need a one-page museum welcome guide for adult visitors. Engli
 
 **2. Define a project:**
 
-- Give your project a name, background, and goals in [Project](/_Axis/PROJECT.md).
+- Give your project a name, background, and goals in [Project](/_Config/PROJECT.md).
 
 **3. Select a profile:**
 
-- Configure [Settings](/_Axis/SETTINGS.md).
-- Set general behavior in [Mindset](/_Axis/MINDSET.md).
+- Configure [Settings](/_Config/SETTINGS.md).
+- Set general behavior in [Mindset](/_Config/MINDSET.md).
 
 **4. Start Axis:**
 
@@ -93,7 +93,7 @@ An optional integration can check a session without making it appear recently ac
 - Standard operating procedures in [Practices](/_Axis/PRACTICES.md).
 - Broad guidance in [Principles](/_Axis/PRINCIPLES.md).
 - Invariant rules (to keep top-of-mind) in [Rules](/_Axis/RULES.md).
-- Conditional triggers (for situational behaviors) in [Directives](/_Axis/DIRECTIVES.md). New Axis versions can add default Directives; the first session after an update adds any you are missing and says so. To keep one out, delete it and add `<!-- axis:omit-directive: {its name} -->` to that file.
+- Conditional triggers (for situational behaviors) in [Directives](/_Config/DIRECTIVES.md). New Axis versions can add default Directives; the first session after an update adds any you are missing and says so. To keep one out, delete it and add `<!-- axis:omit-directive: {its name} -->` to that file.
 - Subject-by-subject rule detail in [Rules](/_Axis/Rules/), lazy-loaded when an activity needs it.
 
 Before a download approval prompt, the default **Explain Download Permissions** Directive has the Agent describe the source, expected contents, destination when known, and whether the action only saves or also opens, runs, installs or imports the file. Unknowns are stated; permission to save is not permission to execute. It adds no approval step to an otherwise authorized retrieval.
@@ -102,8 +102,8 @@ When a verification test fails, **Testing Calibration** has the Agent check whet
 
 **6. Users/Agents co-manage the project by:**
 
-- **Plan** - A high-level overview of how the project is organized is in the [Plan](/_Axis/PLAN.md).
-- **Tasks** - Sequential steps to perform work under the plan is in [Tasks](/_Axis/TASKS.md).
+- **Plan** - A high-level overview of how the project is organized is in the [Plan](/_Config/PLAN.md).
+- **Tasks** - Sequential steps to perform work under the plan is in [Tasks](/_Config/TASKS.md).
 - **Snapshots** - Context saved for review or transfer between sessions is in [Snapshots](/_Axis/SNAPSHOTS.md).
 - **Reminders** - Specific time-based information is queued in [Reminders](/_Axis/Reminders/).
 
@@ -150,7 +150,7 @@ When a verification test fails, **Testing Calibration** has the Agent check whet
 
 - **Monitor everything from a browser.** `^dashboard` opens a live, self-refreshing overview - project, plan, tasks, ideas, notes, logs, and health warnings at a glance. Separate **Reminders**, **User Follow Up**, and **Agent Activity** cards distinguish what is coming due, what waits on you, and what the Agent should advance next. The always-visible Review carries the deeper Recent Developments analysis, so coming back after a week away does not mean reading the whole project. The Dashboard is the live view; `^status` is the quick look (one screen, or a web page), and `^review` is the dated report you can file, print, or email.
 
-- **Run cheap.** `^install ollama` tests a small local model before using it for qualified routine delegation - and only when it catches the planted flaw in at least 4 of 5 identical runs of the aptitude screen does critique route to it. This is one of the biggest budget levers in Axis: local cross-examination has no per-token provider charge, so your frontier-model budget goes to the work that deserves it and you can afford to cross-examine far more often than you otherwise would.
+- **Use a local model where it qualifies.** `^install ollama` tests a small local model before routine delegation. Critique routes to it only when it catches the planted flaw in at least 4 of 5 identical aptitude-screen runs. Local inference has no per-token provider charge; hardware requirements, speed and task quality still matter.
 
 - **Refresh your project.** Run the `^refresh` command now and then to identify stale file locks for quiescent recovery, remove dead Markers, archive over-limit Notes, delete leftover scratch files, and realign your Plan with your Tasks.
 
@@ -195,25 +195,29 @@ First check which release is installed: the `Version:` row of the startup banner
 
 Run `^update`. Your Agent downloads an exact official release into temporary staging, compares it with both your installed release and local project, previews the migration, and proceeds when it is expected and unexceptional. Your `^update` invocation is sufficient; there is no extra `UPDATE` entry. A conflict or exceptional migration asks only for the specific decision needed. After a successful migration, `^update` shuts down the old Axis session itself - do not run `^shutdown` afterward. Close that window (or terminal) and start a new session so the updated Workflow loads.
 
+If your project still keeps its project files in `_Axis/` (`PROJECT.md`, `PLAN.md`, `INITIATIVES.md`, `TASKS.md`, `INSTRUCTIONS.md`, `SETTINGS.md`, `MINDSET.md`, `DIRECTIVES.md`), that first start moves the existing files to `_Config/` before loading them. The file-only update never adds an absent project-owned file in either location, including when both copies are absent. Startup reports what it moved, which links it repaired and what remains for you to review. The words of your Instructions stay intact; only their link destinations may change. If a file exists in both places with different content, nothing is changed and both paths are named: decide which copy to keep, remove or rename the other, and start again.
+
+Finish any unfinished update on another computer before transferring the project, and receive the update on each computer before starting Axis there. Update a parent project before its nested projects: an older parent may not recognize a child whose files have moved. Restart an already-running Dashboard server. To go back, restore the checkpoint taken before the update and remove only the eight relocated files listed above from `_Config/` that the checkpoint did not track; preserve any other content there. Without Git, restore a backup.
+
 When an old updater or pre-commit checker blocks an update, Axis loads a conditional bootstrap/recovery procedure. An exact known checker repair preserves staged, unstaged and untracked work, keeps ordinary commit checks, and does not itself complete adoption. Customized or unrecognized checkers remain held for review.
 
 **Does it run on Windows?**
 Yes. WSL or Git Bash unlocks the complete shell-backed feature set. Without a POSIX-like shell, the canonical file workflow still runs through the host's file tools; shell-dependent enhancements report the limitation and use their documented fallback where one exists.
 
 **Can I rename the `_Axis/` folder?**
-No - the implementation files for Axis reference `_Axis/`, `_Temp/`, `_Trash/`, and `_Wiki/` literally. You can rename the parent folder holding the entire project, but do not rename those specific folders within it.
+No - the implementation files for Axis reference `_Axis/`, `_Config/`, `_Temp/`, `_Trash/`, and `_Wiki/` literally. You can rename the parent folder holding the entire project, but do not rename those specific folders within it.
 
 **Can I use my own README for my project?**
 Yes. The Axis README you see on GitHub is not part of the download, and a cloned copy is replaced during setup. Project Setup creates a README for your project; Axis refreshes only its bounded project-summary block during `^review`, `^save`, and outgoing `^git` checkpoints, and anything you write outside that block remains yours. Use `^help manual` or `^help <topic>` to browse this manual without loading all of it.
 
 **Can I use a different entry file?**
-No - use the `AGENTS.md`, `CLAUDE.md`, and/or `GEMINI.md` files provided by Axis. They are reserved Workflow machinery: `AGENTS.md` holds the instructions, and the other two contain only `@./AGENTS.md` plus a final newline. Put standing project or host guidance in `_Axis/INSTRUCTIONS.md`; `^update` can then replace entry machinery without erasing your instructions.
+No - use the `AGENTS.md`, `CLAUDE.md`, and/or `GEMINI.md` files provided by Axis. They are reserved Workflow machinery: `AGENTS.md` holds the instructions, and the other two contain only `@./AGENTS.md` plus a final newline. Put standing project or host guidance in `_Config/INSTRUCTIONS.md`; `^update` can then replace entry machinery without erasing your instructions.
 
 **Can my project live in Dropbox, Google Drive, or OneDrive?**
 That can work, but Axis detects cloud-synced folders and disables parallel writes, which degrades performance (see [File Sharing](#file-sharing) and the Specification's [Known Limitations](/_Axis/SPECIFICATION.md#known-limitations-and-open-issues)). A plain local folder is better.
 
 **Where do Subprojects go?**
-Anywhere your organization puts them: a Subproject is any folder that is itself a complete Axis Project - carrying the standard entry files, `_Axis/` with its core control files, and `_Temp/`. Nest one inside `Clients/Acme/`, keep one at the project root - Axis recognizes it by what it carries, not by where it sits.
+Anywhere your organization puts them: a Subproject is any folder that is itself a complete Axis Project - carrying the standard entry files, `_Axis/` with its core control files, its Project file in `_Config/`, and `_Temp/`. Nest one inside `Clients/Acme/`, keep one at the project root - Axis recognizes it by what it carries, not by where it sits.
 
 **Can a Subproject contain its own Subprojects?**
 Yes. Nesting is recursive: any complete Axis Project inside another is that project's child. Each session inherits ordinary guidance from its nearest enclosing Axis Project. The ultimate parent has oversight over the entire nested tree by default, including grandchildren and deeper projects; work is relayed through the owning Mains.
@@ -364,7 +368,7 @@ Type `^feedback` to report a bug, request a feature or ask a question. Your Agen
 
 Use an Initiative when several Tasks pursue one shared outcome. For example, a Plan to grow a service might include an Initiative to improve first-time setup, with separate Tasks to investigate delays, make a change, and check the result. The Plan holds priorities, the Initiative holds shared scope and current phase, and Tasks hold the actual work.
 
-Ask your Agent to create or update an Initiative, or use `^plan` and `^tasks`. Its shared record lives in `_Axis/INITIATIVES.md`; Tasks can link to it with an optional `initiative:` key. The Dashboard shows an Initiative link beside linked Tasks. Small projects can keep using only their Plan and Tasks. A completed Task does not automatically mean the shared outcome is achieved.
+Ask your Agent to create or update an Initiative, or use `^plan` and `^tasks`. Its shared record lives in `_Config/INITIATIVES.md`; Tasks can link to it with an optional `initiative:` key. The Dashboard shows an Initiative link beside linked Tasks. Small projects can keep using only their Plan and Tasks. A completed Task does not automatically mean the shared outcome is achieved.
 
 ### Wiki
 
@@ -388,15 +392,15 @@ The Wiki can include images. Saving attachments locally makes them available eve
 
 - In Obsidian `Settings` → `Files and links`, choose `In the folder specified below` for `Default location for new attachments`, then select `_Wiki/_Inbox/`. See [Obsidian's attachment guidance](https://obsidian.md/help/attachments); labels can vary by version.
 
-- Then in `Settings` → `Hotkeys`, search for `Download` to find `Download attachments for current file` and bind it to a hotkey (e.g. Ctrl+Shift+D).
+- Paste or drag the image files into an Obsidian note to copy them to that attachment location, or save them directly into `_Wiki/_Inbox/`.
 
-- After clipping an article, hit the hotkey and all images get downloaded to local disk.
+- Check that the image files are present locally. Setting the attachment location alone does not download every remotely linked image in a clipped article.
 
 - Agents will scan and link images in `_Wiki/_Inbox/` as part of their normal Wiki ingestion and maintenance routines.
 
 ### Settings
 
-The Axis Workflow follows a set of tunable parameters in [Settings](/_Axis/SETTINGS.md). Each Setting controls one aspect of how the Agent reasons, communicates, or manages the project. The easiest way to change Settings is to **select a Profile**, but you can also edit Settings one-by-one by directly editing [`_Axis/SETTINGS.md`](/_Axis/SETTINGS.md) or by requesting help from your Agent.
+The Axis Workflow follows a set of tunable parameters in [Settings](/_Config/SETTINGS.md). Each Setting controls one aspect of how the Agent reasons, communicates, or manages the project. The easiest way to change Settings is to **select a Profile**, but you can also edit Settings one-by-one by directly editing [`_Config/SETTINGS.md`](/_Config/SETTINGS.md) or by requesting help from your Agent.
 
 The behavioral controls are **Reasoning** (depth), **Exploration** (alternatives), **Eagerness** (accommodation of your framing), **Skepticism** (questioning the Agent's own claims), **Familiarity** (tone), **Verbosity** (amount of explanation), **Simplicity**, **Precision** and **Generalization** (solution tradeoffs), **Rigor** (verification), **Creativity** (novelty), **Transparency** (record detail), and **Budget** (discretionary effort). Use `^settings` to review their ranges and values. These guide behavior; they do not directly set the host model's API parameters.
 
@@ -412,7 +416,7 @@ A **hard bound**, such as an approved spending cap or work window, stays binding
 
 **Fault Tolerance** controls bounded handling of minor deviations: -2 is strict, -1 requires ordinary repair, 0 may disclose a harmless cosmetic deviation, +1 also permits up to two minutes of eligible completion grace, and +2 permits a capped 5% grace and audited cosmetic WORM repairs. Standard defaults to +1, Fast to +2 and Deep to -1. The Dashboard shows the level. This setting never changes a failed check into a pass, authorizes a substantive history edit, raises spending limits, or overrides hard deadlines, security or host controls. See [Practices > FaultTolerance] for the exact boundaries.
 
-**Context Management** (default `Default`) chooses how your agent decides what to read from the project for each request. `Two-Pass` makes it check the index first, pick only the records it needs, and open just those. In Axis's tests that used about 38% fewer tokens on Claude, with every answer still correct, but it did not help Codex. Axis suggests the right value for the model you use, once per session, and changes it only if you agree. This is an area under active development; the Specification's [Context Management](/_Axis/SPECIFICATION.md#context-management) section has the details and the evidence.
+**Context Management** (default `Default`) chooses how your Agent selects project records for each request. `Two-Pass` checks the index, shortlists records, then opens them; bulk requests that need a whole family or period skip the index pass. In synthetic projects on one model per platform, Two-Pass used about 38% fewer tokens on Claude for long targeted lookup work and saved tokens in all four targeted comparisons. Heavy whole-month reading used more tokens, and a Codex sample contained three wrong answers out of 55. Axis suggests a measured value once per session and changes it only if you agree. See the Specification’s [Context Management](/_Axis/SPECIFICATION.md#context-management) section for sample sizes and limits.
 
 Another is **Skepticism** (-2 to +2). It steers how hard the Agent doubts its own work - whether it stops to ask *why* a conclusion holds, names the assumptions sitting underneath it, and goes looking for the evidence that would prove it wrong. At the highest setting the Agent explores competing explanations in parallel before committing to one. Skepticism points inward, at the Agent's own reasoning; **CX Frequency** points outward, buying an independent critic once the work is done.
 
@@ -466,7 +470,7 @@ The parent moves `1099-INT.pdf` into `Taxes/_Inbox/`, writes the order down, and
 - **Binding.** A child carries out a checked order, refers it back to you (for example when it needs your answer), or declines it for a stated reason such as an expired order or an unsafe state. It never quietly ignores it. For that task the order outranks the child's own standing instructions; the child reports any conflict. It never moves a secret out of the child or changes which session is in charge there.
 - **Changes that can't be undone** exactly, pushing, publishing, spending money, or loosening a safeguard are listed for your approval before the child starts, and never go to `all` children at once. Your approval in the parent counts as your confirmation in the child.
 - **`all`** shows you the exact order, the children and how many sessions it will start, then runs one child first and the rest one at a time. A failure in that first child stops the run.
-- **Filing to children automatically.** When you drop a document into the parent's `_Inbox/` and it clearly belongs to one child, the parent delivers it to that child's `_Inbox/`. If you have written a standing instruction in the parent's `_Axis/INSTRUCTIONS.md`, for example "tax documents go to Taxes, which files them and updates the estimate", the parent issues that order itself, for tasks that can be undone, right after it greets you. Otherwise it suggests the `^^do` and offers to write such an instruction for you, so the next one routes on its own.
+- **Filing to children automatically.** When you drop a document into the parent's `_Inbox/` and it clearly belongs to one child, the parent delivers it to that child's `_Inbox/`. If you have written a standing instruction in the parent's `_Config/INSTRUCTIONS.md`, for example "tax documents go to Taxes, which files them and updates the estimate", the parent issues that order itself, for tasks that can be undone, right after it greets you. Otherwise it suggests the `^^do` and offers to write such an instruction for you, so the next one routes on its own.
 - **Each child decides** how far its parent may direct it with the **Parent Authority** Setting: `direct` (the default) or `advise`, where orders become requests the child may decline. Use `advise` for a child someone else runs. Only you, working in the child, can raise it back to `direct`.
 - **Know the limit.** These are instructions the agents follow, not locks. An agent that was tricked into misbehaving in the parent could send an order you never gave, and the child could not tell. Recovery is the child's checkpoint: roll back to it.
 
@@ -604,7 +608,7 @@ Axis needs no file server: a project is a folder. A shared authoritative folder 
 
 ### Terminal sessions and model access
 
-`python3 _Axis/Resources/axis-roles.py retire`, run from the project folder, ends that project's live Main: it shows the session's recent activity, asks you to type `RETIRE` (or takes `--yes` from your own scripts), fences its lease with the same record `^kill` writes and logs the retirement. The session stops at its next turn; its records stay. After `^install axis`, `axis retire [path]` is the short form. Use a terminal outside your agent: inside an agent's shell the command runs in agent mode and refuses a User retirement. In agent mode it acts only on a direct child project, for the calling agent's own valid Main session and a Log or Supervision record that session wrote with `requested-by: owner`, the action and the exact child path; Main writes that record only when you, the verified owner, gave the command, never for a colleague in a shared chat. Agent shells are recognized from the environment markers of Claude Code, Codex and OpenClaw and from the `axis` utility's own markers; recognition of a shell run by the Antigravity CLI or Grok Build is not verified. On Claude Code the guardrails hook also refuses the User forms of `axis retire` and `axis start`. These checks catch mistakes; an agent with an unrestricted shell on another host could still pose as you. Without Python 3, wait for the takeover limit, or write the tombstone by hand: create `_Axis/Agents/{Session ID}.kill` with `killed-by: user`, the UTC time and a reason, then delete `_Axis/Agents/{Session ID}.md`.
+`python3 _Axis/Resources/axis-roles.py retire`, run from the project folder, ends that project's live Main: it shows the session's recent activity, asks you to type `RETIRE` (or takes `--yes` from your own scripts), fences its lease with the same record `^kill` writes and logs the retirement. The session stops at its next turn; its records stay. After `^install axis`, `axis retire [path]` is the short form. Use a terminal outside your agent: inside an agent's shell the command runs in agent mode and refuses a User retirement. In agent mode it acts only on a direct child project, for the calling agent's own valid Main session and a Log or Supervision record that session wrote with `requested-by: owner`, the action and the exact child path; Main writes that record only when you, the verified owner, gave the command, never for a colleague in a shared chat. The detector recognizes environment markers for Claude Code, Codex, Gemini CLI, OpenClaw and the `axis` utility, including `ANTIGRAVITY_AGENT` and `GROK_AGENT` for Antigravity and Grok Build when those markers are present. This is best-effort detection, not proof that every host session supplies a marker. On Claude Code the guardrails hook also refuses the User forms of `axis retire` and `axis start`. These checks catch mistakes; an agent with an unrestricted shell on another host could still pose as you. Without Python 3, wait for the takeover limit, or write the tombstone by hand: create `_Axis/Agents/{Session ID}.kill` with `killed-by: user`, the UTC time and a reason, then delete `_Axis/Agents/{Session ID}.md`.
 
 The `axis` terminal utility is an opt-in add-on for macOS, Linux and WSL, set up by `^install axis`. Axis works without it: open the folder in your agent as usual. It gives `axis retire` as a short form, starts a terminal in a declared role ([Assistants, Group Agents and Observers](#assistants-group-agents-and-observers)) and keeps one terminal session per project ([The optional axis utility](#the-optional-axis-utility)).
 
@@ -738,7 +742,7 @@ Reattaching the same terminal does not create another Axis session. Starting ano
 There are separate limits:
 
 - **Computer and terminal:** tmux can keep terminal programs through a client disconnect. It cannot preserve a live process through a desktop reboot, shutdown or process failure. Host policy may also end user processes after logout.
-- **Provider access:** a running terminal does not remove login requirements, usage limits or a provider refusal. Use only verified included subscription access for this route. An unavailable allowance is a reason to pause or return later, not to switch to a paid API key or add `--allow-api`.
+- **Provider access:** a running terminal does not remove login requirements, usage limits or a provider refusal. This example uses verified subscription access. An unavailable allowance does not authorize a paid fallback or `--allow-api`; a separately chosen API route needs explicit authorization under the Model Access Setting.
 - **Axis authority and work limits:** a surviving process does not renew a lost Main lease, change a role, extend a deadline or authorize more work. Agreed task limits and required approval prompts still apply while you are away. tmux is not a scheduler or proof that work is progressing.
 
 Before relying on remote access, agree how long the authoritative computer should stay awake and powered. Apple's [sleep settings](https://support.apple.com/en-euro/guide/mac-help/mchle41a6ccd/mac) vary by model and power source; preventing sleep uses more power, and “Wake for network access” is not proof that this remote path will work. Use an approved, bounded availability arrangement instead of blanket system-wide sleep changes.
@@ -821,7 +825,7 @@ Beyond Main and Auxiliary, you can give a surface (a terminal, a chat or a chann
 - **Group Agent** - serves you and the people you name on a shared chat. It reads only the folders you list for that surface, never your Secrets, Instructions, Memos or records, and has no web or messaging tools. A colleague's request becomes an answer or a request to Main unless you adopt it.
 - **Observer** - read-only within the folders you list; it writes nothing, not even a session record. Stop it by removing its binding.
 
-To set one up, tell Main in this project, for example "declare my laptop terminal as an Assistant". Main adds the surface to your surface table (`_Axis/SURFACES.md`), with the folders a Group Agent or Observer may read, and logs the change. Then start the surface with the declaration `Axis role: Assistant; surface: laptop` in the agent's standing configuration, or from a terminal with `axis --agent claude --role Assistant --surface laptop`. On Claude Code the launcher also passes the declaration and the role's tool limits and withholds MCP connectors from a Group Agent or Observer, and the guardrails hook (`^install guardrails`, which the launcher requires for those two roles) enforces the role's limits and read scope, and refuses Git changes from any declared role (reading history still works; Main commits); elsewhere the limits hold through the role's instructions. A Group Agent or Observer never lists your Memos or reads your whole surface table; admission returns only its own declaration and folders. `^memos` there sends you to Main. On OpenClaw the `axis-guardrails` plugin re-adds each listed agent's role guidance to its system prompt on every run, so the guidance survives compaction. A declaration without a matching row gets a one-line notice and no service. Changes take effect at the surface's next session. Existing OpenClaw chats keep their current roles; nothing reassigns them automatically.
+To set one up, tell Main in this project, for example "declare my laptop terminal as an Assistant". Main adds the surface to your surface table (`_Axis/SURFACES.md`), with the folders a Group Agent or Observer may read, and logs the change. Then start the surface with the declaration `Axis role: Assistant; surface: laptop` in the agent's standing configuration, or from a terminal with `axis --agent claude --role Assistant --surface laptop`. On Claude Code the launcher also passes the declaration and the role's tool limits and withholds MCP connectors from a Group Agent or Observer, and the guardrails hook (`^install guardrails`, which the launcher requires for those two roles) enforces the role's limits and read scope, and refuses Git changes from any declared role (reading history still works; Main commits); elsewhere the limits hold through the role's instructions. A Group Agent or Observer never lists your Memos or reads your whole surface table; admission returns only its own declaration and folders. `^memos` there sends you to Main. On OpenClaw the `axis-guardrails` plugin re-adds each listed agent's role guidance to its system prompt on every run, to supply it again on later runs. This integration has not been tested on an installed OpenClaw, so recovery after compaction is not established. A declaration without a matching row gets a one-line notice and no service. Changes take effect at the surface's next session. Existing OpenClaw chats keep their current roles; nothing reassigns them automatically.
 
 ### An Axis Team of Agents and its Jobs
 
@@ -857,13 +861,13 @@ Main's Message view separates actual Main obligations, uncertain cases and retai
 
 The baseline supports one-time, daily/weekly calendar, elapsed fixed-rate/completion-relative intervals and verified events. Unsupported recurrence is reported. Defaults skip nonexistent daylight-saving times, select the first repeated time, coalesce missed occurrences to one within expiry, and queue at most one while work is active. Unknown clock changes and external effects are held for reconciliation. Only classified safe failures get at most two retries inside the same deadline. Duplicate triggers do not admit another occurrence; Axis does not promise exactly-once external effects.
 
-Scheduled child-project supervision initially reports status/inspection only. Recurring child starts or changes require a separately approved standing mandate. Reminders continue to mean things you must do, independently of executable schedules.
+Scheduled child-project supervision initially reports status/inspection only. Recurring child starts or changes require a separately approved standing mandate. Reminders control when information is surfaced; Follow-Ups track actions waiting on you. Neither grants permission to execute a scheduled action.
 
 ### Long conversations and compaction
 
 When a conversation grows long, the AI tool may compact it into a summary and drop much of what the Agent read at startup. Axis tells every Agent to treat that summary as a hint: before it answers again it reloads the files its role needs, keeps any hold or limit you set, and does not take an earlier approval for a push, publication, spending or deletion from the summary alone. You need do nothing for this. If an Agent seems to have forgotten an Axis rule after a long session, ask it to run its per-turn check and reload; starting a fresh session is always safe.
 
-On Claude Code and Codex you can also add an optional hook with `^install context hooks`; Axis shows the exact change to the tool's settings file and asks before writing it. The hook reminds a resumed or compacted session of its identity and role straight away. On Codex it also gives the startup rules back after a compaction; they stay in the conversation, so each later request carries about 9,000 more input tokens until the next compaction, and the preview states the figure for your project. On Gemini CLI, Copilot CLI, Cursor, Devin and OpenCode the same command adds a smaller hook that only records each compaction, so Axis knows to check its guidance; those tools do not let a hook speak to the Agent after a compaction. The Antigravity CLI and Grok Build have no such hook: there the entry file and the per-turn check carry recovery, and recovery after a compaction has not been observed on either. `_Axis/Resources/Host-Channels.md` lists what each tool supports and when that was last checked. Remove a hook through the same preview and approval process. Axis preserves modified or unknown OpenCode plugins; for a known plugin it saves and verifies the contents and permissions before replacement or removal, so recovery also remains possible after an interruption. A full `^audit` lists the known hook paths and matching releases. The release that installed a hook is reported only when an installation record proves it; otherwise it stays unknown. Axis helpers on Claude Code run without your own CLAUDE.md files; the Task each helper receives carries what it must follow.
+On Claude Code and Codex you can also add an optional hook with `^install context hooks`; Axis shows the exact change to the tool's settings file and asks before writing it. Claude Code can receive the bound session’s role guidance after compaction. On Codex, a compaction event receives a role-neutral recovery message and, when the installed hook includes it and it fits, the startup rules; it does not assign a role from another session’s identity. An older hook may need a reviewed reinstall through `^install context hooks` to include those rules. The rules stay in the conversation until the next compaction, adding input to later requests; the preview estimates the amount for your project. For Gemini CLI, Copilot CLI, Cursor, Devin and OpenCode, Axis supplies a mark-only hook or plugin so the per-turn check can detect a compaction. These routes are compatible by design but have not been verified in live Axis sessions; the host register records its vendor-documentation checks on 5–6 November 2026. The Antigravity CLI and Grok Build have no such hook: there the entry file and the per-turn check carry recovery, and recovery after a compaction has not been observed on either. `_Axis/Resources/Host-Channels.md` lists what each tool supports and when that was last checked. Remove a hook through the same preview and approval process. Axis preserves modified or unknown OpenCode plugins; for a known plugin it saves and verifies the contents and permissions before replacement or removal, so recovery also remains possible after an interruption. A full `^audit` lists the known hook paths and matching releases. The release that installed a hook is reported only when an installation record proves it; otherwise it stays unknown. Axis helpers on Claude Code run without your own CLAUDE.md files; the Task each helper receives carries what it must follow.
 
 ### Sessions, delivery and migration
 
@@ -879,7 +883,7 @@ When an update finds the older Requests queue, it moves the entries to Submissio
 
 Agents can timestamp, append and verify their activity line in one command. If tracking was missed, Main reports the gap as retrospective; it does not invent an earlier action or completion time. Before launching a separate session, Main checks that its temporary-file location stays inside the assigned project; this does not change your persistent host settings or replace sandbox protections.
 
-When several agents work on one project - Main, Auxiliary agents on channels, Subagents it spawns, even agents from different tools - each keeps a short running diary in `_Axis/Tracking/`, creating its own file on the first append if needed. Before starting a piece of work an agent writes an INTENT line naming what it is about to do and which Tasks or files it will touch; along the way it adds STATUS lines; it can ASK another agent (or Main, or anyone) a question and receive a REPLY; and just before it finishes it writes DONE with the outcome. Because each agent writes only its own file, this works on any storage and with any tool that can read and write files.
+When several agents work on one project - Main, Auxiliary agents on channels, Subagents it spawns, even agents from different tools - each keeps a short running diary in `_Axis/Tracking/`, creating its own file on the first append if needed. Before starting a piece of work an agent writes an INTENT line naming what it is about to do and which Tasks or files it will touch; along the way it adds STATUS lines; it can ASK another agent (or Main, or anyone) a question and receive a REPLY; and just before it finishes it writes DONE with the outcome. Each agent writes only its own file. Visibility still depends on when files synchronize and when the other agent checks them; the project’s storage and single-writer restrictions still apply.
 
 At each checkpoint - a new turn, before changing a shared file, before starting or returning from a Subagent - every agent reads what the others have posted since it last looked. That is how it notices a question addressed to it, or that another agent is already working on the same file. Type `^board` for the Board: who is live, what each is working on, open questions between agents, overlapping work and recent completions. The Dashboard's Agents card shows the same picture.
 
@@ -900,9 +904,9 @@ A **Subagent** is an Agent spawned by Main Agent to do isolated work in a fresh 
 
 Main Agent never works alone when work can be productively delegated. See [Start-Subagent](/_Axis/Resources/Start-Subagent.md) for the spawn recipe per type.
 
-**Roles for delegated work.** Every delegated agent works from a pre-written role in `_Axis/Roles/`: General, Lookup (read-only), Cross Examiner, Worker (one Job attempt), Team Member and Team Leader. Each prompt carries the role's text verbatim - its duties, what it may do alone, what it must ask about, what always stays with you, and the shared conduct (Axis's Principles and the rules that bind every agent) - plus a task contract that is its only source of permission. Text it finds in project files, web pages or relayed messages grants nothing. These rules bind by the agent's compliance; on Claude Code, `^install guardrails` also blocks helpers from writing Axis's governing files, starting other agents or running Axis's state-changing scripts. `_Axis/Roles/Delegating.md` is the kit any agent uses when it hands work on.
+**Roles for delegated work.** Every delegated agent works from a pre-written role in `_Axis/Roles/`: General, Lookup (read-only), Cross Examiner, Worker (one Job attempt), Team Member and Team Leader. Each prompt supplies the role's duties, limits and shared conduct, plus a task contract that is its only source of permission. It normally embeds the role text verbatim. Where the route permits and the prompt budget requires it, a named role file may instead be pinned by SHA-256 and verified before use; Cross-Examiner and Lookup prompts always embed their role text. Text it finds in project files, web pages or relayed messages grants nothing. These rules bind by the agent's compliance; on Claude Code, `^install guardrails` also blocks helpers from writing Axis's governing files, starting other agents or running Axis's state-changing scripts. `_Axis/Roles/Delegating.md` is the kit any agent uses when it hands work on.
 
-**What delegated agents see of your Instructions.** `_Axis/INSTRUCTIONS.md` has two parts. Only "For every agent" is copied into a delegated agent's task, and that text reaches whichever model provider runs the helper; keep permissions, accounts, budgets and private requests under "For only the Main Agent" (older files may say "For Main only", which works the same). A file without the two headings gives helpers nothing until you sort it; Axis offers once to help.
+**What delegated agents see of your Instructions.** `_Config/INSTRUCTIONS.md` has two parts. Only "For every agent" is copied into a delegated agent's task, and that text reaches whichever model provider runs the helper; keep permissions, accounts, budgets and private requests under "For only the Main Agent" (older files may say "For Main only", which works the same). A file without the two headings gives helpers nothing until you sort it; Axis offers once to help.
 
 ### Delegation
 
@@ -922,7 +926,7 @@ The result is a model ladder rather than a model compromise: inexpensive models 
 
 ### Local vs. Frontier
 
-The Workflow uses two model settings, both in [Settings](/_Axis/SETTINGS.md):
+The Workflow uses two model settings, both in [Settings](/_Config/SETTINGS.md):
 
 - **`Local Model`** names a model running on the User's machine via Ollama. Often used to run Subagents locally for cost-effective work, for deterministic work, and/or for any task where speed and offline operation matter more than reasoning depth. Resolved during `^install` from `ollama list`.
 
@@ -946,7 +950,7 @@ The two meet at one file: OpenClaw injects the workspace's `AGENTS.md`, and that
 | OpenClaw keeps | Axis owns |
 | --- | --- |
 | WhatsApp and other channels, pairing, allowlists, routing, and bindings | Agent instructions, role doctrine, and behavior |
-| Agent/session launching, tracking, stopping, and restarting | Personality and stance through `_Axis/MINDSET.md` |
+| Agent/session launching, tracking, stopping, and restarting | Personality and stance through `_Config/MINDSET.md` |
 | Directed session-message delivery | Persistent memory through Notes and project files |
 | Explicit cron jobs and scheduled wakeups | Portable schedule intent and supervision policy |
 | Operational transcripts and same-session compaction | Messages as the authoritative inter-agent message |
@@ -988,7 +992,7 @@ The hardening keeps `AGENTS.md` injection and disables the competing layers:
 
 The explicit Axis tool surface retains filesystem/runtime access, agent and session control, messaging, cron, status, and User interaction. Extra tools are opt-in per Project. Required channel and model-provider plugins stay enabled; Axis never disables all plugins or adds a broad plugin allowlist merely to silence a warning.
 
-Do not create OpenClaw persona or memory files for an Axis agent. Put standing project guidance in `_Axis/INSTRUCTIONS.md`, conversational stance in `_Axis/MINDSET.md`, User/project facts in the owning project records, and persistent memory in Axis Notes. Channel display metadata may still provide a name or avatar, but it supplies no behavior, memory, role, or authority.
+Do not create OpenClaw persona or memory files for an Axis agent. Put standing project guidance in `_Config/INSTRUCTIONS.md`, conversational stance in `_Config/MINDSET.md`, User/project facts in the owning project records, and persistent memory in Axis Notes. Channel display metadata may still provide a name or avatar, but it supplies no behavior, memory, role, or authority.
 
 If legacy persona or memory files already exist, Axis checks only their existence and asks before moving them intact to `_Trash/OpenClaw-Legacy/`. A leftover `TOOLS.md` matters most: OpenClaw's repair command (`openclaw doctor --fix`, which also runs during OpenClaw updates) merges it into `AGENTS.md`, which would edit the Axis entry file, so Axis moves it first and treats every repair run and update as a change you approve. It never reads them merely to harden the profile and never edits OpenClaw's SQLite state. For a previously personal or mixed installation, a fresh dedicated Axis profile is safer than trying to clean a shared memory index. The User decides whether old profile state and transcripts are archived or purged.
 
@@ -1006,9 +1010,9 @@ See the [OpenClaw practice](/_Axis/Practices/OpenClaw.md) for the complete thin-
 
 **Cloudflare:** `^install cloudflare` reads [Cloudflare's current agent-setup instructions](https://developers.cloudflare.com/agent-setup/prompt.md) and selects the route for your agent. Axis previews the skills/plugins, MCP connection, install scope and login effects before making changes. The CLI is optional, authentication stays in the native browser, and setup does not authorize deployments, DNS or billing changes. Cloudflare is not required for Axis.
 
-The **Axis Workflow** runs directly from markdown - you do not need to install anything else to get Axis to run, and to run well. You may find, however, that certain third-party extensions, services, and applications will work well with Axis and significantly improve its functionality.
+The **Axis Workflow** runs from Markdown files through a capable Agent host. The tools below are optional examples for editing, capture, backup, search or hosting; they are not required for the core Workflow, and not every tool has an Axis installer. Check the provider’s current documentation for availability, setup and account requirements.
 
-- **Obsidian** - Main UI for User to access project files and Wiki: https://obsidian.md
+- **Obsidian** - Optional viewer and editor for project files and the Wiki: https://obsidian.md
 - **Obsidian Web Clipper** - Capture web pages: https://obsidian.md/clipper
 - **Obsidian Graph View** (built-in) - View shape of wiki: connections, hubs, orphans.
 - **Obsidian Marp Plugin** - Generate markdown presentations from wiki content.
@@ -1066,7 +1070,7 @@ Copyright 2026 Kenneth A. Younge. All rights reserved except as expressly licens
 ## Topic Index
 
 <!-- BEGIN GENERATED: topic-index -->
-106 topics covered in this document, in alphabetical order. The [Help Index](/_Axis/HELPINDEX.md) lists every topic across the Axis documents with the words people use for it; in a project, `^help <topic>` searches it.
+119 topics covered in this document, in alphabetical order. The [Help Index](/_Axis/HELPINDEX.md) lists every topic across the Axis documents with the words people use for it; in a project, `^help <topic>` searches it.
 
 | Topic | In this manual |
 | --- | --- |
@@ -1078,6 +1082,7 @@ Copyright 2026 Kenneth A. Younge. All rights reserved except as expressly licens
 | Auxiliary Agents | [Auxiliary Agents](#auxiliary-agents) |
 | Axel | [FAQ](#faq) |
 | Axis Team of Agents | [An Axis Team of Agents and its Jobs](#an-axis-team-of-agents-and-its-jobs); [Team setup and recovery](#team-setup-and-recovery) |
+| Backup services | [Integrations](#integrations) |
 | Backups | [File Sharing](#file-sharing) |
 | Budget and cost control | [Settings](#settings); [Delegation](#delegation) |
 | Capabilities and host facts | [Capabilities](#capabilities) |
@@ -1088,6 +1093,7 @@ Copyright 2026 Kenneth A. Younge. All rights reserved except as expressly licens
 | Context Management | [Settings](#settings) |
 | Coordinating Agents and the Board | [Coordinating Agents](#coordinating-agents) |
 | Copyright | [Copyright](#copyright) |
+| Cross Examiner role | [Subagents](#subagents) |
 | Cross-Examination | [Tips](#tips); [Subagents](#subagents) |
 | Dashboard | [Reading the Dashboard](#reading-the-dashboard) |
 | Data location and privacy | [FAQ](#faq) |
@@ -1107,7 +1113,9 @@ Copyright 2026 Kenneth A. Younge. All rights reserved except as expressly licens
 | Folders and file layout | [Setup](#setup); [FAQ](#faq) |
 | Follow-Ups | [Tips](#tips) |
 | Full-folder and offline transfer | [Full-Folder and Offline Fallbacks](#full-folder-and-offline-fallbacks) |
+| General Subagent | [Subagents](#subagents) |
 | Git synchronization | [What the Commands Do](#what-the-commands-do); [First-Time Git Setup](#first-time-git-setup) |
+| GitHub hosting | [Integrations](#integrations) |
 | Guardrails and host hooks | [Subagents](#subagents); [Assistants, Group Agents and Observers](#assistants-group-agents-and-observers) |
 | Guided project setup | [Guided project setup](#guided-project-setup) |
 | Help and where to read more | [Commands](#commands) |
@@ -1120,9 +1128,12 @@ Copyright 2026 Kenneth A. Younge. All rights reserved except as expressly licens
 | Keeping links valid | [Keeping Links Valid](#keeping-links-valid) |
 | License | [License](#license) |
 | Local and frontier models | [Local vs. Frontier](#local-vs-frontier) |
+| Local search with QMD | [Integrations](#integrations) |
 | Logs | [How Axis Works](#how-axis-works) |
 | Long conversations and compaction | [Long conversations and compaction](#long-conversations-and-compaction) |
+| Lookup Subagent | [Subagents](#subagents) |
 | Main Agent and the one-Main rule | [Agents and Models](#agents-and-models); [Auxiliary Agents](#auxiliary-agents) |
+| Markdown presentation and table tools | [Integrations](#integrations) |
 | Maximum concurrent sessions | [Settings](#settings) |
 | Memos | [Memos](#memos) |
 | Messages, Assignments and Submissions | [Sessions, delivery and migration](#sessions-delivery-and-migration) |
@@ -1130,6 +1141,7 @@ Copyright 2026 Kenneth A. Younge. All rights reserved except as expressly licens
 | Model access and paid API use | [Terminal sessions and model access](#terminal-sessions-and-model-access) |
 | Model benchmarks and aptitude | [Local vs. Frontier](#local-vs-frontier) |
 | Notes and Ideas | [Tips](#tips) |
+| Obsidian and Web Clipper | [Integrations](#integrations) |
 | OpenClaw | [OpenClaw Integration](#openclaw-integration); [Running Axis on OpenClaw](#running-axis-on-openclaw); [How Axis and OpenClaw Fit Together](#how-axis-and-openclaw-fit-together) |
 | OpenClaw security and group chats | [Security and Audit Boundaries](#security-and-audit-boundaries) |
 | OpenClaw setup and hardening | [OpenClaw Setup](#openclaw-setup) |
@@ -1137,6 +1149,7 @@ Copyright 2026 Kenneth A. Younge. All rights reserved except as expressly licens
 | Plan, Tasks and Initiatives | [How Axis Works](#how-axis-works); [Initiatives](#initiatives) |
 | Portability | [Working Across Tools and Machines](#working-across-tools-and-machines); [Portability](#portability) |
 | Principles, Rules, Practices and Resources | [How Axis Works](#how-axis-works) |
+| Project configuration files and relocation | [FAQ](#faq) |
 | Project file and project README | [How Axis Works](#how-axis-works); [FAQ](#faq) |
 | Project identity and placement | [An Axis Team of Agents and its Jobs](#an-axis-team-of-agents-and-its-jobs) |
 | Prompt envelope | [Porting between AI Platforms](#porting-between-ai-platforms) |
@@ -1162,6 +1175,8 @@ Copyright 2026 Kenneth A. Younge. All rights reserved except as expressly licens
 | Supervision records and targeted audits | [Supervising Child Projects](#supervising-child-projects) |
 | Switching AI tools | [Porting between AI Platforms](#porting-between-ai-platforms) |
 | Taking over an idle session | [Auxiliary Agents](#auxiliary-agents) |
+| Team Leader role | [Subagents](#subagents) |
+| Team Member role | [Subagents](#subagents) |
 | Terminal sessions and the launcher | [Terminal sessions and model access](#terminal-sessions-and-model-access); [The optional axis utility](#the-optional-axis-utility); [Sessions, delivery and migration](#sessions-delivery-and-migration) |
 | Tips | [Tips](#tips) |
 | Trademarks | [Trademarks](#trademarks) |
@@ -1170,10 +1185,12 @@ Copyright 2026 Kenneth A. Younge. All rights reserved except as expressly licens
 | Updating Axis | [FAQ](#faq) |
 | Updating child projects | [Supervising Child Projects](#supervising-child-projects) |
 | Verifying a download | [Verify a Download (Advanced)](#verify-a-download-advanced) |
+| Web search and capture tools | [Integrations](#integrations) |
 | What Axis is | [How Axis Works](#how-axis-works) |
 | Wiki | [Wiki](#wiki) |
 | Wiki images | [Wiki Images](#wiki-images) |
 | Windows | [Setup](#setup); [FAQ](#faq) |
+| Worker role | [Subagents](#subagents) |
 | Working without helper scripts | [An Axis Team of Agents and its Jobs](#an-axis-team-of-agents-and-its-jobs) |
 | Write-once records | [What the Commands Do](#what-the-commands-do) |
 <!-- END GENERATED: topic-index -->

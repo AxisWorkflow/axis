@@ -45,7 +45,7 @@
     "survey_key": null,
     "promotable": false,
     "lifetime": "session",
-    "recovery": ["@core", "@role", "_Axis/INSTRUCTIONS.md", "_Axis/MINDSET.md", "_Axis/DIRECTIVES.md", "@overlay", "@state"]
+    "recovery": ["@core", "@role", "_Config/INSTRUCTIONS.md", "_Config/MINDSET.md", "_Config/DIRECTIVES.md", "@overlay", "@state"]
   },
   "presentation": {
     "title": "Main Agent",

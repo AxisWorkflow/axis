@@ -15,7 +15,7 @@ from pathlib import Path
 # BEGIN GENERATED: role-table
 # Compiled from _Axis/Roles/ at release; edit the role files, never this region.
 ROLE_TABLE=(
-    {'name': 'Main', 'cls': 'session', 'subject': 'Main: session', 'match': 'exact', 'shape': 'exact4', 'created_by': 'claim', 'exclusive': True, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': None, 'survey_key': None, 'notice': None, 'issuer': 'main', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': None, 'guard': None, 'reference_word': 'Main', 'log_by': 'Main Agent', 'title': 'Main Agent', 'plural': 'Main Agents', 'article': 'the', 'serves': 'User', 'families': 'all', 'recovery': ('@core', '@role', '_Axis/INSTRUCTIONS.md', '_Axis/MINDSET.md', '_Axis/DIRECTIVES.md', '@overlay', '@state')},
+    {'name': 'Main', 'cls': 'session', 'subject': 'Main: session', 'match': 'exact', 'shape': 'exact4', 'created_by': 'claim', 'exclusive': True, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': None, 'survey_key': None, 'notice': None, 'issuer': 'main', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': None, 'guard': None, 'reference_word': 'Main', 'log_by': 'Main Agent', 'title': 'Main Agent', 'plural': 'Main Agents', 'article': 'the', 'serves': 'User', 'families': 'all', 'recovery': ('@core', '@role', '_Config/INSTRUCTIONS.md', '_Config/MINDSET.md', '_Config/DIRECTIVES.md', '@overlay', '@state')},
     {'name': 'Auxiliary', 'cls': 'session', 'subject': 'Auxiliary: ', 'match': 'prefix', 'shape': 'single-session-line', 'created_by': 'helper', 'exclusive': False, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': 'list', 'survey_key': 'fresh_auxiliary', 'notice': 'An Auxiliary Agent is serving this project ({id}).', 'issuer': 'worker', 'proposal_owner': True, 'proposal_issuer': 'auxiliary', 'submit_schema': 'axis.external-submission/v1', 'guard': {'config_key': 'externalAgents', 'flag': '--external', 'block_spawn': True, 'new_files': ('subfolders', '_Axis/Submissions/', '_Temp/')}, 'reference_word': 'Auxiliary', 'log_by': 'Auxiliary Agent', 'title': 'Auxiliary Agent', 'plural': 'Auxiliary Agents', 'article': 'an', 'serves': 'User', 'families': ('Ideas', 'Logs', 'Notes'), 'recovery': ('@core', '@role', '_Axis/Practices/Agents.md > Auxiliary Agent', '@state')},
     {'name': 'Assistant', 'cls': 'session', 'subject': 'Assistant: ', 'match': 'prefix', 'shape': 'single-session-line', 'created_by': 'helper', 'exclusive': False, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': 'list', 'survey_key': 'fresh_assistant', 'notice': 'An Assistant is serving this project ({id}).', 'issuer': 'worker', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': 'axis.external-submission/v1', 'guard': {'config_key': 'assistantAgents', 'flag': None, 'block_spawn': False, 'new_files': ('subfolders', '_Axis/Submissions/', '_Temp/')}, 'reference_word': 'Assistant', 'log_by': 'Assistant', 'title': 'Assistant', 'plural': 'Assistants', 'article': 'an', 'serves': 'User', 'families': ('Ideas', 'Logs', 'Notes'), 'recovery': ('@core', '@role', '@state')},
     {'name': 'GroupAgent', 'cls': 'session', 'subject': 'Group Agent: ', 'match': 'prefix', 'shape': 'single-session-line', 'created_by': 'helper', 'exclusive': False, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': 'list', 'survey_key': 'fresh_groupagent', 'notice': 'A Group Agent is serving this project ({id}).', 'issuer': 'worker', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': 'axis.external-submission/v1', 'guard': {'config_key': 'groupAgents', 'flag': None, 'block_spawn': True, 'new_files': ('subfolders', '_Axis/Submissions/', '_Temp/')}, 'reference_word': 'GroupAgent', 'log_by': 'Group Agent', 'title': 'Group Agent', 'plural': 'Group Agents', 'article': 'a', 'serves': 'User and named participants', 'families': ('Ideas', 'Logs', 'Notes'), 'recovery': ('@core', '@role', '@state')},
@@ -242,7 +242,7 @@ if role['exclusive']:
     if len(lines)>=4 and lines[0].strip()==o.session:
         try:
             since=flag.stat().st_mtime
-            changed=any((root/n).stat().st_mtime>since for n in ('_Axis/PROJECT.md',lines[3].strip()))
+            changed=any((root/n).stat().st_mtime>since for n in ('_Config/PROJECT.md',lines[3].strip()))
         except OSError:changed=True
         if changed:items.append('the project overlay or its declaration changed since activation: revalidate it under _Axis/Resources/Load-Project-Overlay.md (activate phase) before applying its guidance')
 # Guidance versioning: name governing files changed since this session's previous turn (never before boot), so
@@ -251,7 +251,7 @@ if role['version_bound']:
     try:
         booted_at=dt.datetime.strptime(o.session,'%Y.%m.%d.%H.%M.%S.%fZ').replace(tzinfo=dt.timezone.utc).timestamp()
         since=max(booted_at,marker_info.st_mtime);changed=[]
-        names=[root/'_Axis'/n for n in ('PRINCIPLES.md','RULES.md','PRACTICES.md','DIRECTIVES.md','MINDSET.md','GLOSSARY.md','MANIFEST.md','PROJECT.md','INSTRUCTIONS.md','SETTINGS.md')]
+        names=[root/'_Axis'/n for n in ('PRINCIPLES.md','RULES.md','PRACTICES.md','GLOSSARY.md','MANIFEST.md')]+[root/'_Config'/n for n in ('DIRECTIVES.md','MINDSET.md','PROJECT.md','INSTRUCTIONS.md','SETTINGS.md')]
         for folder in ('Rules','Practices','Roles'):names+=sorted((root/'_Axis'/folder).glob('*.md'))
         for n in names:
             if n.is_file() and not n.is_symlink() and n.stat().st_mtime>since:changed.append(n.relative_to(root).as_posix())
@@ -318,7 +318,7 @@ def recover(exit=True):
             except OSError:pass
         if role['exclusive']:
             try:
-                tasks=(root/'_Axis/TASKS.md').read_text() if safe_file(root/'_Axis/TASKS.md') else ''
+                tasks=(root/'_Config/TASKS.md').read_text() if safe_file(root/'_Config/TASKS.md') else ''
                 found=re.findall(r'^status: (Active|Blocked)\ncreated: (\S+)',tasks,re.M)
                 active=[c for s,c in found if s=='Active'];state.append('Tasks Active: '+(', '.join(active[:8])+(f' (+{len(active)-8} more)' if len(active)>8 else '') if active else 'none')+f'; Blocked: {sum(1 for s,c in found if s=="Blocked")}')
                 fus=[p for p in (root/'_Axis/Followups').glob('*Z.md') if safe_file(p) and 'resolved: N/A' in p.read_text()]
@@ -326,7 +326,7 @@ def recover(exit=True):
                 state.append(f'open Follow-Ups: {len(fus)}; newest Snapshot: '+(snaps[-1] if snaps else 'none'))
             except OSError:pass
             try:
-                settings=(root/'_Axis/SETTINGS.md').read_text()
+                settings=(root/'_Config/SETTINGS.md').read_text()
                 pairs=[(k,re.search(r'^### '+re.escape(k)+r'\n(?:(?!\n### ).)*?\*\*Value:\*\* ([^\n]+)',settings,re.M|re.S)) for k in ('Permissions','Tracking','Working Language','Context Management','Budget','Fault Tolerance')]
                 state.append('Settings: '+'; '.join(f'{k} {m[1]}' for k,m in pairs if m))
             except OSError:pass
@@ -376,8 +376,8 @@ if role['reply_frame']:
     home=os.path.expanduser('~');folder=str(root);folder='~'+folder[len(home):] if folder==home or folder.startswith(home+'/') else folder
     project='Not set'  # the messaging opening names the Project as the startup banner does
     try:
-        if safe_file(root/'_Axis/PROJECT.md'):
-            with open(root/'_Axis/PROJECT.md',encoding='utf-8',errors='replace') as handle:found=re.match(r'# Project: (.+)',handle.readline(400))
+        if safe_file(root/'_Config/PROJECT.md'):
+            with open(root/'_Config/PROJECT.md',encoding='utf-8',errors='replace') as handle:found=re.match(r'# Project: (.+)',handle.readline(400))
             if found and found.group(1).strip() and '{{' not in found.group(1) and all(ord(c)>=32 for c in found.group(1).strip()):project=found.group(1).strip()
     except OSError:pass
     print(f'Reply frame: start your reply with the Axis header, with nothing before it, and on terminals end with one blank line, no divider, then > READY | {folder}: (or > READY | {folder}:  (Still working in the background) while background work you started still runs). On WhatsApp, SMS and equivalent messaging channels, open instead with the three lines A X I S   W O R K F L O W, " > {project}" and " > {folder}", then a blank line, without dividers, and omit the closing including its background-task variant. Separate paragraphs with blank lines. Progress notes get neither.')

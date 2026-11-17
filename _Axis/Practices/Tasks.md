@@ -3,7 +3,7 @@
 
 Break Plan down into congruent Tasks for actual execution. Keep Plan and Tasks synchronized - do not let them drift. Related Tasks may optionally share an Initiative under [Practices > Initiatives]; keep shared outcomes and phase decisions there, and concrete execution here.
 
-Record each Axis Task in `_Axis/TASKS.md` with the following shape:
+Record each Axis Task in `_Config/TASKS.md` with the following shape:
 
 - **Name** - the ## heading above the entry; 1 to 5 words to identify task at a glance.
 - **Label** - a phrase of 1 to 15 words to summarize what task does.
@@ -12,24 +12,24 @@ Record each Axis Task in `_Axis/TASKS.md` with the following shape:
 - **Updated** - field; exact UTC timestamp of the latest material edit, or `Unknown` only for a migrated Task whose durable recency cannot be established. New Tasks never use `Unknown`.
 - **Completed** - field; timestamp when Status reached **Completed**; `N/A` otherwise.
 - **Cancelled** - field; timestamp when Status reached **Cancelled**; `N/A` otherwise.
-- **Delivers** - field; optional; names the Deliverable in `_Axis/PROJECT.md` this task aims at; `N/A` when the task serves no single Deliverable.
+- **Delivers** - field; optional; names the Deliverable in `_Config/PROJECT.md` this task aims at; `N/A` when the task serves no single Deliverable.
 - **Initiative** - optional `initiative:` field; one stable key from [Initiatives], or omitted/blank/`N/A` for a standalone Task. Keep it identical in the index and detail. Before working on a linked Task, load its matching Initiative section and check the reciprocal Task link under [Practices > Initiatives].
 - **Description** - short body paragraph of < 100 words (blank line before and after).
-- **Details** - A link for `[Details...](Tasks/{yyyy.mm.dd.hh.mm.ss.xxxZ}.md)`, or `Tasks/Archive/{timestamp}.md` after a terminal Task is archived.
+- **Details** - A link for `[Details...](../_Axis/Tasks/{yyyy.mm.dd.hh.mm.ss.xxxZ}.md)`, or `../_Axis/Tasks/Archive/{timestamp}.md` after a terminal Task is archived. Every link from this index into `_Axis/` begins `../_Axis/`.
 
-Field keys in `_Axis/TASKS.md` are exactly `label:`, `status:`, `created:`, `updated:`, `completed:`, `cancelled:`, `delivers:`, and optional `initiative:` - lowercase, one per line, YAML-parseable (the Dashboard depends on these keys). Each value ends at its own line break; a key with no value reads as empty, never as the next line. Every material edit to an open Task advances `updated:`; terminal Tasks carry the terminal timestamp there. Do not use filesystem `mtime` as durable Task recency because copy, checkout, and sync operations rewrite it.
+Field keys in `_Config/TASKS.md` are exactly `label:`, `status:`, `created:`, `updated:`, `completed:`, `cancelled:`, `delivers:`, and optional `initiative:` - lowercase, one per line, YAML-parseable (the Dashboard depends on these keys). Each value ends at its own line break; a key with no value reads as empty, never as the next line. Every material edit to an open Task advances `updated:`; terminal Tasks carry the terminal timestamp there. Do not use filesystem `mtime` as durable Task recency because copy, checkout, and sync operations rewrite it.
 
 ## Deliverable Coverage
 
-`_Axis/PROJECT.md` names the Deliverables; `_Axis/TASKS.md` tracks the work; the Project Subfolders hold the output. The `delivers:` field is what joins the three, so that "are we done?" can be answered by reading the index instead of reading everything.
+`_Config/PROJECT.md` names the Deliverables; `_Config/TASKS.md` tracks the work; the Project Subfolders hold the output. The `delivers:` field is what joins the three, so that "are we done?" can be answered by reading the index instead of reading everything.
 
-- Write the Deliverable name in `delivers:` exactly as it appears in the **Deliverables** section of `_Axis/PROJECT.md`. When a task genuinely serves more than one, separate them with commas; when it serves none (routine upkeep, research, a spike), write `N/A`.
+- Write the Deliverable name in `delivers:` exactly as it appears in the **Deliverables** section of `_Config/PROJECT.md`. When a task genuinely serves more than one, separate them with commas; when it serves none (routine upkeep, research, a spike), write `N/A`.
 - When a task carrying a `delivers:` value reaches **Completed**, record the paths of the work products it produced under a `## Produced` heading in that task's detail file in `_Axis/Tasks/` - one path per line as a `- ` bullet. That is the only place a Deliverable is tied to a file, so it has to be written before the task is closed.
 - A Deliverable no task names is unclaimed work. Surface it rather than assuming it is covered.
-- Producing the file is not the same as meeting the bar. A Deliverable is done when its paths exist AND the relevant **Criteria** in `_Axis/PROJECT.md` have been evaluated against them.
+- Producing the file is not the same as meeting the bar. A Deliverable is done when its paths exist AND the relevant **Criteria** in `_Config/PROJECT.md` have been evaluated against them.
 - The `^review` command reports this coverage on every run.
 
-Keep description of each Task in `_Axis/TASKS.md` very focused: only describe what needs to be done and why. Sort tasks in `_Axis/TASKS.md` by approximate order of execution. No section headers. Put all details for Tasks into respective detail files in `_Axis/Tasks/` - that saves on context and helps User to more easily track the project.
+Keep description of each Task in `_Config/TASKS.md` very focused: only describe what needs to be done and why. Sort tasks in `_Config/TASKS.md` by approximate order of execution. No section headers. Put all details for Tasks into respective detail files in `_Axis/Tasks/` - that saves on context and helps User to more easily track the project.
 
 Agent and User can look up details for each Task from supporting files. Details include:
 
@@ -38,7 +38,7 @@ Agent and User can look up details for each Task from supporting files. Details 
 - how success will be evaluated
 - references to items in Logs, Notes, Snapshots, other Tasks, and the Wiki.
 
-Each task in `_Axis/TASKS.md` carries one of four Status values:
+Each task in `_Config/TASKS.md` carries one of four Status values:
 
 - **Active** - Task is being worked on.
 - **Blocked** - Task is on hold (i.e., waiting on an external input or dependency).
@@ -60,10 +60,10 @@ How to integrate Axis Tasks with the host harness's task management system:
 
 - The overall objective with Axis Tasks is to be "generic and cross-platform", such that an Axis Workflow project can directly port over to a different host and maintain the same task state.
 
-- Some host harnesses (e.g., Cowork, Claude Code) provide their own in-session task tracker that renders progress in the UI. Treat these as ephemeral display only - they are not canonical and may not persist across sessions. `_Axis/TASKS.md` remains the single source of truth for project tasks.
+- Some host harnesses (e.g., Cowork, Claude Code) provide their own in-session task tracker that renders progress in the UI. Treat these as ephemeral display only - they are not canonical and may not persist across sessions. `_Config/TASKS.md` remains the single source of truth for project tasks.
 
 - When working on an Axis Task in a host with a task widget, decompose the work into host-task steps for that session's UI; update the Axis Task in `TASKS.md` once on completion (or at meaningful checkpoints), not on every host-task transition.
 
-- If User asks something like "what are my tasks?", answer from `_Axis/TASKS.md`, not from the host widget.
+- If User asks something like "what are my tasks?", answer from `_Config/TASKS.md`, not from the host widget.
 
 - Do not fight the host about task management. If host harness sends reminders to use its task tracker, then use it - but at in-session layer, not as canonical store.

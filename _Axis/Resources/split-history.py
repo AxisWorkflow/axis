@@ -81,7 +81,7 @@ def parent(root, session=None):
 
 
 def archive(root):
-    settings = read(root / '_Axis/SETTINGS.md').decode()
+    settings = read(root / '_Config/SETTINGS.md').decode()
     match = re.search(r'^### Archive Location\s*\n(.*?)(?=^### |^## |\Z)', settings, re.M | re.S)
     value = re.search(r'^\*\*Value:\*\*\s*(.+)$', match[1], re.M) if match else None
     location = value[1].strip().strip('`') if value else '_Axis/Archive/'
@@ -122,7 +122,7 @@ def support_files(record):
 def catalog(root, target):
     root = parent(root)
     folder(root, target)
-    project = read(root / '_Axis/PROJECT.md').decode()
+    project = read(root / '_Config/PROJECT.md').decode()
     ids = re.findall(r'^project-id: (\S+)\s*$', project, re.M)
     need(len(ids) == 1, 'parent identity required')
     records = {}
@@ -185,7 +185,7 @@ def catalog(root, target):
                 path = Path(base) / name
                 if path.suffix.lower() == '.md':
                     add(path, path.relative_to(root).as_posix(), 'Memos')
-    index_hash = sha(read(root / '_Axis/TASKS.md'))
+    index_hash = sha(read(root / '_Config/TASKS.md'))
     return {'schema': 1, 'parent_project': ids[0], 'folder': target, 'records': records,
             'task_index_sha256': index_hash,
             'catalog_sha256': sha(encode({'records': records, 'task_index_sha256': index_hash}))}
@@ -236,7 +236,7 @@ def stage(root, session, selection_file, child, transaction):
     child = safe(child, directory=True)
     need(child.is_relative_to(root / '_Temp') and child != root / '_Temp', 'stage must be inside parent scratch')
     need(not child.is_relative_to(folder(root, value['folder'])), 'stage overlaps target')
-    need((child / '_Axis/PROJECT.md').is_file(), 'install verified Axis template into stage first')
+    need((child / '_Config/PROJECT.md').is_file(), 'install verified Axis template into stage first')
     for name in ('Agents', 'Flags', 'Logs', 'Notes', 'Tasks', 'Ideas'):
         p = safe(child / '_Axis' / name, directory=True)
         need(not any(x.name != '.gitkeep' for x in p.iterdir()), 'stage already has live state')
@@ -281,7 +281,7 @@ def stage(root, session, selection_file, child, transaction):
         imports[target] = {'parent_path': original, 'sha256': sha(data), 'bytes': len(data)}
     # Copy Task index entries as historical status, without inventing new dates.
     task_ids = {Path(name).stem for name in chosen if chosen[name]['family'] == 'Tasks' and '/Archive/' not in name}
-    index_bytes = read(root / '_Axis/TASKS.md')
+    index_bytes = read(root / '_Config/TASKS.md')
     need(sha(index_bytes) == current['task_index_sha256'], 'Task index changed')
     task_index = index_bytes.decode()
     entries = []
@@ -289,7 +289,7 @@ def stage(root, session, selection_file, child, transaction):
     for part in re.split(r'(?m)(?=^## )', task_index):
         if not part.startswith('## '):
             continue
-        links = re.findall(r'\[Details\.\.\.\]\(((?:Tasks|Tasks/Archive|Archive/Tasks)/(' + ID.pattern + r')\.md)\)', part)
+        links = re.findall(r'\[Details\.\.\.\]\(\.\./_Axis/((?:Tasks|Tasks/Archive|Archive/Tasks)/(' + ID.pattern + r')\.md)\)', part)
         if len(links) != 1:
             need(not task_ids.intersection(ID.findall(part)), 'ambiguous selected Task index identity')
             continue
@@ -303,7 +303,7 @@ def stage(root, session, selection_file, child, transaction):
     need(task_ids == indexed, 'selected Task has no canonical index entry')
     if entries:
         owner.guard()
-        index = child / '_Axis/TASKS.md'
+        index = child / '_Config/TASKS.md'
         index.write_text('# Tasks\n> **Purpose:** Track transferred project work.\n\n' + '\n'.join(entries))
     receipt = {'schema': 1, 'parent_project': current['parent_project'], 'folder': current['folder'],
                'transaction': transaction, 'catalog_sha256': current['catalog_sha256'], 'imports': imports,

@@ -20,7 +20,7 @@ This Resource owns one complete core load in this admitted startup. Do not repea
 
 Plan the response capacity before retrieval, including aggregate output from grouped calls. Use named file boundaries and split oversized reads before requesting them; sequential bounded file tools are sufficient. A retained end marker does not excuse a reported middle cut. Reading the file again solely to reassure yourself after a complete result adds no evidence.
 
-Main-only required inputs: when called by Main's Start-Session Step 1, also load `_Axis/Roles/Main.md`, `_Axis/Practices/Logs.md`, `_Axis/Practices/Tracking.md`, `_Axis/Resources/Detect-Capabilities.md` and `_Axis/SETTINGS.md`. Every other Main caller (the Entry-Protocol lost-context path, Continue-Session, recovery after compaction) also loads `_Axis/Roles/Main.md`. These may share the selected core's bounded batch when the full output fits. Auxiliary and other callers load only the core. Retrieving instructions never executes their probes or changes their order; Main applies standing User guidance before those actions.
+Main-only required inputs: when called by Main's Start-Session Step 1, also load `_Axis/Roles/Main.md`, `_Axis/Practices/Logs.md`, `_Axis/Practices/Tracking.md`, `_Axis/Resources/Detect-Capabilities.md` and `_Config/SETTINGS.md`. Every other Main caller (the Entry-Protocol lost-context path, Continue-Session, recovery after compaction) also loads `_Axis/Roles/Main.md`. These may share the selected core's bounded batch when the full output fits. Auxiliary and other callers load only the core. Retrieving instructions never executes their probes or changes their order; Main applies standing User guidance before those actions.
 
 ## Steps
 

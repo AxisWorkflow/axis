@@ -22,7 +22,9 @@ import unicodedata
 PROTOCOL = 'axis.transfer/v1'
 SID = re.compile(r'\d{4}(?:\.\d{2}){5}\.\d{3}Z\Z')
 STAGES = ('prepared', 'copied-and-verified', 'destination-accepted', 'source-retired')
-ANCHORS = ('AGENTS.md', 'CLAUDE.md', 'GEMINI.md', '_Axis/MANIFEST.md', '_Axis/PROJECT.md', '_Axis/PRACTICES.md', '_Axis/RULES.md')
+ANCHORS = ('AGENTS.md', 'CLAUDE.md', 'GEMINI.md', '_Axis/MANIFEST.md', '_Axis/PRACTICES.md', '_Axis/RULES.md')
+# The brief identifies a project in either place; parent and child may differ.
+BRIEFS = ('_Config/PROJECT.md', '_Axis/PROJECT.md')
 
 
 class TransferError(ValueError):
@@ -43,7 +45,8 @@ def _root(value):
 
 
 def _recognized(root):
-    return all((root / n).is_file() and not (root / n).is_symlink() for n in ANCHORS) and (root / '_Temp').is_dir() and not (root / '_Temp').is_symlink() and not (root / '_Axis').is_symlink()
+    brief = any((root / n).is_file() and not (root / n).is_symlink() and not (root / n).parent.is_symlink() for n in BRIEFS)
+    return brief and all((root / n).is_file() and not (root / n).is_symlink() for n in ANCHORS) and (root / '_Temp').is_dir() and not (root / '_Temp').is_symlink() and not (root / '_Axis').is_symlink()
 
 
 def direct_boundary(source, destination):

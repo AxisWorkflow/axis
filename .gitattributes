@@ -6,6 +6,7 @@ GEMINI.md text eol=lf
 .gitattributes text eol=lf
 .gitignore text eol=lf
 _Axis/**/*.md text eol=lf
+_Config/*.md text eol=lf
 _Axis/LICENSE text eol=lf
 _Axis/Dashboard/*.html text eol=lf
 _Axis/Dashboard/*.js text eol=lf

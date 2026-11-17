@@ -1,13 +1,13 @@
 # Settings
 > **Purpose:** Define how Settings are stored, changed, and overridden.
 
-Settings (stored in `_Axis/SETTINGS.md`) hold configuration values for the project and LLM. Each Setting appears in a ### markdown section.
+Settings (stored in `_Config/SETTINGS.md`) hold configuration values for the project and LLM. Each Setting appears in a ### markdown section.
 
 User can override or change a setting by:
 
 - Asking Agent to override a setting in current context, but not save change to disk.
 - Overriding a setting for a particular task by noting the change in a task description.
-- Editing, saving to disk, and re-loading `_Axis/SETTINGS.md`.
+- Editing, saving to disk, and re-loading `_Config/SETTINGS.md`.
 
 Agents may propose changes to a Setting, but must apply them only with User permission.
 

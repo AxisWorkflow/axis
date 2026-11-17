@@ -83,7 +83,7 @@ new_temp_dir() {
 
 require_project() {
   [ -d "$SECRETS_DIR" ] || safe_error not-axis-project
-  [ -f "$ROOT/_Axis/PROJECT.md" ] || safe_error not-axis-project
+  [ -f "$ROOT/_Config/PROJECT.md" ] || [ -f "$ROOT/_Axis/PROJECT.md" ] || safe_error not-axis-project
   command -v git >/dev/null 2>&1 || safe_error missing-git 3
   local top
   top=$(git -C "$ROOT" rev-parse --show-toplevel 2>/dev/null || true)

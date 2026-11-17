@@ -26,8 +26,9 @@ SID = re.compile(r'\d{4}(?:\.\d{2}){5}\.\d{3}Z\Z')
 HOUR = 3600
 # Environment markers that agent hosts set in the shells they run; best effort, documented as such.
 AGENT_ENV = ('CLAUDECODE', 'CLAUDE_CODE_ENTRYPOINT', 'CODEX_SANDBOX', 'CODEX_SANDBOX_NETWORK_DISABLED', 'CODEX_THREAD_ID',
-             'GEMINI_CLI', 'OPENCLAW_SESSION_KEY', 'OPENCLAW_AGENT_ID', 'AXIS_AGENT_SESSION', 'AXIS_ROLE', 'AXIS_SURFACE')
-ANCHOR = '_Axis/PROJECT.md'
+             'GEMINI_CLI', 'ANTIGRAVITY_AGENT', 'GROK_AGENT', 'OPENCLAW_SESSION_KEY', 'OPENCLAW_AGENT_ID', 'AXIS_AGENT_SESSION',
+             'AXIS_ROLE', 'AXIS_SURFACE')
+ANCHORS = ('_Config/PROJECT.md', '_Axis/PROJECT.md')  # the brief, in either place
 ACTIONS = {'retire': ('retire', 'stop', 'restart'), 'start': ('start', 'restart')}
 
 
@@ -58,13 +59,13 @@ def project(value):
     p = Path(value).expanduser()
     need(p.is_dir() and not p.is_symlink(), 'not a project folder: ' + str(value))
     p = p.resolve(strict=True)
-    need((p / ANCHOR).is_file(), 'not an Axis project: ' + str(p))
+    need(any((p / a).is_file() for a in ANCHORS), 'not an Axis project: ' + str(p))
     return p
 
 
 def nearest_project(path):
     for p in path.parents:
-        if (p / ANCHOR).is_file():
+        if any((p / a).is_file() for a in ANCHORS):
             return p
     return None
 

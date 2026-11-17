@@ -3,7 +3,7 @@
 
 ## Contract
 
-A Project may declare one overlay between exactly one `<!-- axis:project-overlay:begin -->` and `<!-- axis:project-overlay:end -->` pair in `_Axis/PROJECT.md`. New declarations use schema 2 and exactly these ordered fields:
+A Project may declare one overlay between exactly one `<!-- axis:project-overlay:begin -->` and `<!-- axis:project-overlay:end -->` pair in `_Config/PROJECT.md`. New declarations use schema 2 and exactly these ordered fields:
 
 ```text
 project-overlay-schema: 2
@@ -20,7 +20,7 @@ The caller chooses `prepare` during admitted startup, `confirm` after startup co
 
 1. Require the live exact four-line Main Marker for this Session ID, no same-ID kill tombstone and no fresh foreign Main. In `prepare`, require the retained startup admission and `starting` to name this ID; a prior `session-id` cannot authorize this phase. In `confirm`, require matching `session-id`, completed `starting` and released startup claim; the banner is not yet printed. In `activate`, require those same checks and the successful Session ID banner visible. On failure apply nothing and RETURN with a failure classification to the caller; preparation queues its notice for the greeting.
 
-2. Read `_Axis/PROJECT.md` directly. With neither marker present, return `absent` silently; on activation clear a previous cache under Deletion Fallback. Otherwise require one ordered marker pair, exactly three fields for schema 1 or four for schema 2, no duplicate or extra field, ID matching `^[a-z0-9][a-z0-9._-]{7,127}$`, and a nonblank path. Malformed declarations fail closed; never fall back to an older schema.
+2. Read `_Config/PROJECT.md`, or `_Axis/PROJECT.md` before the move. Require every present copy and its parents to be ordinary, unlinked paths; two copies must have identical bytes. With neither marker present, return `absent` silently; on activation clear a previous cache under Deletion Fallback. Otherwise require one ordered marker pair, exactly three fields for schema 1 or four for schema 2, no duplicate or extra field, ID matching `^[a-z0-9][a-z0-9._-]{7,127}$`, and a nonblank path. Malformed declarations fail closed; never fall back to an older schema.
 
 3. Validate the path before opening it. Require a project-relative `.md` path with no absolute, backslash, empty, dot or parent component. Reject links, hard links, special files, noncanonical case spelling and case-folded collisions at every component. Exclude `_Axis/Secrets/`, `_Axis/Agents/`, `_Axis/Flags/`, `_Axis/Tracking/`, `_Temp/`, `_Trash/`, `_Wiki/` and every `.git` component. Require one ordinary file at most 20,000 bytes. Fail closed without following an unsafe path.
 

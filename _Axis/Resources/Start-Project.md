@@ -8,8 +8,8 @@
 2. If User picks Quick Setup:
 	- a. Quietly update [Settings] with the Standard Profile values from [Template-Profiles], and log an Event with subject `Profile selected: Standard (Quick Setup)`.
 	- b. Ask User for the project's name (< 20 chars) and one paragraph of background.
-	- c. Update `_Axis/PROJECT.md`: set the name in the `# Project:` header (Line 1), fill `## Background` with the paragraph, and remove the remaining placeholder sections (User can add any of them back later).
-	- d. Quietly compare the provenance stamp in `_Axis/MINDSET.md` to the Mindset Settings in `_Axis/SETTINGS.md`; regenerate via `_Axis/Resources/Draft-Mindset.md` only on a mismatch (the shipped Mindset already matches Standard).
+	- c. Update `_Config/PROJECT.md`: set the name in the `# Project:` header (Line 1), fill `## Background` with the paragraph, and remove the remaining placeholder sections (User can add any of them back later).
+	- d. Quietly compare the provenance stamp in `_Config/MINDSET.md` to the Mindset Settings in `_Config/SETTINGS.md`; regenerate via `_Axis/Resources/Draft-Mindset.md` only on a mismatch (the shipped Mindset already matches Standard).
 	- e. Quietly save the Flag `_Axis/Flags/skip-wiki` (Wiki setup is deferred on Quick Setup).
 	- f. Tell User in one line: the Wiki (`^wiki`), a formal Plan (`^plan`), and version control are all available later - just ask. GOTO Step 8.
 3. If User picks Interactive Setup: continue with Step 2.
@@ -37,11 +37,11 @@ Finally, implement the User's selection:
 Ask User if they want to now step through each Setting, and adjust them one-by-one.
 
 - If Yes:
-	- Step through each Setting in `_Axis/SETTINGS.md`.
+	- Step through each Setting in `_Config/SETTINGS.md`.
 	- Explain each setting to the User.
 	- Explain the potential range of values for the setting to the User.
 	- Ask User to select a value for the setting.
-	- Update `_Axis/SETTINGS.md` with the new value (override previous value).
+	- Update `_Config/SETTINGS.md` with the new value (override previous value).
 
 - If No: Explain that values for the selected Profile will be used.
 
@@ -58,17 +58,17 @@ Ask User if they want assistance in setting up a new Project.
 
 	- Interview User until you are 95% confident you understand the complete background context for the project and what User wants to now accomplish.
 
-	- Draft (or re-draft) `_Axis/PROJECT.md`.
+	- Draft (or re-draft) `_Config/PROJECT.md`.
 
 - If No:
 
-	- Ask User to complete `_Axis/PROJECT.md`.
+	- Ask User to complete `_Config/PROJECT.md`.
 
 	- Wait for User to complete the file and inform you it is ready to proceed.
 
-	- Read User's version of `_Axis/PROJECT.md`.
+	- Read User's version of `_Config/PROJECT.md`.
 
-	- If you have any remaining questions, and/or there are uncompleted placeholders, then go ahead and interview User until you are 95% confident you understand the complete background context for the project and what User wants to now accomplish, and update `_Axis/PROJECT.md`.
+	- If you have any remaining questions, and/or there are uncompleted placeholders, then go ahead and interview User until you are 95% confident you understand the complete background context for the project and what User wants to now accomplish, and update `_Config/PROJECT.md`.
 
 Finally, check the drafted Project once: if its primary deliverable is a software codebase, say so in one line - Axis targets knowledge and document projects, and the host's coding tools (or a coding-first editor) will serve the code itself better, while Axis manages the surrounding project (plan, decisions, notes, reports). Then continue either way and do not raise it again; whether to run Axis on a coding project is User's call.
 
@@ -89,7 +89,7 @@ Ask User if they want to work with you to draft a Plan to govern the Project.
 
 - If No:
 	- Log "No Plan"
-	- In `_Axis/PLAN.md`, replace the placeholder body of each of the three sections with "No Plan - working from Tasks only."
+	- In `_Config/PLAN.md`, replace the placeholder body of each of the three sections with "No Plan - working from Tasks only."
 	- Make a Note that there is no Formal Plan - instead, Agents only work on Tasks.
 
 - If Yes:
@@ -97,7 +97,7 @@ Ask User if they want to work with you to draft a Plan to govern the Project.
 
 ## Step 8: Transfer Root Ownership
 
-1. Quietly verify `_Axis/PROJECT.md` contains no `{{`. If any remain: on the Interactive path, return to Step 5. On the Quick Setup path, do not send User into the Interactive interview - remove or fill the leftover placeholder sections yourself, asking a single question only where content is genuinely required, then continue.
+1. Quietly verify `_Config/PROJECT.md` contains no `{{`. If any remain: on the Interactive path, return to Step 5. On the Quick Setup path, do not send User into the Interactive interview - remove or fill the leftover placeholder sections yourself, asking a single question only where content is genuinely required, then continue.
 2. Initialize the portable `project-id:` UUID once under [Practices > Coordination], preserving an existing valid identity. Never ship or copy a template UUID into unrelated projects. Follow `_Axis/Resources/Refresh-Project-README.md` in Project Setup mode. This creates the Project README (replacing only the marked Axis introduction from a cloned repository), preserves customized content, and resolves the root `LICENSE` lifecycle without choosing a license for the User.
 3. Quietly write a current UTC timestamp into the Flag `_Axis/Flags/project-ready` (overwrite if present). Project Setup is not complete until the README and license ownership decision has been resolved, including a safely preserved malformed or customized root file reported to User.
 4. On the Quick Setup path, GOTO Step 10. On the Interactive path, continue to Step 9.

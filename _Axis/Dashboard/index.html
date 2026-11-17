@@ -254,11 +254,11 @@
       <a href="./#doc=../USERMANUAL.md" target="_blank" rel="noopener" role="menuitem">User Manual</a>
       <a href="./#doc=../HELPINDEX.md" target="_blank" rel="noopener" role="menuitem">Help Index</a>
       <a href="./#doc=../GLOSSARY.md" target="_blank" rel="noopener" role="menuitem">Glossary</a>
-      <a href="./#doc=../PROJECT.md" target="_blank" rel="noopener" role="menuitem">Project</a>
-      <a href="./#doc=../PLAN.md" target="_blank" rel="noopener" role="menuitem">Plan</a>
-      <a href="./#doc=../INITIATIVES.md" target="_blank" rel="noopener" role="menuitem">Initiatives</a>
-      <a href="./#doc=../TASKS.md" target="_blank" rel="noopener" role="menuitem">Tasks</a>
-      <a href="./#doc=../SETTINGS.md" target="_blank" rel="noopener" role="menuitem">Settings</a>
+      <a href="./#doc=../../_Config/PROJECT.md" target="_blank" rel="noopener" role="menuitem">Project</a>
+      <a href="./#doc=../../_Config/PLAN.md" target="_blank" rel="noopener" role="menuitem">Plan</a>
+      <a href="./#doc=../../_Config/INITIATIVES.md" target="_blank" rel="noopener" role="menuitem">Initiatives</a>
+      <a href="./#doc=../../_Config/TASKS.md" target="_blank" rel="noopener" role="menuitem">Tasks</a>
+      <a href="./#doc=../../_Config/SETTINGS.md" target="_blank" rel="noopener" role="menuitem">Settings</a>
       <a href="./#doc=../CHANGELOG.md" target="_blank" rel="noopener" role="menuitem">Changelog</a>
       <a href="./#doc=../SPECIFICATION.md" target="_blank" rel="noopener" role="menuitem">Specification</a>
       <hr>
@@ -341,8 +341,8 @@
 
 <script>
 "use strict";
-// Paths are relative to _Axis/Dashboard/ ( ".." = _Axis, "../.." = project root ).
-const F = { changelog:"../CHANGELOG.md", project:"../PROJECT.md", settings:"../SETTINGS.md", plan:"../PLAN.md", tasks:"../TASKS.md" };
+// Paths are relative to _Axis/Dashboard/ ( ".." = _Axis, "../.." = project root, "../../_Config" = the project files ).
+const F = { changelog:"../CHANGELOG.md", project:"../../_Config/PROJECT.md", settings:"../../_Config/SETTINGS.md", plan:"../../_Config/PLAN.md", tasks:"../../_Config/TASKS.md" };
 const FOLLOWUPS_DIR = "../Followups/";
 const REMINDERS_DIR = "../Reminders/";
 const DIRS = { Agents:"../Agents/", Tasks:"../Tasks/", Ideas:"../Ideas/", Notes:"../Notes/", Logs:"../Logs/", Reviews:"../Reviews/",
@@ -355,7 +355,8 @@ const FLAG_DOMAINS = {
   "host-shell": ["yes","no"],
   "host-local-llm": ["yes","no"],
   "host-cloud-sync": ["yes","no"],
-  "host-storage": ["atomic","serialized","unknown"]
+  "host-storage": ["atomic","serialized","unknown"],
+  "config-move": ["moving"]
 };
 /* END GENERATED: flag-domains */
 const LOCK_TIMEOUT_HOURS = 10 / 3600;
@@ -516,7 +517,7 @@ function parseTasks(md){                           // shared by the Tasks card a
     const lines = chunk.split("\n");
     const get = f => (chunk.match(new RegExp("^"+f+":[ \\t]*(.+)$","m")) || [,""])[1].trim();
     const body = lines.slice(1).map(l => l.trim()).filter(l => l && !/^(label|status|created|updated|completed|cancelled|delivers|initiative):/.test(l) && !l.includes("[Details"));
-    const dm = chunk.match(/\[Details\.\.\.\]\(((?:Tasks|Archive\/Tasks)\/[^)]+)\)/);
+    const dm = chunk.match(/\[Details\.\.\.\]\(\.\.\/_Axis\/((?:Tasks|Archive\/Tasks)\/[^)]+)\)/);   // the index is in _Config/
     return { name: lines[0].trim(), label: get("label"), status: get("status"), updated: get("updated"), delivers: get("delivers"), initiative: get("initiative"),
              desc: body[0] || "", details: dm ? "../" + dm[1] : null };
   }).filter(t => t.status && !t.status.includes("{{"));
@@ -815,7 +816,7 @@ async function collectOperationalNotices(partial){ // actionable notices for the
   } catch(e){ markPartial(partial, "Status"); }
   try {                                            // stale locks only; fresh locks are active work, not a Status notice
     const locks = [];
-    for (const base of ["../../", "../", ...Object.values(DIRS)]) {
+    for (const base of ["../../", "../", "../../_Config/", ...Object.values(DIRS)]) {
       try { const html = await read(base);
             for (const m of html.matchAll(/href="([^"?]+\.lock)\/"/g)) {
               const href = m[1];
@@ -1096,7 +1097,7 @@ function renderTaskPage(){
       const nameHtml = t.details && t.details.startsWith("../Tasks/") ? `<a href="${esc(t.details)}" data-doc="${esc(t.details)}"><b>${esc(t.name)}</b></a>` : `<b>${esc(t.name)}</b>`;
       items.push(`<li><span class="status ${esc(t.status)}">${esc(t.status)}</span> ${nameHtml}${agechip}` +
         (t.label && !t.label.includes("{{") ? ` <span class="muted">- ${esc(t.label)}</span>` : "") +
-        (t.initiative && /^[a-z][a-z0-9-]*$/.test(t.initiative) ? ` <a class="chip" href="../INITIATIVES.md#${encodeURIComponent(t.initiative)}">Initiative</a>` : "") +
+        (t.initiative && /^[a-z][a-z0-9-]*$/.test(t.initiative) ? ` <a class="chip" href="../../_Config/INITIATIVES.md#${encodeURIComponent(t.initiative)}">Initiative</a>` : "") +
         (t.delivers && !t.delivers.includes("{{") && t.delivers !== "N/A" ? ` <span class="chip" style="font-size:11.5px">→ ${esc(t.delivers)}</span>` : "") +
         (t.status === "Blocked" && t.desc && !t.desc.includes("{{") ? `<br><span class="muted" style="font-size:12.5px">${esc(t.desc)}</span>` : "") + "</li>");
     }
@@ -1212,14 +1213,14 @@ function mdSection(body){                          // minimal markdown for the P
   return html;
 }
 
-async function renderProject(partial){             // full _Axis/PROJECT.md, section by section
+async function renderProject(partial){             // full _Config/PROJECT.md, section by section
   try {
     const md = await read(F.project);
     const nameM = md.match(/^#\s+Project:\s*(.+)/m);
     const title = (nameM && !nameM[1].includes("{{")) ? `Project: ${esc(nameM[1].trim())}` : "Project";
     const parts = md.split(/\n## /).slice(1);
     let html = `<h2>${title}</h2>`;
-    if (!parts.length) { html += "<div class='muted'>No sections in _Axis/PROJECT.md</div>"; }
+    if (!parts.length) { html += "<div class='muted'>No sections in _Config/PROJECT.md</div>"; }
     else {
       const GLOSS = { Background:"open-form description of the context",
         Aspirations:"higher-level", Objectives:"lower-level",
@@ -1235,7 +1236,7 @@ async function renderProject(partial){             // full _Axis/PROJECT.md, sec
       }).join("") + "</div>";
     }
     el("project").innerHTML = html;
-  } catch(e){ markPartial(partial, "Project"); el("project").innerHTML = "<h2>Project</h2><div class='muted'>Could not read _Axis/PROJECT.md</div>"; }
+  } catch(e){ markPartial(partial, "Project"); el("project").innerHTML = "<h2>Project</h2><div class='muted'>Could not read _Config/PROJECT.md</div>"; }
 }
 
 async function renderMetrics(partial){             // count line in the header, in DIRS order
@@ -1302,7 +1303,9 @@ function dashPath(href, base){                      // a served project path as 
   try {
     const root = "http://axis.invalid/_Axis/Dashboard/";
     const url = new URL(raw, new URL(base || "./", root));
-    if (url.origin !== "http://axis.invalid" || !url.pathname.startsWith("/_Axis/") || !/\.md$/i.test(url.pathname)) return null;
+    if (url.origin !== "http://axis.invalid" || !/\.md$/i.test(url.pathname)) return null;
+    if (url.pathname.startsWith("/_Config/")) return "../.." + decodeURIComponent(url.pathname) + url.hash;
+    if (!url.pathname.startsWith("/_Axis/")) return null;
     return ".." + decodeURIComponent(url.pathname).slice("/_Axis".length) + url.hash;
   } catch(e){ return null; }
 }

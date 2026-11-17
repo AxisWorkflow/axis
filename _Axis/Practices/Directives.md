@@ -5,7 +5,7 @@ A Directive defines behavior to follow under certain conditions. Directive may, 
 
 A Directive therefore needs an inferential framework (i.e., criteria) to determine when the conditions apply and when the Directive should be triggered.
 
-The User may give you (Agent) an informal directive in a chat session (i.e., tell you to do something in certain situations). When a User gives a directive that seems important and needs to persist so it can be triggered in the future, you should record it as a new Directive in `_Axis/DIRECTIVES.md`.
+The User may give you (Agent) an informal directive in a chat session (i.e., tell you to do something in certain situations). When a User gives a directive that seems important and needs to persist so it can be triggered in the future, you should record it as a new Directive in `_Config/DIRECTIVES.md`.
 
 Follow these principles when you draft triggers for a new Directive:
 
@@ -23,4 +23,4 @@ Follow these principles when you draft triggers for a new Directive:
 
 ## Default Directives
 
-Every Axis version ships its default Directives twice: in the new-project template `_Axis/DIRECTIVES.md`, and in the managed `_Axis/Resources/Default-Directives.md`, which each update replaces. At startup `boot.py` appends any default Directive missing from the project's `_Axis/DIRECTIVES.md`, so existing projects receive new defaults after an update. It matches by heading, ignoring case, and never edits, reorders or removes an existing Directive. To keep a default out of a project, remove it and add the line `<!-- axis:omit-directive: {Directive name} -->` to `_Axis/DIRECTIVES.md`.
+Every Axis version ships its default Directives twice: in the new-project template `_Config/DIRECTIVES.md`, and in the managed `_Axis/Resources/Default-Directives.md`, which each update replaces. At startup `boot.py` appends any default Directive missing from the project's `_Config/DIRECTIVES.md`, so existing projects receive new defaults after an update. The append matches by heading, ignoring case, and never edits, reorders or removes an existing Directive. To keep a default out of a project, remove it and add the line `<!-- axis:omit-directive: {Directive name} -->` to `_Config/DIRECTIVES.md`.

@@ -1,7 +1,7 @@
 # Changelog
 > **Purpose:** Record Axis release identity and the structural migrations needed to update an existing project safely.
 
-current-version: 3.21
+current-version: 3.22
 changelog-format: 1
 self-update-baseline: 26.08.19
 
@@ -39,6 +39,49 @@ update-impact: automatic
 ### Verification
 
 - None.
+
+## 3.22
+
+released: 2026-11-17
+
+update-impact: automatic
+
+### Structural Changes
+
+- New reserved root folder `_Config/` for the eight project files: `PROJECT.md`, `PLAN.md`, `INITIATIVES.md`, `TASKS.md`, `INSTRUCTIONS.md`, `SETTINGS.md`, `MINDSET.md` and `DIRECTIVES.md` live there and no longer in `_Axis/`. Everything else stays where it is: records, the other indexes, Flags, Markers, Secrets and the Wiki administration remain in `_Axis/`. A new project ships the eight files in `_Config/`. A `_Config` folder a project already has is used when it holds none of the eight, and its other content is left untouched.
+- Guidance, programs and the entry file name the files in `_Config/`. The Manifest lists them under `Project files`, the resolver table of `_Axis/Practices/References.md` points [Project], [Plan], [Initiatives], [Tasks], [Settings], [Mindset] and [Directives] there, and the Workflow reserves seven underscore-prefixed folders. `AGENTS.md` grows by 2 bytes to 5,514 of its 5,536-byte cap; the two pointer files are unchanged.
+- A link from a file in `_Config/` to a record or file in `_Axis/` begins `../_Axis/`: `../_Axis/Tasks/{ID}.md`, `../_Axis/Tasks/Archive/{ID}.md` and, for the configured Archive Location, `../_Axis/Archive/Tasks/{ID}.md`.
+- The updater files change, so the update runs in two steps, new updater first. The new updater looks before it writes: a project whose files cannot be moved is refused before any change, with each path named.
+- `_Axis/Resources/boot.py` looks again at the beginning of every start, before the session is claimed, and moves the files in a Main start after any update is adopted. New Flag `_Axis/Flags/config-move` marks a move that did not finish; the next Main start completes it.
+- New managed Resource `_Axis/Resources/Move-Project-Files.md`: the same look and move by hand, for a start without Python. `_Axis/Resources/Boot-Manual.md` step 2 and `_Axis/Resources/Entry-Protocol.md` send a project that still holds a project file in `_Axis/` to it; no other start reads it.
+- While a project file is still in `_Axis/`, or an update waits for adoption, no role other than Main is admitted: an Auxiliary, Assistant, Group Agent or Observer says to start a Main session first.
+- A nested project is recognized with its Project file in either place. A parent older than this release does not recognize a child that has moved: update the parent first, which is the order `^^update` uses.
+- `^merge` refuses a source or continuing project that still holds a project file in `_Axis/`: start or update that project first.
+- The commit check keeps the moved files in scope and resolves a link to the old place of a moved file as a historical link, which warns and never refuses a commit. The guardrails hook protects both places, and helpers are refused the Instructions at both.
+- `.gitattributes` gains `_Config/*.md text eol=lf`.
+- The Specification no longer says Claude Cowork is untried with the `CLAUDE.md` pointer: one 3.21 test project was observed starting there.
+
+### Project-State Migrations
+
+- The project files (automatic, at the first Main start after the update, never in the update transaction): `boot.py` moves each of `SETTINGS.md`, `INSTRUCTIONS.md`, `MINDSET.md`, `DIRECTIVES.md`, `PROJECT.md`, `PLAN.md`, `INITIATIVES.md` and `TASKS.md` that is in `_Axis/` to `_Config/`, in that order, and records one `Reference move` Log per file. Before a file moves, its relative links are rebased so that they still resolve: a link destination that does not begin with `../`, `/`, `#` or a scheme, and is not the name of one of the eight, gets `../_Axis/` in front. In `INSTRUCTIONS.md` only link destinations are rebased, by the same rule; its words are never changed, and the start-up notice says how many destinations were adjusted. Without Python the same step is `_Axis/Resources/Move-Project-Files.md`.
+- Links to the moved files (same start): in open Tasks, open Follow-Ups, open Reminders, Notes, Ideas and live Memos they are rewritten to the new place; the `blocks:` field of open Follow-Ups and the `target:` field of open Reminders follow. Write-once records and archived Memos keep their text.
+- Old paths written as text (same start): in `DIRECTIVES.md` and `SETTINGS.md` each of the eight old paths, such as `_Axis/TASKS.md` in an existing Directive, becomes `_Config/TASKS.md`, in code spans too; a longer path that contains one, such as `../_Axis/TASKS.md`, and everything else in the two files stay as they are, and the start-up notice gives the count per file. In the other six project files, the Instructions included, such mentions are not changed: the notice counts and lists them; correct them by hand where they matter. The notice also lists link forms the move could not follow (reference definitions, destinations with a title or a space, HTML), links rewritten inside code, and each entry of `_Axis/EXCEPTIONS.md` that names a project file.
+- A file found in both places: identical copies leave the one in `_Config/` and send the old one to `_Trash/`; different copies stop the start before anything is written, and the message names both paths. Keep one copy and remove or rename the other, then start again.
+- The start that adopts the update commits the move with the adoption checkpoint; a move made at a later start is committed before ordinary work as `axis: move project files to _Config`. Restart a Dashboard server that was started before the update.
+- Way back: the move alone has none, because the next start moves the files again. To leave this release, restore the checkpoint taken before the update, then delete the eight files in `_Config/`, which that checkpoint never tracked. Without Git the only way back is a backup.
+- Limit - another computer on an older release: with Remote Freshness `on` or `auto`, its start receives this update in the middle of its own start and then looks for the Settings at the old place. That one start is interrupted; nothing is lost. On every other computer, receive the update before starting Axis there, or recover the interrupted start under `_Axis/Resources/Lock-File.md` > Quiescent Recovery.
+- Limit - an update left unfinished by an older release on another computer has not been tried together with this move. Finish or roll back that update on its own computer before it receives this release.
+
+### Retired Paths
+
+- None.
+
+### Verification
+
+- After apply and before the restart: every project file is still where it was, and the transaction created nothing in `_Config/`.
+- `AGENTS.md` names `_Config/INSTRUCTIONS.md` and keeps its terminal marker and 5,536-byte cap; both pointer files match all 13 bytes.
+- The merged `.gitattributes` carries `_Config/*.md text eol=lf`.
+- After the first Main start: no project file remains in `_Axis/`, each moved file has one `Reference move` Log, `_Axis/Flags/config-move` is absent or `cleared`, and the checkpoint passes the commit check.
 
 ## 3.21
 

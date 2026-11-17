@@ -15,7 +15,7 @@ The objective of this command is to form an internally-consistent knowledge base
 
 1. Quietly read `_Axis/GLOSSARY.md` and `_Axis/MANIFEST.md` (skip either if already loaded this session, e.g., via [Starting-Context]).
 2. Quietly read `_Axis/PRACTICES.md` (the index), then `_Axis/Practices/Wiki.md` and `_Axis/Practices/Agents.md`.
-3. Quietly read `_Axis/PROJECT.md` for project context and intentions.
+3. Quietly read `_Config/PROJECT.md` for project context and intentions.
 4. Lazy-load other files only if you actually need them. The complete Wiki objective and operating rationale are in [Practices > Wiki]; do not load the Axis User Manual.
 
 #### 2. Route

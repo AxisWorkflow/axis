@@ -28,10 +28,10 @@ A statement may begin with one type word and a bracketed scope: `{TYPE} [{scope}
 
 For example:
 
-	2026.10.02.09.14.03.512Z - 2026.10.02.09.02.11.004Z - INTENT [2026.10.01.18.20.44.101Z, _Axis/PLAN.md] Revise the Plan for the new release date
+	2026.10.02.09.14.03.512Z - 2026.10.02.09.02.11.004Z - INTENT [2026.10.01.18.20.44.101Z, _Config/PLAN.md] Revise the Plan for the new release date
 	2026.10.02.09.15.40.027Z - 2026.10.02.09.02.11.004Z - ASK [to:Main] Please add a Follow-Up for the vendor contract; I cannot write it as Auxiliary
 	2026.10.02.09.16.02.880Z - 2026.10.02.08.40.00.311Z - REPLY [re:2026.10.02.09.15.40.027Z 2026.10.02.09.02.11.004Z] Accepted; Follow-Up 2026.10.02.09.16.01.957Z created
-	2026.10.02.09.21.17.645Z - 2026.10.02.09.02.11.004Z - DONE [2026.10.01.18.20.44.101Z, _Axis/PLAN.md] Plan revised; release moved to 10-14
+	2026.10.02.09.21.17.645Z - 2026.10.02.09.02.11.004Z - DONE [2026.10.01.18.20.44.101Z, _Config/PLAN.md] Plan revised; release moved to 10-14
 
 An INTENT is open until its author writes a DONE, or a `STATUS` whose text begins `stopped`, with the same scope. An ASK is open until any REPLY names its message ID; an ASK `to:any` closes on the first REPLY. An open entry whose author's Marker is stale or tombstoned is an orphan: report it, never act on it as live work.
 

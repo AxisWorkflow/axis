@@ -39,7 +39,7 @@ from pathlib import Path,PurePosixPath
 # BEGIN GENERATED: role-table
 # Compiled from _Axis/Roles/ at release; edit the role files, never this region.
 ROLE_TABLE=(
-    {'name': 'Main', 'cls': 'session', 'subject': 'Main: session', 'match': 'exact', 'shape': 'exact4', 'created_by': 'claim', 'exclusive': True, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': None, 'survey_key': None, 'notice': None, 'issuer': 'main', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': None, 'guard': None, 'reference_word': 'Main', 'log_by': 'Main Agent', 'title': 'Main Agent', 'plural': 'Main Agents', 'article': 'the', 'serves': 'User', 'families': 'all', 'recovery': ('@core', '@role', '_Axis/INSTRUCTIONS.md', '_Axis/MINDSET.md', '_Axis/DIRECTIVES.md', '@overlay', '@state')},
+    {'name': 'Main', 'cls': 'session', 'subject': 'Main: session', 'match': 'exact', 'shape': 'exact4', 'created_by': 'claim', 'exclusive': True, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': None, 'survey_key': None, 'notice': None, 'issuer': 'main', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': None, 'guard': None, 'reference_word': 'Main', 'log_by': 'Main Agent', 'title': 'Main Agent', 'plural': 'Main Agents', 'article': 'the', 'serves': 'User', 'families': 'all', 'recovery': ('@core', '@role', '_Config/INSTRUCTIONS.md', '_Config/MINDSET.md', '_Config/DIRECTIVES.md', '@overlay', '@state')},
     {'name': 'Auxiliary', 'cls': 'session', 'subject': 'Auxiliary: ', 'match': 'prefix', 'shape': 'single-session-line', 'created_by': 'helper', 'exclusive': False, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': 'list', 'survey_key': 'fresh_auxiliary', 'notice': 'An Auxiliary Agent is serving this project ({id}).', 'issuer': 'worker', 'proposal_owner': True, 'proposal_issuer': 'auxiliary', 'submit_schema': 'axis.external-submission/v1', 'guard': {'config_key': 'externalAgents', 'flag': '--external', 'block_spawn': True, 'new_files': ('subfolders', '_Axis/Submissions/', '_Temp/')}, 'reference_word': 'Auxiliary', 'log_by': 'Auxiliary Agent', 'title': 'Auxiliary Agent', 'plural': 'Auxiliary Agents', 'article': 'an', 'serves': 'User', 'families': ('Ideas', 'Logs', 'Notes'), 'recovery': ('@core', '@role', '_Axis/Practices/Agents.md > Auxiliary Agent', '@state')},
     {'name': 'Assistant', 'cls': 'session', 'subject': 'Assistant: ', 'match': 'prefix', 'shape': 'single-session-line', 'created_by': 'helper', 'exclusive': False, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': 'list', 'survey_key': 'fresh_assistant', 'notice': 'An Assistant is serving this project ({id}).', 'issuer': 'worker', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': 'axis.external-submission/v1', 'guard': {'config_key': 'assistantAgents', 'flag': None, 'block_spawn': False, 'new_files': ('subfolders', '_Axis/Submissions/', '_Temp/')}, 'reference_word': 'Assistant', 'log_by': 'Assistant', 'title': 'Assistant', 'plural': 'Assistants', 'article': 'an', 'serves': 'User', 'families': ('Ideas', 'Logs', 'Notes'), 'recovery': ('@core', '@role', '@state')},
     {'name': 'GroupAgent', 'cls': 'session', 'subject': 'Group Agent: ', 'match': 'prefix', 'shape': 'single-session-line', 'created_by': 'helper', 'exclusive': False, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': 'list', 'survey_key': 'fresh_groupagent', 'notice': 'A Group Agent is serving this project ({id}).', 'issuer': 'worker', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': 'axis.external-submission/v1', 'guard': {'config_key': 'groupAgents', 'flag': None, 'block_spawn': True, 'new_files': ('subfolders', '_Axis/Submissions/', '_Temp/')}, 'reference_word': 'GroupAgent', 'log_by': 'Group Agent', 'title': 'Group Agent', 'plural': 'Group Agents', 'article': 'a', 'serves': 'User and named participants', 'families': ('Ideas', 'Logs', 'Notes'), 'recovery': ('@core', '@role', '@state')},
@@ -60,6 +60,21 @@ ROLE_LEDGER={'issuers': ('auxiliary', 'external', 'main', 'worker'), 'submission
 # Words that mark a following identifier as a session, not a record: today's role words and titles, plus the retired
 # role names the ledger keeps as proposal owners, so a historical session cited under its old name stays a session.
 SESSION_WORD=re.compile(r'(session|'+'|'.join(sorted({re.escape(w) for r in ROLE_TABLE if r['cls']=='session' for w in (r['reference_word'],r['title'])}|{re.escape(o.rstrip(':')) for o,_ in ROLE_LEDGER['proposal_owners']}))+r'|e\.g\.)\W{0,4}$',re.I)
+
+# BEGIN GENERATED: project-files
+PROJECT_FILES=('PROJECT.md','PLAN.md','INITIATIVES.md','TASKS.md','INSTRUCTIONS.md','SETTINGS.md','MINDSET.md','DIRECTIVES.md')
+def project_file(root,name):
+    """Path of project file NAME: in _Config/ once moved, in _Axis/ before. Two differing copies are an error, never a choice."""
+    import pathlib
+    if name not in PROJECT_FILES:raise ValueError('not a project file: '+str(name))
+    new=pathlib.Path(root)/'_Config'/name;old=pathlib.Path(root)/'_Axis'/name
+    if new.is_file() and old.is_file() and new.read_bytes()!=old.read_bytes():raise ValueError('project file differs between _Config and _Axis: '+name)
+    return new if new.is_file() or not old.is_file() else old
+def project_name(root,name):
+    """Project-relative name of project file NAME, by the same rule: `_Config/NAME` or `_Axis/NAME`."""
+    import pathlib
+    return project_file(root,name).relative_to(pathlib.Path(root)).as_posix()
+# END GENERATED: project-files
 
 NAME=re.compile(r'\d{4}(?:\.\d{2}){5}\.\d{3}Z\.md')
 FAMILIES=('Audit','CX','Followups','Ideas','Logs','Notes','Reminders','Reviews','Snapshots','Status','Supervision','Tasks','Teams','Messages','Jobs','Schedules','ColdStorage')
@@ -216,7 +231,7 @@ def harmonization_exempt(root,added):
             accepted=set()
             for change in report['dispositions']:
                 old,new=change['source'],change['target']
-                if not all(_safe_relative(n) and n.split('/')[0] in ('_Axis','_Memos','_Wiki','_Dev') and not any(p in {'Secrets','Agents','Flags','Tracking','.git','.codex','.claude','.gemini','Updates','Resources','Rules','Practices','Commands'} or p.endswith(('_U','_X')) for p in n.split('/')) for n in (old,new)):raise ValueError('repair outside content scope')
+                if not all(_safe_relative(n) and (n.split('/')[0] in ('_Axis','_Memos','_Wiki','_Dev') or n in CONFIG_SOURCE) and not any(p in {'Secrets','Agents','Flags','Tracking','.git','.codex','.claude','.gemini','Updates','Resources','Rules','Practices','Commands'} or p.endswith(('_U','_X')) for p in n.split('/')) for n in (old,new)):raise ValueError('repair outside content scope')
                 before=git(root,'show','HEAD:'+old);after=git(root,'show',':'+new)
                 if before is None or after is None:continue
                 if any(len(data)!=change[side]['bytes'] or hashlib.sha256(data).hexdigest()!=change[side]['sha256'] for data,side in ((before,'before'),(after,'after'))):continue
@@ -226,7 +241,11 @@ def harmonization_exempt(root,added):
         except (ValueError,KeyError,TypeError,AttributeError,UnicodeError):continue
     return allowed
 
-RECONCILABLE=('_Axis/PLAN.md','_Axis/INITIATIVES.md','_Axis/TASKS.md','_Axis/SNAPSHOTS.md','_Axis/PROJECT.md','_Axis/SETTINGS.md','_Axis/MINDSET.md','_Axis/DIRECTIVES.md','_Axis/ENVIRONMENT.md')
+RECONCILABLE=('_Axis/PLAN.md','_Axis/INITIATIVES.md','_Axis/TASKS.md','_Axis/SNAPSHOTS.md','_Axis/PROJECT.md','_Axis/SETTINGS.md','_Axis/MINDSET.md','_Axis/DIRECTIVES.md','_Axis/ENVIRONMENT.md',
+              '_Config/PLAN.md','_Config/INITIATIVES.md','_Config/TASKS.md','_Config/PROJECT.md','_Config/SETTINGS.md','_Config/MINDSET.md','_Config/DIRECTIVES.md')
+# The eight project files moved from _Axis/ to _Config/ in 3.22: a fixed table, never a record a project can write.
+CONFIG_ALIAS={'_Axis/'+n:'_Config/'+n for n in PROJECT_FILES}
+CONFIG_SOURCE={new:old for old,new in CONFIG_ALIAS.items()}
 
 def reconcilable(path):
     parts=path.split('/') if isinstance(path,str) else []
@@ -412,7 +431,9 @@ def cosmetic_whitespace(data):
 
 def cosmetic_corrections(root,added):
     """Accept only staged exact cosmetic diffs with new bound intent/outcome/preimage."""
-    ok=set();settings=git(root,'show',':_Axis/SETTINGS.md')
+    ok=set()
+    try:settings=view_settings(lambda rel:git(root,'show',':'+rel))
+    except SettingsError:return ok
     if settings is None:return ok
     sections=re.findall(r'^### Fault Tolerance\s*\n(.*?)(?=^### |^## |\Z)',settings.decode('utf-8','replace'),re.M|re.S)
     if len(sections)!=1 or re.findall(r'^\*\*Value:\*\*\s*(\S+)\s*$',sections[0],re.M)!=['2']:return ok
@@ -447,7 +468,8 @@ def cosmetic_corrections(root,added):
 NEAR=re.compile(r'(?<![\w.])\d{4}\.\d{2}\.\d{2}\.\d{2}[0-9A-Za-z.:*?]*')
 SCOPE=['_Axis/Logs','_Axis/Snapshots','_Axis/Tasks','_Axis/Followups','_Axis/Reminders','_Axis/Notes','_Axis/Ideas','_Axis/CX','_Axis/Audit',
        '_Axis/Reviews','_Axis/Supervision','_Axis/Teams','_Axis/Messages','_Axis/Jobs','_Axis/Schedules','_Axis/TEAMS.md','_Axis/MESSAGES.md','_Axis/JOBS.md','_Axis/SCHEDULES.md','_Axis/TASKS.md','_Axis/SNAPSHOTS.md','_Axis/PLAN.md','_Axis/INITIATIVES.md',
-       '_Axis/PROJECT.md','_Axis/INSTRUCTIONS.md','_Memos']
+       '_Axis/PROJECT.md','_Axis/INSTRUCTIONS.md','_Memos',
+       '_Config/TASKS.md','_Config/PLAN.md','_Config/INITIATIVES.md','_Config/PROJECT.md','_Config/INSTRUCTIONS.md']
 LINK=re.compile(r'\[[^\]\n]*\]\(([^)\s]+)\)')
 VALUE=re.compile(r'^\s*(?:[-*]\s*)?(?:\*\*)?(created|updated|completed|cancelled|raised|resolved|reviewed|verified|released|compiled|due-at|started|generated|when|date|at|time)(?:\*\*)?:',re.I)
 
@@ -683,7 +705,7 @@ def standing_authority(root,authority,user_words):
     """A standing User instruction cited by an override: a committed record where User instructions live, unchanged in
     this commit, quoting the words. It is review evidence, not proof that User wrote them."""
     if not isinstance(authority,dict) or set(authority)!={'record','sha256'} or not _safe_relative(authority['record']):return False
-    if not (authority['record']=='_Axis/INSTRUCTIONS.md' or re.fullmatch(r'_Axis/(?:Archive/)?(?:Logs|Notes)/(?:Archive/)?'+IDENT.pattern+r'\.md',authority['record'])):return False
+    if not (authority['record'] in ('_Axis/INSTRUCTIONS.md','_Config/INSTRUCTIONS.md') or re.fullmatch(r'_Axis/(?:Archive/)?(?:Logs|Notes)/(?:Archive/)?'+IDENT.pattern+r'\.md',authority['record'])):return False
     head=git(root,'show','HEAD:'+authority['record']);staged=git(root,'show',':'+authority['record'])
     if head is None or staged!=head or hashlib.sha256(head).hexdigest()!=authority['sha256']:return False
     words=' '.join(user_words.split())
@@ -731,9 +753,21 @@ def warning_receipt(root,session,lines):
     # The recorded diagnostics bind the staged view before this Log is staged. Re-run checks after staging it.
     return save_receipt(root,session,{'schema':1,'kind':'warnings','head':(git(root,'rev-parse','HEAD') or b'').decode().strip(),'index_tree':(git(root,'write-tree') or b'').decode().strip(),'warnings':[line[:500] for line in warnings[:5]],'diagnostics_sha256':hashlib.sha256('\n'.join(lines).encode()).hexdigest(),'summary':lines[-1] if lines else ''})
 
+class SettingsError(ExceptionsError):
+    """Two differing copies of the Settings in one place the check reads; it never chooses between them."""
+
+def view_settings(reader):
+    """The Settings of one Git view: `_Config/SETTINGS.md` when the view has it, else `_Axis/SETTINGS.md`; None when it
+    has neither. Two differing copies in one view refuse the check."""
+    new,old=reader('_Config/SETTINGS.md'),reader('_Axis/SETTINGS.md')
+    if new is not None and old is not None and new!=old:raise SettingsError('_Config/SETTINGS.md and _Axis/SETTINGS.md differ in this view; keep one copy')
+    return old if new is None else new
+
 def archive_root(root,text=None,allow_missing=False):
     if text is None:
-        try:text=(root/'_Axis/SETTINGS.md').read_text(encoding='utf-8')
+        try:settings=project_file(root,'SETTINGS.md')
+        except ValueError:raise SettingsError('_Config/SETTINGS.md and _Axis/SETTINGS.md differ; keep one copy') from None
+        try:text=settings.read_text(encoding='utf-8')
         except OSError:return None
     m=re.search(r'^### Archive Location\s*$.*?^\*\*Value:\*\*\s*(.+?)\s*$',text,re.M|re.S)
     v=(m.group(1).strip() if m else '_Axis/Archive/')
@@ -803,13 +837,15 @@ def context(root,scopes,with_archive):
     logs=[p.relative_to(root).as_posix() for p in (root/'_Axis/Logs').glob('*.md')]
     logs += [p.relative_to(root).as_posix() for base in (root/'_Axis/Archive/Logs',root/'_Axis/Logs/Archive') for p in base.glob('*.md')]
     reference_history(root,known,names,lambda p:_working_source(root,p),logs)
+    # Built-in alias: only while the old file is absent and the new one is a plain file.
+    names['__config__']={old:new for old,new in CONFIG_ALIAS.items() if not os.path.lexists(root/old) and not (root/'_Config').is_symlink() and (root/new).is_file() and not (root/new).is_symlink()}
     cold_references(known,names,lambda p:_working_source(root,p),[p.relative_to(root).as_posix() for p in (root/'_Axis/ColdStorage').glob('*.md')])
     return arch,known,names,texts
 
 def snapshot_context(root,revision):
     """Resolve Git checks against the chosen index/commit, not uncommitted source/registry bytes."""
     entries=_git_entries(root,revision);reader=_git_reader(root,revision,entries)
-    settings=reader('_Axis/SETTINGS.md');arch=archive_root(root,settings.decode('utf-8','replace') if settings else '',True)
+    settings=view_settings(reader);arch=archive_root(root,settings.decode('utf-8','replace') if settings else '',True)
     archive_rel=arch.relative_to(root).as_posix() if arch.is_relative_to(root) else None
     known=set();names={};texts={};present=set()
     for rel,(mode,_) in entries.items():
@@ -840,6 +876,7 @@ def snapshot_context(root,revision):
         except ValueError:return path.exists()
         return rel in present
     reference_history(root,known,names,reader,entries,revision)
+    names['__config__']={old:new for old,new in CONFIG_ALIAS.items() if old not in entries and entries.get(new,('',''))[0] in ('100644','100755')}
     cold_references(known,names,reader,entries)
     return arch,known,names,texts,reader,exists
 
@@ -853,7 +890,9 @@ def coordination_metadata_lines(text,rel):
     except (OSError,ValueError,TypeError,AttributeError,RecursionError):return set()
 
 WARNING_KINDS={'EXTERNAL-LINK','HISTORICAL-LINK'}
-ANCHORS=('AGENTS.md','CLAUDE.md','GEMINI.md','_Axis/MANIFEST.md','_Axis/PROJECT.md','_Axis/PRACTICES.md','_Axis/RULES.md','_Temp')
+ANCHORS=('AGENTS.md','CLAUDE.md','GEMINI.md','_Axis/MANIFEST.md','_Axis/PRACTICES.md','_Axis/RULES.md','_Temp')
+# A nested project keeps its brief in _Config/ once moved and in _Axis/ before; the folder _Config/ is no anchor.
+BRIEFS=('_Config/PROJECT.md','_Axis/PROJECT.md')
 
 def foreign_link(root,f,target,exists=None):
     from urllib.parse import unquote
@@ -867,7 +906,7 @@ def foreign_link(root,f,target,exists=None):
     # Only inspect anchors along this target's path; never traverse or read child instructions.
     for ancestor in (local,*local.parents):
         if ancestor==root:break
-        if all(check(ancestor/a) for a in ANCHORS) or all((ancestor/a).exists() for a in ANCHORS):return True
+        if any(all(test(ancestor/a) for a in ANCHORS) and any(test(ancestor/b) for b in BRIEFS) for test in (check,lambda p:p.exists())):return True
     return False
 
 def scan(root,arch,known,names,f,text,rel,exists=None):
@@ -916,6 +955,9 @@ def scan(root,arch,known,names,f,text,rel,exists=None):
             cold=names.get('__cold__',{}).get(local.relative_to(root).as_posix()) if local.is_relative_to(root) else None
             if cold:
                 out.append(('HISTORICAL-LINK',i,target+' -> cold locator '+cold,worm));continue
+            builtin=names.get('__config__',{}).get(local.relative_to(root).as_posix()) if local.is_relative_to(root) else None
+            if builtin:
+                out.append(('HISTORICAL-LINK',i,target+' -> '+builtin,worm));continue
             alias=names.get('__history__',{}).get(local.relative_to(root).as_posix()) if local.is_relative_to(root) else None
             if alias:
                 out.append(('HISTORICAL-LINK',i,target+' -> '+alias,worm));continue
@@ -960,7 +1002,19 @@ def links(root,scopes,with_archive):
             found+=[(rel,x) for x in findings]
         code,lines=report(found,len(texts),arch)
         return code,exception_diagnostics(entries,reader,raw)+lines
+    except SettingsError as error:return 1,['REFUSED: '+str(error)]
     except ExceptionsError as error:return 1,['REFUSED: invalid '+EXCEPTIONS_PATH+': '+str(error)]
+
+def moved_finding_key(root,f,kind,detail):
+    """A link finding of a moved project file is known by its kind and the project-relative path it resolves to, with
+    enclosing angle brackets removed, not by its text."""
+    from urllib.parse import unquote
+    if kind not in ('BROKEN-LINK','MOVED-LINK','HISTORICAL-LINK','EXTERNAL-LINK'):return kind,detail
+    target=detail.split(' -> ',1)[0]
+    if target.startswith('<') and target.endswith('>'):target=target[1:-1]
+    if re.match(r'^[a-z][a-z0-9+.-]*:',target,re.I):return kind,target
+    local=Path(os.path.normpath((f.parent/unquote(target.split('#',1)[0].split('?',1)[0])).as_posix()))
+    return kind,(local.relative_to(root).as_posix() if local.is_relative_to(root) else local.as_posix())
 
 def in_scope(rel):
     return rel!=EXCEPTIONS_PATH and rel.endswith('.md') and any(rel==s or rel.startswith(s+'/') for s in SCOPE)
@@ -999,7 +1053,11 @@ def links_staged(root):
     if raw is None:return 2,['UNAVAILABLE: git diff --cached failed']
     try:
         arch,known,names,_,reader,exists=snapshot_context(root,'INDEX');entries=load_exceptions(root,reader=reader)
-        head_view=snapshot_context(root,'HEAD') if has_head(root) else None;head_entries=[];warnings=[];head_valid=True
+        head_view=None;head_entries=[];warnings=[];head_valid=True
+        if has_head(root):
+            # Two differing Settings at HEAD give no baseline; the commit that removes one copy must stay possible.
+            try:head_view=snapshot_context(root,'HEAD')
+            except SettingsError as error:warnings=['NOTE: no historical baseline exemptions: at HEAD '+str(error)]
         if head_view:
             try:head_entries=load_exceptions(root,reader=head_view[4])
             except ExceptionsError as error:
@@ -1009,16 +1067,22 @@ def links_staged(root):
         for rel in sorted(p for p in paths if p and in_scope(p)):
             staged=reader(rel)
             if staged is None:continue
-            n+=1;f=root/rel;head=head_view[4](rel) if head_view else None;before={}
+            n+=1;f=root/rel;head=head_view[4](rel) if head_view else None;before={};hrel=rel
+            # A newly moved file or removed identical old twin carries the old layout's finding baseline.
+            if head_view and rel in CONFIG_SOURCE:
+                oldrel=CONFIG_SOURCE[rel];oldhead=head_view[4](oldrel)
+                if oldhead is not None and (head is None or (head==oldhead and reader(oldrel) is None)):
+                    head=oldhead;hrel=oldrel
+            hf=root/hrel;key=(lambda file,k,d:moved_finding_key(root,file,k,d)) if hrel!=rel else (lambda file,k,d:(k,d))
             if head is not None and head_valid:
                 ha,hk,hn,_,_,he=head_view
-                prior=apply_exceptions(head_entries,rel,head,scan(root,ha,hk,hn,f,head.decode('utf-8','replace'),rel,he))
+                prior=apply_exceptions(head_entries,hrel,head,scan(root,ha,hk,hn,hf,head.decode('utf-8','replace'),hrel,he))
                 for k,_,d,_ in prior:
-                    if k not in ('ACKNOWLEDGED',ACK_EXCEPTION):before[(k,d)]=before.get((k,d),0)+1
+                    if k not in ('ACKNOWLEDGED',ACK_EXCEPTION):before[key(hf,k,d)]=before.get(key(hf,k,d),0)+1
             findings[rel]=scan(root,arch,known,names,f,staged.decode('utf-8','replace'),rel,exists)
             for x in apply_exceptions(entries,rel,staged,findings[rel]):
                 if x[0]=='ACKNOWLEDGED':continue
-                if x[0]!=ACK_EXCEPTION and before.get((x[0],x[2]),0):before[(x[0],x[2])]-=1
+                if x[0]!=ACK_EXCEPTION and before.get(key(f,x[0],x[2]),0):before[key(f,x[0],x[2])]-=1
                 else:new.append((rel,x))
         approvals=approved_paths(root,'links')
         new=[(rel,(ACK_EXCEPTION,x[1],x[2]+' (User-approved checkpoint override)',x[3])) if rel in approvals and x[0] not in WARNING_KINDS else (rel,x) for rel,x in new]

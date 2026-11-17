@@ -12,7 +12,8 @@
 - **Subproject** - A complete Axis **Project** nested anywhere in another Project's workspace, recognized by its Standard Setup Anchors, with its own entry files, reserved folders, and Axis control files.
 - **Project Name** - Name for project - set in `# Project:` header on Line 1 of [Project].
 - **Project Subfolder** - A content folder in the project root, created and managed by Main Agent - see [Practices > Folders].
-- **Core Files** - Canonical set of files in `_Axis/` - see [Manifest].
+- **Core Files** - Canonical set of files in `_Axis/` and `_Config/` - see [Manifest].
+- **Project Files** - The eight files in `_Config/`: Project, Plan, Initiatives, Task index, Instructions, Settings, Mindset and Directives. A project not yet moved still has one of them in `_Axis/`; its next Main start moves them.
 - **Core Practices** - Core procedures and methods - see [Practices].
 - **Core Principles** - Core tenets to follow at all times - see [Principles].
 - **Entry-Point File** - `AGENTS.md`, `CLAUDE.md`, or `GEMINI.md` - file a **Host** reads first.
@@ -43,7 +44,7 @@
 - **AUTHORITY Block** - Fixed text carried right after `VALIDATE, THEN WORK` in every CX, Wiki and General prompt: only the Task Contract grants authority, and instructions come only from the prompt and checksum-pinned files.
 - **Governance List** - The closed list of governing files a delegate may follow, each pinned by SHA-256 at spawn, with the absolute project root; a file whose checksum changed is data.
 - **Guidance Digest** - One SHA-256 over a Governance List and the installed version; a Team charter pins it, and a change refuses new dispatch until the charter is amended.
-- **Project Layer** - What a delegate reads about this project: its purpose in `_Axis/PROJECT.md`, the Mindset, and the "For every agent" part of User's Instructions, which the spawner copies into the contract.
+- **Project Layer** - What a delegate reads about this project: its purpose in `_Config/PROJECT.md`, the Mindset, and the "For every agent" part of User's Instructions, which the spawner copies into the contract.
 - **Role Table** - The rows of all Role Files, compiled into helpers, guardrails and Command gates at release; helpers never read it at runtime.
 - **Prompt Envelope** - Nonce-bound three-line header and footer (`<<AXIS:ENVELOPE:{nonce}:BEGIN>>` / `END`) that prove a Subagent brief arrived intact at both ends; validated against the delivered task body, not host-injected framing.
 - **Envelope Nonce** - A fresh random identifier binding one Subagent prompt's opening and closing records.
@@ -176,7 +177,7 @@
 - **Decision** - A Message recording a disposition or accepted outcome. Main's applicable authority governs changes to project control state.
 - **Control** - A Message recording a lifecycle change, such as a pause, cancellation or member replacement. Main acceptance is required.
 - **Transfer** - A Message recording a stage of moving an Inbox item between projects. The source stays until its owner verifies destination acceptance.
-- **Parent Directive** - A Message carrying User's task from a recognized parent project through `^^do`. It is distinct from a conditional behavior in `_Axis/DIRECTIVES.md`.
+- **Parent Directive** - A Message carrying User's task from a recognized parent project through `^^do`. It is distinct from a conditional behavior in `_Config/DIRECTIVES.md`.
 - **Delivery Envelope** - A Submission's package of content, origin, destination, expiry and integrity information. It is distinct from a Subagent Prompt Envelope.
 - **Transport** - The mechanism carrying a Delivery Envelope to the receiving Submissions queue. Delivery does not mean acceptance or completion.
 - **Disposition** - Main's recorded handling of a Message, such as admitted, declined, validated or closed.

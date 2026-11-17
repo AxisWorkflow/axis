@@ -13,7 +13,7 @@ Ideas can result from:
 - exploration by Agent when directed to explore more by [Settings > Exploration]
 - spontaneous thoughts (by User or Agent) during normal course of work
 
-Ideas follow the **Index-Detail Pattern:** name each Idea file `{yyyy.mm.dd.hh.mm.ss.xxxZ}.md`, put the Subject on Line 1 (≤ 80 chars) like every other record, then add bare `key: value` fields (the same style as `_Axis/TASKS.md`):
+Ideas follow the **Index-Detail Pattern:** name each Idea file `{yyyy.mm.dd.hh.mm.ss.xxxZ}.md`, put the Subject on Line 1 (≤ 80 chars) like every other record, then add bare `key: value` fields (the same style as `_Config/TASKS.md`):
 
 	subject summarizing the idea (Line 1, ≤ 80 chars)
 

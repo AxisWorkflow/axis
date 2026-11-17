@@ -19,6 +19,21 @@ import sys
 import time
 import uuid
 
+# BEGIN GENERATED: project-files
+PROJECT_FILES=('PROJECT.md','PLAN.md','INITIATIVES.md','TASKS.md','INSTRUCTIONS.md','SETTINGS.md','MINDSET.md','DIRECTIVES.md')
+def project_file(root,name):
+    """Path of project file NAME: in _Config/ once moved, in _Axis/ before. Two differing copies are an error, never a choice."""
+    import pathlib
+    if name not in PROJECT_FILES:raise ValueError('not a project file: '+str(name))
+    new=pathlib.Path(root)/'_Config'/name;old=pathlib.Path(root)/'_Axis'/name
+    if new.is_file() and old.is_file() and new.read_bytes()!=old.read_bytes():raise ValueError('project file differs between _Config and _Axis: '+name)
+    return new if new.is_file() or not old.is_file() else old
+def project_name(root,name):
+    """Project-relative name of project file NAME, by the same rule: `_Config/NAME` or `_Axis/NAME`."""
+    import pathlib
+    return project_file(root,name).relative_to(pathlib.Path(root)).as_posix()
+# END GENERATED: project-files
+
 def replace_shared(src, dst):
     """os.replace with a bounded retry. On shared network folders (SMB) a rename can fail briefly with EBUSY or
     EACCES while another computer reads the target (SMB lab, 2026-10-04: worst wait 1.05 s)."""
@@ -52,7 +67,8 @@ def ordinary(path, missing=False, directory=False):
     return path
 
 def setting(root, name):
-    text=ordinary(root/'_Axis/SETTINGS.md').read_text()
+    for folder in ('_Config','_Axis'):ordinary(root/folder/'SETTINGS.md',missing=True)
+    text=ordinary(project_file(root,'SETTINGS.md')).read_text()
     matches=re.findall(r'^### '+re.escape(name)+r'\n(.*?)(?=\n### |\n## |\Z)',text,re.M|re.S)
     require(len(matches)<=1)
     if not matches:return None

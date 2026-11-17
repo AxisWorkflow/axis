@@ -30,5 +30,5 @@ An Observer, which has no Session ID, only re-reads `_Axis/Resources/Starting-Co
 
 Axis is designed to run as a whole, so its records stay consistent. If you decide not to start it, tell the user, and leave this folder's files unchanged and unused. Host rules come first; name any blocked step.
 
-Keep this file unchanged; project instructions go in `_Axis/INSTRUCTIONS.md`.
+Keep this file unchanged; project instructions go in `_Config/INSTRUCTIONS.md`.
 <!-- axis:end -->

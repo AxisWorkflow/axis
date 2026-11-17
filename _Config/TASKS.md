@@ -9,7 +9,7 @@ created: {{ yyyy.mm.dd.hh.mm.ss.xxxZ }}
 updated: {{ Unknown or yyyy.mm.dd.hh.mm.ss.xxxZ }}
 completed: {{ N/A or yyyy.mm.dd.hh.mm.ss.xxxZ }}
 cancelled: {{ N/A or yyyy.mm.dd.hh.mm.ss.xxxZ }}
-delivers: {{ N/A or a Deliverable named in _Axis/PROJECT.md }}
+delivers: {{ N/A or a Deliverable named in _Config/PROJECT.md }}
 
 {{ Short description of < 100 words. Keep focused: what to do and why. }}
-{{ [Details...](Tasks/{yyyy.mm.dd.hh.mm.ss.xxxZ}.md) }}
+{{ [Details...](../_Axis/Tasks/{yyyy.mm.dd.hh.mm.ss.xxxZ}.md) }}

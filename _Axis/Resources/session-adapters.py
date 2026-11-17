@@ -24,7 +24,9 @@ import uuid
 SID = re.compile(r'\d{4}(?:\.\d{2}){5}\.\d{3}Z\Z')
 OPS = ('inspect', 'start', 'attach', 'notify', 'pause', 'stop', 'resume')
 ANCHORS = ('AGENTS.md', 'CLAUDE.md', 'GEMINI.md', '_Axis/MANIFEST.md',
-           '_Axis/PROJECT.md', '_Axis/PRACTICES.md', '_Axis/RULES.md')
+           '_Axis/PRACTICES.md', '_Axis/RULES.md')
+# The brief identifies a project in either place; a target may still hold it in _Axis/.
+BRIEFS = ('_Config/PROJECT.md', '_Axis/PROJECT.md')
 MANUAL = 'Open the exact project root in a separate agent session and follow its entry file; retain results in Axis records.'
 
 
@@ -70,6 +72,8 @@ def recognized(root):
             p = root / name
             if not p.is_file() or p.is_symlink():
                 return False
+        if not any((root / name).is_file() and not (root / name).is_symlink() and not (root / name).parent.is_symlink() for name in BRIEFS):
+            return False
         return (root / '_Axis').is_dir() and not (root / '_Axis').is_symlink() and (root / '_Temp').is_dir() and not (root / '_Temp').is_symlink()
     except (OSError, ValueError):
         return False

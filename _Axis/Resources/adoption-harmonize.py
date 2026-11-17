@@ -18,10 +18,27 @@ import uuid
 
 CONVENTIONS = 'axis-layout/v3.08'
 ROOTS = ('_Axis', '_Memos', '_Wiki', '_Dev')
+# In _Config/ only the eight project files are adoption content; anything else there is the User's own.
+CONFIG = '_Config'
 FAMILIES = {'Tasks','Ideas','Notes','Logs','Snapshots','CX','Audit','Reviews','Status','Supervision','Followups','Reminders','Messages','Teams','Jobs','Schedules'}
 ID = re.compile(r'\d{4}(?:\.\d{2}){5}\.\d{3}Z\Z')
 PRIVATE = {'Secrets','Agents','Flags','Tracking','.git','.codex','.claude','.gemini'}
 MAX_TEXT = 1024 * 1024
+
+# BEGIN GENERATED: project-files
+PROJECT_FILES=('PROJECT.md','PLAN.md','INITIATIVES.md','TASKS.md','INSTRUCTIONS.md','SETTINGS.md','MINDSET.md','DIRECTIVES.md')
+def project_file(root,name):
+    """Path of project file NAME: in _Config/ once moved, in _Axis/ before. Two differing copies are an error, never a choice."""
+    import pathlib
+    if name not in PROJECT_FILES:raise ValueError('not a project file: '+str(name))
+    new=pathlib.Path(root)/'_Config'/name;old=pathlib.Path(root)/'_Axis'/name
+    if new.is_file() and old.is_file() and new.read_bytes()!=old.read_bytes():raise ValueError('project file differs between _Config and _Axis: '+name)
+    return new if new.is_file() or not old.is_file() else old
+def project_name(root,name):
+    """Project-relative name of project file NAME, by the same rule: `_Config/NAME` or `_Axis/NAME`."""
+    import pathlib
+    return project_file(root,name).relative_to(pathlib.Path(root)).as_posix()
+# END GENERATED: project-files
 
 
 def digest(raw): return hashlib.sha256(raw).hexdigest()
@@ -58,7 +75,7 @@ def checkpoint(root):
 
 def safe(root, name):
     parts = name.split('/')
-    if parts[0] not in ROOTS or any(p in ('', '.', '..') or p in PRIVATE or p.endswith(('_U','_X')) for p in parts):
+    if not (parts[0] in ROOTS or len(parts)==2 and parts[0]==CONFIG and parts[1] in PROJECT_FILES) or any(p in ('', '.', '..') or p in PRIVATE or p.endswith(('_U','_X')) for p in parts):
         raise ValueError('repair path outside allowed adoption content')
     path = root
     for part in parts:
@@ -136,7 +153,7 @@ def inventory(root, journal=None, guard=lambda:None):
                     counts['boundaries']+=1;residual.append({'path':name,'reason':'symlink boundary; left in place'});continue
                 if stat.S_ISDIR(info.st_mode):
                     counts['directories']+=1;directories.append(name)
-                    if (path/'_Axis/PROJECT.md').is_file():
+                    if (path/'_Config/PROJECT.md').is_file() or (path/'_Axis/PROJECT.md').is_file():
                         counts['boundaries']+=1;residual.append({'path':name,'reason':'independent nested project; contents intentionally unscanned'});continue
                     walk(path)
                 elif stat.S_ISREG(info.st_mode):
@@ -151,6 +168,26 @@ def inventory(root, journal=None, guard=lambda:None):
         path=root/name
         if path.is_symlink():residual.append({'path':name,'reason':'linked root; left in place'});counts['boundaries']+=1
         elif path.is_dir():present.append(name);walk(path)
+    path=root/CONFIG
+    if path.is_symlink():residual.append({'path':CONFIG,'reason':'linked root; left in place'});counts['boundaries']+=1
+    elif path.is_dir():
+        present.append(CONFIG)
+        try:entries=scan_entries(root,path,journal,guard)
+        except OSError:
+            entries=[];counts['unreadable']+=1;residual.append({'path':CONFIG,'reason':'unreadable subtree; left in place'})
+        if any(entry.name not in PROJECT_FILES for entry in entries):
+            counts['boundaries']+=1;residual.append({'path':CONFIG,'reason':'content beside the project files; intentionally unscanned'})
+        for entry in entries:
+            if entry.name not in PROJECT_FILES:continue
+            name=entry.relative_to(root).as_posix()
+            try:
+                info=entry.lstat()
+                if stat.S_ISREG(info.st_mode):
+                    counts['files']+=1;files[name]={'bytes':info.st_size,'mode':stat.S_IMODE(info.st_mode),'links':info.st_nlink}
+                else:
+                    counts['boundaries']+=1;residual.append({'path':name,'reason':'link or special file; left in place'})
+            except OSError:
+                counts['unreadable']+=1;residual.append({'path':name,'reason':'unreadable entry; left in place'})
     return {'roots':present,'files':files,'directories':directories,'counts':counts,'residual':residual}
 
 
@@ -295,8 +332,16 @@ def rewrite_links(name, text, moves):
 
 
 def prepare(root, scan, journal, guard):
+    duplicates={name for name in PROJECT_FILES if all(folder+'/'+name in scan['files'] for folder in ('_Config','_Axis'))}
+    # Keep the dependency-consistent repair unit intact until the move resolves duplicate project files.
+    if duplicates:scan=dict(scan,excluded=list(scan['files']))
     moves,residual=candidate_moves(root,scan)
     writes={};facts=[]
+    for name in sorted(duplicates):
+        residual.append({'path':'_Config/'+name,'reason':'project file exists in both locations; repair deferred until the project-file move'})
+    try:index=project_name(root,'TASKS.md')
+    except ValueError:
+        index=None;residual.append({'path':'_Config/TASKS.md','reason':'Task index differs between _Config and _Axis; left in place'})
     for name,info in scan['files'].items():
         if name in scan.get('excluded',[]) or name.startswith(('_Dev/Evidence/','_Dev/Candidate/','_Dev/Artifacts/','_Axis/Updates/','_Axis/Merges/','_Axis/Splits/','_Axis/Repairs/','_Axis/Resources/','_Axis/Rules/','_Axis/Practices/','_Axis/Commands/')):continue
         if info['links']!=1 or info['bytes']>MAX_TEXT or not name.endswith('.md') and name not in moves:continue
@@ -314,7 +359,7 @@ def prepare(root, scan, journal, guard):
                 path=Path(name)
                 if path.parent.as_posix()=='_Axis/Tasks' and valid_id(path.stem) and re.match(r'^# Task: [^\n]+\n',text) and re.search(r'^status: (Active|Blocked|Completed|Cancelled)$',text,re.M) and not re.search(r'^created:',text,re.M):
                     changed=changed.replace('\nstatus:', '\ncreated: '+path.stem+'\nstatus:',1)
-                if name=='_Axis/TASKS.md':
+                if name==index:
                     # The existing index remains intact. Add only a link to a
                     # corroborated active Task omitted from it, without copying
                     # stale status claims or replacing user-authored summaries.
@@ -328,7 +373,7 @@ def prepare(root, scan, journal, guard):
                         title=re.match(r'^# Task: ([^\n]+)\n',detail)
                         if not title or not re.search(r'^status: (Active|Blocked)$',detail,re.M):continue
                         if any(c in title[1] for c in '[]<>'):continue
-                        changed+='\n## '+title[1]+'\n\n[Details...]('+canonical[len('_Axis/'):] +')\n'
+                        changed+='\n## '+title[1]+'\n\n[Details...]('+(canonical[len('_Axis/'):] if index.startswith('_Axis/') else '../'+canonical)+')\n'
 
             target=moves.get(name,name)
             if changed!=text or target!=name:

@@ -35,9 +35,14 @@ def module(name):
     value = importlib.util.module_from_spec(spec); spec.loader.exec_module(value); return value
 
 
+def axis_project(p):
+    """An Axis project: its brief is in _Config/ or, before its files have moved, in _Axis/."""
+    return (p / '_Config/PROJECT.md').is_file() or (p / '_Axis/PROJECT.md').is_file()
+
+
 def project(value):
     p = Path(value).expanduser().resolve(strict=True)
-    if not (p / '_Axis/PROJECT.md').is_file(): raise ValueError('not an Axis project')
+    if not axis_project(p): raise ValueError('not an Axis project')
     return p
 
 
@@ -151,7 +156,7 @@ def discover(roots):
         p = Path(root).expanduser()
         if not p.is_dir() or p.is_symlink(): continue
         for child in [p, *sorted(p.iterdir())]:
-            if child.is_dir() and not child.is_symlink() and (child / '_Axis/PROJECT.md').is_file(): found.add(str(child.resolve()))
+            if child.is_dir() and not child.is_symlink() and axis_project(child): found.add(str(child.resolve()))
     return sorted(found)
 
 

@@ -26,7 +26,7 @@ from pathlib import Path
 # BEGIN GENERATED: role-table
 # Compiled from _Axis/Roles/ at release; edit the role files, never this region.
 ROLE_TABLE=(
-    {'name': 'Main', 'cls': 'session', 'subject': 'Main: session', 'match': 'exact', 'shape': 'exact4', 'created_by': 'claim', 'exclusive': True, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': None, 'survey_key': None, 'notice': None, 'issuer': 'main', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': None, 'guard': None, 'reference_word': 'Main', 'log_by': 'Main Agent', 'title': 'Main Agent', 'plural': 'Main Agents', 'article': 'the', 'serves': 'User', 'families': 'all', 'recovery': ('@core', '@role', '_Axis/INSTRUCTIONS.md', '_Axis/MINDSET.md', '_Axis/DIRECTIVES.md', '@overlay', '@state')},
+    {'name': 'Main', 'cls': 'session', 'subject': 'Main: session', 'match': 'exact', 'shape': 'exact4', 'created_by': 'claim', 'exclusive': True, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': None, 'survey_key': None, 'notice': None, 'issuer': 'main', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': None, 'guard': None, 'reference_word': 'Main', 'log_by': 'Main Agent', 'title': 'Main Agent', 'plural': 'Main Agents', 'article': 'the', 'serves': 'User', 'families': 'all', 'recovery': ('@core', '@role', '_Config/INSTRUCTIONS.md', '_Config/MINDSET.md', '_Config/DIRECTIVES.md', '@overlay', '@state')},
     {'name': 'Auxiliary', 'cls': 'session', 'subject': 'Auxiliary: ', 'match': 'prefix', 'shape': 'single-session-line', 'created_by': 'helper', 'exclusive': False, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': 'list', 'survey_key': 'fresh_auxiliary', 'notice': 'An Auxiliary Agent is serving this project ({id}).', 'issuer': 'worker', 'proposal_owner': True, 'proposal_issuer': 'auxiliary', 'submit_schema': 'axis.external-submission/v1', 'guard': {'config_key': 'externalAgents', 'flag': '--external', 'block_spawn': True, 'new_files': ('subfolders', '_Axis/Submissions/', '_Temp/')}, 'reference_word': 'Auxiliary', 'log_by': 'Auxiliary Agent', 'title': 'Auxiliary Agent', 'plural': 'Auxiliary Agents', 'article': 'an', 'serves': 'User', 'families': ('Ideas', 'Logs', 'Notes'), 'recovery': ('@core', '@role', '_Axis/Practices/Agents.md > Auxiliary Agent', '@state')},
     {'name': 'Assistant', 'cls': 'session', 'subject': 'Assistant: ', 'match': 'prefix', 'shape': 'single-session-line', 'created_by': 'helper', 'exclusive': False, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': 'list', 'survey_key': 'fresh_assistant', 'notice': 'An Assistant is serving this project ({id}).', 'issuer': 'worker', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': 'axis.external-submission/v1', 'guard': {'config_key': 'assistantAgents', 'flag': None, 'block_spawn': False, 'new_files': ('subfolders', '_Axis/Submissions/', '_Temp/')}, 'reference_word': 'Assistant', 'log_by': 'Assistant', 'title': 'Assistant', 'plural': 'Assistants', 'article': 'an', 'serves': 'User', 'families': ('Ideas', 'Logs', 'Notes'), 'recovery': ('@core', '@role', '@state')},
     {'name': 'GroupAgent', 'cls': 'session', 'subject': 'Group Agent: ', 'match': 'prefix', 'shape': 'single-session-line', 'created_by': 'helper', 'exclusive': False, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': 'list', 'survey_key': 'fresh_groupagent', 'notice': 'A Group Agent is serving this project ({id}).', 'issuer': 'worker', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': 'axis.external-submission/v1', 'guard': {'config_key': 'groupAgents', 'flag': None, 'block_spawn': True, 'new_files': ('subfolders', '_Axis/Submissions/', '_Temp/')}, 'reference_word': 'GroupAgent', 'log_by': 'Group Agent', 'title': 'Group Agent', 'plural': 'Group Agents', 'article': 'a', 'serves': 'User and named participants', 'families': ('Ideas', 'Logs', 'Notes'), 'recovery': ('@core', '@role', '@state')},
@@ -63,7 +63,7 @@ ROLE_FILE=re.compile(r'ROLE FILE: `?(_Axis/Roles/([A-Z][A-Za-z]*)\.md)`? sha256 
 CONTRACT_PIN=re.compile(r'CONTRACT COPY: `(_Temp/Envelopes/([^`]+)\.contract\.md)` sha256 ([0-9a-f]{64})')
 SESSION_ID=re.compile(r'\d{4}(?:\.\d{2}){5}\.\d{3}Z')
 CREDENTIAL=re.compile(r'(AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{20,}|sk-(?:ant-|proj-)?[A-Za-z0-9_-]{20,}|xox[abpr]-[A-Za-z0-9-]{10,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|AGE-SECRET-KEY-[0-9A-Z]{20,})')
-FIXED=('_Axis/PRINCIPLES.md','_Axis/RULES.md','_Axis/PRACTICES.md','_Axis/DIRECTIVES.md','_Axis/MINDSET.md','_Axis/GLOSSARY.md','_Axis/MANIFEST.md','_Axis/PROJECT.md','_Axis/Resources/Start-Subagent.md')
+FIXED=('_Axis/PRINCIPLES.md','_Axis/RULES.md','_Axis/PRACTICES.md','_Config/DIRECTIVES.md','_Config/MINDSET.md','_Axis/GLOSSARY.md','_Axis/MANIFEST.md','_Config/PROJECT.md','_Axis/Resources/Start-Subagent.md')
 
 def collapse(text):return ' '.join(text.split())
 
@@ -147,7 +147,7 @@ def credential(text):
 
 def instructions(root):
     """('sorted', text of the For every agent section) or ('unsorted', '')."""
-    path=Path(root)/'_Axis/INSTRUCTIONS.md'
+    path=Path(root)/'_Config/INSTRUCTIONS.md'
     try:lines=path.read_text(encoding='utf-8').split('\n')
     except (OSError,UnicodeError):return 'unsorted',''
     heads=[(i,len(m[1])) for i,x in enumerate(lines) for m in [re.fullmatch(r' {0,3}(#{1,6})\s+For every agent\b[^\n]*',x.rstrip(),re.I)] if m]
@@ -184,7 +184,7 @@ def governing(root,include=()):
     names+=[f'_Axis/Roles/{r["name"]}.md' for r in ROLE_TABLE]+[f'_Axis/Roles/{x}.md' for x in SUPPORT]
     for extra in include:
         norm=posixpath.normpath(extra)
-        if norm!=extra or not re.fullmatch(r'[A-Za-z0-9_][A-Za-z0-9_./ -]*\.md',extra) or norm.startswith('../') or norm.casefold().startswith(('_axis/secrets/','_temp/','_trash/','_axis/agents/','_axis/flags/')) or norm.casefold()=='_axis/instructions.md':raise ValueError('designated guidance path refused: '+extra)
+        if norm!=extra or not re.fullmatch(r'[A-Za-z0-9_][A-Za-z0-9_./ -]*\.md',extra) or norm.startswith('../') or norm.casefold().startswith(('_axis/secrets/','_temp/','_trash/','_axis/agents/','_axis/flags/')) or norm.casefold() in ('_config/instructions.md','_axis/instructions.md'):raise ValueError('designated guidance path refused: '+extra)
         names.append(extra)
     rows=[];missing=[]
     for name in dict.fromkeys(names):

@@ -18,9 +18,9 @@ The User Manual remains at `_Axis/USERMANUAL.md`, the Specification at `_Axis/SP
 1. Main Agent only. Auxiliary Agents return a Message candidate to their owning Command and STOP without writing the README. Subagents return to Main without mutation. Run only in one of these cases: [Start-Project] is completing setup; `^review` has saved a new report; `^save` is preparing its Snapshot checkpoint; or `^git` is about to make an outgoing checkpoint. Otherwise STOP silently. Outside Project Setup, require a valid `project-ready` Flag before changing the root README.
 
 2. Read only public-safe project sources needed for a compact synopsis:
-	- `_Axis/PROJECT.md`: project name, Background, Deliverables, and Criteria.
-	- `_Axis/PLAN.md`: current Objective and immediate phase or direction, when substantive.
-	- `_Axis/TASKS.md`: counts by status and the current Active or Blocked subjects, without copying detail bodies.
+	- `_Config/PROJECT.md`: project name, Background, Deliverables, and Criteria.
+	- `_Config/PLAN.md`: current Objective and immediate phase or direction, when substantive.
+	- `_Config/TASKS.md`: counts by status and the current Active or Blocked subjects, without copying detail bodies.
 	- The newest Review memo in `_Memos/` (`* - Review - *.md`, ordered by parsed creation date or UTC timestamp for legacy and new names), when one exists: its date and Summary only.
 
 3. Exclude Secrets, infrastructure locations, environment signatures, credentials, personal account details, Session IDs, Capability Flags, local paths, host-specific state, and record bodies. Do not invent missing facts. Keep the result useful in a private repository but safe enough that changing repository visibility would not disclose operational secrets.

@@ -11,7 +11,7 @@ When checked tools are in use, load `_Axis/Resources/Checked-Completion.md` for 
 
 4. **Archive Note overflow.** If Notes exceed [Settings > Max Notes], retain the most recent active Notes and move the oldest excess under [Practices > Archiving > Automatic Note Overflow].
 
-5. **Update Mindset.** If the provenance stamp at the end of `_Axis/MINDSET.md` no longer matches the Mindset Settings in `_Axis/SETTINGS.md` (or the stamp is missing), run `_Axis/Resources/Draft-Mindset.md` to regenerate it.
+5. **Update Mindset.** If the provenance stamp at the end of `_Config/MINDSET.md` no longer matches the Mindset Settings in `_Config/SETTINGS.md` (or the stamp is missing), run `_Axis/Resources/Draft-Mindset.md` to regenerate it.
 
 6. **Assess portability.** Read and follow [Practices > Portability > Always-On Save Assessment] end to end. Run every safe, locally observable check; validate every `_Axis/ENVIRONMENT.md` declaration; run bounded discovery and anomaly-only path scans. Never read Secrets content or list secret names, contact/authenticate to a remote merely to improve an infrastructure status, mutate an unrelated external system, enumerate global host state, or enter a nested Subproject. Keep the Archive Location portable ([Practices > Archiving > Archive Location]). Classify `Ready`, `Degraded`, or `Unverified`. An unavailable optional observation does not block the save.
 

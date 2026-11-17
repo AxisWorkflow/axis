@@ -15,8 +15,8 @@ A Review summarizes the project's current state - what changed, what is open, ho
 	- e. Separately collect live or archived Log Subjects beginning `Capability downgrade:` from the same window, without duplicating identical live/archive identities. For the five most recent, extract `feature`, `missing-capability`, `behavior-used`, `work-skipped`, and `user-impact`; mark any missing field as an incomplete downgrade record. An absent local endpoint without requested Local Subagent work is neutral, not a downgrade.
 
 4. Build the Deliverable coverage table (see [Practices > Tasks > Deliverable Coverage]):
-	- a. Read the **Deliverables** and **Criteria** sections of `_Axis/PROJECT.md`. If either still holds `{{` placeholders, skip to item 5 and say in the report that the project is not set up yet.
-	- b. For each Deliverable, list the tasks in `_Axis/TASKS.md` whose `delivers:` field names it, with their Status.
+	- a. Read the **Deliverables** and **Criteria** sections of `_Config/PROJECT.md`. If either still holds `{{` placeholders, skip to item 5 and say in the report that the project is not set up yet.
+	- b. For each Deliverable, list the tasks in `_Config/TASKS.md` whose `delivers:` field names it, with their Status.
 	- c. For each of those tasks, follow its `[Details...]` link, which may resolve to live or archived Task storage, and read `## Produced` to get the paths of the work products it produced.
 	- d. Mark each Deliverable **Delivered** (every task naming it is Completed and at least one path is recorded), **In progress** (some task naming it is Active or Blocked), or **Unclaimed** (no task names it).
 	- e. For each Delivered item, say whether the Criteria have actually been evaluated against it. An unevaluated Deliverable is not done - do not report it as done.
@@ -40,8 +40,8 @@ A Review summarizes the project's current state - what changed, what is open, ho
 	- a. **Tasks current?** Every Active task has a valid exact `updated:` within the last 7 days; every Blocked task has a valid reason. `Unknown` is review-needed, never treated as fresh or stale.
 	- b. **Stale locks?** No stale `*.lock/` directories.
 	- c. **Wiki healthy?** `_Axis/Wiki/Library-Index.md` current; no orphaned pages; all contradictions flagged (not dropped or auto-resolved).
-	- d. **Setup complete?** `_Axis/PROJECT.md` contains no `{{` placeholders.
-	- e. **Deliverables claimed?** Every Deliverable in `_Axis/PROJECT.md` is named by at least one task's `delivers:` field; every Completed task with a `delivers:` value has a `## Produced` section in its detail file.
+	- d. **Setup complete?** `_Config/PROJECT.md` contains no `{{` placeholders.
+	- e. **Deliverables claimed?** Every Deliverable in `_Config/PROJECT.md` is named by at least one task's `delivers:` field; every Completed task with a `delivers:` value has a `## Produced` section in its detail file.
 	- f. **Follow-Ups healthy?** Every live Follow-Up is open and well-shaped, every `blocks:` target exists, every terminal Follow-Up is archived, and every User-blocked Task that needs a specific User action has exactly one matching open Follow-Up.
 	- g. **Reminders healthy?** Every live Reminder is open and well-shaped, due/update times are coherent, every target/reopen reference resolves, and every terminal Reminder is archived.
 	- h. **Portability current?** The latest Snapshot contains one valid Continuity block, every infrastructure declaration has a current exact status, bounded discovery ran, and no unresolved storage-policy/replica, path, case/NFC, conflict-copy, link, or text-normalization finding is hidden.

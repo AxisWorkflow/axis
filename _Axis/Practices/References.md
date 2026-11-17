@@ -7,7 +7,7 @@ Axis References point to Workflow files or sections: [File], [File > Section], [
 
 | Reference | Resolves to |
 | --- | --- |
-| [Project] | `_Axis/PROJECT.md` |
+| [Project] | `_Config/PROJECT.md` |
 | [User Manual] | `_Axis/USERMANUAL.md` |
 | [Specification] | `_Axis/SPECIFICATION.md` |
 | [Project README] | `README.md` |
@@ -19,12 +19,12 @@ Axis References point to Workflow files or sections: [File], [File > Section], [
 | [Principles] | `_Axis/PRINCIPLES.md` |
 | [Rules] | `_Axis/RULES.md` |
 | [Rules > X] | `_Axis/Rules/{X}.md` |
-| [Mindset] | `_Axis/MINDSET.md` |
-| [Settings] | `_Axis/SETTINGS.md` |
-| [Directives] | `_Axis/DIRECTIVES.md` |
-| [Plan] | `_Axis/PLAN.md` |
-| [Tasks] | `_Axis/TASKS.md` |
-| [Initiatives] | `_Axis/INITIATIVES.md` |
+| [Mindset] | `_Config/MINDSET.md` |
+| [Settings] | `_Config/SETTINGS.md` |
+| [Directives] | `_Config/DIRECTIVES.md` |
+| [Plan] | `_Config/PLAN.md` |
+| [Tasks] | `_Config/TASKS.md` |
+| [Initiatives] | `_Config/INITIATIVES.md` |
 | [Snapshots] | `_Axis/SNAPSHOTS.md` |
 | [Dashboard] | `_Axis/Dashboard/` |
 | [Detect-Capabilities], [Resources > Detect-Capabilities] | `_Axis/Resources/Detect-Capabilities.md` |
@@ -57,9 +57,9 @@ Axis References point to Workflow files or sections: [File], [File > Section], [
 Rules of use:
 
 - Deeper forms name real headings in the resolved file.
-- [Settings > X] names the `### X` Setting inside `_Axis/SETTINGS.md`; [Practices > X] and [Rules > X] each resolve to the single-token file in their own folder, per their table rows.
+- [Settings > X] names the `### X` Setting inside `_Config/SETTINGS.md`; [Practices > X] and [Rules > X] each resolve to the single-token file in their own folder, per their table rows.
 - Unlisted base forms are invalid. Fix the reference or extend this table AND its integrity check together.
-- References are logical names: [Project] resolves to `_Axis/PROJECT.md`; [Wiki > ...] rows resolve into `_Axis/Wiki/`. The table supplies paths. When folders move, update the row; never rename the reference solely for that move.
+- References are logical names: [Project] resolves to `_Config/PROJECT.md`; [Wiki > ...] rows resolve into `_Axis/Wiki/`. The table supplies paths. When folders move, update the row; never rename the reference solely for that move.
 
 ## Documentation Boundary
 

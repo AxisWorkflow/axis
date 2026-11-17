@@ -27,13 +27,13 @@ The `^^do all` preview covers the complete target tree and total session/cost bo
 
 Discover the complete descendant tree on demand for `^^` and `^audit supervision`; never maintain a registration file or background scan. The optional read-only `python3 _Axis/Resources/supervision-tree.py --root .` returns paths, immediate parents and depths; file-only discovery follows the same rules. Filter depth 1 only when a procedure specifically needs immediate transport neighbors.
 
-1. Start at the current Project root. Search descendant directories without following symbolic links and without entering `_Axis/`, `_Temp/`, `_Trash/`, `_Wiki/`, the legacy `Wiki` directory, `_Inbox/`, `_Memos/`, `_Dev/`, `.git/`, another hidden system directory, or any `_X` path. `_U` content may be read for discovery, but any state-changing command against a child beneath `_U` refuses because that protected ancestor is read-only.
+1. Start at the current Project root. Search descendant directories without following symbolic links and without entering `_Axis/`, `_Config/`, `_Temp/`, `_Trash/`, `_Wiki/`, the legacy `Wiki` directory, `_Inbox/`, `_Memos/`, `_Dev/`, `.git/`, another hidden system directory, or any `_X` path. `_U` content may be read for discovery, but any state-changing command against a child beneath `_U` refuses because that protected ancestor is read-only.
 
 2. Recognize a child only when one directory carries every Standard Setup Anchor in [Practices > Subprojects > Recognition Contract]. A partial anchor set is an incomplete candidate, not a child; report it only when User named that path or an audit is looking for incomplete candidates.
 
 3. Once a recognized child is found, add it with its immediate recognized ancestor and continue descending that branch under the same boundaries. A deeper project remains its immediate parent's child while also belonging to every enclosing parent's oversight scope. Opaque development, release/artifact, temporary and source-intake trees are data, never independently activated projects.
 
-4. Identify a child by its exact root-relative path. A unique final directory name or unique Project Name from child `_Axis/PROJECT.md` may be accepted as a convenience selector. If a selector matches more than one child, list the exact paths and STOP without choosing.
+4. Identify a child by its exact root-relative path. A unique final directory name or unique Project Name from child `_Config/PROJECT.md` (`_Axis/PROJECT.md` in a child not yet moved) may be accepted as a convenience selector. If a selector matches more than one child, list the exact paths and STOP without choosing.
 
 5. Do not infer a child from Git, a host session, a Note, a Supervision record, or a prior result. Physical anchors decide every run. Git arrangement remains a separate decision under [Practices > GIT > Subproject Repositories].
 
@@ -43,7 +43,7 @@ Without shell access, use the Host's ordinary file-listing tools and the same bo
 
 For each recognized child, read only the state needed by the requested command:
 
-- `_Axis/PROJECT.md` Line 1 for display identity;
+- `_Config/PROJECT.md` Line 1 (`_Axis/PROJECT.md` in a child not yet moved) for display identity;
 - `_Axis/Agents/` Subjects, Marker bodies, `.kill` siblings, and measured `mtime` for role and lease state;
 - `_Axis/Tracking/` tails that correspond to fresh Markers;
 - Line 1 and safe metadata from `_Axis/Messages/` when queue state matters;
@@ -146,9 +146,9 @@ Gives a child a binding order that a genuine child session carries out under the
 
 2. **Approval list.** When the task cannot be undone exactly, pushes, publishes or spends money, or loosens a safeguard (Permissions, Storage Policy, or any Setting that widens what agents may do), show `will change:` with each change in plain words and wait for User's approval; record the approved list. Such a task never runs with `all`, and raising a child's `Parent Authority` is never a `^^do` task. Otherwise ask nothing more.
 
-3. **Preview `all`.** Show the exact task text each child will receive, the children with each one's `Parent Authority` value as read from its own `_Axis/SETTINGS.md`, the number of sessions to start, and the cost of one session when known. Wait for User's yes.
+3. **Preview `all`.** Show the exact task text each child will receive, the children with each one's `Parent Authority` value as read from its own `_Config/SETTINGS.md` (`_Axis/SETTINGS.md` in a child not yet moved), the number of sessions to start, and the cost of one session when known. Wait for User's yes.
 
-4. **Deliver files.** For each `with` path: refuse anything under `_Axis/`, a Secret, a `_U` or `_X` path, or a file outside the parent root. Copy it into the child's `_Inbox/` under its own name (append `-2`, `-3`, ... on collision; never overwrite), verify size and SHA-256 at the destination, retain the parent copy until exact destination acceptance; only source Main retires unchanged bytes under [Practices > Coordination]. A delivered file is the third and last permitted parent write into a child ([Practices > Subprojects]).
+4. **Deliver files.** For each `with` path: refuse anything under `_Axis/` or `_Config/`, a Secret, a `_U` or `_X` path, or a file outside the parent root. Copy it into the child's `_Inbox/` under its own name (append `-2`, `-3`, ... on collision; never overwrite), verify size and SHA-256 at the destination, retain the parent copy until exact destination acceptance; only source Main retires unchanged bytes under [Practices > Coordination]. A delivered file is the third and last permitted parent write into a child ([Practices > Subprojects]).
 
 5. **Record.** For each child write one Supervision record: `action: do`, `scope:` the child path, `directive:` the parent outbound Message identity, one `delivered: {name} {sha256}` line per file, `approved:` the approved list or `none`, and the exact task text under `## Task`.
 
@@ -164,8 +164,8 @@ Gives a child a binding order that a genuine child session carries out under the
 
 During the parent's Inbox filing ([Practices > Inbox]), deliver every item whose home is clearly one direct child into that child's `_Inbox/` with the step 4 mechanics, whether or not a routing instruction covers it, and name it in the Inbox report.
 
-- When the parent's `_Axis/INSTRUCTIONS.md` holds User's routing instruction for that kind of item and that child, run that `^^do` for the one child yourself without asking: the instruction is User's authority. Quote it in the Supervision record. This covers only tasks that can be undone exactly; anything needing the approval list waits for User. During Session Start, deliver before the banner, then start the `^^do` in the same turn right after the greeting, with one line telling User it is running.
-- Without one, suggest the `^^do` that would have the child process the item, and offer to add a matching routing instruction to the parent's `_Axis/INSTRUCTIONS.md`. Write it only on User's yes; later items of that kind then route under it.
+- When the parent's `_Config/INSTRUCTIONS.md` holds User's routing instruction for that kind of item and that child, run that `^^do` for the one child yourself without asking: the instruction is User's authority. Quote it in the Supervision record. This covers only tasks that can be undone exactly; anything needing the approval list waits for User. During Session Start, deliver before the banner, then start the `^^do` in the same turn right after the greeting, with one line telling User it is running.
+- Without one, suggest the `^^do` that would have the child process the item, and offer to add a matching routing instruction to the parent's `_Config/INSTRUCTIONS.md`. Write it only on User's yes; later items of that kind then route under it.
 
 ## `^^start <child|all>`
 

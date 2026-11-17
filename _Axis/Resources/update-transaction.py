@@ -16,8 +16,8 @@ except ImportError:
     raise SystemExit(2)
 ID=r'\d{4}(?:\.\d{2}){5}\.\d{3}Z'
 ENTRIES=('AGENTS.md','CLAUDE.md','GEMINI.md')
-PROJECT=('_Axis/PROJECT.md','_Axis/SETTINGS.md','_Axis/MINDSET.md','_Axis/DIRECTIVES.md','_Axis/ENVIRONMENT.md')
-MUTABLE=('_Axis/PLAN.md','_Axis/INITIATIVES.md','_Axis/TASKS.md','_Axis/SNAPSHOTS.md',*PROJECT)
+PROJECT=('_Axis/PROJECT.md','_Axis/SETTINGS.md','_Axis/MINDSET.md','_Axis/DIRECTIVES.md','_Axis/ENVIRONMENT.md','_Config/PROJECT.md','_Config/SETTINGS.md','_Config/MINDSET.md','_Config/DIRECTIVES.md')
+MUTABLE=('_Axis/PLAN.md','_Axis/INITIATIVES.md','_Axis/TASKS.md','_Axis/SNAPSHOTS.md','_Config/PLAN.md','_Config/INITIATIVES.md','_Config/TASKS.md',*PROJECT)
 TOP=('.gitattributes','.gitignore','README.md','LICENSE',*ENTRIES)
 MANAGED=('_Axis/CHANGELOG.md','_Axis/CLA.md','_Axis/CONTRIBUTING.md','_Axis/LICENSE','_Axis/README.md','_Axis/USERMANUAL.md','_Axis/SPECIFICATION.md','_Axis/HELPINDEX.md','_Axis/GLOSSARY.md','_Axis/MANIFEST.md','_Axis/PRACTICES.md','_Axis/PRINCIPLES.md','_Axis/RULES.md')
 PREFIX=('_Axis/Commands/','_Axis/Practices/','_Axis/Rules/','_Axis/Resources/','_Axis/Dashboard/','_Axis/Branding/','_Axis/Roles/')
@@ -29,6 +29,97 @@ DECLARABLE_DIR=r'_Axis/[A-Z][A-Za-z0-9_-]*/'
 # applied by the new release's updater in the same ^update. Step one changes no project state and no boot doctrine.
 UPDATER_FILES=('_Axis/Resources/update-transaction.py','_Axis/Commands/update.md','_Axis/Resources/Check-Update-Handoff.md','_Axis/Resources/record-check.py')
 STATE_DIRS=('Agents','Archive','Audit','CX','Flags','Followups','Ideas','Logs','Notes','Reminders','Requests','Teams','Messages','Jobs','Schedules','Submissions','Reviews','Secrets','Snapshots','Status','Supervision','Tasks','Tracking','Updates','Merges','Splits','Repairs','ColdStorage','Wiki')
+# BEGIN GENERATED: project-files
+PROJECT_FILES=('PROJECT.md','PLAN.md','INITIATIVES.md','TASKS.md','INSTRUCTIONS.md','SETTINGS.md','MINDSET.md','DIRECTIVES.md')
+def project_file(root,name):
+    """Path of project file NAME: in _Config/ once moved, in _Axis/ before. Two differing copies are an error, never a choice."""
+    import pathlib
+    if name not in PROJECT_FILES:raise ValueError('not a project file: '+str(name))
+    new=pathlib.Path(root)/'_Config'/name;old=pathlib.Path(root)/'_Axis'/name
+    if new.is_file() and old.is_file() and new.read_bytes()!=old.read_bytes():raise ValueError('project file differs between _Config and _Axis: '+name)
+    return new if new.is_file() or not old.is_file() else old
+def project_name(root,name):
+    """Project-relative name of project file NAME, by the same rule: `_Config/NAME` or `_Axis/NAME`."""
+    import pathlib
+    return project_file(root,name).relative_to(pathlib.Path(root)).as_posix()
+# END GENERATED: project-files
+# config-look:begin
+# The same text in boot.py and update-transaction.py; change both together.
+def config_receipts(root):
+    """Move receipts on record for the eight project files: (Log, source, target, sha256), oldest first in each folder."""
+    import json,os,re
+    found=[]
+    for folder in ('_Axis/Archive/Logs','_Axis/Logs/Archive','_Axis/Logs'):
+        try:names=sorted(os.listdir(os.path.join(str(root),folder)))
+        except OSError:continue
+        for n in names:
+            if not re.fullmatch(r'\d{4}(?:\.\d{2}){5}\.\d{3}Z\.md',n):continue
+            try:
+                with open(os.path.join(str(root),folder,n),'rb') as stream:
+                    if stream.read(15)!=b'Reference move\n':continue
+                    text=stream.read(16384).decode('utf-8','replace')
+            except OSError:continue
+            blocks=re.findall(r'^```axis-record-receipt\n(.*?)\n```\s*$',text,re.M|re.S)
+            if len(blocks)!=1:continue
+            try:value=json.loads(blocks[0])
+            except ValueError:continue
+            if not isinstance(value,dict) or value.get('kind')!='move':continue
+            source,target=value.get('source'),value.get('target')
+            if any((source,target)==('_Axis/'+name,'_Config/'+name) for name in PROJECT_FILES):found.append((folder+'/'+n,source,target,value.get('sha256')))
+    return found
+
+def config_look(root):
+    """Read-only look at the eight project files before their move from _Axis/ to _Config/: the state of each
+    (absent, move, done, redundant, conflict), every conflict with its path and what to do, and the sign of an
+    unfinished move. It writes nothing."""
+    import hashlib,os,stat,subprocess
+    root=str(root);files={};conflicts=[];different=[];folder=False
+    def status(*parts):
+        try:return os.lstat(os.path.join(root,*parts))
+        except (FileNotFoundError,NotADirectoryError):return None
+    def data(*parts):
+        with open(os.path.join(root,*parts),'rb') as stream:return stream.read()
+    names=os.listdir(root)
+    if '_Config' in names:
+        folder=stat.S_ISDIR(status('_Config').st_mode)
+        if not folder:conflicts.append({'kind':'folder','path':'_Config','advice':'`_Config` exists and is not a plain folder, and Axis keeps the project files in a folder of that name: rename or remove it'})
+    else:
+        other=sorted(n for n in names if n.casefold()=='_config')
+        if other:conflicts.append({'kind':'letter-case','path':other[0],'advice':f'`{other[0]}` differs from `_Config` only in letter case: rename it to `_Config` to hold the project files, or to another name'})
+    for name in PROJECT_FILES:
+        old=status('_Axis',name);new=status('_Config',name) if folder else None;plain=True
+        for where,info in (('_Axis',old),('_Config',new)):
+            if info is not None and not stat.S_ISREG(info.st_mode):
+                plain=False;what='a link' if stat.S_ISLNK(info.st_mode) else 'not a plain file'
+                conflicts.append({'kind':'not-plain','path':where+'/'+name,'advice':f'`{where}/{name}` is {what}: replace it with a plain file that holds the content'})
+        if not plain:files[name]='conflict'
+        elif old is None:files[name]='absent' if new is None else 'done'
+        elif new is None:files[name]='move'
+        elif old.st_size==new.st_size and data('_Axis',name)==data('_Config',name):files[name]='redundant'
+        else:files[name]='conflict';different.append(name)
+    if different:
+        recorded={(target,digest) for _,_,target,digest in config_receipts(root)}
+        for name in different:
+            used=('_Config/'+name,hashlib.sha256(data('_Config',name)).hexdigest()) in recorded
+            advice=(f'`_Config/{name}` is the copy in use and `_Axis/{name}` appeared later: merge what is needed from `_Axis/{name}` into `_Config/{name}`, then remove `_Axis/{name}`' if used
+                    else f'`_Axis/{name}` and `_Config/{name}` both exist and differ: keep one copy, and remove or rename the other')
+            conflicts.append({'kind':'different','path':'_Axis/'+name,'other':'_Config/'+name,'in_use':used,'advice':advice})
+    git='none'
+    if os.path.lexists(os.path.join(root,'.git')):
+        git='not-asked'
+        if any(v in ('move','redundant') for v in files.values()):
+            # Asked only while a file is still to move: an ignored destination would checkpoint as deletions alone.
+            try:asked=subprocess.run(['git','-C',root,'check-ignore','--',*['_Config/'+n for n in PROJECT_FILES]],capture_output=True,timeout=30)
+            except (OSError,subprocess.SubprocessError):asked=None
+            git='unavailable' if asked is None or asked.returncode not in (0,1) else 'ignored' if asked.returncode==0 else 'not-ignored'
+            if git=='ignored':
+                paths=[p for p in asked.stdout.decode('utf-8','replace').splitlines() if p]
+                conflicts.append({'kind':'ignored','path':'_Config/','paths':paths,'advice':'Git ignores '+', '.join('`'+p+'`' for p in paths)+', so a checkpoint would record the old files as deleted and add nothing: remove that ignore rule'})
+    try:
+        with open(os.path.join(root,'_Axis','Flags','config-move'),encoding='utf-8',errors='replace') as stream:unfinished=stream.readline().strip()=='moving'
+    except OSError:unfinished=False
+    return {'files':files,'conflicts':conflicts,'unfinished':unfinished,'git':git}
+# config-look:end
 
 def require(v,m):
     if not v:raise ValueError(m)
@@ -153,7 +244,7 @@ def lease(root,sid,boot=False):
     for q in safe(root,'_Axis/Agents').glob('*.md'):
         if q!=p and not safe(root,str(q.relative_to(root).with_suffix('.kill'))).exists():require(time.time()-q.stat().st_mtime>=3600,'another writer may be active')
     require(read(safe(root,'_Axis/Flags/host-storage')).decode().splitlines()[0]=='atomic','atomic storage required')
-    require(re.search(r'### Storage Policy\n(?:(?!\n### ).)*?\*\*Value:\*\* auto(?:\n|$)',read(safe(root,'_Axis/SETTINGS.md')).decode(),re.S),'storage policy forbids transaction')
+    require(re.search(r'### Storage Policy\n(?:(?!\n### ).)*?\*\*Value:\*\* auto(?:\n|$)',read(safe(root,project_name(root,'SETTINGS.md'))).decode(),re.S),'storage policy forbids transaction')
     return p
 
 def plan_scope(p):
@@ -209,10 +300,16 @@ def validate_plan(root,p):
     require(isinstance(p['changes'],list) and p['changes'],'empty plan');seen=set();migrations=p.get('migration_paths',[]);
     if p.get('updater_only'):require(p['updater_only'] is True and all(isinstance(v,dict) and v.get('path') in UPDATER_FILES and v.get('after') is not None for v in p['changes']) and not migrations and p.get('reconciliation')=={},'updater-only step may change only the updater files')
     require(isinstance(migrations,list) and all(n in PROJECT for n in migrations),'invalid semantic migration scope')
+    for name in migrations:
+        if Path(name).name in PROJECT_FILES:
+            other=('_Axis/' if name.startswith('_Config/') else '_Config/')+Path(name).name
+            require(identity(safe(root,other)) is None,'semantic migration requires one project-file copy: '+name+'; resolve '+other+' before preparing the update')
     log=[v for v in p['changes'] if isinstance(v,dict) and v.get('path')=='_Axis/CHANGELOG.md' and isinstance(v.get('staged'),str) and v['staged'].startswith('_Temp/')]
     extra=declared(read(safe(root,log[0]['staged'])).decode(),p['from_version'],p['to_version']) if len(log)==1 else set()
     for v in p['changes']:
         require(set(v)=={'path','before','after','staged'},'invalid change fields');n=v['path'];safe(root,n);require(n in TOP or n in MANAGED or n.startswith(PREFIX) or n in extra or any(x.endswith('/') and n.startswith(x) for x in extra) or n in migrations or n=='.github/README.md' and v['after'] is None,'unmanaged or protected mutation target');require(n.casefold() not in seen,'duplicate target');seen.add(n.casefold());valid_identity(v['before']);valid_identity(v['after']);require(v['before']!=v['after'] or (n==CORE and v['after'] is not None and not p.get('updater_only') and core_matches_plan(root,p)),'no-op change (only an exact source-matching startup core may refresh)')
+        if n in {folder+'/'+name for folder in ('_Config','_Axis') for name in PROJECT_FILES}:
+            require(v['before'] is not None or v['after'] is None,'update cannot add a project-file template: '+n)
         if v['after'] is None:require(v['staged'] is None,'deletion has payload')
         else:require(v['staged'].startswith('_Temp/'),'payload must be reviewed local staging');require(identity(safe(root,v['staged']))==v['after'],'staged bytes changed')
     for field in ('preserved','source_checks'):
@@ -227,8 +324,8 @@ def validate_plan(root,p):
         require(v['after'] is not None,'required core file cannot retire');return read(safe(root,v['staged']))
     require(entry_contract(proposed,p),'planned entry mismatch')
     if not p.get('updater_only'):require(re.search(r'^current-version: '+re.escape(p['to_version'])+r'$',proposed('_Axis/CHANGELOG.md').decode(),re.M),'planned target version mismatch')
-    if '_Axis/SETTINGS.md' in replacements:
-        require(re.search(r'### Storage Policy\n(?:(?!\n### ).)*?\*\*Value:\*\* auto(?:\n|$)',proposed('_Axis/SETTINGS.md').decode(),re.S),'storage-policy transition requires reviewed manual migration')
+    for settings in ('_Config/SETTINGS.md','_Axis/SETTINGS.md'):
+        if settings in replacements:require(re.search(r'### Storage Policy\n(?:(?!\n### ).)*?\*\*Value:\*\* auto(?:\n|$)',proposed(settings).decode(),re.S),'storage-policy transition requires reviewed manual migration')
     require(bool(p['source_checks']),'source identity checks required')
     require(p['source']['archive_sha256'] in [v['sha256'] for v in p['source_checks'].values() if v],'archive not pinned')
     h=p.get('harmonization')
@@ -249,7 +346,7 @@ def live(root,p,which):return all(identity(safe(root,v['path']))==v[which] for v
 def preserved(root,p,reconciling=False):return all(identity(safe(root,n))==v for n,v in p['preserved'].items() if not (reconciling and n in p['reconciliation']))
 def strict_path(n):
     # Axis-owned files and the project records an update can reformat or reconcile: any change blocks adoption.
-    return n in TOP or n in MANAGED or n.startswith(PREFIX) or n in MUTABLE or n=='_Axis/INSTRUCTIONS.md' or n.startswith(('_Axis/Tasks/','_Axis/Followups/','_Axis/Wiki/')) or bool(re.fullmatch(DECLARABLE,n))
+    return n in TOP or n in MANAGED or n.startswith(PREFIX) or n in MUTABLE or n in ('_Axis/INSTRUCTIONS.md','_Config/INSTRUCTIONS.md') or n.startswith(('_Axis/Tasks/','_Axis/Followups/','_Axis/Wiki/')) or bool(re.fullmatch(DECLARABLE,n))
 def adopted(root,p,reconciling=False):
     # After release (2.01): strict for Axis-owned state; other preserved project files are reported, not blocking.
     require(live(root,p,'after'),'applied state drift: a file this update wrote changed after apply; restore the update result to continue adoption')
@@ -465,7 +562,7 @@ def harmonization_view(root,E,p):
     blocked={v['path'] for v in p['changes']}|set(p['reconciliation'])|{p['authorization']['record']}
     for op in unit['operations']:
         n=op['source'];target=op['target']
-        require(n not in blocked and target not in blocked and n.split('/')[0] in ('_Axis','_Memos','_Wiki','_Dev') and target.split('/')[0] in ('_Axis','_Memos','_Wiki','_Dev'),'repair exceeds reconciliation scope')
+        require(n not in blocked and target not in blocked and all(v.split('/')[0] in ('_Axis','_Memos','_Wiki','_Dev') or v in ['_Config/'+x for x in PROJECT_FILES] for v in (n,target)),'repair exceeds reconciliation scope')
         valid_identity(op['before']);valid_identity(op['after'])
         require((E/'harmonization'/(str(op['index'])+'.done')).is_file(),'repair lacks completion')
         require(identity(safe(root,target))==op['after'] and (n==target or not safe(root,n).exists()),'harmonized record changed')
@@ -611,7 +708,11 @@ def main():
     if a.action in ('classify','prepare'):plan=parse(read(localarg(a.plan)))
     if a.action=='classify':print(json.dumps(classification(plan),sort_keys=True));return
     if a.action=='inspect':print(json.dumps(inspect(root),sort_keys=True));return
-    merge_clear(root);require(a.session and a.transaction,'session and transaction required');lease(root,a.session,a.action in ('begin-reconcile','consume','retire'))
+    merge_clear(root);require(a.session and a.transaction,'session and transaction required')
+    if a.action=='prepare':
+        # The look, before the lease reads the Settings by the same rule and before anything is written.
+        blocked=config_look(root)['conflicts'];require(not blocked,'the project files cannot move to _Config/: '+'; '.join(c['advice'] for c in blocked)+'. Nothing was written; prepare the update again afterwards')
+    lease(root,a.session,a.action in ('begin-reconcile','consume','retire'))
     with operation(root):
         lease(root,a.session,a.action in ('begin-reconcile','consume','retire'))
         if a.action=='prepare':

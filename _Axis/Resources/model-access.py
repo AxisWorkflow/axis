@@ -7,6 +7,21 @@ import re
 import stat
 import subprocess
 
+# BEGIN GENERATED: project-files
+PROJECT_FILES=('PROJECT.md','PLAN.md','INITIATIVES.md','TASKS.md','INSTRUCTIONS.md','SETTINGS.md','MINDSET.md','DIRECTIVES.md')
+def project_file(root,name):
+    """Path of project file NAME: in _Config/ once moved, in _Axis/ before. Two differing copies are an error, never a choice."""
+    import pathlib
+    if name not in PROJECT_FILES:raise ValueError('not a project file: '+str(name))
+    new=pathlib.Path(root)/'_Config'/name;old=pathlib.Path(root)/'_Axis'/name
+    if new.is_file() and old.is_file() and new.read_bytes()!=old.read_bytes():raise ValueError('project file differs between _Config and _Axis: '+name)
+    return new if new.is_file() or not old.is_file() else old
+def project_name(root,name):
+    """Project-relative name of project file NAME, by the same rule: `_Config/NAME` or `_Axis/NAME`."""
+    import pathlib
+    return project_file(root,name).relative_to(pathlib.Path(root)).as_posix()
+# END GENERATED: project-files
+
 MODES = {'subscription', 'api-key', 'either'}
 PROVIDERS = {'claude': ('anthropic-api-key', 'ANTHROPIC_API_KEY'),
              'codex': ('openai-api-key', 'OPENAI_API_KEY')}
@@ -18,8 +33,12 @@ SELECTORS = {'OPENAI_API_KEY', 'CODEX_API_KEY', 'ANTHROPIC_API_KEY', 'ANTHROPIC_
 
 
 def setting(root, provider):
-    try:text = (Path(root) / '_Axis/SETTINGS.md').read_text()
-    except FileNotFoundError:text = ''
+    path = project_file(root, 'SETTINGS.md')
+    try:text = path.read_text()
+    except FileNotFoundError:
+        # Only a project with no Settings in either place reads as the default; a file that left _Axis/ meanwhile is an error.
+        if path.parent.name != '_Config': raise
+        text = ''
     def value(name):
         match = re.search(r'^### ' + re.escape(name) + r'\n(.*?)(?=^### |\Z)', text, re.M | re.S)
         if not match: return None

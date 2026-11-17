@@ -19,7 +19,7 @@ A Cross-Examination should happen in isolation from the rest of the Workflow. A 
 
 ### 1. Behavior and Settings
 
-The CX role text in `_Axis/Roles/CX.md` carries the Cross Examiner's stance, compiled at release from [Template-Mindset] at these levels: Reasoning 2, Exploration 1, Eagerness -2, Skepticism 2, Familiarity -2, Verbosity -2, Simplicity -2, Precision 2, Generalization -2, Rigor 2, Creativity -2, Transparency -2, Budget -1, and CX Frequency 0. Main carries that role text verbatim in the spawn prompt and does not restate it. A CX Subagent does NOT follow the project Mindset in `_Axis/MINDSET.md`.
+The CX role text in `_Axis/Roles/CX.md` carries the Cross Examiner's stance, compiled at release from [Template-Mindset] at these levels: Reasoning 2, Exploration 1, Eagerness -2, Skepticism 2, Familiarity -2, Verbosity -2, Simplicity -2, Precision 2, Generalization -2, Rigor 2, Creativity -2, Transparency -2, Budget -1, and CX Frequency 0. Main carries that role text verbatim in the spawn prompt and does not restate it. A CX Subagent does NOT follow the project Mindset in `_Config/MINDSET.md`.
 
 ### 2. Synopsis
 
@@ -28,7 +28,7 @@ The Main Agent should draft a Synopsis to summarize the actions, decisions, work
 ### 3. On Return
 
 - Log an Event referencing the path of the returned report - the CX Subagent does not Log, so this is the audit-trail entry.
-- Review the findings and act on them, or record why you are not, at a level of detail consistent with **Verbosity** in `_Axis/SETTINGS.md`.
+- Review the findings and act on them, or record why you are not, at a level of detail consistent with **Verbosity** in `_Config/SETTINGS.md`.
 
 ## CX Subagent: Performing a Cross-Examination
 

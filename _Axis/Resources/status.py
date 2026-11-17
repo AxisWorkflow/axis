@@ -10,6 +10,21 @@ import argparse, datetime as dt, html, importlib.util, json, os, re, shutil, sub
 from pathlib import Path
 
 sys.dont_write_bytecode = True
+# BEGIN GENERATED: project-files
+PROJECT_FILES=('PROJECT.md','PLAN.md','INITIATIVES.md','TASKS.md','INSTRUCTIONS.md','SETTINGS.md','MINDSET.md','DIRECTIVES.md')
+def project_file(root,name):
+    """Path of project file NAME: in _Config/ once moved, in _Axis/ before. Two differing copies are an error, never a choice."""
+    import pathlib
+    if name not in PROJECT_FILES:raise ValueError('not a project file: '+str(name))
+    new=pathlib.Path(root)/'_Config'/name;old=pathlib.Path(root)/'_Axis'/name
+    if new.is_file() and old.is_file() and new.read_bytes()!=old.read_bytes():raise ValueError('project file differs between _Config and _Axis: '+name)
+    return new if new.is_file() or not old.is_file() else old
+def project_name(root,name):
+    """Project-relative name of project file NAME, by the same rule: `_Config/NAME` or `_Axis/NAME`."""
+    import pathlib
+    return project_file(root,name).relative_to(pathlib.Path(root)).as_posix()
+# END GENERATED: project-files
+
 TS = re.compile(r'^\d{4}\.\d{2}\.\d{2}\.\d{2}\.\d{2}\.\d{2}\.\d{3}Z\.md$')
 
 
@@ -97,15 +112,17 @@ def first_paragraph(text, after=None):
 def collect(root, detail):
     now = dt.datetime.now(dt.timezone.utc)
     ax = root / '_Axis'
-    project = read(ax / 'PROJECT.md')
+    # Until the first start after an update has moved a project file, it is still in _Axis/: the either-place rule.
+    cfg = lambda name: project_file(root, name)
+    project = read(cfg('PROJECT.md'))
     name = (re.findall(r'^# Project:\s*(.+)$', project, re.M) or ['Not set'])[0].strip()
     if '{{' in name:
         name = 'Not set'
     version = (re.findall(r'^current-version: (\S+)$', read(ax / 'CHANGELOG.md'), re.M) or ['Unavailable'])[0]
-    plan = read(ax / 'PLAN.md')
+    plan = read(cfg('PLAN.md'))
     direction = first_paragraph(plan, after='## ') or 'No Plan written yet.'
     tasks = []
-    for head, body in blocks(read(ax / 'TASKS.md')):
+    for head, body in blocks(read(cfg('TASKS.md'))):
         f = fields(body)
         if '{{' in head + body or 'status' not in f:
             continue
@@ -113,7 +130,7 @@ def collect(root, detail):
                       'updated': f.get('updated', ''), 'initiative': f.get('initiative', '')})
     count = {s: sum(t['status'] == s for t in tasks) for s in ('Active', 'Planned', 'Blocked', 'Completed', 'Cancelled')}
     inits = []
-    for head, body in blocks(read(ax / 'INITIATIVES.md')):
+    for head, body in blocks(read(cfg('INITIATIVES.md'))):
         f = fields(body)
         if 'status' in f and '{{' not in head + body:
             nxt = ''
@@ -161,7 +178,7 @@ def collect(root, detail):
         'generated': now.strftime('%Y-%m-%d %H:%M'), 'project': name, 'version': version, 'folder': str(root),
         'model': model_name(model),
         'model_access': next((v for v in read(ax/'Flags/model-access').splitlines()[:1] if v in {'subscription','api-key'}),'unverified'),
-        'context': context_method(read(ax / 'SETTINGS.md')),
+        'context': context_method(read(cfg('SETTINGS.md'))),
         'decisions': [{'initiative': i['name'], 'next': i['next']} for i in inits if i['status'] in ('Active', 'Blocked') and i['next']],
         'direction': direction, 'tasks': count, 'active': active, 'blocked': blocked,
         'initiatives': [i for i in inits if i['status'] not in ('Completed', 'Cancelled')],
@@ -386,7 +403,12 @@ def main():
     if not (root / '_Axis').is_dir():
         print('status: no _Axis/ folder under --root', file=sys.stderr)
         return 2
-    d = collect(root, a.detail)
+    try:
+        d = collect(root, a.detail)
+    except ValueError as error:
+        # Two differing copies of a project file: reported as that error, never one of them shown.
+        print(f'status: {error}', file=sys.stderr)
+        return 2
     if a.format == 'json':
         print(json.dumps(d, indent=1, default=str))
     elif a.format == 'html':

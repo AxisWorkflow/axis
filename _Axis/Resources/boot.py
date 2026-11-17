@@ -12,7 +12,7 @@ from pathlib import Path
 # BEGIN GENERATED: role-table
 # Compiled from _Axis/Roles/ at release; edit the role files, never this region.
 ROLE_TABLE=(
-    {'name': 'Main', 'cls': 'session', 'subject': 'Main: session', 'match': 'exact', 'shape': 'exact4', 'created_by': 'claim', 'exclusive': True, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': None, 'survey_key': None, 'notice': None, 'issuer': 'main', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': None, 'guard': None, 'reference_word': 'Main', 'log_by': 'Main Agent', 'title': 'Main Agent', 'plural': 'Main Agents', 'article': 'the', 'serves': 'User', 'families': 'all', 'recovery': ('@core', '@role', '_Axis/INSTRUCTIONS.md', '_Axis/MINDSET.md', '_Axis/DIRECTIVES.md', '@overlay', '@state')},
+    {'name': 'Main', 'cls': 'session', 'subject': 'Main: session', 'match': 'exact', 'shape': 'exact4', 'created_by': 'claim', 'exclusive': True, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': None, 'survey_key': None, 'notice': None, 'issuer': 'main', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': None, 'guard': None, 'reference_word': 'Main', 'log_by': 'Main Agent', 'title': 'Main Agent', 'plural': 'Main Agents', 'article': 'the', 'serves': 'User', 'families': 'all', 'recovery': ('@core', '@role', '_Config/INSTRUCTIONS.md', '_Config/MINDSET.md', '_Config/DIRECTIVES.md', '@overlay', '@state')},
     {'name': 'Auxiliary', 'cls': 'session', 'subject': 'Auxiliary: ', 'match': 'prefix', 'shape': 'single-session-line', 'created_by': 'helper', 'exclusive': False, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': 'list', 'survey_key': 'fresh_auxiliary', 'notice': 'An Auxiliary Agent is serving this project ({id}).', 'issuer': 'worker', 'proposal_owner': True, 'proposal_issuer': 'auxiliary', 'submit_schema': 'axis.external-submission/v1', 'guard': {'config_key': 'externalAgents', 'flag': '--external', 'block_spawn': True, 'new_files': ('subfolders', '_Axis/Submissions/', '_Temp/')}, 'reference_word': 'Auxiliary', 'log_by': 'Auxiliary Agent', 'title': 'Auxiliary Agent', 'plural': 'Auxiliary Agents', 'article': 'an', 'serves': 'User', 'families': ('Ideas', 'Logs', 'Notes'), 'recovery': ('@core', '@role', '_Axis/Practices/Agents.md > Auxiliary Agent', '@state')},
     {'name': 'Assistant', 'cls': 'session', 'subject': 'Assistant: ', 'match': 'prefix', 'shape': 'single-session-line', 'created_by': 'helper', 'exclusive': False, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': 'list', 'survey_key': 'fresh_assistant', 'notice': 'An Assistant is serving this project ({id}).', 'issuer': 'worker', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': 'axis.external-submission/v1', 'guard': {'config_key': 'assistantAgents', 'flag': None, 'block_spawn': False, 'new_files': ('subfolders', '_Axis/Submissions/', '_Temp/')}, 'reference_word': 'Assistant', 'log_by': 'Assistant', 'title': 'Assistant', 'plural': 'Assistants', 'article': 'an', 'serves': 'User', 'families': ('Ideas', 'Logs', 'Notes'), 'recovery': ('@core', '@role', '@state')},
     {'name': 'GroupAgent', 'cls': 'session', 'subject': 'Group Agent: ', 'match': 'prefix', 'shape': 'single-session-line', 'created_by': 'helper', 'exclusive': False, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': 'list', 'survey_key': 'fresh_groupagent', 'notice': 'A Group Agent is serving this project ({id}).', 'issuer': 'worker', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': 'axis.external-submission/v1', 'guard': {'config_key': 'groupAgents', 'flag': None, 'block_spawn': True, 'new_files': ('subfolders', '_Axis/Submissions/', '_Temp/')}, 'reference_word': 'GroupAgent', 'log_by': 'Group Agent', 'title': 'Group Agent', 'plural': 'Group Agents', 'article': 'a', 'serves': 'User and named participants', 'families': ('Ideas', 'Logs', 'Notes'), 'recovery': ('@core', '@role', '@state')},
@@ -29,6 +29,21 @@ ROLE_TABLE=(
 )
 ROLE_LEDGER={'issuers': ('auxiliary', 'external', 'main', 'worker'), 'submission_schemas': ('axis.external-submission/v1',), 'proposal_member_subject': 'Subagent: External proposal Team', 'survey_keys': ('fresh_assistant', 'fresh_auxiliary', 'fresh_external', 'fresh_groupagent', 'orphan_subagents'), 'proposal_owners': (('External:', 'external'), ('Auxiliary:', 'auxiliary'))}
 # END GENERATED: role-table
+
+# BEGIN GENERATED: project-files
+PROJECT_FILES=('PROJECT.md','PLAN.md','INITIATIVES.md','TASKS.md','INSTRUCTIONS.md','SETTINGS.md','MINDSET.md','DIRECTIVES.md')
+def project_file(root,name):
+    """Path of project file NAME: in _Config/ once moved, in _Axis/ before. Two differing copies are an error, never a choice."""
+    import pathlib
+    if name not in PROJECT_FILES:raise ValueError('not a project file: '+str(name))
+    new=pathlib.Path(root)/'_Config'/name;old=pathlib.Path(root)/'_Axis'/name
+    if new.is_file() and old.is_file() and new.read_bytes()!=old.read_bytes():raise ValueError('project file differs between _Config and _Axis: '+name)
+    return new if new.is_file() or not old.is_file() else old
+def project_name(root,name):
+    """Project-relative name of project file NAME, by the same rule: `_Config/NAME` or `_Axis/NAME`."""
+    import pathlib
+    return project_file(root,name).relative_to(pathlib.Path(root)).as_posix()
+# END GENERATED: project-files
 
 def model_label(model):
     """The `Model:` row: the reported model id in readable form; an unrecognized form unchanged; Unknown when none is reported."""
@@ -174,7 +189,7 @@ def completed_receipt(e):
     keys={'schema','transaction','session','from_version','to_version','target_commit','plan_sha256','authorization','engine_sha256','git_checkpoints','unrelated_changes','outcome','completed','trash'}
     if set(value)-{'harmonization_sha256','reconciled'}!=keys or value['schema']!=2 or value['transaction']!=e.name or value['outcome'] not in ('consumed','rolled-back'):raise ValueError('invalid completed update receipt')
     bound=value.get('reconciled',{})
-    live=lambda n:n in ('_Axis/PLAN.md','_Axis/INITIATIVES.md','_Axis/TASKS.md','_Axis/SNAPSHOTS.md','_Axis/PROJECT.md','_Axis/SETTINGS.md','_Axis/MINDSET.md','_Axis/DIRECTIVES.md','_Axis/ENVIRONMENT.md') or bool(re.fullmatch(r'_Axis/(?:Tasks|Followups)/\d{4}(?:\.\d{2}){5}\.\d{3}Z\.md',n))
+    live=lambda n:n in ('_Axis/PLAN.md','_Axis/INITIATIVES.md','_Axis/TASKS.md','_Axis/SNAPSHOTS.md','_Axis/PROJECT.md','_Axis/SETTINGS.md','_Axis/MINDSET.md','_Axis/DIRECTIVES.md','_Axis/ENVIRONMENT.md','_Config/PLAN.md','_Config/INITIATIVES.md','_Config/TASKS.md','_Config/PROJECT.md','_Config/SETTINGS.md','_Config/MINDSET.md','_Config/DIRECTIVES.md') or bool(re.fullmatch(r'_Axis/(?:Tasks|Followups)/\d{4}(?:\.\d{2}){5}\.\d{3}Z\.md',n))
     if 'reconciled' in value and (value['outcome']!='consumed' or not isinstance(bound,dict) or not bound or any(not isinstance(v,dict) or not live(n) or set(v)-{'path'}!={'sha256','bytes'} or not re.fullmatch('[0-9a-f]{64}',str(v['sha256'])) or type(v['bytes']) is not int or v.get('path',n) not in ((n,'_Axis/Followups/Archive/'+n.rsplit('/',1)[-1],'_Axis/Archive/Followups/'+n.rsplit('/',1)[-1]) if n.startswith('_Axis/Followups/') else (n,)) for n,v in bound.items())):raise ValueError('invalid completed reconciliation binding')
     ident=r'\d{4}(?:\.\d{2}){5}\.\d{3}Z'
     if not re.fullmatch(ident,value['session']) or not re.fullmatch(r'_Trash/\d{4}-\d{2}-\d{2}--Update-'+re.escape(e.name),value['trash']):raise ValueError('invalid completion identity')
@@ -339,7 +354,7 @@ def sync_directives():
     # Default Directives (2.04, User decision 2026-10-04): append each Directive shipped in the managed
     # Resources/Default-Directives.md that the project's DIRECTIVES.md lacks, unless the project opts out with
     # <!-- axis:omit-directive: {name} -->. Existing Directives are never edited, reordered or removed.
-    src=R/'Default-Directives.md';dst=root/'_Axis/DIRECTIVES.md'
+    src=R/'Default-Directives.md';dst=root/'_Config/DIRECTIVES.md'
     if not src.is_file() or not dst.is_file() or src.is_symlink() or dst.is_symlink():return []
     def sections(text):
         parts=re.split(r'(?m)^(?=## )',text);return [(x.splitlines()[0][3:].strip(),x.rstrip('\n')+'\n') for x in parts if x.startswith('## ')]
@@ -354,7 +369,7 @@ def sync_directives():
 
 def instructions_unsorted():
     """User text in INSTRUCTIONS.md with no "For every agent" heading, and no sorting Follow-Up raised before."""
-    f=root/'_Axis/INSTRUCTIONS.md'
+    f=root/'_Config/INSTRUCTIONS.md'
     if not f.is_file() or f.is_symlink() or f.stat().st_size>262144:return False
     text=f.read_text(encoding='utf-8',errors='replace')
     # Same verdict as the delegation helper: one "For every agent" heading, no Main-only text inside it.
@@ -450,7 +465,7 @@ def first_boot():
 def memo_zone():
     # Memo dates use [Settings > Project Time Zone], or the host's local zone when it is Unknown or unusable.
     try:
-        v=re.search(r'^\*\*Value:\*\* (\S+)\s*$',(root/'_Axis/SETTINGS.md').read_text().split('### Project Time Zone',1)[1].split('###',1)[0],re.M).group(1)
+        v=re.search(r'^\*\*Value:\*\* (\S+)\s*$',(root/'_Config/SETTINGS.md').read_text().split('### Project Time Zone',1)[1].split('###',1)[0],re.M).group(1)
         if v not in ('Unknown',):
             from zoneinfo import ZoneInfo
             return ZoneInfo(v)
@@ -524,6 +539,388 @@ def inbox_items():
     try:return sorted(n for n in os.listdir(root/'_Inbox') if not n.startswith('.'))
     except OSError:return []
 
+# config-move:begin
+# The move of the eight project files from _Axis/ to _Config/ (3.22). config_look() only reads; boot calls it before
+# the claim. move_config() is the step: under the startup admission, after adoption is consumed and before the
+# coordination layout. Any failure inside the step ends the start as interrupted: no READY on a mixed layout.
+CONFIG_ORDER=('SETTINGS.md','INSTRUCTIONS.md','MINDSET.md','DIRECTIVES.md','PROJECT.md','PLAN.md','INITIATIVES.md','TASKS.md')
+CONFIG_FLAG='_Axis/Flags/config-move'
+CONFIG_TEMP='.axis-config-move'
+# An old path of one of the eight written as text: not part of a longer path. In CONFIG_CORRECTED the step corrects it.
+CONFIG_MENTION=re.compile(r'(?<![\w./-])_Axis/(?:'+'|'.join(re.escape(n) for n in PROJECT_FILES)+r')(?![\w-])')
+CONFIG_CORRECTED=('DIRECTIVES.md','SETTINGS.md')
+class ConfigMove(Exception):pass
+# config-look:begin
+# The same text in boot.py and update-transaction.py; change both together.
+def config_receipts(root):
+    """Move receipts on record for the eight project files: (Log, source, target, sha256), oldest first in each folder."""
+    import json,os,re
+    found=[]
+    for folder in ('_Axis/Archive/Logs','_Axis/Logs/Archive','_Axis/Logs'):
+        try:names=sorted(os.listdir(os.path.join(str(root),folder)))
+        except OSError:continue
+        for n in names:
+            if not re.fullmatch(r'\d{4}(?:\.\d{2}){5}\.\d{3}Z\.md',n):continue
+            try:
+                with open(os.path.join(str(root),folder,n),'rb') as stream:
+                    if stream.read(15)!=b'Reference move\n':continue
+                    text=stream.read(16384).decode('utf-8','replace')
+            except OSError:continue
+            blocks=re.findall(r'^```axis-record-receipt\n(.*?)\n```\s*$',text,re.M|re.S)
+            if len(blocks)!=1:continue
+            try:value=json.loads(blocks[0])
+            except ValueError:continue
+            if not isinstance(value,dict) or value.get('kind')!='move':continue
+            source,target=value.get('source'),value.get('target')
+            if any((source,target)==('_Axis/'+name,'_Config/'+name) for name in PROJECT_FILES):found.append((folder+'/'+n,source,target,value.get('sha256')))
+    return found
+
+def config_look(root):
+    """Read-only look at the eight project files before their move from _Axis/ to _Config/: the state of each
+    (absent, move, done, redundant, conflict), every conflict with its path and what to do, and the sign of an
+    unfinished move. It writes nothing."""
+    import hashlib,os,stat,subprocess
+    root=str(root);files={};conflicts=[];different=[];folder=False
+    def status(*parts):
+        try:return os.lstat(os.path.join(root,*parts))
+        except (FileNotFoundError,NotADirectoryError):return None
+    def data(*parts):
+        with open(os.path.join(root,*parts),'rb') as stream:return stream.read()
+    names=os.listdir(root)
+    if '_Config' in names:
+        folder=stat.S_ISDIR(status('_Config').st_mode)
+        if not folder:conflicts.append({'kind':'folder','path':'_Config','advice':'`_Config` exists and is not a plain folder, and Axis keeps the project files in a folder of that name: rename or remove it'})
+    else:
+        other=sorted(n for n in names if n.casefold()=='_config')
+        if other:conflicts.append({'kind':'letter-case','path':other[0],'advice':f'`{other[0]}` differs from `_Config` only in letter case: rename it to `_Config` to hold the project files, or to another name'})
+    for name in PROJECT_FILES:
+        old=status('_Axis',name);new=status('_Config',name) if folder else None;plain=True
+        for where,info in (('_Axis',old),('_Config',new)):
+            if info is not None and not stat.S_ISREG(info.st_mode):
+                plain=False;what='a link' if stat.S_ISLNK(info.st_mode) else 'not a plain file'
+                conflicts.append({'kind':'not-plain','path':where+'/'+name,'advice':f'`{where}/{name}` is {what}: replace it with a plain file that holds the content'})
+        if not plain:files[name]='conflict'
+        elif old is None:files[name]='absent' if new is None else 'done'
+        elif new is None:files[name]='move'
+        elif old.st_size==new.st_size and data('_Axis',name)==data('_Config',name):files[name]='redundant'
+        else:files[name]='conflict';different.append(name)
+    if different:
+        recorded={(target,digest) for _,_,target,digest in config_receipts(root)}
+        for name in different:
+            used=('_Config/'+name,hashlib.sha256(data('_Config',name)).hexdigest()) in recorded
+            advice=(f'`_Config/{name}` is the copy in use and `_Axis/{name}` appeared later: merge what is needed from `_Axis/{name}` into `_Config/{name}`, then remove `_Axis/{name}`' if used
+                    else f'`_Axis/{name}` and `_Config/{name}` both exist and differ: keep one copy, and remove or rename the other')
+            conflicts.append({'kind':'different','path':'_Axis/'+name,'other':'_Config/'+name,'in_use':used,'advice':advice})
+    git='none'
+    if os.path.lexists(os.path.join(root,'.git')):
+        git='not-asked'
+        if any(v in ('move','redundant') for v in files.values()):
+            # Asked only while a file is still to move: an ignored destination would checkpoint as deletions alone.
+            try:asked=subprocess.run(['git','-C',root,'check-ignore','--',*['_Config/'+n for n in PROJECT_FILES]],capture_output=True,timeout=30)
+            except (OSError,subprocess.SubprocessError):asked=None
+            git='unavailable' if asked is None or asked.returncode not in (0,1) else 'ignored' if asked.returncode==0 else 'not-ignored'
+            if git=='ignored':
+                paths=[p for p in asked.stdout.decode('utf-8','replace').splitlines() if p]
+                conflicts.append({'kind':'ignored','path':'_Config/','paths':paths,'advice':'Git ignores '+', '.join('`'+p+'`' for p in paths)+', so a checkpoint would record the old files as deleted and add nothing: remove that ignore rule'})
+    try:
+        with open(os.path.join(root,'_Axis','Flags','config-move'),encoding='utf-8',errors='replace') as stream:unfinished=stream.readline().strip()=='moving'
+    except OSError:unfinished=False
+    return {'files':files,'conflicts':conflicts,'unfinished':unfinished,'git':git}
+# config-look:end
+def config_check(root):
+    """The commit check as a module: the step takes its link pattern, scope and write-once rules, so the two cannot disagree."""
+    import importlib.util
+    spec=importlib.util.spec_from_file_location('axis_config_record_check',Path(root)/'_Axis/Resources/record-check.py')
+    module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);return module
+
+def config_put(path,data,expected=None):
+    """A temporary file in the same folder, then an atomic replace. With expected, refuses a file that changed meanwhile."""
+    import stat
+    tmp=path.with_name('.'+path.name+CONFIG_TEMP);mode=stat.S_IMODE(os.lstat(path).st_mode) if os.path.lexists(path) else 0o644
+    with open(tmp,'wb') as stream:
+        stream.write(data);stream.flush();os.fsync(stream.fileno())
+    os.chmod(tmp,mode)
+    if expected is not None and path.read_bytes()!=expected:
+        os.unlink(tmp);raise ConfigMove(path.name+' changed while it was being corrected')
+    replace_shared(tmp,path)
+    if path.read_bytes()!=data:raise ConfigMove('readback of '+path.name+' differs')
+
+def config_sign(root,progress=None):
+    """The sign of an unfinished step: `moving` on the first line of the Flag, then what the points so far did, so that
+    a resumed start reports all of it. Without progress the sign is cleared."""
+    flag=Path(root)/CONFIG_FLAG
+    if progress is not None:
+        flag.parent.mkdir(exist_ok=True);config_put(flag,('moving\n'+json.dumps(progress,sort_keys=True)+'\n').encode());return
+    try:os.unlink(flag)
+    except FileNotFoundError:pass
+    except PermissionError:config_put(flag,b'cleared\n')
+
+def config_progress(root):
+    blank={'files':{},'moved':{},'trashed':{},'repaired':{},'fields':{}}
+    try:lines=(Path(root)/CONFIG_FLAG).read_text(encoding='utf-8').splitlines()
+    except (OSError,UnicodeError):return blank
+    try:value=json.loads(lines[1]) if lines[:1]==['moving'] and len(lines)>1 else None
+    except ValueError:value=None
+    return {k:value[k] if isinstance(value.get(k),dict) else {} for k in blank} if isinstance(value,dict) else blank
+
+def config_rebase(destination):
+    """One rule for a link destination of a file that moves from _Axis/ to _Config/: unchanged when it begins with
+    ../, /, # or a scheme, or is one of the eight names (with or without a fragment); otherwise a leading ./ is dropped
+    and ../_Axis/ is put in front, inside angle brackets when it has them. Applying it twice changes nothing."""
+    angle=len(destination)>1 and destination[0]=='<' and destination[-1]=='>';core=destination[1:-1] if angle else destination
+    while core.startswith('./'):core=core[2:]
+    if core.startswith(('../','/','#')) or re.match(r'^[a-z][a-z0-9+.-]*:',core,re.I) or core.split('#',1)[0].split('?',1)[0] in PROJECT_FILES:return destination
+    return '<../_Axis/'+core+'>' if angle else '../_Axis/'+core
+
+def config_rebase_text(text,link):
+    """The rule on every destination the commit check reads as one (its LINK, on every line, code included). Returns
+    the new text and one (line, old, new, inside code) per change."""
+    out=[];changes=[];fence=None
+    for number,line in enumerate(text.splitlines(keepends=True),1):
+        mark=re.match(r'^ {0,3}(`{3,}|~{3,})',line);code=fence is not None or bool(mark) or line.startswith(('    ','\t'))
+        if mark:fence=mark[1] if fence is None else None if mark[1][0]==fence[0] and len(mark[1])>=len(fence) else fence
+        spans=[m.span() for m in re.finditer(r'(`+).*?\1',line)]
+        found=[(m.start(1),m.end(1),m[1],config_rebase(m[1]),code or any(a<=m.start()<b for a,b in spans)) for m in link.finditer(line)]
+        found=[x for x in found if x[2]!=x[3]]
+        for a,b,_,new,_ in reversed(found):line=line[:a]+new+line[b:]
+        changes+=[(number,old,new,inside) for _,_,old,new,inside in found];out.append(line)
+    return ''.join(out),changes
+
+def config_correct(text,link):
+    """For the Directives and the Settings: each old path of the eight written as text, in code too, becomes the new
+    one. A destination the commit check reads keeps to the link rule. Returns the new text and the count; applying it
+    twice changes nothing."""
+    out=[];count=0
+    for line in text.splitlines(keepends=True):
+        inside=[m.span(1) for m in link.finditer(line)]
+        found=[m.start() for m in CONFIG_MENTION.finditer(line) if not any(a<=m.start()<b for a,b in inside)]
+        for a in reversed(found):line=line[:a]+'_Config/'+line[a+len('_Axis/'):]
+        count+=len(found);out.append(line)
+    return ''.join(out),count
+
+def config_unread(text):
+    """Link forms the commit check does not read, whose destination the rule would change: left as written, listed as breaking."""
+    forms=(('reference definition',re.compile(r'^ {0,3}\[[^\]\n]+\]:[ \t]*(<[^>\n]*>|\S+)')),
+           ('destination with a title or spaces',re.compile(r'\[[^\]\n]*\]\((<[^>\n]*>[^)\n]*|[^)\n]*\s[^)\n]*)\)')),
+           ('HTML attribute',re.compile(r'''(?:href|src)\s*=\s*["']([^"'\n]+)["']''',re.I)))
+    left=[]
+    for number,line in enumerate(text.splitlines(),1):
+        for form,pattern in forms:
+            for m in pattern.finditer(line):
+                d=m[1].strip()
+                d=d[1:d.index('>')] if d.startswith('<') and '>' in d else (d.split() or [''])[0]
+                if form=='destination with a title or spaces' and not re.search(r'\s',m[1]):continue
+                if d and config_rebase(d)!=d:left.append({'line':number,'form':form,'destination':d})
+    return left
+
+def config_fixed(check,root,rel,data,text,has_git):
+    """A record that keeps its text: write-once on disk or at HEAD, or a coordination or checksummed record."""
+    if check.protected_coordination_detail(rel,data):return True
+    parts=rel.split('/')
+    if parts[0]!='_Axis':return False
+    kind=check.rule_kind(rel)
+    if parts[1]=='Archive' or len(parts)>3 and parts[2]=='Archive' or kind in check.WORM:return True
+    if kind=='Tasks' and (check.field(text,'status') or '').casefold() in ('completed','cancelled'):return True
+    if kind in ('Followups','Reminders') and (check.field(text,'outcome') or 'N/A') not in ('N/A',''):return True
+    return bool(has_git and check.rule(root,rel))
+
+def config_records(root,check):
+    """Records the step may correct: the families the commit check scans, apart from write-once and coordination
+    families, the index files that are not project files, and live Memos. A temporary file an earlier stop left is removed."""
+    closed=set(check.WORM)|{'Teams','Messages','Jobs','Schedules'}
+    for scope in check.SCOPE:
+        parts=scope.split('/');base=root/scope
+        if parts[0]=='_Config' or len(parts)==2 and parts[1] in PROJECT_FILES or len(parts)==2 and parts[1] in closed or base.is_symlink():continue
+        if base.is_file():yield base
+        if not base.is_dir():continue
+        for folder,dirs,names in os.walk(base):
+            # Live Memos only: archived Memos keep their text.
+            dirs[:]=[] if scope=='_Memos' else sorted(d for d in dirs if d not in ('Secrets','.git','node_modules','Dashboard','Branding'))
+            for n in sorted(names):
+                path=Path(folder)/n
+                if n.startswith('.') and n.endswith(CONFIG_TEMP) and not path.is_symlink():os.unlink(path)
+                elif n.endswith('.md') and not path.is_symlink():yield path
+
+def config_step(root,receipt):
+    """Design of the move, points 0 to 6. receipt(source, target) records one move receipt and returns its Log.
+    Returns the data for the notice, or None when the look found nothing to do."""
+    import posixpath,stat
+    from urllib.parse import unquote
+    root=Path(root);state=config_look(root)
+    if state['conflicts']:raise ConfigMove('; '.join(c['advice'] for c in state['conflicts']))
+    files=state['files'];todo=[n for n in CONFIG_ORDER if files[n]=='move'];double=[n for n in CONFIG_ORDER if files[n]=='redundant']
+    if not (todo or double or state['unfinished']):return None
+    check=config_check(root);link=check.LINK;has_git=state['git']!='none'
+    decode=lambda data:data.decode('utf-8','surrogateescape');encode=lambda text:text.encode('utf-8','surrogateescape')
+    digest=lambda data:hashlib.sha256(data).hexdigest()
+    def ruled(name,text):
+        """The text of NAME as it arrives: link destinations by the rule; in the Directives and the Settings also the
+        old paths of the eight written as text. With the rebased destinations and the count of corrected paths."""
+        text,changes=config_rebase_text(text,link);count=0
+        if name in CONFIG_CORRECTED:text,count=config_correct(text,link)
+        return text,changes,count
+    def rebased(name,data):
+        """The bytes of NAME as they arrive, with what changed kept for the notice. In the Instructions and the five
+        other files only link destinations change."""
+        text,changes,count=ruled(name,decode(data));kept=progress['files'].get(name,{}).get('corrected',0)
+        if changes:progress['files'][name]={'rebased':len(changes),'in_code':[{'line':i,'destination':encode(new).decode('utf-8','replace')} for i,_,new,inside in changes if inside]}
+        else:progress['files'].setdefault(name,{'rebased':0,'in_code':[]})
+        if name in CONFIG_CORRECTED:progress['files'][name]['corrected']=count or kept
+        return encode(text)
+    # Point 0: the sign of an unfinished step, before the first change.
+    progress=config_progress(root);config_sign(root,progress)
+    # What an earlier stop left: temporary files, and the one case that still has to be finished (point 3 below).
+    for name in CONFIG_ORDER:
+        for folder in ('_Axis','_Config'):
+            tmp=root/folder/('.'+name+CONFIG_TEMP)
+            if not os.path.lexists(tmp):continue
+            if folder=='_Config' and files[name]=='done' and tmp.is_file() and not tmp.is_symlink():
+                current=(root/'_Config'/name).read_bytes();waiting=tmp.read_bytes()
+                if waiting!=current and waiting==encode(ruled(name,decode(current))[0]):
+                    replace_shared(tmp,root/'_Config'/name);continue
+            os.unlink(tmp)
+    # Point 1.
+    if not os.path.lexists(root/'_Config'):os.mkdir(root/'_Config')
+    # Point 2: each file to move, in the fixed order.
+    recorded={(s,t,d):log for log,s,t,d in config_receipts(root)}
+    for name in todo:
+        src,dst=root/'_Axis'/name,root/'_Config'/name;source,target='_Axis/'+name,'_Config/'+name
+        data=src.read_bytes();after=rebased(name,data)
+        if after!=data:
+            config_sign(root,progress);config_put(src,after,data);data=after
+        log=recorded.get((source,target,digest(data))) or receipt(source,target)
+        progress['moved'][name]={'receipt':log,'sha256':digest(data)};config_sign(root,progress)
+        # Without a hard link: a file with two names is refused by every reader.
+        tmp=dst.with_name('.'+name+CONFIG_TEMP)
+        with open(tmp,'wb') as stream:
+            stream.write(data);stream.flush();os.fsync(stream.fileno())
+        os.chmod(tmp,stat.S_IMODE(os.lstat(src).st_mode))
+        if src.read_bytes()!=data or os.path.lexists(dst):
+            os.unlink(tmp);raise ConfigMove(f'`{target}` appeared or `{source}` changed between the receipt and the move; nothing was overwritten')
+        replace_shared(tmp,dst)
+        if digest(dst.read_bytes())!=progress['moved'][name]['sha256']:raise ConfigMove(f'`{target}` does not hold the bytes of its receipt')
+        os.unlink(src)
+    # Point 3: a redundant old copy goes to _Trash/; the copy in _Config/ is a copy of an old-layout file and takes the rule.
+    for name in double:
+        old,new=root/'_Axis'/name,root/'_Config'/name;data=new.read_bytes();after=rebased(name,data)
+        trash=root/'_Trash';trash.mkdir(exist_ok=True);day=datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d');dest=trash/f'{day}--{name}';k=2
+        while os.path.lexists(dest):dest=trash/f'{day}--{name}-{k}';k+=1
+        progress['trashed'][name]=dest.relative_to(root).as_posix();config_sign(root,progress)
+        tmp=new.with_name('.'+name+CONFIG_TEMP)
+        if after!=data:
+            with open(tmp,'wb') as stream:
+                stream.write(after);stream.flush();os.fsync(stream.fileno())
+            os.chmod(tmp,stat.S_IMODE(os.lstat(new).st_mode))
+        if old.read_bytes()!=data or new.read_bytes()!=data:
+            if after!=data:os.unlink(tmp)
+            raise ConfigMove(f'`_Axis/{name}` or `_Config/{name}` changed while the old copy was being removed')
+        replace_shared(old,dest)
+        if after!=data:
+            replace_shared(tmp,new)
+            if new.read_bytes()!=after:raise ConfigMove(f'readback of `_Config/{name}` differs')
+    moved={'_Axis/'+n:'_Config/'+n for n in PROJECT_FILES if not os.path.lexists(root/'_Axis'/n) and (root/'_Config'/n).is_file() and not (root/'_Config'/n).is_symlink()}
+    def resolved(rel,core):
+        """(old path of a moved file the destination leads to, where its fragment starts), or (None, 0). Read as the
+        commit check reads it: angle brackets are part of the name, so such a link is left and its old finding stays."""
+        if core.startswith(('#','/','parent:')) or re.match(r'^[a-z][a-z0-9+.-]*:',core,re.I):return None,0
+        cut=min([i for i in (core.find('#'),core.find('?')) if i>=0] or [len(core)]);value=unquote(core[:cut])
+        local=posixpath.normpath(posixpath.join(posixpath.dirname(rel),value)) if value else ''
+        return (local,cut) if local in moved else (None,0)
+    # Point 4: links in editable records that lead to an old place.
+    plan=[]
+    for path in config_records(root,check):
+        data=path.read_bytes()
+        if b'](' not in data:continue
+        rel=path.relative_to(root).as_posix();text=decode(data);out=[];count=0
+        for line in text.splitlines(keepends=True):
+            spans=[]
+            for m in link.finditer(line):
+                local,cut=resolved(rel,m[1])
+                if local is None:continue
+                spans.append((m.start(1),m.end(1),posixpath.relpath(moved[local],posixpath.dirname(rel))+m[1][cut:]))
+            for a,b,new in reversed(spans):line=line[:a]+new+line[b:]
+            count+=len(spans);out.append(line)
+        if count and not config_fixed(check,root,rel,data,text,has_git):plan.append((path,data,encode(''.join(out))));progress['repaired'][rel]=count
+    if plan:config_sign(root,progress)
+    for path,data,after in plan:config_put(path,after,data)
+    # Point 5: path fields of open Follow-Ups and Reminders. `updated:` is not advanced for this correction.
+    plan=[]
+    for family,key in (('Followups','blocks'),('Reminders','target')):
+        base=root/'_Axis'/family
+        for n in sorted(os.listdir(base)) if base.is_dir() and not base.is_symlink() else []:
+            path=base/n
+            if not n.endswith('.md') or path.is_symlink() or not path.is_file():continue
+            data=path.read_bytes();text=decode(data);rel='_Axis/'+family+'/'+n;lines=text.splitlines(keepends=True)
+            hit=next(((i,m) for i,m in ((i,re.fullmatch(r'('+key+r':[ \t]*)(.*?)([ \t]*(?:\r?\n)?)',line)) for i,line in enumerate(lines)) if m),None)
+            if not hit:continue
+            i,m=hit;items=m[2].split(', ');new=[moved.get(x.strip(),x) for x in items]
+            if new==items or config_fixed(check,root,rel,data,text,has_git):continue
+            lines[i]=m[1]+', '.join(new)+m[3];plan.append((path,data,encode(''.join(lines))))
+            progress['fields'][rel]={'field':key,'paths':[x.strip() for x,y in zip(items,new) if x!=y]}
+    if plan:config_sign(root,progress)
+    for path,data,after in plan:config_put(path,after,data)
+    # The sign stays set until the start is READY: a start interrupted before that runs the step again and repeats the notice.
+    # Point 6 and the rest of the notice, read from what is on disk now. Nothing below is rewritten.
+    left=[];mentions=[]
+    for name in CONFIG_ORDER:
+        path=root/'_Config'/name
+        if name not in progress['files'] or not path.is_file():continue
+        text=path.read_bytes().decode('utf-8','replace');rel='_Config/'+name
+        left+=[dict(x,file=rel) for x in config_unread(text)]
+        for number,line in enumerate(text.splitlines(),1):
+            inside=[m.span(1) for m in link.finditer(line)]
+            mentions+=[{'file':rel,'line':number,'text':m[0]} for m in CONFIG_MENTION.finditer(line) if not any(a<=m.start()<b for a,b in inside)]
+            mentions+=[{'file':rel,'line':number,'text':m[1]} for m in link.finditer(line) if resolved(rel,m[1])[0]]
+    try:registry=(root/'_Axis/EXCEPTIONS.md').read_text(encoding='utf-8',errors='replace')
+    except OSError:registry=''
+    stale=sorted({m[1] for m in re.finditer(r'"path"\s*:\s*"(_Axis/[A-Z]+\.md)"',registry) if m[1] in moved})
+    return {'moved':[{'file':n,**progress['moved'][n]} for n in CONFIG_ORDER if n in progress['moved']],
+            'rebased':sum(v.get('rebased',0) for v in progress['files'].values()),
+            'in_code':[{'file':'_Config/'+n,**x} for n in CONFIG_ORDER for x in progress['files'].get(n,{}).get('in_code',[])],
+            'trashed':[{'file':n,'old_copy':progress['trashed'][n]} for n in CONFIG_ORDER if n in progress['trashed']],
+            'repaired':[{'record':r,'links':progress['repaired'][r]} for r in sorted(progress['repaired'])],
+            'fields':[{'record':r,**progress['fields'][r]} for r in sorted(progress['fields'])],
+            'left':left,'instructions_rebased':progress['files'].get('INSTRUCTIONS.md',{}).get('rebased',0),'old_paths':mentions,'stale_exceptions':stale,'git':state['git'],
+            'corrected':[{'file':'_Config/'+n,'paths':progress['files'][n]['corrected']} for n in CONFIG_ORDER if progress['files'].get(n,{}).get('corrected')]}
+
+def config_notice(d):
+    """The one start-up notice of the step. A list longer than ten ends with a count; the READY line carries all of it."""
+    def some(items,show):return '; '.join(show(x) for x in items[:10])+(f'; and {len(items)-10} more' if len(items)>10 else '')
+    out=['Axis now keeps the project files in _Config/.']
+    if d['moved']:out.append('Moved there from _Axis/, each with a move receipt in the Logs: '+', '.join(x['file'] for x in d['moved'])+'.')
+    if d['rebased']:out.append(f"{d['rebased']} link(s) inside them now begin with ../_Axis/ and lead to the same files as before.")
+    if d['instructions_rebased']:out.append(f"{d['instructions_rebased']} of them are in _Config/INSTRUCTIONS.md; nothing else in that file changed.")
+    if d['corrected']:out.append('Old paths of these files written in the Settings and the Directives now read _Config/: '+', '.join(f"{x['paths']} place(s) in {x['file']}" for x in d['corrected'])+'; nothing else in their wording changed.')
+    if d['trashed']:out.append('Already in _Config/ with the same content, so the old copy went to _Trash/: '+some(d['trashed'],lambda x:x['file']+' ('+x['old_copy']+')')+'.')
+    if d['repaired'] or d['fields']:
+        out.append(f"Corrected {sum(x['links'] for x in d['repaired'])} link(s) to the moved files in {len(d['repaired'])} editable record(s) and {sum(len(x['paths']) for x in d['fields'])} path field(s) of open Follow-Ups and Reminders.")
+    if d['in_code']:out.append('Link text inside code changed too, because the commit check reads it: '+some(d['in_code'],lambda x:f"{x['file']}:{x['line']} {x['destination']}")+'.')
+    if d['left']:out.append('Left as written and now broken, in link forms Axis does not read: '+some(d['left'],lambda x:f"{x['file']}:{x['line']} {x['form']} {x['destination']}")+'.')
+    if d['old_paths']:out.append(f"The moved files still name an old path in {len(d['old_paths'])} place(s), which Axis did not rewrite: "+some(d['old_paths'],lambda x:f"{x['file']}:{x['line']} {x['text']}")+'.')
+    if d['stale_exceptions']:out.append('Link exceptions that name a moved file went stale and need renewal under link maintenance: '+', '.join(d['stale_exceptions'])+'.')
+    out.append('A Dashboard server started before the update still serves the old paths: restart it.')
+    if d['git']=='none':out.append('This folder has no Git repository of its own, so Axis could not test whether Git ignores _Config/ and the move has no checkpoint.')
+    elif d['git']=='unavailable':out.append('Git could not say whether it ignores _Config/: check that before the checkpoint.')
+    return ' '.join(out)
+
+def move_config():
+    """The step of the move, by Main under the startup admission: (notice, Log request, checkpoint request or None,
+    data), or None when there was nothing to do."""
+    def receipt(source,target):
+        code,out,_=call(R/'record-check.py','--root',root,'record-move','--session',sid,'--path',source,'--to',target,'--reason','Project files to _Config',operation='project file move receipt')
+        line=(out.strip().splitlines() or [''])[-1]
+        if code or not line.startswith('RECORDED: '):raise ConfigMove('the move receipt for '+source+' could not be recorded'+(' ('+line[:200]+')' if line else ''))
+        return line[10:]
+    try:d=config_step(root,receipt)
+    except StartupStall:raise
+    except ConfigMove as e:interrupted('the move of the project files to _Config/ did not finish: '+str(e))
+    except Exception as e:interrupted('the move of the project files to _Config/ did not finish ('+type(e).__name__+')')
+    if d is None:return None
+    log='record one Log Event "Project files moved to _Config" with what the start-up notice reports; the config_move data of the READY line lists every item'
+    checkpoint=None if d['git']=='none' else 'checkpoint the move of the project files before ordinary work: one commit with the message "axis: move project files to _Config" under _Axis/Practices/GIT.md > Update checkpoints, holding the moved files, their receipts and the corrected records; report checkpoint blocked with exact causes if unavailable'
+    return config_notice(d),log,checkpoint,d
+# config-move:end
+
 if not (root/'_Axis/Resources/startup-state.py').is_file():stop('run this from the project root')
 def before_claim(*args,operation):
     # No startup ownership exists yet, so a stalled helper stops startup without an interrupted claim.
@@ -533,6 +930,11 @@ def before_claim(*args,operation):
 declared=(o.role or os.environ.get('AXIS_ROLE','')).strip()
 if declared and re.sub(r'\s+','',declared).lower() not in {r['name'].lower() for r in ROLE_TABLE if r['cls']=='session' and r['exclusive']}:
     print(json.dumps({'axis_boot':'AUXILIARY','declared_role':declared}));print(f'AUXILIARY: this session is declared {declared}, not Main. Follow _Axis/Resources/Start-Auxiliary.md.');sys.exit(3)
+if not o.finish_adoption:
+    # The look at the project files (3.22), before the merge status and the claim: a conflict stops here with nothing written and no lock left.
+    try:seen=config_look(root)
+    except OSError as e:stop('the project files could not be inspected ('+type(e).__name__+')')
+    if seen['conflicts']:stop('the project files cannot move to _Config/: '+'; '.join(x['advice'] for x in seen['conflicts'])+'. Nothing was written; start again afterwards','_Axis/Resources/Move-Project-Files.md',config=seen)
 merge_status=before_claim(R/'merge-project.py','--root',root,'status',operation='merge status check')
 if merge_status.get('status') not in ('clear','recovery'):stop('project merge state requires attention','_Axis/Practices/Merging.md',merge=merge_status)
 if o.finish_adoption:
@@ -559,7 +961,7 @@ else:
         print(json.dumps({'axis_boot':'ASK','claim':c}))
         print(f"ASK: another Main session is idle, under the {c['threshold_hours']}-hour takeover limit at Permissions {c['permissions']}: {mains(c)}. The recorded host conversation may still be open even while its Axis lease is idle. Ask the user in one line, naming it and recommending takeover: take it over (its record is cleared and that session stops at its next turn), or join as an Auxiliary Agent beside it. On take over, run: python3 _Axis/Resources/boot.py {again} --host {o.host!r} --model {o.model!r} --harness {o.harness} --spawn {o.spawn} --parallel {o.parallel}. On join, follow _Axis/Resources/Start-Auxiliary.md. Do nothing else until the user answers.")
         sys.exit(5)
-    if c.get('status')!='admitted':stop('session claim failed',claim=c)
+    if c.get('status')!='admitted':stop('session claim failed'+(': an earlier start did not finish and left its startup lock. When that start ran on a computer that received an Axis update in the middle of its own start, recover it once under _Axis/Resources/Lock-File.md > Quiescent Recovery; on every other computer, receive the update before starting Axis there' if c.get('code') in ('occupied_admission','unfinished_starting') else ''),claim=c)
     sid,owner=c['session'],c['owner']
     # One line for the records the claim cleared; it replaces the old advice to run ^refresh.
     swept=f"Cleared {c.get('cleared',0)} stale session record(s)" if c.get('cleared') or c.get('took_over') else None
@@ -575,6 +977,7 @@ try:
  retire_closed_updates(sid)
  validate_merged_startup(sid)
  adopted=adopt(sid) if us=='ready' else None
+ config=move_config()
  layout=run(R/'coordination-layout.py','--root',root,'--session',sid,'--owner',owner)
  if layout.get('status')!='harmonized':
   # An optional adoption repair cannot turn preserved malformed legacy content
@@ -619,7 +1022,7 @@ try:
  replied=memo_replies()
  if replied:pending.append(f"read the replies in {len(replied)} memo(s) edited since their last update ({', '.join(replied[:3])}) under _Axis/Practices/Memos.md > Two-way memos and replies; report them in one line under the greeting and act only within that section's limits")
  waiting=inbox_items()
- if waiting:pending.append(f'file {len(waiting)} item(s) waiting in _Inbox/ under _Axis/Practices/Inbox.md, then report what went where in one line under the greeting; for an item delivered to a child project under a routing instruction in _Axis/INSTRUCTIONS.md, run its ^^do in this same turn right after the greeting, without asking: that instruction is the user\'s standing request')
+ if waiting:pending.append(f'file {len(waiting)} item(s) waiting in _Inbox/ under _Axis/Practices/Inbox.md, then report what went where in one line under the greeting; for an item delivered to a child project under a routing instruction in _Config/INSTRUCTIONS.md, run its ^^do in this same turn right after the greeting, without asking: that instruction is the user\'s standing request')
  if 'cloud-synced-folder' in (s.get('notices') or []):
      why=s.get('cloud_reason') or 'reason not recorded'
      notices.append(f'This folder looks cloud-synced ({why}), so agents here write one at a time. If it is really a local folder, say so and it will be corrected.')
@@ -630,6 +1033,10 @@ try:
      if adopted['unrelated_changes']:notices.append('Project files changed after the update was applied (reported, not blocking): '+', '.join(adopted['unrelated_changes'][:5]))
      h=adopted.get('harmonization')
      if h:notices.append(f"Adoption scan: {h.get('repairs',0)} repairs; {len(h.get('residual',[]))} unresolved findings retained. Report: _Axis/Updates/{adopted['transaction']}/harmonization.json")
+ if config:
+     # With an adopted update the move enters the adoption checkpoint; without one the step asks for its own.
+     notices.append(config[0]);later.append(config[1])
+     if config[2] and not adopted:pending.insert(0,config[2])
  if s.get('manifest_missing'):notices.append('Missing Workflow files: '+', '.join(s['manifest_missing']))
  if os.path.lexists(root/'_Axis/Flags/promote'):notices.append('An old promote Flag is still at _Axis/Flags/promote. In-session promotion was removed in 3.15, so it has no effect; it can be deleted.')
  env=s.get('environment') or {};bind=root/'_Axis/Flags/environment-binding'
@@ -671,12 +1078,12 @@ try:
  if ix.get('outcome') not in (None,'clear'):notices.append('Task or Snapshot index mismatch; run ^refresh')
  locks=s.get('locks') or {}
  if locks.get('lock_dirs') or locks.get('timestamp_claims'):notices.append('Stale lock or claim directories found; recovery needs a quiet moment (^refresh)')
- proj=(root/'_Axis/PROJECT.md').read_text() if (root/'_Axis/PROJECT.md').is_file() else ''
- if instructions_unsorted():later.append('offer once to sort _Axis/INSTRUCTIONS.md for helpers: raise one Follow-Up "Sort your Instructions for helpers" under _Axis/Practices/Followups.md that proposes which lines go under "For every agent" and which under "For only the Main Agent"; until User sorts it, helpers receive nothing from that file')
+ proj=(root/'_Config/PROJECT.md').read_text() if (root/'_Config/PROJECT.md').is_file() else ''
+ if instructions_unsorted():later.append('offer once to sort _Config/INSTRUCTIONS.md for helpers: raise one Follow-Up "Sort your Instructions for helpers" under _Axis/Practices/Followups.md that proposes which lines go under "For every agent" and which under "For only the Main Agent"; until User sorts it, helpers receive nothing from that file')
  if 'axis:project-overlay:begin' in proj:pending.append('validate and activate the declared project overlay with _Axis/Resources/Load-Project-Overlay.md (confirm, then activate); its guidance applies only after that')
  ready=(root/'_Axis/Flags/project-ready');rv=ready.read_text().splitlines()[0].strip() if ready.exists() and ready.read_text().strip() else ''
  if not re.fullmatch(r'\d{4}(\.\d{2}){5}\.\d{3}Z',rv):pending.append('say "Your project needs to be set up." and follow _Axis/Resources/Start-Project.md')
- rf=re.search(r'^\*\*Value:\*\* (on|auto)\s*$',(root/'_Axis/SETTINGS.md').read_text().split('### Remote Freshness',1)[-1].split('###',1)[0],re.M)
+ rf=re.search(r'^\*\*Value:\*\* (on|auto)\s*$',(root/'_Config/SETTINGS.md').read_text().split('### Remote Freshness',1)[-1].split('###',1)[0],re.M)
  if rf:
      # Check-Remote-Freshness.md, run here so that `auto` can bring the project up to date before the Agent reads it.
      # The helper bounds its own network calls; a suspected stall leaves freshness unverified, never blocks startup.
@@ -697,7 +1104,7 @@ try:
  if nf:notices.append(f'This project is on a shared network folder ({nf}). Axis lets one agent write at a time here, because file locks proved unreliable on some network servers (_Axis/Resources/Lock-File.md > Shared Network Folders).')
  sg=secrets_guidance()
  if sg:notices.append(sg)
- cm=re.search(r'^\*\*Value:\*\* (\S+)\s*$',(root/'_Axis/SETTINGS.md').read_text().split('### Context Management',1)[-1].split('###',1)[0],re.M) if '### Context Management' in (root/'_Axis/SETTINGS.md').read_text() else None
+ cm=re.search(r'^\*\*Value:\*\* (\S+)\s*$',(root/'_Config/SETTINGS.md').read_text().split('### Context Management',1)[-1].split('###',1)[0],re.M) if '### Context Management' in (root/'_Config/SETTINGS.md').read_text() else None
  if cm and cm.group(1)=='Two-Pass':pending.append('Context Management is Two-Pass: read _Axis/Practices/Context.md and follow its Two-Pass section for every request')
  # Default Directive "Suggest a Context Method", applied mechanically at startup because the model is known here.
  cmv=cm.group(1) if cm and cm.group(1) in ('Default','Two-Pass') else 'Default';mid=o.model.lower()
@@ -717,7 +1124,7 @@ try:
  except BaseException:pass  # optional; turn.py binds on the next renewed lease
 
  bar=' '.join('-'*14)
- print(json.dumps({'axis_boot':'READY','session':sid,'notices':notices,'pending':pending,'later':later}))
+ print(json.dumps({'axis_boot':'READY','session':sid,'notices':notices,'pending':pending,'later':later,**({'config_move':config[3]} if config else {})}))
  print('Banner for the user (start your reply with it, as is, after any pending items; it repeats the header so the complete block shows together):')
  # Four blank lines set the block apart from any text the model printed during startup (User design, 2026-10-08).
  if o.interaction=='channel':
@@ -727,13 +1134,17 @@ try:
  print('Greeting: one blank line under the banner, greet the user in one line and introduce yourself as Axel, the Main Agent (for example "Hi, Axel here.").')
  for x in notices:print('Notice for the user: '+x)
  for x in pending:print('Pending before the first answer: '+x)
- print('Before any answer other than the greeting or a requested exact reply: read _Axis/Resources/Load-Starting-Context.md (core rules), _Axis/Roles/Main.md, _Axis/INSTRUCTIONS.md, _Axis/MINDSET.md, _Axis/DIRECTIVES.md, _Axis/PLAN.md, _Axis/TASKS.md, the newest Snapshots and the Notes index'+('; and: '+'; '.join(later) if later else '')+'.')
+ print('Before any answer other than the greeting or a requested exact reply: read _Axis/Resources/Load-Starting-Context.md (core rules), _Axis/Roles/Main.md, _Config/INSTRUCTIONS.md, _Config/MINDSET.md, _Config/DIRECTIVES.md, _Config/PLAN.md, _Config/TASKS.md, the newest Snapshots and the Notes index'+('; and: '+'; '.join(later) if later else '')+'.')
  print(f'On every later turn, first run: python3 _Axis/Resources/turn.py --session {sid}')
  print('Reply frame, required on every reply that hands the turn back to the user, this one included (exceptions: _Axis/Rules/Speaking.md > Final response boundary): this reply opens with the banner instead of the header; every later reply starts with the header, with nothing before it, not even a sentence; on WhatsApp, SMS and equivalent messaging channels open every message with three lines instead (A X I S   W O R K F L O W, then " > " and the Project name, then " > " and the folder) followed by a blank line, without dividers; on terminals every reply ends with the closing; on WhatsApp, SMS and equivalent discrete-message channels that already identify the turn, omit the closing including its background-task variant; progress notes during a turn get neither. A later terminal reply looks like this (the fence only marks the example; never print the fence itself):')
  if o.interaction=='channel':
   print(f'Later messaging reply: the same three lines (A X I S   W O R K F L O W, then " > {name}", then " > {folder}"), one blank line, then the answer with blank lines between paragraphs; no closing prompt.')
  else:
   print(f'```text\n{bar}\n A X I S   W O R K F L O W\n{bar}\n\n{{the answer, leading with the outcome}}\n\n> READY | {folder}:\n```')
+ if config:
+  # The start is complete and its output is out: clear the sign of an unfinished move. If that fails the sign stays, and the next start repeats the notice.
+  try:sys.stdout.flush();config_sign(root)
+  except Exception:pass
 except SystemExit:raise
 except StartupStall as e:interrupted('suspected hang in '+e.args[0]['operation']+'; the stalled helper was stopped and its journal is retained for recovery',stall=e.args[0])
 except BaseException as e:interrupted(type(e).__name__)

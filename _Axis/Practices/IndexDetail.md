@@ -57,7 +57,7 @@ The Index-Detail Pattern is implemented in three ways:
 
   A file with summary information is the index (including cross-file state that a first-line scrape of the detail files will not catch) and multiple detail files catch the full information (one index file and many supporting detail files). The index file and the contents of the directory must stay in sync: if you write a detail file, also append an entry to the index, and vice versa.
 
-  Tasks (`_Axis/TASKS.md` + `_Axis/Tasks/`) and
+  Tasks (`_Config/TASKS.md` + `_Axis/Tasks/`) and
   Snapshots (`_Axis/SNAPSHOTS.md` + `_Axis/Snapshots/`) follow this method. Teams, Messages, Jobs and Schedules have small rebuildable uppercase indexes; accepted events, not index rows, determine their state. Optional `Teams/{ID}/` work folders are companions, not extra identities. See [Practices > Coordination].
 
 - **Directory-index + Marker**

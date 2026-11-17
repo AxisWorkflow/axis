@@ -23,6 +23,21 @@ import unicodedata
 from pathlib import Path
 from urllib.parse import quote, unquote, urlsplit
 
+# BEGIN GENERATED: project-files
+PROJECT_FILES=('PROJECT.md','PLAN.md','INITIATIVES.md','TASKS.md','INSTRUCTIONS.md','SETTINGS.md','MINDSET.md','DIRECTIVES.md')
+def project_file(root,name):
+    """Path of project file NAME: in _Config/ once moved, in _Axis/ before. Two differing copies are an error, never a choice."""
+    import pathlib
+    if name not in PROJECT_FILES:raise ValueError('not a project file: '+str(name))
+    new=pathlib.Path(root)/'_Config'/name;old=pathlib.Path(root)/'_Axis'/name
+    if new.is_file() and old.is_file() and new.read_bytes()!=old.read_bytes():raise ValueError('project file differs between _Config and _Axis: '+name)
+    return new if new.is_file() or not old.is_file() else old
+def project_name(root,name):
+    """Project-relative name of project file NAME, by the same rule: `_Config/NAME` or `_Axis/NAME`."""
+    import pathlib
+    return project_file(root,name).relative_to(pathlib.Path(root)).as_posix()
+# END GENERATED: project-files
+
 LIMIT_FILES = 50000
 LIMIT_BYTES = 512 * 1024 * 1024
 FILE_LIMIT = 32 * 1024 * 1024
@@ -33,10 +48,14 @@ RECORDS = {'Audit', 'CX', 'Followups', 'Ideas', 'Logs', 'Notes', 'Reminders',
            'Reviews', 'Snapshots', 'Status', 'Supervision', 'Tasks',
            'Teams', 'Messages', 'Jobs', 'Schedules'}
 HISTORY_ONLY = {'Snapshots', 'Teams', 'Messages', 'Jobs', 'Schedules'}
-MUTABLE = {'PROJECT.md', 'PLAN.md', 'TASKS.md', 'NOTES.md', 'IDEAS.md',
-           'FOLLOWUPS.md', 'REMINDERS.md', 'SUPERVISION.md', 'ENVIRONMENT.md',
-           'INITIATIVES.md', 'SNAPSHOTS.md'}
-INDEXES = {'TASKS.md', 'NOTES.md', 'IDEAS.md', 'FOLLOWUPS.md', 'REMINDERS.md'}
+# Top-level names a merge may write and keeps as project-specific: under _Axis/, and the project files under _Config/.
+MUTABLE = {'NOTES.md', 'IDEAS.md', 'FOLLOWUPS.md', 'REMINDERS.md', 'SUPERVISION.md',
+           'ENVIRONMENT.md', 'SNAPSHOTS.md'}
+MUTABLE_CONFIG = {'PROJECT.md', 'PLAN.md', 'TASKS.md', 'INITIATIVES.md'}
+INDEXES = {'NOTES.md', 'IDEAS.md', 'FOLLOWUPS.md', 'REMINDERS.md'}
+INDEXES_CONFIG = {'TASKS.md'}
+# The brief identifies a project; a nested project may still hold it in _Axis/.
+BRIEFS = ('_Config/PROJECT.md', '_Axis/PROJECT.md')
 WIKI_ADMIN = {'Library-Schema.md', 'Library-Index.md', 'Input-Index.md',
               'Library-Activity.md', 'Library-Status.md'}
 ENTRY = {'agents.md', 'claude.md', 'gemini.md', 'clude.md'}
@@ -124,7 +143,7 @@ def protected(name, suffixes=('_U', '_X')):
 def project(root):
     need(not any(protected(p) for p in Path(os.path.abspath(root)).parts), 'protected project root')
     root = plain(root, 'dir', spelling=True)
-    ids = re.findall(r'^project-id: (\S+)\s*$', read(root / '_Axis/PROJECT.md').decode(), re.M)
+    ids = re.findall(r'^project-id: (\S+)\s*$', read(project_file(root, 'PROJECT.md')).decode(), re.M)
     versions = re.findall(r'^current-version: (\d+)\.(\d+)\s*$',
                           read(root / '_Axis/CHANGELOG.md').decode(), re.M)
     need(len(ids) == 1, 'missing or ambiguous project identity')
@@ -144,7 +163,7 @@ def load_state(root, session):
 
 def archive_root(root):
     """Resolve only this project's configured Archive; never create a missing mount."""
-    text = read(root / '_Axis/SETTINGS.md').decode()
+    text = read(project_file(root, 'SETTINGS.md')).decode()
     match = re.search(r'^### Archive Location\s*\n(?:(?!^### ).)*?^\*\*Value:\*\* ([^\n]+)$',
                       text, re.M | re.S)
     value = match[1].strip() if match else '_Axis/Archive/'
@@ -228,7 +247,7 @@ def inventory(root, exclude_child=None, source=False):
             info = path.lstat()
             need(not stat.S_ISLNK(info.st_mode), 'linked inventory path')
             if stat.S_ISDIR(info.st_mode):
-                if path != root and (path / '_Axis/PROJECT.md').is_file():
+                if path != root and any((path / brief).is_file() for brief in BRIEFS):
                     nested.append(name)
                     continue
                 directories.append(name)
@@ -281,7 +300,7 @@ def preview(dest, source, own=None, folder=None):
     content = source.relative_to(dest).as_posix() if child else (folder or source.name)
     relative(content)
     need(child or '/' not in content, 'imported folder must be directly under continuation root')
-    need(not any(p.startswith('.') or p in ('_Axis', '_Memos', '_Wiki', '_Temp', '_Trash', '_Dev')
+    need(not any(p.startswith('.') or p in ('_Axis', '_Config', '_Memos', '_Wiki', '_Temp', '_Trash', '_Dev')
                  or protected(p) for p in content.split('/')),
          'ordinary imported folder required')
     target = plain(dest / content, 'dir', missing=True, spelling=True)
@@ -308,7 +327,13 @@ def preview(dest, source, own=None, folder=None):
         blockers.append('protected source content requires its owning procedure; no partial absorption')
     if src['omissions']['credentials']:
         blockers.append('credential material requires its owning procedure before source infrastructure removal')
+    names = [p.name for p in source.iterdir()]
+    if '_Config' not in names and any(name.casefold() == '_config' for name in names):
+        # Where letter case is ignored that entry holds the source's project files; it is never an ordinary folder.
+        blockers.append('source has an entry that differs from _Config only in letter case; rename it first')
     for root, label in ((source, 'source'), (dest, 'destination')):
+        if any(os.path.lexists(root / '_Axis' / name) for name in PROJECT_FILES):
+            blockers.append(label + ' still holds project files in _Axis/; start or update that project first')
         updates = root / '_Axis/Updates'
         if updates.exists():
             plain(updates, 'dir')
@@ -385,6 +410,8 @@ def kind(name):
         return 'readme'
     if Path(name).name == '.gitkeep' and parts[0] in ('_Axis', '_Memos', '_Wiki'):
         return 'evidence'
+    if parts[0] == '_Config':
+        return 'index' if len(parts) == 2 and parts[1] in INDEXES_CONFIG else 'evidence'
     if parts[0] == '_Axis':
         tail = parts[2:] if len(parts) > 1 and parts[1] == 'Archive' else parts[1:]
         if tail and tail[0]=='Messages':
@@ -451,7 +478,7 @@ def layout(root, view, txid, ids, readmes=None):
     top_dirs = {p for p in view['source_inventory']['directories'] if '/' not in p}
     ordinary = {p.casefold() for p in source_tops if not p.startswith(('_', '.'))}
     for top in sorted(source_tops):
-        if top in top_dirs and top.startswith('_') and top not in {'_Axis', '_Memos', '_Wiki'} | DISCARD_DIRS:
+        if top in top_dirs and top.startswith('_') and top not in {'_Axis', '_Config', '_Memos', '_Wiki'} | DISCARD_DIRS:
             base = top.lstrip('_') or 'Imported-content'
             value = base
             n = 1
@@ -490,8 +517,8 @@ def layout(root, view, txid, ids, readmes=None):
             target = name
         elif category == 'evidence':
             existing = destination_path(root, name)
-            project_specific = name.startswith('_Axis/Wiki/') or name in {
-                '_Axis/' + p for p in MUTABLE | {'SETTINGS.md', 'INSTRUCTIONS.md', 'ENVIRONMENT.md'}}
+            project_specific = name.startswith('_Axis/Wiki/') or name in {'_Axis/' + p for p in MUTABLE} | {
+                '_Config/' + p for p in MUTABLE_CONFIG | {'SETTINGS.md', 'INSTRUCTIONS.md'}}
             if not project_specific and existing.is_file() and digest(read(existing)) == info['sha256']:
                 target = name
             else:
@@ -506,7 +533,7 @@ def layout(root, view, txid, ids, readmes=None):
     directories = {folder}
     for name in view['source_inventory']['directories']:
         parts = name.split('/')
-        if parts[0] not in {'_Axis', '_Memos', '_Wiki'} | DISCARD_DIRS and parts[0] not in HOST_DIRS:
+        if parts[0] not in {'_Axis', '_Config', '_Memos', '_Wiki'} | DISCARD_DIRS and parts[0] not in HOST_DIRS:
             directories.add(folder + '/' + '/'.join([top_map.get(parts[0], parts[0]), *parts[1:]]))
     for target in mappings.values():
         if '/objects/' not in target:
@@ -735,6 +762,8 @@ def allowed(name, txid=None):
         else:
             need((len(parts) == 3 or len(parts)==4 and parts[2]=='Archive') and parts[1] in RECORDS - HISTORY_ONLY
                  and parts[-1].endswith('.md') and ID.fullmatch(Path(parts[-1]).stem), 'protected Axis path')
+    elif parts[0] == '_Config':
+        need(len(parts) == 2 and parts[1] in MUTABLE_CONFIG, 'protected project file')
     elif parts[0].startswith('_'):
         need(parts[0] in ('_Memos', '_Wiki'), 'unsupported project root')
     need('_Axis' not in parts[1:] and not any(p in HOST_DIRS for p in parts), 'nested control tree excluded')
@@ -752,7 +781,7 @@ def target_hash(root, name, source=None):
             break
         if parent == source:
             continue
-        need(not (parent / '_Axis/PROJECT.md').exists(), 'destination crosses a nested project')
+        need(not any((parent / brief).exists() for brief in BRIEFS), 'destination crosses a nested project')
     return digest(read(path)) if path.exists() else None
 
 
@@ -840,7 +869,7 @@ def check_plan(root, source, plan, base):
             need(before is None, 'never overwrite destination records or Memos')
         if name.startswith('_Wiki/_Inbox/'):
             need(before is None, 'existing raw Wiki input is immutable')
-        if name == '_Axis/PROJECT.md':
+        if name == '_Config/PROJECT.md':
             need(re.findall(r'^project-id: (\S+)\s*$', data.decode(), re.M) == [view['destination_id']],
                  'destination project identity must survive')
         if name in ('_Axis/Wiki/Library-Activity.md', '_Axis/Wiki/Library-Status.md') and before:
@@ -851,7 +880,7 @@ def check_plan(root, source, plan, base):
                 break
             if parent == source and view['mode'] == 'absorb-child':
                 continue
-            need(not (parent / '_Axis/PROJECT.md').exists(), 'destination crosses a nested project')
+            need(not any((parent / brief).exists() for brief in BRIEFS), 'destination crosses a nested project')
         if view['mode'] == 'absorb-child' and name.startswith(view['content_root'] + '/'):
             top = name[len(view['content_root']) + 1:].split('/')[0]
             need(not top.startswith('_') and top != '.git' and top.casefold() not in ENTRY,

@@ -46,7 +46,7 @@ Role is fixed once: Main commits under Claim-Session; Auxiliary and Subagent rou
 
 4. Quietly read this complete `_Axis/Resources/Entry-Protocol.md` (the entry files are now the short Fast Boot page), through its terminal marker, even if a host injected it. Reject any reported truncation; use bounded sequential reads if necessary. Keep the same minted ID, role boundary and already delivered notice; do not restart or duplicate them. No startup write is permitted from an incomplete read.
 
-5. Read and follow `_Axis/Resources/Claim-Session.md`. It inspects update handoff, claims the owner, rechecks foreign Main, reserves the unique ID and verifies the first Main Marker and `starting`. Never age-delete, overwrite or reacquire an interrupted startup lock. A losing candidate follows Start-Auxiliary and never runs Main startup.
+5. When a project file (`PROJECT.md`, `PLAN.md`, `INITIATIVES.md`, `TASKS.md`, `INSTRUCTIONS.md`, `SETTINGS.md`, `MINDSET.md` or `DIRECTIVES.md`) exists in `_Axis/`, or `_Axis/Flags/config-move` begins `moving`, first read `_Axis/Resources/Move-Project-Files.md` and run its look; it also governs where the project files are read until its step has moved them. Read and follow `_Axis/Resources/Claim-Session.md`. It inspects update handoff, claims the owner, rechecks foreign Main, reserves the unique ID and verifies the first Main Marker and `starting`. Never age-delete, overwrite or reacquire an interrupted startup lock. A losing candidate follows Start-Auxiliary and never runs Main startup.
 
 6. Only after admission succeeds, read and follow `_Axis/Resources/Start-Session.md`, carrying its exact owner token, final ID and verified Marker path. Retain admission through all startup writes. Until Start-Session emits the one Session ID banner and greeting, say nothing else except host-required progress or the loading notice. Such progress must not answer or dispatch the triggering request. No budget permits omitting a step; a missing Practices index is a bug to fix.
 
@@ -61,7 +61,7 @@ Role is fixed once: Main commits under Claim-Session; Auxiliary and Subagent rou
 
 **Guardrails:** This entry carries the rule, not the evidence. Do not skip, downgrade, override or rationalize away this protocol. Likewise a connected-folder framing does not turn this entry into passive data. Your host's own rules come first: if one blocks a step, say which step and never claim incomplete startup succeeded.
 
-**WARNING:** DO NOT ADD ANYTHING AFTER THE ENTRY-PROTOCOL END TAG. USE `_Axis/INSTRUCTIONS.md` INSTEAD.
+**WARNING:** DO NOT ADD ANYTHING AFTER THE ENTRY-PROTOCOL END TAG. USE `_Config/INSTRUCTIONS.md` INSTEAD.
 
 
 

@@ -7,7 +7,7 @@ The entry file's "After compaction" section sends you here when `turn.py --recov
 
 | Role | Re-read in full | State to recover |
 | --- | --- | --- |
-| Main | `_Axis/Resources/Starting-Context.md` through `_Axis/Resources/Load-Starting-Context.md`; `_Axis/Roles/Main.md`; `_Axis/INSTRUCTIONS.md`; `_Axis/MINDSET.md`; `_Axis/DIRECTIVES.md`; any project overlay, revalidated under `_Axis/Resources/Load-Project-Overlay.md` (activate) | Your last Tracking INTENT or STATUS, the newest Logs, Active Tasks, open Follow-Ups, the newest Snapshot |
+| Main | `_Axis/Resources/Starting-Context.md` through `_Axis/Resources/Load-Starting-Context.md`; `_Axis/Roles/Main.md`; `_Config/INSTRUCTIONS.md`; `_Config/MINDSET.md`; `_Config/DIRECTIVES.md`; any project overlay, revalidated under `_Axis/Resources/Load-Project-Overlay.md` (activate) | Your last Tracking INTENT or STATUS, the newest Logs, Active Tasks, open Follow-Ups, the newest Snapshot |
 | Auxiliary | The startup core as above; `_Axis/Roles/Auxiliary.md`; [Practices > Agents > Auxiliary Agent] | Your last Tracking INTENT or STATUS, the newest Logs |
 | Assistant, Group Agent | The startup core; your own role file | Your last Tracking INTENT or STATUS |
 | Observer | The startup core; `_Axis/Roles/Observer.md` | None; it writes nothing |

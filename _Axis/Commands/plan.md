@@ -12,12 +12,12 @@
 	- Cancel obsolete tasks (Status **Cancelled**, stamp the *Cancelled* field, leave *Completed* as `N/A`, record the reason in the detail file). Do NOT mark abandoned tasks as **Completed** - that breaks the WORM rule.
 	- Draft new Tasks that fit the new Plan.
 
-4. Draft a 1-3 paragraph Executive Summary and insert it into the `## Executive Summary` section of `_Axis/PLAN.md`.
+4. Draft a 1-3 paragraph Executive Summary and insert it into the `## Executive Summary` section of `_Config/PLAN.md`.
 
-5. Identify key stages and milestones and save them into the `## Execution Path` section of `_Axis/PLAN.md`.
+5. Identify key stages and milestones and save them into the `## Execution Path` section of `_Config/PLAN.md`.
 
-6. Generate 1-5 key concerns that might hold back the project and save them into the `## Key Concerns` section of `_Axis/PLAN.md`.
+6. Generate 1-5 key concerns that might hold back the project and save them into the `## Key Concerns` section of `_Config/PLAN.md`.
 
-7. Generate a summary illustration as a Mermaid diagram (`.mermaid`) or SVG (fall back to PNG if an image tool is available). Save it as `_Axis/Dashboard/plan-diagram.{mermaid|svg|png}`, overwriting any previous diagram - exactly one Plan diagram exists at a time, and the Dashboard renders that name - then add a link to it at the top of `_Axis/PLAN.md`.
+7. Generate a summary illustration as a Mermaid diagram (`.mermaid`) or SVG (fall back to PNG if an image tool is available). Save it as `_Axis/Dashboard/plan-diagram.{mermaid|svg|png}`, overwriting any previous diagram - exactly one Plan diagram exists at a time, and the Dashboard renders that name - then add a link to it (`../_Axis/Dashboard/plan-diagram.{ext}`) at the top of `_Config/PLAN.md`.
 
 8. Log one Event recording the Plan revision: what changed, and which Initiatives or Tasks were added, changed, completed, or cancelled. STOP.

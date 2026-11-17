@@ -26,7 +26,7 @@ except ImportError:
 # BEGIN GENERATED: role-table
 # Compiled from _Axis/Roles/ at release; edit the role files, never this region.
 ROLE_TABLE=(
-    {'name': 'Main', 'cls': 'session', 'subject': 'Main: session', 'match': 'exact', 'shape': 'exact4', 'created_by': 'claim', 'exclusive': True, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': None, 'survey_key': None, 'notice': None, 'issuer': 'main', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': None, 'guard': None, 'reference_word': 'Main', 'log_by': 'Main Agent', 'title': 'Main Agent', 'plural': 'Main Agents', 'article': 'the', 'serves': 'User', 'families': 'all', 'recovery': ('@core', '@role', '_Axis/INSTRUCTIONS.md', '_Axis/MINDSET.md', '_Axis/DIRECTIVES.md', '@overlay', '@state')},
+    {'name': 'Main', 'cls': 'session', 'subject': 'Main: session', 'match': 'exact', 'shape': 'exact4', 'created_by': 'claim', 'exclusive': True, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': None, 'survey_key': None, 'notice': None, 'issuer': 'main', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': None, 'guard': None, 'reference_word': 'Main', 'log_by': 'Main Agent', 'title': 'Main Agent', 'plural': 'Main Agents', 'article': 'the', 'serves': 'User', 'families': 'all', 'recovery': ('@core', '@role', '_Config/INSTRUCTIONS.md', '_Config/MINDSET.md', '_Config/DIRECTIVES.md', '@overlay', '@state')},
     {'name': 'Auxiliary', 'cls': 'session', 'subject': 'Auxiliary: ', 'match': 'prefix', 'shape': 'single-session-line', 'created_by': 'helper', 'exclusive': False, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': 'list', 'survey_key': 'fresh_auxiliary', 'notice': 'An Auxiliary Agent is serving this project ({id}).', 'issuer': 'worker', 'proposal_owner': True, 'proposal_issuer': 'auxiliary', 'submit_schema': 'axis.external-submission/v1', 'guard': {'config_key': 'externalAgents', 'flag': '--external', 'block_spawn': True, 'new_files': ('subfolders', '_Axis/Submissions/', '_Temp/')}, 'reference_word': 'Auxiliary', 'log_by': 'Auxiliary Agent', 'title': 'Auxiliary Agent', 'plural': 'Auxiliary Agents', 'article': 'an', 'serves': 'User', 'families': ('Ideas', 'Logs', 'Notes'), 'recovery': ('@core', '@role', '_Axis/Practices/Agents.md > Auxiliary Agent', '@state')},
     {'name': 'Assistant', 'cls': 'session', 'subject': 'Assistant: ', 'match': 'prefix', 'shape': 'single-session-line', 'created_by': 'helper', 'exclusive': False, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': 'list', 'survey_key': 'fresh_assistant', 'notice': 'An Assistant is serving this project ({id}).', 'issuer': 'worker', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': 'axis.external-submission/v1', 'guard': {'config_key': 'assistantAgents', 'flag': None, 'block_spawn': False, 'new_files': ('subfolders', '_Axis/Submissions/', '_Temp/')}, 'reference_word': 'Assistant', 'log_by': 'Assistant', 'title': 'Assistant', 'plural': 'Assistants', 'article': 'an', 'serves': 'User', 'families': ('Ideas', 'Logs', 'Notes'), 'recovery': ('@core', '@role', '@state')},
     {'name': 'GroupAgent', 'cls': 'session', 'subject': 'Group Agent: ', 'match': 'prefix', 'shape': 'single-session-line', 'created_by': 'helper', 'exclusive': False, 'version_bound': True, 'reply_frame': True, 'blocks_save': False, 'survey': 'list', 'survey_key': 'fresh_groupagent', 'notice': 'A Group Agent is serving this project ({id}).', 'issuer': 'worker', 'proposal_owner': False, 'proposal_issuer': None, 'submit_schema': 'axis.external-submission/v1', 'guard': {'config_key': 'groupAgents', 'flag': None, 'block_spawn': True, 'new_files': ('subfolders', '_Axis/Submissions/', '_Temp/')}, 'reference_word': 'GroupAgent', 'log_by': 'Group Agent', 'title': 'Group Agent', 'plural': 'Group Agents', 'article': 'a', 'serves': 'User and named participants', 'families': ('Ideas', 'Logs', 'Notes'), 'recovery': ('@core', '@role', '@state')},
@@ -43,6 +43,20 @@ ROLE_TABLE=(
 )
 ROLE_LEDGER={'issuers': ('auxiliary', 'external', 'main', 'worker'), 'submission_schemas': ('axis.external-submission/v1',), 'proposal_member_subject': 'Subagent: External proposal Team', 'survey_keys': ('fresh_assistant', 'fresh_auxiliary', 'fresh_external', 'fresh_groupagent', 'orphan_subagents'), 'proposal_owners': (('External:', 'external'), ('Auxiliary:', 'auxiliary'))}
 # END GENERATED: role-table
+# BEGIN GENERATED: project-files
+PROJECT_FILES=('PROJECT.md','PLAN.md','INITIATIVES.md','TASKS.md','INSTRUCTIONS.md','SETTINGS.md','MINDSET.md','DIRECTIVES.md')
+def project_file(root,name):
+    """Path of project file NAME: in _Config/ once moved, in _Axis/ before. Two differing copies are an error, never a choice."""
+    import pathlib
+    if name not in PROJECT_FILES:raise ValueError('not a project file: '+str(name))
+    new=pathlib.Path(root)/'_Config'/name;old=pathlib.Path(root)/'_Axis'/name
+    if new.is_file() and old.is_file() and new.read_bytes()!=old.read_bytes():raise ValueError('project file differs between _Config and _Axis: '+name)
+    return new if new.is_file() or not old.is_file() else old
+def project_name(root,name):
+    """Project-relative name of project file NAME, by the same rule: `_Config/NAME` or `_Axis/NAME`."""
+    import pathlib
+    return project_file(root,name).relative_to(pathlib.Path(root)).as_posix()
+# END GENERATED: project-files
 # Session Markers other than the lease holder's, and the Agents records another session may create for a spawn.
 SHARED_PREFIXES = tuple(r['subject'] for r in ROLE_TABLE if r['cls'] == 'session' and not r['exclusive'])
 SPAWNED_PREFIXES = tuple(r['subject'] for r in ROLE_TABLE if r['cls'] == 'session' and r['created_by'] == 'spawner')
@@ -77,6 +91,8 @@ ID = re.compile(r'\d{4}(?:\.\d{2}){5}\.\d{3}Z')
 FAMILIES = ('Agents','Audit','CX','Followups','Ideas','Logs','Notes','Reminders','Reviews','Snapshots','Status','Supervision','Tasks','Teams','Messages','Jobs','Schedules','ColdStorage')
 # Reviews/ arrives with the first ^review on projects updated from 2.00; Status/ is the pre-2.01 name it replaces.
 OPTIONAL_FAMILIES = ('Reviews','Status','Teams','Messages','Jobs','Schedules','ColdStorage')
+# The inspected indexes: (family, index file, prefix of its links to the records under _Axis/).
+INDEXES = (('Tasks','_Config/TASKS.md','../_Axis/'),('Snapshots','_Axis/SNAPSHOTS.md',''))
 CAPS = ('model','host-spawn','host-parallel','host-shell','host-local-llm','host-cloud-sync','host-storage')
 OWNER_KEYS = {'schema','kind','token','session','host','phase','starting_log','started_log'}
 
@@ -142,11 +158,15 @@ def write_fd(fd, data):
         offset+=count
     os.fsync(fd)
 
+def no_settings(error):
+    """The project has no Settings file in either place (the either-place rule then names the new one). Only this reads as a default."""
+    return error.code=='missing_path' and error.path=='_Config/SETTINGS.md'
+
 def archive_root(startup):
     """Resolve [Settings > Archive Location] read-only: (project-relative root, None), (None, absolute or home-relative root), or (None, None) when unavailable."""
     try:value=startup.setting('Archive Location')
     except Fault as error:
-        if error.code!='missing_path' or error.path!='_Axis/SETTINGS.md':raise
+        if not no_settings(error):raise
         value=None
     value=(value or '_Axis/Archive/').strip()
     if value.rstrip('/')=='_Axis/Archive':return '_Axis/Archive',None
@@ -207,6 +227,12 @@ class Startup:
             if error.code=='missing_path':return False
             raise
 
+    def config(self, name):
+        """Project-relative name of project file NAME by the either-place rule; two differing copies are a Fault, never a choice."""
+        need(name in PROJECT_FILES,'project_file',name)
+        try:return project_name(self.root,name)
+        except ValueError:raise Fault('project_file_conflict','_Config/'+name) from None
+
     def merge_access(self):
         # Source-side maintenance retires all writing authority, including a previously booted session.
         # Destination Main retains only the recovery lane under the Merging practice.
@@ -216,7 +242,7 @@ class Startup:
         try:value=json.loads(raw)
         except (ValueError,TypeError):raise Fault('merge_state_invalid','_Axis/Flags/merge-pending') from None
         need(isinstance(value,dict) and set(value)=={'schema','transaction','plan_sha256','destination_id','source_id'} and value.get('schema')==1 and re.fullmatch(r'\d{4}(?:\.\d{2}){5}\.\d{3}Z',str(value.get('transaction',''))) and re.fullmatch(r'[0-9a-f]{64}',str(value.get('plan_sha256',''))),'merge_state_invalid','_Axis/Flags/merge-pending')
-        project=self.read('_Axis/PROJECT.md');ids=re.findall(r'^project-id: (\S+)\s*$',project,re.M)
+        project=self.read(self.config('PROJECT.md'));ids=re.findall(r'^project-id: (\S+)\s*$',project,re.M)
         need(len(ids)==1 and isinstance(value.get('destination_id'),str) and isinstance(value.get('source_id'),str) and value['destination_id']!=value['source_id'] and ids[0] in (value['source_id'],value['destination_id']),'merge_state_invalid','_Axis/Flags/merge-pending')
         need(ids[0]==value['destination_id'],'merge_source_held','_Axis/Flags/merge-pending')
 
@@ -303,7 +329,7 @@ class Startup:
     def permissions(self):
         try:value=self.setting('Permissions')
         except Fault as error:
-            if error.code!='missing_path':raise
+            if not no_settings(error):raise
             value=None
         return value if value in ('Restricted','Default','Autonomous') else 'Default'
 
@@ -550,8 +576,8 @@ class Startup:
             return (value.st_dev,value.st_ino,value.st_mode,value.st_nlink,value.st_size,value.st_mtime_ns,value.st_ctime_ns)
         def capture():
             result={}
-            for family,index in (('Tasks','TASKS.md'),('Snapshots','SNAPSHOTS.md')):
-                name='_Axis/'+index;path=self.path(name)
+            for family,name,_ in INDEXES:
+                path=self.path(name)
                 fd=os.open(path,os.O_RDONLY|os.O_NOFOLLOW)
                 try:
                     before=metadata(path)
@@ -594,19 +620,19 @@ class Startup:
             issue_count+=1
             if len(issues)<32:issues.append({'family':family,'code':code,'path':path})
         for family,(text,_,files,_) in before.items():
-            links=[]
+            links=[];prefix=next(p for f,_,p in INDEXES if f==family)
             for number,section in enumerate(re.split(r'(?m)^##[ \t]+',text)[1:],1):
                 if '{{' in section:continue
                 matches=re.findall(r'\[Details\.\.\.\]\(([^)\n]*)\)',section)
                 if len(matches)!=1 or section.count('[Details...]')!=1:
                     issue(family,'entry_link_count','entry '+str(number))
                 for link in matches:
-                    found=re.fullmatch(r'(?:Archive/)?'+family+r'/(?:Archive/)?('+ID.pattern+r')\.md',link)
+                    found=re.fullmatch(re.escape(prefix)+r'(?:Archive/)?'+family+r'/(?:Archive/)?('+ID.pattern+r')\.md',link)
                     if found:
                         try:parse_stamp(found[1])
                         except Fault:found=None
                     if not found:issue(family,'invalid_link','entry '+str(number));continue
-                    links.append(link)
+                    links.append(link[len(prefix):])
             counts[family]={'entries':len(links),'files':len(files)}
             linked={}
             for link in links:linked[link]=linked.get(link,0)+1
@@ -624,11 +650,12 @@ class Startup:
         return {'status':'indexes-checked','outcome':'mismatch' if issue_count else 'clear','counts':counts,'issue_count':issue_count,'issues':issues,'issues_truncated':issue_count>len(issues)}
 
     def setting(self, name):
-        text=self.read('_Axis/SETTINGS.md');sections=re.findall(r'^### '+re.escape(name)+r'\s*\n(.*?)(?=^### |\Z)',text,re.M|re.S)
-        need(len(sections)<=1,'setting_ambiguous','_Axis/SETTINGS.md')
+        source=self.config('SETTINGS.md')
+        text=self.read(source);sections=re.findall(r'^### '+re.escape(name)+r'\s*\n(.*?)(?=^### |\Z)',text,re.M|re.S)
+        need(len(sections)<=1,'setting_ambiguous',source)
         if not sections:return None
         values=re.findall(r'^\*\*Value:\*\* ([^\n]*)$',sections[0],re.M)
-        need(len(values)<=1,'setting_ambiguous','_Axis/SETTINGS.md')
+        need(len(values)<=1,'setting_ambiguous',source)
         return values[0].strip() if values else None
 
     def tracking(self, require_opening):
@@ -852,6 +879,20 @@ class Admission(Startup):
         need(header is not None or not rows,'surface_table_invalid',SURFACES)
         return rows
 
+    def update_waiting(self):
+        """True while _Axis/Updates/ holds a transaction that is not closed (completed, consumed, or rolled back and released). Names only."""
+        if not os.path.lexists(self.root/'_Axis/Updates'):return False
+        for entry in self.path('_Axis/Updates',kind='directory').iterdir():
+            if entry.name in ('.gitkeep','operation.lck','.DS_Store') and entry.is_file() and not entry.is_symlink():continue
+            if entry.is_symlink() or not entry.is_dir():return True
+            if (entry/'completed.json').exists():continue
+            view=self.root/'_Temp'/('Update-'+entry.name) if (entry/'recovery.json').exists() else entry
+            try:names={p.name for p in view.iterdir()}
+            except OSError:return True
+            if 'consumed.json' in names or {'rollback.json','released.json'}<=names:continue
+            return True
+        return False
+
     def admit(self, role, host, surface=None, cause='declared', legacy_channel=False, initial=None):
         row=role_named(role)
         need(row is not None and row['name'] in DECLARABLE,'role_not_declarable',str(role))
@@ -859,6 +900,9 @@ class Admission(Startup):
         need(declared is None or declared is row,'declared_role_mismatch','AXIS_ROLE')
         need(isinstance(host,str) and host.strip()==host and 0<len(host)<=120 and all(ord(c)>=32 for c in host),'host')
         self.merge_access();scope=None
+        # No declared role, an Observer included, is admitted while an update waits for adoption or a project file is still in _Axis/: a Main starts first.
+        need(not self.update_waiting(),'update_pending','_Axis/Updates')
+        for name in PROJECT_FILES:need(not os.path.lexists(self.root/'_Axis'/name),'project_files_unmoved','_Axis/'+name)
         if cause=='declared':
             # Channel hosts keep the 3.15 Auxiliary declaration, with or without a surface, until Round B2 asks each chat its role.
             legacy=legacy_channel and row['name']=='Auxiliary'

@@ -79,7 +79,7 @@
 
 An Observer reads within its read scope and answers anyone the surface admits. It writes nothing: no session file, lease, record, Tracking line or per-turn helper call; the host transcript is its only record. It boots through Start-Auxiliary, whose helper check writes nothing for this role.
 
-- **Read scope and disclosure:** as for a Group Agent (`_Axis/Roles/GroupAgent.md`): only the folders its surface row names plus the Axis workflow files; never `_Axis/Secrets/`, `_Axis/INSTRUCTIONS.md`, `_Memos/`, project records or anything outside that scope.
+- **Read scope and disclosure:** as for a Group Agent (`_Axis/Roles/GroupAgent.md`): only the folders its surface row names plus the Axis workflow files; never `_Axis/Secrets/`, `_Config/INSTRUCTIONS.md`, `_Memos/`, project records or anything outside that scope.
 - **No outbound tools**, no Commands that change anything, and no requests written for anyone; asked to change something, it says that Main does that.
 - **Limits:** it is not on the Board or in the session count; `^kill` cannot reach it, so the User stops it by removing or disabling its surface binding; it gets no version-change check. After compaction it follows the entry file's "After compaction" section, which names this file.
 - **Presentation:** Axel, the read-only Observer, saying so in the greeting.

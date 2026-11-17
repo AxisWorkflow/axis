@@ -41,7 +41,7 @@ def once(path,data):
     need(read(p)==data,'copy readback mismatch')
 
 def setting(root,name):
-    text=read(Path(root)/'_Axis/SETTINGS.md').decode()
+    text=read(Path(root)/'_Config/SETTINGS.md').decode()
     sections=re.findall(r'^### '+re.escape(name)+r'\s*\n(.*?)(?=^### |^## |\Z)',text,re.M|re.S)
     need(len(sections)<=1,'ambiguous setting')
     values=re.findall(r'^\*\*Value:\*\* ([^\n]*)$',sections[0],re.M) if sections else []
@@ -245,7 +245,7 @@ def lease(root,session):
     io.close=close;return io
 
 def persist_level(root,io,level):
-    p=Path(root)/'_Axis/SETTINGS.md';text=read(p).decode();value=policy(root,level)
+    p=Path(root)/'_Config/SETTINGS.md';text=read(p).decode();value=policy(root,level)
     section=re.search(r'(^### Archiving\s*\n.*?)(?=^### |^## |\Z)',text,re.M|re.S)
     if section:
         need(len(re.findall(r'^\*\*Value:\*\*',section[1],re.M))==1,'Archiving setting malformed')
@@ -265,20 +265,20 @@ def apply_local(root,io,plan):
         tool=Path(__file__).with_name('record-check.py')
         subprocess.run([sys.executable,str(tool),'--root',str(root),'record-move','--session',io.sid,'--path',item['source'],'--to',item['destination'],'--reason','Archiving '+plan['level']+' lifecycle policy'],check=True,capture_output=True)
         dst.parent.mkdir(exist_ok=True);os.rename(src,dst);need(sha(read(dst))==item['sha256'] and not src.exists(),'archive move readback');moves.append(item)
-        for index in ('TASKS.md','SNAPSHOTS.md'):
-            p=Path(root)/'_Axis'/index
+        for index,prefix in (('_Config/TASKS.md','../_Axis/'),('_Axis/SNAPSHOTS.md','')):
+            p=Path(root)/index
             if not p.exists():continue
-            old=read(p).decode();parts=re.split(r'(?m)(?=^## )',old);needle=']('+item['source'].removeprefix('_Axis/')+')'
+            old=read(p).decode();parts=re.split(r'(?m)(?=^## )',old);needle=']('+prefix+item['source'].removeprefix('_Axis/')+')'
             removed=[part for part in parts[1:] if needle in part]
             if removed:
                 need(len(removed)==1,'ambiguous active index entry');new=''.join(part for part in parts if part not in removed)
-                pointer='Archived history: ['+item['family']+'/Archive]('+item['family']+'/Archive/). Cold bundles are indexed there when present.\n\n'
+                pointer='Archived history: ['+item['family']+'/Archive]('+prefix+item['family']+'/Archive/). Cold bundles are indexed there when present.\n\n'
                 if pointer not in new:
                     at=new.find('\n## ');at=at if at>=0 else len(new);new=new[:at]+'\n'+pointer+new[at:]
                 io.guard();p.write_text(new)
-        initiative=Path(root)/'_Axis/INITIATIVES.md'
+        initiative=Path(root)/'_Config/INITIATIVES.md'
         if initiative.exists():
-            old=read(initiative).decode();new=old.replace(']('+item['source'].removeprefix('_Axis/')+')',']('+item['destination'].removeprefix('_Axis/')+')')
+            old=read(initiative).decode();new=old.replace('](../'+item['source']+')','](../'+item['destination']+')')
             if new!=old:io.guard();initiative.write_text(new)
     return moves
 
@@ -300,7 +300,7 @@ def eligibility(root,rel,review,level):
     p=local(root,rel);need(p.is_file(),'select exact files')
     for parent in p.parents:
         if parent==Path(root):break
-        need(not (parent/'AGENTS.md').exists() and not (parent/'_Axis/PROJECT.md').exists(),'nested project boundary')
+        need(not (parent/'AGENTS.md').exists() and not (parent/'_Config/PROJECT.md').exists() and not (parent/'_Axis/PROJECT.md').exists(),'nested project boundary')
     now=dt.datetime.now(dt.timezone.utc)
     if rel.startswith('_Dev/Evidence/'):
         need(review.get('schema')==1 and review.get('session') and isinstance(review.get('files'),dict),'diagnostic dependency review required')
