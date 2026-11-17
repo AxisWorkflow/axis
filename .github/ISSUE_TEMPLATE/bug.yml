@@ -1,0 +1,104 @@
+name: Bug report
+description: Something in Axis did not work as documented. Not for security problems.
+title: "[Bug]: "
+type: Bug
+labels: ["needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Easiest route: type `^feedback` in your Axis session; your agent prepares this report for you.
+        Security problems: do not file here. Use [private vulnerability reporting](https://github.com/AxisWorkflow/axis/security/advisories/new).
+        Write what you observed. Put any theory in "Analysis (not verified)".
+        Do not paste secrets, tokens, personal data or your project's content.
+        Issues are public. By submitting, you agree that the Axis maintainers may use the text of your report to improve Axis.
+  - type: textarea
+    id: axis-header
+    attributes:
+      label: Axis report header
+      description: Filled in by ^feedback. Leave empty if you are filing by hand.
+      render: text
+  - type: input
+    id: axis-version
+    attributes:
+      label: Axis version
+      description: From the startup banner, for example 2.09
+    validations:
+      required: true
+  - type: dropdown
+    id: bug-type
+    attributes:
+      label: Bug type
+      options:
+        - Wrong behavior
+        - Regression (worked in an earlier version)
+        - Crash or stop
+        - Records damaged or lost
+        - Documentation wrong
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: One or two sentences of what you observed.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Numbered steps from a fresh session.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual
+      description: Observed evidence only. Trim output to the relevant lines.
+    validations:
+      required: true
+  - type: input
+    id: host-model
+    attributes:
+      label: Host and model
+      description: For example Claude Code, claude-sonnet-5
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction and latest-release check
+      description: Was it reproduced, how, and on which version?
+  - type: textarea
+    id: duplicates
+    attributes:
+      label: Related issues searched
+      description: Issue numbers found, or the search words used.
+  - type: textarea
+    id: analysis
+    attributes:
+      label: Analysis (not verified)
+      description: Optional. Theories or suggested fixes, clearly unconfirmed.
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: Confirmations
+      options:
+        - label: This report contains no secrets, personal data or private project content.
+          required: true
+        - label: This is not a security vulnerability.
+          required: true
+# axis:production-only - lives only on the public Axis repository; Axis removes it from a new project at first startup.
