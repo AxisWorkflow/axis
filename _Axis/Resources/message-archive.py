@@ -27,7 +27,7 @@ def archive(store,team,prepared):
     if (store.io.setting('Archiving') or 'Default')=='Never':return {'status':'disabled'}
     charter=store.read('Teams',team)
     settlement=integration(store,team)
-    c.need(settlement and settlement['integration_complete'],'Main-integration-and-settlement-required')
+    c.need(settlement and integrated(store,c,charter,settlement),'Main-integration-and-settlement-required')
     if prepared['path'] is not None:c.need(inventory_token(prepared['path'])==prepared['inventory'],'archive-input-changed')
     state=store.project('Teams',team)
     c.need(not state['held'] and state['state'] in c.TERMINAL,'Team-still-active')
@@ -68,6 +68,16 @@ def archive(store,team,prepared):
     c.need(inventory_token(target)==prepared['inventory'],'archive-readback')
     store._write_bytes(receipt.relative_to(store.root).as_posix(),c.canonical(value)+b'\n',None)
     return {'status':'archived','path':target.relative_to(store.root).as_posix(),'files':count}
+
+
+def integrated(store,c,charter,settlement):
+    """A sponsor's local settlement never claims integration. Main's integration of the top Team covers the
+    locally settled child Teams beneath it; until then their Messages stay in place."""
+    if settlement['integration_complete']:return True
+    share=charter.get('resource_allocation') or {}
+    if settlement.get('local_acceptance') is not True or not share.get('root'):return False
+    top=c.allocation_module().settled(store,store.read('Teams',share['root']))
+    return bool(top and top['integration_complete'])
 
 
 def inventory_token(path):

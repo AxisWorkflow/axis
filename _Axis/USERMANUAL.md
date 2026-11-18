@@ -1,6 +1,6 @@
 # Axis Workflow User Manual
 > **Purpose:** How to use the Axis Workflow day to day: setup, commands, the Dashboard, the Wiki, working across tools and machines, and working with Agents and models. For the technical and compliance reference, see [SPECIFICATION](/_Axis/SPECIFICATION.md).
-> **Version:** 3.22
+> **Version:** 3.23
 
 **Looking for something?** Jump to the [Topic Index](#topic-index) at the end of this manual, or ask your Agent `^help <topic>`.
 
@@ -117,7 +117,7 @@ When a verification test fails, **Testing Calibration** has the Agent check whet
 **8. Track work:**
 
 - **Dashboard** - Launch a dashboard (`^dashboard`) for a live overview of the workflow.
-- **Obsidian** - The free and wildly popular Markdown Editor, running on your computer.
+- **Obsidian** - A free Markdown editor that runs on your computer.
 - **Memos** - Dated messages from your Agent in `_Memos/`: decisions for you, next steps, findings, and Reviews.
 - **Reviews** - Periodic assessments made at key junctures, saved as Memos.
 - **Follow-ups** - Specific actions assigned to the User are tracked in Follow-Ups.
@@ -195,6 +195,8 @@ First check which release is installed: the `Version:` row of the startup banner
 
 Run `^update`. Your Agent downloads an exact official release into temporary staging, compares it with both your installed release and local project, previews the migration, and proceeds when it is expected and unexceptional. Your `^update` invocation is sufficient; there is no extra `UPDATE` entry. A conflict or exceptional migration asks only for the specific decision needed. After a successful migration, `^update` shuts down the old Axis session itself - do not run `^shutdown` afterward. Close that window (or terminal) and start a new session so the updated Workflow loads.
 
+An Axis Team of Agents created before an update keeps its records, permissions and budget. If the update changed the guidance its charter was admitted under, the Team starts no new work until Main amends the charter to the new guidance. Child Teams need a delegation grant in a new Team's charter; an existing Team cannot gain one.
+
 If your project still keeps its project files in `_Axis/` (`PROJECT.md`, `PLAN.md`, `INITIATIVES.md`, `TASKS.md`, `INSTRUCTIONS.md`, `SETTINGS.md`, `MINDSET.md`, `DIRECTIVES.md`), that first start moves the existing files to `_Config/` before loading them. The file-only update never adds an absent project-owned file in either location, including when both copies are absent. Startup reports what it moved, which links it repaired and what remains for you to review. The words of your Instructions stay intact; only their link destinations may change. If a file exists in both places with different content, nothing is changed and both paths are named: decide which copy to keep, remove or rename the other, and start again.
 
 Finish any unfinished update on another computer before transferring the project, and receive the update on each computer before starting Axis there. Update a parent project before its nested projects: an older parent may not recognize a child whose files have moved. Restart an already-running Dashboard server. To go back, restore the checkpoint taken before the update and remove only the eight relocated files listed above from `_Config/` that the checkpoint did not track; preserve any other content there. Without Git, restore a backup.
@@ -205,7 +207,7 @@ When an old updater or pre-commit checker blocks an update, Axis loads a conditi
 Yes. WSL or Git Bash unlocks the complete shell-backed feature set. Without a POSIX-like shell, the canonical file workflow still runs through the host's file tools; shell-dependent enhancements report the limitation and use their documented fallback where one exists.
 
 **Can I rename the `_Axis/` folder?**
-No - the implementation files for Axis reference `_Axis/`, `_Config/`, `_Temp/`, `_Trash/`, and `_Wiki/` literally. You can rename the parent folder holding the entire project, but do not rename those specific folders within it.
+No - the implementation files for Axis reference its seven reserved folders (`_Axis/`, `_Config/`, `_Inbox/`, `_Memos/`, `_Temp/`, `_Trash/` and `_Wiki/`) literally. You can rename the parent folder holding the entire project, but do not rename those specific folders within it.
 
 **Can I use my own README for my project?**
 Yes. The Axis README you see on GitHub is not part of the download, and a cloned copy is replaced during setup. Project Setup creates a README for your project; Axis refreshes only its bounded project-summary block during `^review`, `^save`, and outgoing `^git` checkpoints, and anything you write outside that block remains yours. Use `^help manual` or `^help <topic>` to browse this manual without loading all of it.
@@ -847,6 +849,12 @@ When a teammate changes or withdraws a claim others rely on, it sends a [positio
 
 The checked Team inbox can wait for substantive answers or observation receipts separately and return compact previews; complete Messages remain readable. The optional included route needs a trusted Host integration to verify actual access, and retains durable partial output plus uncertain process state. An explicitly selected closing contract records readiness, release, optional acknowledgment, own result and DONE. These records do not themselves prove process termination, release capacity, settle charges or accept work. See the [Coordination Manual](/_Axis/Resources/Coordination-Manual.md#compact-observation-and-purpose-specific-waits) and [Checked Session](/_Axis/Resources/Checked-Session.md#selected-closing-tools) for the usable tools and manual fallback.
 
+### Sponsoring a child Team
+
+When Main creates an Axis Team of Agents, it can add a [delegation grant](/_Axis/GLOSSARY.md#coordination-and-jobs) to the charter that names member seats as sponsors. The grant states the purpose and, where needed, narrower actions and paths and how many levels of child Teams may follow (one by default, at most three). A sponsor can then commission a child Team, give it part of its own Team's money and agent slots, give it assignments, review its results and close out its resource use. A child Team keeps its parent's clock, accounting and cost basis and never receives more than its parent has left. The sponsor's review is local: Main still decides what enters the shared project.
+
+Main can later narrow or revoke a grant, but cannot add one to an existing Team or widen it; a revoked grant needs a new charter before new work. When a grant changes or a sponsor's seat passes to another session, new work below it waits until earlier writers have finished. Main and any sponsor above can pause, stop or settle the work. A child Team returns its results to its sponsor, never directly to Main, and has no selected closing contract or automatic provider launch. The helper records and checks; it does not start agents, so each member is a separate session that your Agent or you start. Without the helper, your Agent can use the by-hand or single-recorder procedure in the [Coordination Manual](/_Axis/Resources/Coordination-Manual.md#nested-teams-without-the-helper). Child Teams are qualified by offline tests only; a live run of several cooperating agents in child Teams has not been qualified.
+
 ### Team setup and recovery
 
 Team infrastructure supplies identity, direct communication, owned workspaces, lifecycle and recovery. A collaboration plan selects how members work: delegation, assistance, pairing, independent assessment, deliberation, stress testing or a custom combination. Main recommends a method from the objective and asks only for consequential missing information. Every teammate can communicate directly within the grant; shared project integration remains Main-owned.
@@ -885,7 +893,7 @@ Agents can timestamp, append and verify their activity line in one command. If t
 
 When several agents work on one project - Main, Auxiliary agents on channels, Subagents it spawns, even agents from different tools - each keeps a short running diary in `_Axis/Tracking/`, creating its own file on the first append if needed. Before starting a piece of work an agent writes an INTENT line naming what it is about to do and which Tasks or files it will touch; along the way it adds STATUS lines; it can ASK another agent (or Main, or anyone) a question and receive a REPLY; and just before it finishes it writes DONE with the outcome. Each agent writes only its own file. Visibility still depends on when files synchronize and when the other agent checks them; the project’s storage and single-writer restrictions still apply.
 
-At each checkpoint - a new turn, before changing a shared file, before starting or returning from a Subagent - every agent reads what the others have posted since it last looked. That is how it notices a question addressed to it, or that another agent is already working on the same file. Type `^board` for the Board: who is live, what each is working on, open questions between agents, overlapping work and recent completions. The Dashboard's Agents card shows the same picture.
+At each checkpoint - a new turn, before changing a shared file, before starting or returning from a Subagent - every agent reads what the others have posted since it last looked. That is how it notices a question addressed to it, or that another agent is already working on the same file. Delegated agents need that checkpoint instruction and an allowed inbox in their task. A reply records what happened to a request; posting a question alone does not mean it was read. Type `^board` for the Board: who is live, what each is working on, open questions between agents, overlapping work and recent completions. The Dashboard's Agents card shows the same picture.
 
 An Auxiliary agent that needs a shared change it may not make itself can ask Main; Main decides it like any Message, records the decision and replies. A question between agents never grants permission: file locks and roles still decide who may write, and anything that needs you still comes to you.
 
@@ -938,7 +946,7 @@ The Workflow uses two model settings, both in [Settings](/_Config/SETTINGS.md):
 
 ### Running Axis on OpenClaw
 
-[OpenClaw](https://openclaw.ai) is the wildly popular open-source gateway that connects an AI agent to the messaging apps you already use - WhatsApp, Telegram, Discord, Slack, iMessage, and two dozen more - and keeps it running around the clock: message it from your phone, wake it on a schedule, let it work while you sleep. One gateway can run several isolated agents, each with its own workspace and its own background sub-agents.
+[OpenClaw](https://openclaw.ai) is an open-source gateway that connects an AI agent to the messaging apps you already use - WhatsApp, Telegram, Discord, Slack, iMessage, and two dozen more - and keeps it running around the clock: message it from your phone, wake it on a schedule, let it work while you sleep. One gateway can run several isolated agents, each with its own workspace and its own background sub-agents.
 
 Axis uses OpenClaw as a **thin harness**, not as a second project brain. The integration keeps the things a Markdown workflow cannot provide by itself - channels, verified sender routing, agent/session lifecycle, directed messaging, cron triggers, and the runtime tools needed to operate the project. Axis owns identity, instructions, memory, project knowledge, Messages, and every canonical record.
 
@@ -960,7 +968,7 @@ OpenClaw must retain enough operational session state to route a turn, continue 
 
 - **One agent, one project.** Give each OpenClaw agent its own Axis Project folder. On startup it becomes that project's Main Agent, unless a standing declaration or another live Main makes it an Auxiliary Agent. Markers, leases, and file locks preserve the same one-Main boundary used on every other Host.
 - **Role stays Axis-owned.** A standing role declaration takes effect at the next boot, and no session changes its own role. OpenClaw display metadata, transcripts, and configuration cannot reassign it mid-session.
-- **Groups with other people.** Admission does not yet check who sent the first message, so an allowlisted colleague's first message in a project group can start the session that becomes Main. To reduce the risk, declare each group Auxiliary in its own group entry with the line `Axis role: Auxiliary; surface: {name}`, reset the group's session, and keep Main in your own direct chat. The group session still has Main's tools, but no chat command can make it Main. A 3.10 declaration that names External keeps working as Auxiliary. The entry may instead name Assistant, Group Agent or Observer, each with its row in your surface table ([Assistants, Group Agents and Observers](#assistants-group-agents-and-observers)); those three are untested on an installed OpenClaw group. [Practices > OpenClaw](/_Axis/Practices/OpenClaw.md) has the steps.
+- **Groups with other people.** Admission does not check who sent the first message, so an allowlisted colleague's first message in a project group can start the session that becomes Main. To reduce the risk, declare each group Auxiliary in its own group entry with the line `Axis role: Auxiliary; surface: {name}`, reset the group's session, and keep Main in your own direct chat. The group session still has Main's tools, but no chat command can make it Main. A 3.10 declaration that names External keeps working as Auxiliary. The entry may instead name Assistant, Group Agent or Observer, each with its row in your surface table ([Assistants, Group Agents and Observers](#assistants-group-agents-and-observers)); those three are untested on an installed OpenClaw group. [Practices > OpenClaw](/_Axis/Practices/OpenClaw.md) has the steps.
 - **Main on a chat.** A chat session becomes Main only when its chat carries no role declaration and no other Main is live: end a Main elsewhere with `^shutdown`, then send the chat one message. Keep Main in a group only when you are its only writer. That Main renews its lease only when it answers a message. A terminal opened later in the same project folder joins as an Auxiliary Agent while that Main was active within the hour; after an hour it asks you whether to take over, and past the takeover limit ([Auxiliary Agents](#auxiliary-agents)) it becomes Main and the chat session stops writing. Start that terminal in a declared role ([Assistants, Group Agents and Observers](#assistants-group-agents-and-observers)) if it must never take Main. End the chat's Main with `^shutdown` in the chat, or with `python3 _Axis/Resources/axis-roles.py retire` from a terminal in the project folder. This arrangement is untested on an installed OpenClaw.
 - **Delegation stays gated.** OpenClaw Subagents become Axis Subagents: each task carries the nonce-bound Prompt Envelope in isolated context, and Main validates the return. ACP mode can instead start a full external harness such as Claude Code, which boots through the project entry file; Local Subagents continue to call Ollama directly.
 - **Messages stay authoritative.** Axis persists its local outbound Message and reads back the direct child's Submissions envelope before trying an exact OpenClaw notification. The notification carries only the Subject and path. The child's genuine Main imports the envelope; queued delivery alone does not prove receipt or authorize action.
@@ -1070,7 +1078,7 @@ Copyright 2026 Kenneth A. Younge. All rights reserved except as expressly licens
 ## Topic Index
 
 <!-- BEGIN GENERATED: topic-index -->
-119 topics covered in this document, in alphabetical order. The [Help Index](/_Axis/HELPINDEX.md) lists every topic across the Axis documents with the words people use for it; in a project, `^help <topic>` searches it.
+120 topics covered in this document, in alphabetical order. The [Help Index](/_Axis/HELPINDEX.md) lists every topic across the Axis documents with the words people use for it; in a project, `^help <topic>` searches it.
 
 | Topic | In this manual |
 | --- | --- |
@@ -1166,6 +1174,7 @@ Copyright 2026 Kenneth A. Younge. All rights reserved except as expressly licens
 | Secrets and API keys | [FAQ](#faq) |
 | Security model | [Security and Audit Boundaries](#security-and-audit-boundaries) |
 | Settings and Profiles | [Settings](#settings) |
+| Sponsoring a child Team | [Sponsoring a child Team](#sponsoring-a-child-team) |
 | Startup and the Ready banner | [How Axis Works](#how-axis-works); [Tips](#tips) |
 | Stopping and retiring an Agent | [Terminal sessions and model access](#terminal-sessions-and-model-access) |
 | Storage, locks and concurrent writes | [Capabilities](#capabilities) |

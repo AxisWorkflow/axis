@@ -31,6 +31,8 @@ With Python, `envelope.py assemble` builds the whole prompt from a role and a co
 
 ## Write the contract
 
+For a child Team, carry the exact parent chain, sponsor slot and current session, authority and allocation, Team/Job bindings, write scope and return to the sponsor. Load [Practices > NestedTeams].
+
 Every General-token contract has these labelled parts, in this order. `envelope.py check --contract` checks the labels.
 
 - `PURPOSE:` the project goal served and who benefits.
@@ -39,7 +41,7 @@ Every General-token contract has these labelled parts, in this order. `envelope.
 - `SUCCESS:` what success means in those terms.
 - `CRITICAL RULES:` how critical rules apply here, for example which checks may not change.
 - `CONSTRAINTS:` holds and constraints that bind, and the Working Language when it is not English.
-- `SCOPE AND AUTHORITY:` read and write scope; any grant (writes, helpers, starting agents); whether host temporary space may be used, with unique names; tools that carry the User's sign-ins are off limits, even for reading, unless granted.
+- `SCOPE AND AUTHORITY:` read and write scope; any grant (writes, helpers, starting agents); whether host temporary space may be used, with unique names; tools that carry the User's sign-ins are off limits, even for reading, unless granted. For tracked delegates, name the authorized read route to the spawner's Tracking file or checked inbox and its Marker/kill metadata, and permit correlated replies in the delegate's own Tracking. A tool-only contract names its checked route.
 - `LIMITS:` the exact Marker path and its `.kill` path; classify each time or usage figure as a hard bound, deadline, target or forecast under [Rules > Budget]; state hard time bounds in absolute UTC. Carry cumulative usage through interruption and compaction, which renew neither authority nor limits; require the existing envelope and guidance recovery before continuation.
 - `SOURCES:` what to read, and how to ask for a missing source.
 - `RETURN:` the return shape; cite your own Tracking lines by time, never by quoting identifiers.
@@ -55,5 +57,5 @@ Run the mechanical checks first, then judge:
 2. Every changed path is inside the contract's write scope (`git status`, `git diff --stat`); an out-of-scope write is a defect even when the rest is good.
 3. No check, test or assertion was weakened or deleted unless the contract allowed it (`git diff` on tests).
 4. No push, publication, spawn or governing-file change happened without a grant (`git log` and remote state, Markers, `envelope.py governance --verify`).
-5. Tracking lines exist when the prompt required them; a quoted read token is a diagnostic, not proof of reading.
+5. Tracking lines and dispositions of addressed ASKs exist when required. Reconcile unread or unanswered corrections before accepting stale work; a quoted read token is a diagnostic, not proof of reading.
 6. Then shape, preservation, semantic and judgment validation under [Practices > Delegation], the frame check, and whether the result delivers the decision promised.

@@ -1,7 +1,7 @@
 # Changelog
 > **Purpose:** Record Axis release identity and the structural migrations needed to update an existing project safely.
 
-current-version: 3.22
+current-version: 3.23
 changelog-format: 1
 self-update-baseline: 26.08.19
 
@@ -39,6 +39,29 @@ update-impact: automatic
 ### Verification
 
 - None.
+
+## 3.23
+
+released: 2026-11-19
+
+update-impact: automatic
+
+### Structural Changes
+
+- An Axis Team of Agents may commission child Teams under a recorded delegation grant with bounded resources and sponsor-local acceptance. The managed Nested Teams Practice and two optional runtime helpers describe and enforce this route.
+- Tracked delegated prompts carry awareness checkpoints and correlated replies alongside start/end telemetry. Their contracts name an authorized inbox; existing role, scope and message-authority boundaries remain.
+
+### Project-State Migrations
+
+- Existing Team and Job records retain their schemas and grants. A new Team charter can opt in. New dispatch under an older guidance digest follows the existing reviewed charter amendment procedure.
+
+### Retired Paths
+
+- None.
+
+### Verification
+
+- Verify the nested grant, ancestor attenuation, child settlement and sponsor transfer on the adopted source. Check that an ordinary Team runs without loading the optional delegation code.
 
 ## 3.22
 

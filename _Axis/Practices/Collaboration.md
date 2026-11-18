@@ -19,7 +19,7 @@ Use a pattern as a starting point, then adapt it with Main judgment and guided q
 
 ## Plan contract
 
-A structured `axis.team-plan/v1` document includes revision, objective, deliverables, acceptance criteria, pattern, leader slot `leader`, worker slots, phases, participation periods, review assignments, synthesis owner, Main acceptance, and the total budget with a cost basis. `estimates` is telemetry/planning only. The helper's canonical hash identifies the exact plan; the charter embeds the reviewed object. It does not read instructions from a supplied path or make arbitrary code executable.
+A structured `axis.team-plan/v1` document includes revision, objective, deliverables, acceptance criteria, pattern, leader slot `leader`, worker slots, phases, participation periods, review assignments, synthesis owner, acceptance owner (`main`, or `sponsor` for a child Team), and the total budget with a cost basis. `estimates` is telemetry/planning only. The helper's canonical hash identifies the exact plan; the charter embeds the reviewed object. It does not read instructions from a supplied path or make arbitrary code executable.
 
 `all-workers` review expands to every ordered pair of different workers. `targeted` assignments map each reviewer to the authors whose artifacts they review. `none` is valid when the task does not require peer review. Name whether responses and synthesis review are required. These derived obligations are structural coverage; the reviewer still must assess the actual work and significant objections. Do not manufacture disagreement to meet a count.
 
@@ -33,6 +33,6 @@ At each phase boundary, before synthesis and when a chair or Main takes over, re
 
 ## Adaptation and recovery
 
-The leader may refine assignments and method within delegated discretion, publish the successor plan and reason, and identify how in-flight work is treated. Formal charter plan changes use Main's existing `amend` control with a replacement `collaboration_plan`, `summary` and explicit in-flight disposition. Binding validation and the epoch fence still apply. A plan amendment cannot enlarge authority, membership, path permissions or money/runtime limits. Keep prior revisions and retained artifacts available.
+The leader may refine assignments and method within delegated discretion, publish the successor plan and reason, and identify how in-flight work is treated. Main amends an ordinary Team plan. A child Team's sponsor amends its plan. Formal plan changes use the `amend` control with a replacement `collaboration_plan`, `summary` and explicit in-flight disposition. Binding validation and the epoch fence still apply. A plan amendment cannot enlarge authority, membership, path permissions or money/runtime limits. Keep prior revisions and retained artifacts available.
 
 When an optional tool is unavailable, use the same portable plan and canonical records manually. When execution is interrupted, retain artifact/review references and outstanding obligations; resume through reconciled session/Job state. A procedure ending, a review question or a correctable fixture defect does not independently cancel the objective. Hold only the operation whose real precondition is missing.

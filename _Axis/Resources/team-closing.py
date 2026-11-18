@@ -230,6 +230,8 @@ def create_contract(store, *, team, job, participants, release_slot, final_slot,
     need(type(require_ack) is bool and isinstance(phase,str) and 0<len(phase.strip())<=256,'closing-policy')
     with store.locked(team=team):
         store.require_history();t=store.read('Teams',team);j=store.read('Jobs',job);tv=store.project('Teams',team);jv=store.project('Jobs',job)
+        # A selected closing contract is Main-owned. A child Team has no sponsor-local form yet: say so, never drop it.
+        need(not t.get('delegated_only'),'delegated-closing-unsupported')
         need(j.get('team')==team and store.session==t['acceptance_owner']==j['acceptance_owner'],'closing-owner')
         need(not tv['held'] and not jv['held'] and tv['state'] in {'ready','running'} and jv['state'] in {'admitted','running'},'closing-unavailable')
         store.validate_authority(t['authority']);store.validate_authority(j['authority'])

@@ -1,7 +1,7 @@
 # Teams
 > **Purpose:** Set up a feasible Team using common infrastructure and a task-specific collaboration plan.
 
-An Auxiliary may use this planning process for its own proposal Team under [Practices > AuxiliaryTeams]. It follows the explicit owner-bound helper route; only Main accepts project changes.
+An Auxiliary uses [Practices > AuxiliaryTeams] for its proposal Team. A sponsor with an explicit grant uses [Practices > NestedTeams] to run a child Team. Count the child shares on top of what the parent plan needs at once.
 
 Load for Team creation or a material method change. [Practices > Coordination] owns records, authority, member binding, dispatch, workspaces and acceptance. [Practices > Collaboration] owns the selected working method. Membership, logical role, provider session and actual concurrent availability are distinct.
 

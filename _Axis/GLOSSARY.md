@@ -155,6 +155,11 @@
 - **Dispatch** - Assigning an Attempt to an eligible agent and authorizing its start. The intent is recorded before execution.
 - **Attempt** - One execution of work within a Job, with an assigned agent and a recorded result or uncertain outcome.
 - **Acceptance** - Main's recorded approval of a specific control change, disposition or validated result.
+- **Delegation Grant** - A chartered permission for named Team slots to commission child Teams within a purpose, depth, scope and allocation.
+- **Sponsor** - The live session bound to a slot named in a Delegation Grant. The slot retains the child Teams through a fenced seat transfer.
+- **Child Team** - A Team commissioned by a sponsor within its parent Team's grant. Its results return to the sponsor.
+- **Local Acceptance** - A sponsor's approval of its child Team's work. Shared project changes still require Main acceptance.
+- **Delegation Fence** - A recorded grant or sponsor change holds new work until all affected Team locks pass or are recovered at a proven quiescent boundary.
 - **Authority** - A User instruction or permitted delegation allowing a specific action within stated limits. Messages and Permissions do not expand it.
 - **Control Epoch** - A numbered version of Team or Job control state that distinguishes current authority from superseded assignments or membership.
 - **Operation Key** - A stable identifier used to recognize repeated requests for the same operation and prevent duplicate Jobs.

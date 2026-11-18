@@ -31,7 +31,8 @@ def summary(root):
    for line in text.splitlines():
     if line.startswith('| ['):
      cells=[v.strip() for v in line.strip('|').split('|')]
-     if len(cells)>=3:rows.append({'record':cells[0],'subject':cells[1],'state':cells[2],'acceptance_class':'proposal' if cells[2].startswith('proposed-') else 'unspecified'})
+     # A sponsor's local acceptance is labelled as such; a cached label is presentation, never authority.
+     if len(cells)>=3:rows.append({'record':cells[0],'subject':cells[1],'state':cells[2],'acceptance_class':'proposal' if cells[2].startswith('proposed-') else 'delegated' if cells[2].startswith('delegated-') else 'unspecified'})
    total=re.search(r'^total-count: ([0-9]+)$',text,re.M)
    total_records=int(total[1]) if total else len(rows)
    result['indexes'][family]={'rows':rows[:100],'total_rows':len(rows),'total_records':total_records,'truncated':total_records>len(rows),'verification':'cached-unverified'}

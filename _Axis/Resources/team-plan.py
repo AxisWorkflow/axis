@@ -108,7 +108,9 @@ def preview(plan):
         require(type(review.get('responses_required')) is bool, 'invalid-response-obligation')
     require(type(synthesis.get('member_review')) is bool, 'invalid-synthesis-review')
     require(synthesis.get('owner') in members, 'invalid-synthesis-owner')
-    require(synthesis.get('acceptance_owner') == 'main', 'missing-main-acceptance')
+    # Main accepts an ordinary Team's synthesis. A child Team's sponsor accepts it locally; Main still integrates.
+    acceptance_owner = synthesis.get('acceptance_owner')
+    require(isinstance(acceptance_owner, str) and acceptance_owner in {'main', 'sponsor'}, 'missing-main-acceptance')
     allowed_budget = {'max_spend_usd', 'max_runtime_minutes', 'spend_basis'}
     require(not (set(budget) - allowed_budget), 'unsupported-budget-field')
     money = budget.get('max_spend_usd')
@@ -129,7 +131,7 @@ def preview(plan):
     except (ValueError, TypeError):
         plan_digest = None
         require(False, 'non-json-plan')
-    return {
+    result = {
         'consistent': not issues,
         'plan_sha256': plan_digest,
         'obligations': obligations,
@@ -147,10 +149,17 @@ def preview(plan):
         'unverified': ['actual authority', 'provider access and allowance', 'capability observations',
                        'storage and lease safety', 'runtime readiness', 'semantic quality of the plan'],
     }
+    if acceptance_owner == 'sponsor':
+        # Stated only for a sponsor-accepted plan, so every Main-accepted preview keeps its exact earlier shape.
+        result['summary'].update(acceptance_owner='sponsor', local_acceptance=True, project_integration='main')
+    return result
 
 
-def bind(plan, slots, concurrency, budget_policy=None, ceilings=None):
-    """Validate a plan against actual charter roles; never grants authority."""
+def bind(plan, slots, concurrency, budget_policy=None, ceilings=None, *, acceptance='main'):
+    """Validate a plan against actual charter roles; never grants authority.
+
+    `acceptance` is who accepts this Team's synthesis: 'main' for a Team Main accepted, 'sponsor' for a child
+    Team. The plan must name the same owner, so local acceptance is never read as Main's or the reverse."""
     result = preview(plan)
     issues = list(result['issues'])
     if not issues:
@@ -158,6 +167,8 @@ def bind(plan, slots, concurrency, budget_policy=None, ceilings=None):
             issues.append('plan-membership-mismatch')
         if type(concurrency) is not int or concurrency < result['summary']['required_capacity']:
             issues.append('plan-concurrency-mismatch')
+        if plan['synthesis'].get('acceptance_owner') != acceptance:
+            issues.append('missing-main-acceptance' if acceptance == 'main' else 'sponsor-acceptance-required')
     if not issues and budget_policy is not None:
         from decimal import Decimal
         money = budget_policy.get('money')

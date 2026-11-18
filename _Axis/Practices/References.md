@@ -43,6 +43,7 @@ Axis References point to Workflow files or sections: [File], [File > Section], [
 | [Start-Auxiliary], [Resources > Start-Auxiliary] | `_Axis/Resources/Start-Auxiliary.md` |
 | [Start-Session], [Resources > Start-Session] | `_Axis/Resources/Start-Session.md` |
 | [Start-Subagent], [Resources > Start-Subagent] | `_Axis/Resources/Start-Subagent.md` |
+| [Resources > Coordination-Manual] | `_Axis/Resources/Coordination-Manual.md` |
 | [Start-Wiki], [Resources > Start-Wiki] | `_Axis/Resources/Start-Wiki.md` |
 | [Starting-Context], [Resources > Starting-Context] | `_Axis/Resources/Starting-Context.md` |
 | [Template-LocalPrompt], [Resources > Template-LocalPrompt] | `_Axis/Resources/Template-LocalPrompt.md` |

@@ -136,6 +136,7 @@ Optional project state: `EXCEPTIONS.md` in the Axis control folder, created on f
 - `_Axis/Practices/Coordination.md`
 - `_Axis/Practices/Teams.md`
 - `_Axis/Practices/AuxiliaryTeams.md`
+- `_Axis/Practices/NestedTeams.md`
 - `_Axis/Practices/Collaboration.md`
 - `_Axis/Practices/Scheduling.md`
 - `_Axis/Practices/Reminders.md`
@@ -233,7 +234,9 @@ Optional project state: `EXCEPTIONS.md` in the Axis control folder, created on f
 - `_Axis/Resources/model-access.py` - Shared launch-time subscription/API credential selector.
 - `_Axis/Resources/message-paths.py` - Nested, archived and legacy Message identity lookup.
 - `_Axis/Resources/message-archive.py` - Closed, integrated and settled Message retention.
-- `_Axis/Resources/team-allocation.py` - Main-issued independent Team resource grants and settlement.
+- `_Axis/Resources/team-allocation.py` - Team resource grants, nested shares and settlement.
+- `_Axis/Resources/team-delegation.py` - Parent-chain authority, sponsor operations and delegation fences.
+- `_Axis/Resources/nested-team.py` - Sponsor command interface and fence completion.
 - `_Axis/Resources/adoption-harmonize.py` - Verified adoption's best-effort convention repairs and temporary recovery.
 
 - `_Axis/Resources/auxiliary-team.py` - Scoped Auxiliary proposal Team operations; no provider launch.

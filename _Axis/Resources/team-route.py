@@ -158,6 +158,8 @@ def execute_native_attempt(store, job, attempt, *, request, verify_access, expli
         if not cwd.is_absolute() or cwd.resolve()!=cwd or not cwd.is_dir():raise ValueError('canonical working directory required')
         if not isinstance(req['prompt'],str) or type(req['output_bytes']) is not int or not 1024<=req['output_bytes']<=4*1024*1024:raise ValueError('invalid prompt or capture capacity')
         founding=store.read('Jobs',job);policy=founding.get('limits',{}).get('budget')
+        # A child Team's work travels by the carried native route; an automatic provider route is refused, not dropped.
+        if founding.get('delegated_only'):raise ValueError('delegated-route-unsupported: a child Team has no automatic provider route')
         if not isinstance(policy,dict) or policy.get('version')!=1:raise ValueError('native Job required')
         state=store.project('Jobs',job);item=state.get('attempts',{}).get(attempt,{})
         if item.get('route_request_sha256')!=digest:raise ValueError('request differs from accepted dispatch')

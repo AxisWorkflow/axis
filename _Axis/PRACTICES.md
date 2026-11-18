@@ -84,6 +84,7 @@ Read before the matching action.
   *Load for recording or disposition.*
 
 - [Practices > Teams], [Practices > Collaboration] - Team setup and methods.
+- [Practices > NestedTeams] - load for a delegation grant, sponsor operations or supervision of child Teams.
   *Load for setup or method changes.*
 
 - [Practices > Notes] - Writing, renewing, and archiving Notes.
