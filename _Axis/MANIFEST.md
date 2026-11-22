@@ -271,8 +271,12 @@ Optional project state: `EXCEPTIONS.md` in the Axis control folder, created on f
 - `_Axis/Resources/merge-project.py` - optional local merge preview, preservation, approved apply/abort and durable retirement support.
 - `_Axis/Resources/feedback-format.py` - read-only bug/feature draft format checker; never sends or grants consent.
 - `_Axis/Resources/guardrails.py` - optional host hook (`^install guardrails`) that refuses an Agent's edit to a write-once record or a malformed new record name, and a helper's use of `_Axis/Secrets/`, writes outside its role's folders or to governing files, starting other agents, or running state-changing Axis helpers, and a declared role's shell Git changes.
+- `_Axis/Resources/strict-read-policy.py` - inert, pure strict read comparison for a future qualified chat adapter (`guardrails.py --strict-read`); it grants no read, and the strict mode refuses every request.
+- `_Axis/Resources/surfaces.py` - parser of a `surface-schema: 2` surface table, used by boot and the guardrails hook; admission reads the table itself and checks this file's pinned identity. Host-bound rows are refused until a qualified host adapter exists.
 - `_Axis/Resources/Helpers/axis-cx.claude-agent`, `axis-wiki.claude-agent`, `axis-general.claude-agent`, `axis-lookup.claude-agent` - helper role definitions `^install guardrails` copies into `.claude/agents/` as `.md` files.
 - `_Axis/Resources/OpenClaw/axis-guardrails/openclaw.plugin.json` and `index.ts` - optional OpenClaw plugin (`^install guardrails`) that applies `guardrails.py --external` to agents configured as Auxiliary Agents, and `--role` for the declared roles' configuration keys, and appends each listed agent's role guidance to its system prompt on every run.
+- `_Axis/Resources/OpenClaw/axis-guardrails/strict-chat.ts` and `identity-state.ts` - the plugin's dormant strict chat branch, loaded only when the plugin configuration has a `chatPolicy` key; on every installed build it refuses every chat in its domain.
+- `_Axis/Resources/OpenClaw/host-capabilities.py` and `axis-guardrails/host-capabilities.json` - read-only record and checker of what the installed OpenClaw build can guarantee to the strict chat gate; every carrier answers unavailable.
 - `_Axis/Resources/team-plan.py` - optional structural plan validator.
 - `_Axis/Resources/Team-Patterns/meta-team.json`, `assistance.json`, `delegated-report.json` - editable examples, never execution authority.
 - `_Axis/Resources/coordination.py`

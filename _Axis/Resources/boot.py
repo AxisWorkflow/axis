@@ -27,7 +27,7 @@ ROLE_TABLE=(
     {'name': 'TeamMember', 'cls': 'delegated', 'token': 'GENERAL', 'carries_blocks': True, 'agent_type': None, 'write_scope': None, 'deny': None},
     {'name': 'TeamLeader', 'cls': 'delegated', 'token': 'GENERAL', 'carries_blocks': True, 'agent_type': None, 'write_scope': None, 'deny': None},
 )
-ROLE_LEDGER={'issuers': ('auxiliary', 'external', 'main', 'worker'), 'submission_schemas': ('axis.external-submission/v1',), 'proposal_member_subject': 'Subagent: External proposal Team', 'survey_keys': ('fresh_assistant', 'fresh_auxiliary', 'fresh_external', 'fresh_groupagent', 'orphan_subagents'), 'proposal_owners': (('External:', 'external'), ('Auxiliary:', 'auxiliary'))}
+ROLE_LEDGER={'issuers': ('auxiliary', 'external', 'main', 'worker'), 'submission_schemas': ('axis.external-submission/v1', 'axis.external-submission/v2'), 'proposal_member_subject': 'Subagent: External proposal Team', 'survey_keys': ('fresh_assistant', 'fresh_auxiliary', 'fresh_external', 'fresh_groupagent', 'orphan_subagents'), 'proposal_owners': (('External:', 'external'), ('Auxiliary:', 'auxiliary'))}
 # END GENERATED: role-table
 
 # BEGIN GENERATED: project-files
@@ -66,6 +66,7 @@ a.add_argument('--spawn',choices=('yes','no'),default='no');a.add_argument('--pa
 a.add_argument('--finish-adoption',metavar='SESSION',help='resume a startup that stopped with ADOPT after the listed record edits')
 a.add_argument('--take-over',action='append',default=[],metavar='SESSION',help='after the user agreed at ASK: take over this idle Main session')
 a.add_argument('--role',help='a role the host declared for this session (3.16); a role other than Main never takes the Main lease')
+a.add_argument('--surface',help='the surface the host declared for this session; a host-bound surface row stops startup before the claim')
 o=a.parse_args();root=Path.cwd().resolve();R=root/'_Axis/Resources'
 
 def stamp():
@@ -930,6 +931,18 @@ def before_claim(*args,operation):
 declared=(o.role or os.environ.get('AXIS_ROLE','')).strip()
 if declared and re.sub(r'\s+','',declared).lower() not in {r['name'].lower() for r in ROLE_TABLE if r['cls']=='session' and r['exclusive']}:
     print(json.dumps({'axis_boot':'AUXILIARY','declared_role':declared}));print(f'AUXILIARY: this session is declared {declared}, not Main. Follow _Axis/Resources/Start-Auxiliary.md.');sys.exit(3)
+# A host-bound (schema 2) surface row needs a verified host declaration, which no host supplies yet. A session declared for a
+# surface (--surface, AXIS_SURFACE or both) reads the surface table here, before any claim write; without one nothing is read.
+# Every declared value counts: a blank value, or two values that disagree, stop startup before anything is read.
+named_surfaces=[v.strip() for v in (o.surface,os.environ.get('AXIS_SURFACE')) if v is not None]
+if named_surfaces:
+    if not all(named_surfaces) or len(set(named_surfaces))>1:stop('the declared surface is blank, or --surface and AXIS_SURFACE disagree, so no single verified host declaration names this session. Nothing was written','_Axis/Practices/Surfaces.md')
+    try:
+        import importlib.util;sys.dont_write_bytecode=True
+        spec=importlib.util.spec_from_file_location('axis_surface_gate',R/'startup-state.py');gate=importlib.util.module_from_spec(spec);spec.loader.exec_module(gate)
+        admission=gate.Admission(str(root));admission.surfaces();held=named_surfaces[0] in admission.bound
+    except Exception:held=True
+    if held:stop('this surface needs a verified host declaration, which this host cannot supply, so strict chat service is unavailable here. Nothing was written','_Axis/Practices/Surfaces.md')
 if not o.finish_adoption:
     # The look at the project files (3.22), before the merge status and the claim: a conflict stops here with nothing written and no lock left.
     try:seen=config_look(root)

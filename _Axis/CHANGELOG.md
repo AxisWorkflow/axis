@@ -1,7 +1,7 @@
 # Changelog
 > **Purpose:** Record Axis release identity and the structural migrations needed to update an existing project safely.
 
-current-version: 3.23
+current-version: 3.24
 changelog-format: 1
 self-update-baseline: 26.08.19
 
@@ -39,6 +39,35 @@ update-impact: automatic
 ### Verification
 
 - None.
+
+## 3.24
+
+released: 2026-11-22
+
+update-impact: automatic
+
+### Structural Changes
+
+- Tracked delegates reply to an ASK with a `re:` pair as the REPLY scope and use the Tracking helper for every line when Python is available. The helper refuses a malformed REPLY scope and, for a Subagent, a DONE while a live sender's ASK to it has no REPLY. An Auxiliary proposal Team member's prompt tells it to make its last inbox check immediately before DONE.
+- A parent's agent-mode start of a Claude child pre-approves only the child's own boot command with the exact values its start text names; every other call that needs approval is refused, changing directory, agents and web tools are denied, and no MCP server loads. The User's own Claude settings still apply. The start refuses a child that still holds a Main Marker without a tombstone, whatever its age, and reports a Claude CLI without the needed options as unavailable before any stop. Supervision `^^start` documents the start command and its authority and access-evidence files; a retired child's lease reads as fenced.
+- New optional helpers for the strict chat gate, all inert on every installed host: `_Axis/Resources/surfaces.py` (the parser of a `surface-schema: 2` surface table; admission reads the table itself and refuses host-bound rows, as do boot and the guard), `_Axis/Resources/strict-read-policy.py` with `guardrails.py --strict-read` (always refuses), and `_Axis/Resources/OpenClaw/host-capabilities.py` with its record `axis-guardrails/host-capabilities.json` (every carrier answers unavailable). Boot also refuses a blank or disagreeing `--surface` and `AXIS_SURFACE`.
+- Roles serving other people on Claude Code: the `axis` launcher offers them a closed tool list and pins their surface and read scope at launch, and admission refuses a pin that differs from the surface row. The guardrails hook allows a read only inside both the pin and the live row, so a narrowed row applies at once; it lets a Group Agent run the request helper's `submit` and refuses more shell forms that would run other programs (defence in depth, not a qualification). The request helper holds a `--body` that is only a path and a `--body-file` inside an `_X`, `.git` or host folder; Assistants and Group Agents say a request was sent only after the helper's receipt. `axis retire` recognises more agent-host shells.
+- The Claude Code guardrails entry also names Claude Code's newer tools (`PowerShell`, `Monitor`, `SendMessage`, `Workflow`, `RemoteTrigger`, schedules, notifications, worktrees, Artifacts and others). The hook refuses every one to a role serving other people, refuses helpers those that start or schedule agent work and checks a helper's `Monitor` or `PowerShell` command like its shell; an Assistant's or Auxiliary Agent's `Monitor` or `PowerShell` command gets the rules its shell command has, Main passes them as before, and other hosts are unchanged. Re-run `^install guardrails` to widen an installed entry. A Group Agent or Assistant sends requests to Main only through `coordination-submissions.py submit`; on Claude Code the hook refuses its direct writes to `_Axis/Submissions/` and its other shell commands naming that folder. The hook's Secrets checks also refuse a spelling a case-insensitive volume resolves to `_Axis/Secrets/` (such as a long s), and an abbreviated option or `--` before an Axis helper's subcommand is refused rather than read as another subcommand.
+- Main imports `axis.external-submission/v2` requests: the v1 proposal plus one exact-key `origin_context` (issuer role, surface, binding and policy digests, and `owner` or `participant`). `coordination-submissions.py import` checks its shape and records it in the imported Message as untrusted source metadata marked recorded-only; it never authorizes, and `owner` is not User approval. A changed context for the same source Log is a held conflict. Nothing writes v2: only a trusted host adapter may supply the context and none exists, so `submit` and `export` still write v1 only. The role ledger lists v2 beside v1.
+- The OpenClaw `axis-guardrails` plugin carries a dormant strict chat branch (`strict-chat.ts` with `identity-state.ts`) that loads only when its configuration has a `chatPolicy` key, which the shipped plugin manifest does not accept. Without the key nothing changes. With it, the agents it manages and calls without an agent ID get no service on the carriers that call its hooks (the model run and every tool call are blocked and no role guidance is added), and an invalid policy or a failed load refuses every agent of the plugin and never falls back to the legacy lists.
+- OpenClaw, WhatsApp, Surfaces and Submissions guidance and `^install`/`^audit openclaw` separate the legacy profile every installation uses from strict per-chat service, which is unavailable; a strict timer may call only the one-shot `scheduling.py trigger`, and a Submission doorbell needs an exact requester/target pair, a non-renewing check and a notification-only carrier, which no host supplies yet. `^audit openclaw`'s `Ready` covers the legacy profile only.
+
+### Project-State Migrations
+
+- None. A surface table without a schema line keeps its existing meaning.
+
+### Retired Paths
+
+- None.
+
+### Verification
+
+- Verify that a schema-1 surface table admits as before, that a host-bound schema-2 row and a blank or disagreeing surface are refused before any write, that a Subagent's helper DONE is refused while an addressed ASK is unanswered, that a launched Group Agent loses a folder as soon as its row drops it, that a Group Agent's or Assistant's direct write to `_Axis/Submissions/` is refused while its `submit` passes, that an `axis.external-submission/v2` request imports with its origin context recorded-only while no helper writes v2, and that the `axis-guardrails` plugin without a `chatPolicy` key behaves as before.
 
 ## 3.23
 

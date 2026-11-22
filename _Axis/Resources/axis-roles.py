@@ -24,10 +24,12 @@ import time
 
 SID = re.compile(r'\d{4}(?:\.\d{2}){5}\.\d{3}Z\Z')
 HOUR = 3600
-# Environment markers that agent hosts set in the shells they run; best effort, documented as such.
-AGENT_ENV = ('CLAUDECODE', 'CLAUDE_CODE_ENTRYPOINT', 'CODEX_SANDBOX', 'CODEX_SANDBOX_NETWORK_DISABLED', 'CODEX_THREAD_ID',
-             'GEMINI_CLI', 'ANTIGRAVITY_AGENT', 'GROK_AGENT', 'OPENCLAW_SESSION_KEY', 'OPENCLAW_AGENT_ID', 'AXIS_AGENT_SESSION',
-             'AXIS_ROLE', 'AXIS_SURFACE')
+# Environment markers that agent hosts set in the shells they run; best effort, documented as such. Claude Code's
+# shell also sets AI_AGENT, CLAUDE_CODE_EXECPATH, CLAUDE_CODE_SESSION_ID and CLAUDE_PID, so blanking two names does not
+# pass for the User's terminal.
+AGENT_ENV = ('CLAUDECODE', 'CLAUDE_CODE_ENTRYPOINT', 'AI_AGENT', 'CLAUDE_CODE_EXECPATH', 'CLAUDE_CODE_SESSION_ID', 'CLAUDE_PID',
+             'CODEX_SANDBOX', 'CODEX_SANDBOX_NETWORK_DISABLED', 'CODEX_THREAD_ID', 'GEMINI_CLI', 'ANTIGRAVITY_AGENT', 'GROK_AGENT',
+             'OPENCLAW_SESSION_KEY', 'OPENCLAW_AGENT_ID', 'AXIS_AGENT_SESSION', 'AXIS_ROLE', 'AXIS_SURFACE', 'AXIS_READ_SCOPE')
 ANCHORS = ('_Config/PROJECT.md', '_Axis/PROJECT.md')  # the brief, in either place
 ACTIONS = {'retire': ('retire', 'stop', 'restart'), 'start': ('start', 'restart')}
 

@@ -28,11 +28,23 @@ ROLE_TABLE=(
     {'name': 'TeamMember', 'cls': 'delegated', 'token': 'GENERAL', 'carries_blocks': True, 'agent_type': None, 'write_scope': None, 'deny': None},
     {'name': 'TeamLeader', 'cls': 'delegated', 'token': 'GENERAL', 'carries_blocks': True, 'agent_type': None, 'write_scope': None, 'deny': None},
 )
-ROLE_LEDGER={'issuers': ('auxiliary', 'external', 'main', 'worker'), 'submission_schemas': ('axis.external-submission/v1',), 'proposal_member_subject': 'Subagent: External proposal Team', 'survey_keys': ('fresh_assistant', 'fresh_auxiliary', 'fresh_external', 'fresh_groupagent', 'orphan_subagents'), 'proposal_owners': (('External:', 'external'), ('Auxiliary:', 'auxiliary'))}
+ROLE_LEDGER={'issuers': ('auxiliary', 'external', 'main', 'worker'), 'submission_schemas': ('axis.external-submission/v1', 'axis.external-submission/v2'), 'proposal_member_subject': 'Subagent: External proposal Team', 'survey_keys': ('fresh_assistant', 'fresh_auxiliary', 'fresh_external', 'fresh_groupagent', 'orphan_subagents'), 'proposal_owners': (('External:', 'external'), ('Auxiliary:', 'auxiliary'))}
 # END GENERATED: role-table
 # Proposal submissions: every schema ever issued stays importable; a role row with a submit schema may send.
 PROPOSAL_SCHEMAS=frozenset(ROLE_LEDGER['submission_schemas'])
 SUBMITTERS=tuple(r for r in ROLE_TABLE if r['cls']=='session' and r['submit_schema'])
+# Exact keys per proposal schema. A ledger schema with no entry here is refused, never read as another schema.
+PROPOSAL_V1='axis.external-submission/v1';PROPOSAL_V2='axis.external-submission/v2'
+PROPOSAL_KEYS={PROPOSAL_V1:frozenset({'schema','submission','destination','origin_session','origin_log','log_digest','body','expires'})}
+PROPOSAL_KEYS[PROPOSAL_V2]=PROPOSAL_KEYS[PROPOSAL_V1]|{'origin_context'}
+# Only a trusted host adapter may write a v2 origin context, and this build has none: delivery writes these schemas only.
+WRITABLE=frozenset({SCHEMA,PROPOSAL_V1})
+# Import records a v2 origin context as untrusted source metadata. It never authorizes; owner is not User approval.
+CONTEXT_KEYS=frozenset({'issuer_role','surface','binding_digest','policy_digest','requester_principal'})
+CONTEXT_ROLES=frozenset(r['name'] for r in SUBMITTERS)
+PRINCIPALS=('owner','participant')
+# The surfaces.py shapes of a surface name, a host binding and a policy digest.
+SURFACE_NAME=re.compile(r'[A-Za-z0-9][A-Za-z0-9._-]{0,63}');BINDING=re.compile(r'openclaw:v1:[0-9a-f]{64}');HEX64=re.compile(r'[0-9a-f]{64}')
 ANCHORS=('AGENTS.md','CLAUDE.md','GEMINI.md','_Axis/MANIFEST.md','_Axis/PRACTICES.md','_Axis/RULES.md')
 # The brief identifies a project in either place; a neighbour may still hold it in _Axis/.
 BRIEFS=('_Config/PROJECT.md','_Axis/PROJECT.md')
@@ -121,9 +133,17 @@ def encode(envelope):
  if len(raw)>MAX:raise ValueError('oversize submission; reference a scoped artifact')
  return raw
 
+def origin_context(value):
+ """A v2 origin context of exactly five string fields, checked for shape only: a recorded claim, never a grant."""
+ if type(value) is not dict or set(value)!=CONTEXT_KEYS or not all(type(v) is str for v in value.values()):raise ValueError('invalid origin context')
+ if value['issuer_role'] not in CONTEXT_ROLES or value['requester_principal'] not in PRINCIPALS:raise ValueError('origin context role or principal not permitted')
+ if not SURFACE_NAME.fullmatch(value['surface']) or not BINDING.fullmatch(value['binding_digest']) or not HEX64.fullmatch(value['policy_digest']):raise ValueError('invalid origin context')
+ return dict(value)
+
 def decode(raw):
  subject,envelope=core._FORMAT.decode(raw.decode('utf-8'),MAX)
- required={'schema','submission','origin_project','origin_message','destination','digest','expires','route','record'} if envelope.get('schema')==SCHEMA else {'schema','submission','destination','origin_session','origin_log','log_digest','body','expires'} if envelope.get('schema') in PROPOSAL_SCHEMAS else set()
+ schema=envelope.get('schema') if type(envelope.get('schema')) is str else None
+ required={'schema','submission','origin_project','origin_message','destination','digest','expires','route','record'} if schema==SCHEMA else PROPOSAL_KEYS.get(schema,set()) if schema in PROPOSAL_SCHEMAS else set()
  if not required or set(envelope)!=required:raise ValueError('incompatible submission schema')
  if envelope['schema']==SCHEMA:
   if not isinstance(envelope['record'],dict) or not isinstance(envelope['record'].get('subject'),str):raise ValueError('invalid source record')
@@ -133,6 +153,7 @@ def decode(raw):
  else:
   core.identity(envelope['origin_session']);core.identity(envelope['origin_log'])
   if not isinstance(envelope['body'],str) or not isinstance(envelope['log_digest'],str) or not re.fullmatch(r'[0-9a-f]{64}',envelope['log_digest']):raise ValueError('invalid proposal data')
+  if schema==PROPOSAL_V2:origin_context(envelope['origin_context'])
  if not isinstance(envelope['destination'],str):raise ValueError('invalid destination')
  core.timestamp(envelope['expires'])
  if subject!=_subject(envelope):raise ValueError('submission Subject mismatch')
@@ -140,6 +161,7 @@ def decode(raw):
  return envelope
 
 def _deliver(store,directory,envelope,initial):
+ if envelope.get('schema') not in WRITABLE:raise ValueError('no writer for this submission schema in this build; nothing was sent')
  # Sender identities are handles in this queue, outside receiver record IDs.
  # Check just the queue and its retained copy; never claim receiver timestamps.
  ident=initial
@@ -200,8 +222,10 @@ def submit_proposal(store,log_id,body,expires=None):
  return _deliver(store,store.path('_Axis/Submissions',kind='directory'),envelope,log_id)
 
 def import_proposal(store,name,envelope):
- required={'schema','submission','destination','origin_session','origin_log','log_digest','body','expires'}
- if set(envelope)!=required or envelope['destination']!=store.project_id():raise ValueError('invalid proposal')
+ schema=envelope.get('schema') if type(envelope.get('schema')) is str else None
+ required=PROPOSAL_KEYS.get(schema) if schema in PROPOSAL_SCHEMAS else None
+ if required is None or set(envelope)!=required or envelope['destination']!=store.project_id():raise ValueError('invalid proposal')
+ context=origin_context(envelope['origin_context']) if schema==PROPOSAL_V2 else None
  core.identity(envelope['origin_session']);core.identity(envelope['origin_log'])
  if not isinstance(envelope['body'],str) or len(envelope['body'].encode())>core.MAX_BODY:raise ValueError('proposal size')
  if core.timestamp(envelope['expires'])<=store.now():raise ValueError('expired proposal')
@@ -212,7 +236,10 @@ def import_proposal(store,name,envelope):
  if previous:
   if len(previous)!=1 or previous[0]['data']['proposal']['digest']!=digest:raise ValueError('proposal import conflict')
   return {'status':'already-imported','id':previous[0]['id'],'submission':name,'envelope':name}
- result=store.message('request','main',envelope['body'],correlation='proposal:'+key,expires=envelope['expires'],data={'proposal':{'key':key,'digest':digest,'submission':name,'origin_session':envelope['origin_session'],'origin_log':envelope['origin_log'],'expires':envelope['expires']}})
+ proposal={'key':key,'digest':digest,'submission':name,'origin_session':envelope['origin_session'],'origin_log':envelope['origin_log'],'expires':envelope['expires']}
+ # The sender's unverified claim, kept as data: no field of it is read as authority, approval or a route.
+ if context is not None:proposal.update(schema=schema,source_metadata={'origin_context':context,'status':'recorded-only','trusted':False})
+ result=store.message('request','main',envelope['body'],correlation='proposal:'+key,expires=envelope['expires'],data={'proposal':proposal})
  return {'status':'imported','id':result['id'],'submission':name,'envelope':name}
 
 def finish_import(store,name,raw,result):
@@ -291,17 +318,57 @@ def decline(store,name,reason):
   record=store.message('decision','main',reason,correlation='submission:'+name,data={'submission_disposition':{'submission':name,'digest':sha,'size':len(raw),'outcome':'declined','retained':'_Axis/Submissions/_received/'+name}})
   return finish_import(store,name,raw,{'status':'declined','id':record['id'],'submission':name})
 
+PATH_SHAPE=re.compile(r'~.*|.*/.*|.*\.[A-Za-z0-9]{1,10}',re.S)
+
+def request_text(body):
+ """The --body text. A body shaped like a path alone (one word with a '/', a leading '~' or a file extension) is
+ refused: --body is the request itself. The shape decides, never whether such a path exists, so the answer tells the
+ caller nothing about files it may not read."""
+ named=body.strip()
+ if named and not re.search(r'\s',named) and PATH_SHAPE.fullmatch(named):raise ValueError('--body is the request text, not a file name, and this body is only a path ('+named[:200]+'); write the request itself with --body, or pass a project file that holds it with --body-file. Nothing was sent')
+ return body
+
+# Path parts --body-file never opens: excluded (_X) content, compared without case and on each dot-separated stem as
+# Practices > Protected names it (Archive_X/, Diary_X.md), and the host and version-control folders (coordination.py's
+# protected-path rule).
+HIDDEN_PARTS=('.git','.claude','.codex','.gemini','.openclaw')
+
+def protected_part(part):
+ return part.casefold() in HIDDEN_PARTS or any(prefix.upper().endswith('_X') for prefix in part.split('.'))
+
+def request_file(store,name):
+ """The request text in a project file named relative to --root: a regular file, no symlink, outside any secrets
+ folder, never in or named as excluded (_X) content or a host or version-control folder, strict UTF-8, at most the
+ Message body limit. A role serving other people passes text with --body: this helper does not know the read scope its
+ surface allows."""
+ store.guard();marker=store.io.read(store.io.marker_name)
+ row=next((r for r in SUBMITTERS if marker.startswith(r['subject'])),None)
+ if row is None:raise ValueError('proposal route not permitted for this role')
+ if row['serves']!='User':raise ValueError(row['article'].capitalize()+' '+row['title']+' passes the request text with --body; --body-file would read project files outside its read scope. Nothing was sent')
+ if not isinstance(name,str) or any(protected_part(p) for p in name.split('/')):raise ValueError('--body-file never opens excluded (_X) content or a .git, .claude, .codex, .gemini or .openclaw folder (Practices > Protected). Nothing was sent')
+ try:raw=read_bytes(store.path(name),core.MAX_BODY)
+ except (ValueError,OSError,core.CoordinationError) as exc:raise ValueError('--body-file must name a regular project file, relative to --root and outside any secrets folder, of at most 16 KiB ('+str(exc)+'). Nothing was sent') from None
+ try:return raw.decode('utf-8')
+ except UnicodeDecodeError:raise ValueError('--body-file must hold UTF-8 text. Nothing was sent') from None
+
 def main(argv=None):
  parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--root',default='.');parser.add_argument('--session',required=True);sub=parser.add_subparsers(dest='action',required=True)
  e=sub.add_parser('export');e.add_argument('--destination',required=True);e.add_argument('--message',required=True);e.add_argument('--expires')
  i=sub.add_parser('import');i.add_argument('submission')
  d=sub.add_parser('decline');d.add_argument('submission');d.add_argument('--reason',required=True)
- p=sub.add_parser('submit');p.add_argument('--log',required=True);p.add_argument('--body',required=True);p.add_argument('--expires')
+ p=sub.add_parser('submit',description='Queue a request for Main in _Axis/Submissions/, tied to the Log that records it. Pass the request text with --body, or a project file that holds it with --body-file. The receipt is status queued (or already-delivered) with the Submission name.')
+ p.add_argument('--log',required=True,help='the ID of the Log that records this request')
+ body=p.add_mutually_exclusive_group(required=True)
+ body.add_argument('--body',help='the request text itself, not a file name')
+ body.add_argument('--body-file',metavar='PATH',help='a project file holding the request text (UTF-8, at most 16 KiB), relative to --root; a role serving other people uses --body')
+ p.add_argument('--expires',help='when the request lapses (default: 24 hours after the Log)')
  args=parser.parse_args(argv)
  try:
   store=core.Store(args.root,args.session)
   if args.action=='export':result=export_message(store,args.destination,args.message,args.expires)
-  elif args.action=='submit':result=submit_proposal(store,args.log,args.body,args.expires)
+  elif args.action=='submit':
+   body=request_file(store,args.body_file) if args.body_file is not None else request_text(args.body)
+   result=submit_proposal(store,args.log,body,args.expires)
   elif args.action=='decline':result=decline(store,args.submission,args.reason)
   else:result=import_message(store,args.submission)
   print(json.dumps(result));return 0

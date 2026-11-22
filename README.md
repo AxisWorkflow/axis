@@ -2,7 +2,7 @@
 > **Purpose:** Introduce Axis, start a project, and find the user and technical guides.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-2ea44f.svg)](/_Axis/LICENSE)
-[![Version](https://img.shields.io/badge/Version-3.23-blue.svg)](https://github.com/AxisWorkflow/axis)
+[![Version](https://img.shields.io/badge/Version-3.24-blue.svg)](https://github.com/AxisWorkflow/axis)
 [![Works with](https://img.shields.io/badge/Works%20with-Claude%20Cowork%20%7C%20Claude%20Code%20%7C%20ChatGPT%20Work%20%7C%20Codex%20%7C%20Cursor%20%7C%20Antigravity%20CLI-6f42c1.svg)](https://github.com/AxisWorkflow/axis)
 
 The [**Axis Workflow™**](https://github.com/AxisWorkflow/axis) is an open-source project developed by [Kenneth Younge Advisory](https://kennethyounge.com), released under the [MIT License](/_Axis/LICENSE). The license grants no trademark rights. If you like **Axis**, [please buy us a coffee](https://buymeacoffee.com/axisworkflow). Please **[star the repo](https://github.com/AxisWorkflow/axis)** - it helps others to find it.
@@ -67,7 +67,7 @@ The Dashboard illustration uses fictional project records and example settings.
 - **An inbox and memos.** Drop new material into `_Inbox/` and your Agent [files it](/_Axis/USERMANUAL.md#inbox). Decisions, findings and Reviews you will want to read later arrive as dated [Memos](/_Axis/USERMANUAL.md#memos).
 - **Simple commands.** Type `^help` for the list: save and resume, notes, ideas, status, archive and more. `^help <topic>` finds the section that covers a topic.
 - **Portability.** Switch AI tools or computers mid-project; optional Git support checkpoints and moves your work.
-- **More than one Agent or project.** A second session joins as a bounded helper beside the one Main Agent. An optional [Axis Team of Agents](/_Axis/USERMANUAL.md#an-axis-team-of-agents-and-its-jobs) works under a charter with recorded Jobs, and a parent project can [supervise the Axis projects nested inside it](/_Axis/USERMANUAL.md#supervising-child-projects). What runs depends on your AI host.
+- **More than one Agent or project.** A second session joins as a bounded helper beside the one Main Agent. An optional [Axis Team of Agents](/_Axis/USERMANUAL.md#an-axis-team-of-agents-and-its-jobs) works under a charter with recorded Jobs; under a delegation grant, a member can [sponsor a child Team](/_Axis/USERMANUAL.md#sponsoring-a-child-team) for part of the work. A parent project can [supervise the Axis projects nested inside it](/_Axis/USERMANUAL.md#supervising-child-projects). What runs depends on your AI host.
 - **Reach it from another device.** Optional routes let you use a session on your own computer from a [laptop or phone](/_Axis/USERMANUAL.md#remote-access-from-a-laptop-or-phone), or talk to a project through a messaging channel with [OpenClaw](/_Axis/USERMANUAL.md#openclaw-integration). Each has its own setup and limits.
 - **Cost control.** Routine work can go to cheaper or local models while stronger models handle judgment.
 

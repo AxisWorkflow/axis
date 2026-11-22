@@ -58,6 +58,16 @@ CLAUDE_DENY = {'Auxiliary': ('Edit', 'MultiEdit', 'NotebookEdit'), 'Assistant': 
                'Observer': ('WebFetch', 'WebSearch', 'Agent', 'Task', 'Edit', 'Write', 'MultiEdit', 'NotebookEdit')}
 # Roles serving other people load no MCP servers, so no connector can carry project content out.
 NO_MCP = ['--strict-mcp-config', '--mcp-config', '{"mcpServers": {}}']
+
+
+def offered_tools(row):
+    """The closed tool list (Claude Code `--tools`) a role serving other people is offered: the file tools for its reads
+    and new files and the shell for its own helpers, so no newer host tool that reaches outside the session (messaging,
+    remote triggers, notifications, schedules, workflows, monitors) is offered. The guardrails hook refuses the rest of
+    the tools its installed matcher sends it; this list alone withholds the tools that matcher never sends."""
+    return ('Bash', 'Glob', 'Grep', 'Read') + (('Write',) if row['guard']['new_files'] else ())
+
+
 # CC-7/CC-15: the session-role guidance budget is characters, not bytes; a role file missing or without a fence
 # contributes no guidance rather than failing the launch.
 ROLE_GUIDANCE_LIMIT = 8000
@@ -146,8 +156,24 @@ def child_command(agent, command, row, line, root=None, surface=None):
     else: extra = ['--append-system-prompt-file', str(system_prompt_file(root, row, surface, line))]
     deny = CLAUDE_DENY.get(row['name'])
     if deny: extra += ['--disallowedTools', ','.join(deny)]
-    if row['serves'] != 'User': extra += NO_MCP
+    if row['serves'] != 'User': extra += ['--tools', ','.join(offered_tools(row))] + NO_MCP
     return command + extra  # after the native authentication selector the launcher verifies
+
+
+def child_env(env, root, row, surface):
+    """The declared child's environment: AXIS_ROLE and AXIS_SURFACE for the helpers and the hook, and for a role serving
+    other people (a Group Agent or an Observer) AXIS_READ_SCOPE, the read scope its surface row names at launch ('' when
+    the table has no such row). The admission helper refuses a pin that differs from the row, and the hook allows a read
+    only inside both the pin and the live row, so a widened row waits for the next launch and a narrowed one applies at
+    once. The pin stays in the session's environment, never in a file another role can read. A role serving the User
+    carries no pin."""
+    env['AXIS_ROLE'], env['AXIS_SURFACE'] = row['name'], surface
+    env.pop('AXIS_READ_SCOPE', None)
+    if row['serves'] != 'User':
+        try: found = module('startup-state').Admission(str(root)).surfaces().get(surface)
+        except Exception: found = None
+        env['AXIS_READ_SCOPE'] = ', '.join(found[1]) if found and found[0]['name'] == row['name'] and found[1] else ''
+    return env
 
 
 def discover(roots):
@@ -250,7 +276,7 @@ def main(argv=None):
             access = module('model-access')
             command, env, _ = access.prepare(root, args.agent, [executable], mode=args.access, paid_authorized=args.allow_api)
             if row is not None:
-                env['AXIS_ROLE'], env['AXIS_SURFACE'] = row['name'], args.surface
+                child_env(env, root, row, args.surface)
                 command = child_command(args.agent, command, row, line, root, args.surface)
                 if args.agent != 'claude': print(f'axis: put the line "{line}" in this agent\'s standing configuration; the launcher sets AXIS_ROLE for the helpers', file=sys.stderr)
             verified = access.verify_cli(args.agent,command,env,str(root),allow_interactive_choice=True)

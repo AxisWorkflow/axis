@@ -41,7 +41,7 @@ ROLE_TABLE=(
     {'name': 'TeamMember', 'cls': 'delegated', 'token': 'GENERAL', 'carries_blocks': True, 'agent_type': None, 'write_scope': None, 'deny': None},
     {'name': 'TeamLeader', 'cls': 'delegated', 'token': 'GENERAL', 'carries_blocks': True, 'agent_type': None, 'write_scope': None, 'deny': None},
 )
-ROLE_LEDGER={'issuers': ('auxiliary', 'external', 'main', 'worker'), 'submission_schemas': ('axis.external-submission/v1',), 'proposal_member_subject': 'Subagent: External proposal Team', 'survey_keys': ('fresh_assistant', 'fresh_auxiliary', 'fresh_external', 'fresh_groupagent', 'orphan_subagents'), 'proposal_owners': (('External:', 'external'), ('Auxiliary:', 'auxiliary'))}
+ROLE_LEDGER={'issuers': ('auxiliary', 'external', 'main', 'worker'), 'submission_schemas': ('axis.external-submission/v1', 'axis.external-submission/v2'), 'proposal_member_subject': 'Subagent: External proposal Team', 'survey_keys': ('fresh_assistant', 'fresh_auxiliary', 'fresh_external', 'fresh_groupagent', 'orphan_subagents'), 'proposal_owners': (('External:', 'external'), ('Auxiliary:', 'auxiliary'))}
 # END GENERATED: role-table
 # BEGIN GENERATED: project-files
 PROJECT_FILES=('PROJECT.md','PLAN.md','INITIATIVES.md','TASKS.md','INSTRUCTIONS.md','SETTINGS.md','MINDSET.md','DIRECTIVES.md')
@@ -67,6 +67,137 @@ DECLARABLE = {r['name']: r for r in ROLE_TABLE if r['cls'] == 'session' and r['c
 SURFACES = '_Axis/SURFACES.md'
 SURFACE_NAME = re.compile(r'[A-Za-z0-9][A-Za-z0-9._-]{0,63}')
 FOLDER_NAME = re.compile(r'[A-Za-z0-9][A-Za-z0-9 ._-]{0,127}')
+# surfaces.py beside this helper is the surface table's parser. Admission never runs it: the reader below repeats the
+# parts admission uses (the schema marker and the schema-2 table) and refuses unless that file is the parser it was
+# checked against (test-surface-reader.py), by size and SHA-256. A host binding takes that file's BINDING_PREFIX.
+SURFACE_PARSER = (26291, 'b4383b73f1cf7a3292ba337bf20d50781f9a75608a18c314e5fd6de23512ca71')
+# That parser's frozen Unicode 16 sets: the code points a table line may not hold, and White_Space.
+UNSAFE_TEXT = ((0x0,0x1F),(0x7F,0x9F),(0xAD,0xAD),(0x600,0x605),(0x61C,0x61C),(0x6DD,0x6DD),(0x70F,0x70F),(0x890,0x891),(0x8E2,0x8E2),
+    (0x180E,0x180E),(0x200B,0x200F),(0x202A,0x202E),(0x2060,0x2064),(0x2066,0x206F),(0xD800,0xDFFF),(0xFEFF,0xFEFF),(0xFFF9,0xFFFB),
+    (0x110BD,0x110BD),(0x110CD,0x110CD),(0x13430,0x1343F),(0x1BCA0,0x1BCA3),(0x1D173,0x1D17A),(0xE0001,0xE0001),(0xE0020,0xE007F))
+WHITE_SPACE = ((0x9,0xD),(0x20,0x20),(0x85,0x85),(0xA0,0xA0),(0x1680,0x1680),(0x2000,0x200A),(0x2028,0x2029),(0x202F,0x202F),(0x205F,0x205F),(0x3000,0x3000))
+_SURFACE_PARSER = []
+
+def sha256_hex(data):
+    """SHA-256 (FIPS 180-4) of DATA, for the parser identity; this helper's import contract has no hashlib."""
+    M=0xffffffff;primes=[p for p in range(2,312) if all(p%d for d in range(2,int(p**0.5)+1))]
+    def root(n,k):
+        x=int(round(n**(1.0/k)))
+        while x**k>n:x-=1
+        while (x+1)**k<=n:x+=1
+        return x
+    # The constants: the first 32 fraction bits of the cube roots of the first 64 primes and the square roots of the first 8.
+    K=[root(p<<96,3)&M for p in primes];h=[root(p<<64,2)&M for p in primes[:8]]
+    n=len(data);data=bytes(data)+b'\x80'+b'\0'*((55-n)%64)+(8*n).to_bytes(8,'big')
+    for i in range(0,len(data),64):
+        w=[int.from_bytes(data[j:j+4],'big') for j in range(i,i+64,4)]
+        for t in range(16,64):
+            x,y=w[t-15],w[t-2]
+            w.append((w[t-16]+(((x>>7|x<<25)^(x>>18|x<<14)^x>>3)&M)+w[t-7]+(((y>>17|y<<15)^(y>>19|y<<13)^y>>10)&M))&M)
+        a,b,c,d,e,f,g,z=h
+        for t in range(64):
+            t1=(z+(((e>>6|e<<26)^(e>>11|e<<21)^(e>>25|e<<7))&M)+((e&f)^(~e&g))+K[t]+w[t])&M
+            t2=((((a>>2|a<<30)^(a>>13|a<<19)^(a>>22|a<<10))&M)+((a&b)^(a&c)^(b&c)))&M
+            a,b,c,d,e,f,g,z=(t1+t2)&M,a,b,c,(d+t1)&M,e,f,g
+        h=[(x+y)&M for x,y in zip(h,(a,b,c,d,e,f,g,z))]
+    return ''.join('%08x'%x for x in h)
+
+def surface_parser():
+    """The host-binding prefix of surfaces.py beside this helper, once its bytes are the pinned parser's (read, never run)."""
+    if not _SURFACE_PARSER:
+        try:
+            # Opened without waiting and read only as a regular file: a FIFO, device or directory there refuses at once.
+            fd=os.open(Path(os.path.abspath(__file__)).with_name('surfaces.py'),os.O_RDONLY|os.O_NONBLOCK|os.O_NOCTTY);data=b''
+            try:
+                if stat.S_ISREG(os.fstat(fd).st_mode):
+                    with open(fd,'rb',closefd=False) as handle:data=handle.read(SURFACE_PARSER[0]+1)
+            finally:os.close(fd)
+        except OSError:data=b''
+        found=re.findall(rb'^BINDING_PREFIX = "([a-z0-9:]+)"$',data,re.M)
+        need(len(data)==SURFACE_PARSER[0] and sha256_hex(data)==SURFACE_PARSER[1] and len(found)==1,'surface_parser',SURFACES)
+        _SURFACE_PARSER.append(found[0].decode())
+    return _SURFACE_PARSER[0]
+
+def _among(c, ranges):return any(a<=ord(c)<=b for a,b in ranges)
+
+def _trim(value):
+    """VALUE without leading and trailing White_Space (the parser's frozen set, not the runtime's)."""
+    start,end=0,len(value)
+    while start<end and _among(value[start],WHITE_SPACE):start+=1
+    while end>start and _among(value[end-1],WHITE_SPACE):end-=1
+    return value[start:end]
+
+def surface_schema(text):
+    """1 or 2: the table's `surface-schema:` marker; no marker is 1. A blank, unknown, misspelled, repeated, hidden or
+    late marker refuses and never reads as 1. The label inside ordinary prose is not a marker."""
+    need(len(text)<=65536,'surface_table_limit',SURFACES)
+    try:size=len(text.encode('utf-8'))
+    except UnicodeEncodeError:raise Fault('unsafe_unicode',SURFACES) from None
+    need(size<=65536,'surface_table_limit',SURFACES)
+    label='surface-schema';breaks='\n\r\v\f\x1c\x1d\x1e\x85\u2028\u2029'
+    # The label is sought with unsafe characters and LS/PS out of view, at its original offsets; LF stays a boundary.
+    visible=[(i,c) for i,c in enumerate(text) if c=='\n' or not (_among(c,UNSAFE_TEXT) or c in '\u2028\u2029')]
+    for match in re.finditer(label,''.join(c for _,c in visible),re.I|re.A):
+        start=prefix=visible[match.start()][0]
+        while prefix and text[prefix-1] not in breaks and (text[prefix-1].isspace() or _among(text[prefix-1],UNSAFE_TEXT)):prefix-=1
+        if prefix and text[prefix-1] not in breaks:continue
+        need(not text[prefix:start].strip() and text[start:start+len(label)].lower()==label,'surface_schema_invalid',SURFACES)
+    lines=text.splitlines();table=next((i for i,line in enumerate(lines) if line.lstrip().startswith('|')),None)
+    markers=[(i,line.strip()) for i,line in enumerate(lines) if line.lstrip().lower().startswith(label)]
+    if not markers:return 1
+    need(len(markers)==1,'surface_schema_duplicate',SURFACES)
+    match=re.fullmatch(r'surface-schema: ([12])',markers[0][1])
+    need(match is not None,'surface_schema_invalid',SURFACES)
+    need(table is None or markers[0][0]<table,'surface_schema_position',SURFACES)
+    return int(match.group(1))
+
+def strict_table(text, prefix):
+    """A schema-2 table's rows as (surface, role name, read scope, host binding), the scope 'project' or a tuple of folders.
+    The table is one block of pipe lines (LF or CRLF) under the four-column header; prose may surround it and any later
+    pipe line refuses. A host binding is `manual` or PREFIX and 64 lowercase hex digits."""
+    lines=[];ended=False;raw=text.split('\n')
+    for index,line in enumerate(raw):
+        if index<len(raw)-1 and line.endswith('\r'):line=line[:-1]
+        if '|' not in line:
+            ended=ended or bool(lines);continue
+        need(not ended,'surface_table_invalid',SURFACES)
+        # A line of a table within 65536 bytes is within the parser's line limit.
+        need(not any(_among(c,UNSAFE_TEXT) for c in line),'unsafe_unicode',SURFACES)
+        need('\u2028' not in line and '\u2029' not in line,'surface_table_invalid',SURFACES)
+        clean=_trim(line)
+        need(line.startswith('|') and clean.endswith('|'),'surface_table_invalid',SURFACES)
+        cells=[_trim(part) for part in clean[1:-1].split('|')]
+        need(len(cells)==4,'surface_table_invalid',SURFACES);lines.append(cells)
+    need(len(lines)>=2 and lines[0]==['Surface','Role','Read scope','Host binding'] and all(re.fullmatch(r':?-{3,}:?',c) for c in lines[1]),'surface_table_invalid',SURFACES)
+    need(len(lines)-2<=256,'surface_row_limit',SURFACES)
+    def cell(value):
+        # One inline-code wrapping is syntax; the value inside stays exact.
+        if value.startswith('`') or value.endswith('`'):
+            need(len(value)>=2 and value[0]==value[-1]=='`' and '`' not in value[1:-1],'surface_table_invalid',SURFACES);return value[1:-1]
+        need('`' not in value,'surface_table_invalid',SURFACES);return value
+    rows=[];names=set();bindings=set()
+    for raw_name,raw_role,raw_scope,raw_binding in lines[2:]:
+        name,role,binding=cell(raw_name),cell(raw_role),cell(raw_binding)
+        # A role is its name or title, any case, without White_Space; the ledger's retired name maps to its successor.
+        key=''.join(c for c in role if not _among(c,WHITE_SPACE)).lower();key='auxiliary' if key=='external' else key
+        row=next((r for r in ROLE_TABLE if r['cls']=='session' and key in (r['name'].lower(),r['title'].replace(' ','').lower())),None)
+        need(SURFACE_NAME.fullmatch(name) is not None and name not in names,'surface_table_invalid',SURFACES)
+        need(row is not None and (row['name'] in DECLARABLE or row['name']=='Main'),'surface_table_invalid',SURFACES)
+        if raw_scope=='project':
+            need(row['serves']=='User','surface_scope_required',SURFACES);scope='project'
+        else:
+            parts=raw_scope.split(',');need(1<=len(parts)<=64,'surface_scope_limit',SURFACES);scope=[]
+            for part in parts:
+                folder=cell(_trim(part));folder=folder[:-1] if folder.endswith('/') else folder
+                need(folder==_trim(folder) and FOLDER_NAME.fullmatch(folder) is not None,'surface_table_invalid',SURFACES)
+                need(folder not in scope,'surface_scope_duplicate',SURFACES);scope.append(folder)
+            scope=tuple(scope)
+        need(binding=='manual' or re.fullmatch(re.escape(prefix)+'[0-9a-f]{64}',binding) is not None,'surface_binding_invalid',SURFACES)
+        need(row['name']!='Main' or binding!='manual','main_binding_required',SURFACES)
+        if binding!='manual':
+            need(binding not in bindings,'surface_binding_duplicate',SURFACES);bindings.add(binding)
+        rows.append((name,row['name'],scope,binding));names.add(name)
+    return rows
 
 def role_named(value):
     """The session row a declaration or AXIS_ROLE names (name or title, any case; the ledger's retired name maps to its successor), else None."""
@@ -803,7 +934,14 @@ class Session(Startup):
         need(kind in ('INTENT','STATUS','ASK','REPLY','DONE'),'tracking_type')
         need(isinstance(scope,str) and 0<len(scope)<=1024 and not any(c in scope for c in '\r\n[]'),'tracking_scope')
         need(isinstance(text,str) and bool(text.strip()) and len(text.encode())<=4096 and not any(ord(c)<32 for c in text),'tracking_text')
+        if kind=='REPLY':
+            pair=re.fullmatch(r're:(\S+) (\S+)',scope);need(pair is not None and scope.isascii(),'tracking_reply_scope')
+            for part in pair.groups():
+                try:parse_stamp(part)
+                except Fault:raise Fault('tracking_reply_scope') from None
         self.guard();relative='_Axis/Tracking/'+self.sid+'.md'
+        if kind=='DONE' and self.lease[0].startswith(SPAWNED_PREFIXES):
+            pending=self.unanswered_asks();need(not pending,'tracking_unanswered_ask',' | '.join(pending))
         path=self.path(relative,missing=True)
         fd=os.open(path,os.O_RDWR|os.O_APPEND|os.O_CREAT|os.O_NOFOLLOW,0o644)
         try:
@@ -817,6 +955,20 @@ class Session(Startup):
             self.guard()
             return {'status':'appended','path':relative,'timestamp':now,'type':kind}
         finally:os.close(fd)
+
+    def unanswered_asks(self):
+        """IDs of ASK lines addressed to this session by a live sender with no REPLY in this session's own file."""
+        mine=self.read('_Axis/Tracking/'+self.sid+'.md',optional=True,limit=16777216) or ''
+        answered=set(re.findall(r'^\S+ - '+re.escape(self.sid)+r' - REPLY \[re:(\S+ \S+)\]',mine,re.M));pending=[]
+        for entry in sorted(os.listdir(self.path('_Axis/Tracking',kind='directory'))):
+            sender=entry[:-3]
+            if not entry.endswith('.md') or sender==self.sid or not ID.fullmatch(sender):continue
+            marker='_Axis/Agents/'+sender+'.md'
+            if self.exists('_Axis/Agents/'+sender+'.kill') or not self.exists(marker) or time.time()-self.path(marker).stat().st_mtime>=3600:continue
+            text=self.read('_Axis/Tracking/'+entry,optional=True,limit=16777216) or ''
+            for ts in re.findall(r'^(\S+) - '+re.escape(sender)+r' - ASK \[to:'+re.escape(self.sid)+r'\] ',text,re.M):
+                if ts+' '+sender not in answered:pending.append(ts+' '+sender)
+        return pending
 
     def memo(self, subject, content):
         need(isinstance(subject,str) and 0<len(subject)<=80 and subject.strip()==subject and not subject.endswith('.')
@@ -857,9 +1009,16 @@ class Admission(Startup):
         self.merge_access()
 
     def surfaces(self):
-        """The User's surface table: {surface: (role row, read scope)}; a missing table has no rows."""
-        text=self.read(SURFACES,optional=True,limit=65536)
+        """The User's surface table: {surface: (role row, read scope)}; a missing table has no rows. An explicit
+        `surface-schema: 2` table goes to strict_surfaces(); a malformed or unsupported marker refuses, never schema 1."""
+        text=self.read(SURFACES,optional=True,limit=65536);self.bound=set()
         if text is None:return {}
+        try:
+            # A reader failure that is not one of its own refusals is still a stated refusal, never a traceback.
+            prefix=surface_parser()
+            if surface_schema(text)==2:return self.strict_surfaces(strict_table(text,prefix))
+        except Fault:raise
+        except Exception:raise Fault('surface_parser',SURFACES) from None
         rows={};header=None
         for line in text.splitlines():
             if not line.startswith('|'):continue
@@ -877,6 +1036,19 @@ class Admission(Startup):
             need(folders is not None or row['serves']=='User','surface_scope_required',SURFACES)
             rows[name.strip('`')]=(row,folders)
         need(header is not None or not rows,'surface_table_invalid',SURFACES)
+        return rows
+
+    def strict_surfaces(self, table):
+        """Schema-2 rows in the schema-1 shape. A `manual` row is an ordinary row. A host-bound row needs a verified host
+        declaration, which no host supplies yet: it goes to self.bound, which admit() refuses, and is never returned."""
+        rows={}
+        for surface,role,scope,binding in table:
+            row=role_named(role);folders=None if scope=='project' else tuple(scope)
+            need(row is not None and row['name']==role,'surface_table_invalid',SURFACES)
+            if binding!='manual':self.bound.add(surface);continue
+            need(row['name'] in DECLARABLE and all(not f.startswith(('_','.')) for f in folders or ()),'surface_table_invalid',SURFACES)
+            need(folders is not None or row['serves']=='User','surface_scope_required',SURFACES)
+            rows[surface]=(row,folders)
         return rows
 
     def update_waiting(self):
@@ -898,6 +1070,9 @@ class Admission(Startup):
         need(row is not None and row['name'] in DECLARABLE,'role_not_declarable',str(role))
         declared=declared_role()
         need(declared is None or declared is row,'declared_role_mismatch','AXIS_ROLE')
+        # The guardrails hook reads the launcher's AXIS_SURFACE; when it is set, it must name this declaration's surface.
+        launched=os.environ.get('AXIS_SURFACE')
+        need(launched is None or launched.strip()==surface,'declared_surface_mismatch','AXIS_SURFACE')
         need(isinstance(host,str) and host.strip()==host and 0<len(host)<=120 and all(ord(c)>=32 for c in host),'host')
         self.merge_access();scope=None
         # No declared role, an Observer included, is admitted while an update waits for adoption or a project file is still in _Axis/: a Main starts first.
@@ -908,6 +1083,8 @@ class Admission(Startup):
             legacy=legacy_channel and row['name']=='Auxiliary'
             need((legacy and surface is None) or (isinstance(surface,str) and SURFACE_NAME.fullmatch(surface) is not None),'surface_name',str(surface))
             table=self.surfaces()
+            # A host-bound row is refused before the legacy channel exception: no verified host declaration exists yet.
+            need(surface not in self.bound,'surface_unverified',SURFACES)
             if surface in table:
                 need(table[surface][0] is row,'surface_mismatch',SURFACES);scope=table[surface][1]
             else:need(legacy,'surface_missing',SURFACES)
@@ -915,6 +1092,9 @@ class Admission(Startup):
             need(cause=='live-main' and row['name']=='Auxiliary' and surface is None,'cause',str(cause))
             # The claim steps down for a fresh Main, a recently active idle one, or the User's choice to join beside an idle one.
             need(bool(self.foreign_mains() or self.idle_mains()),'no_live_main','_Axis/Agents')
+        # The guardrails hook reads only inside both the launcher's AXIS_READ_SCOPE and the live row; when it is set, it must name exactly this row's folders.
+        pinned=os.environ.get('AXIS_READ_SCOPE')
+        need(pinned is None or (scope is not None and sorted(f.strip() for f in pinned.split(','))==sorted(scope)),'declared_scope_mismatch','AXIS_READ_SCOPE')
         out={'role':row['name'],'title':row['title'],'surface':surface,'cause':cause,'read_scope':'project' if scope is None else list(scope),'role_file':'_Axis/Roles/'+row['name']+'.md'}
         if row['created_by']=='none':return dict(out,status='observer',writes=False)
         candidate=initial or stamp();parse_stamp(candidate)

@@ -29,6 +29,26 @@ ANCHORS = ('AGENTS.md', 'CLAUDE.md', 'GEMINI.md', '_Axis/MANIFEST.md',
 BRIEFS = ('_Config/PROJECT.md', '_Axis/PROJECT.md')
 MANUAL = 'Open the exact project root in a separate agent session and follow its entry file; retain results in Axis records.'
 
+# A Claude child start approves one Bash command without asking: the exact boot command its start
+# text names. boot.py with any other arguments (such as --take-over) and every turn.py call would
+# need approval, and --permission-prompts none refuses whatever would ask. Only Bash, Read, Glob and
+# Grep exist; cd, Agent, Task, WebFetch and WebSearch are denied; no MCP server loads. Claude Code
+# still approves its own read-only file reads and read-only commands without asking, and the User's
+# own Claude settings, hooks and plugins still apply.
+CLAUDE_TOOLS = 'Bash,Read,Glob,Grep'
+CLAUDE_DENY = 'Agent,Task,WebFetch,WebSearch,Bash(cd:*)'
+NO_MCP = ('--strict-mcp-config', '--mcp-config', '{"mcpServers": {}}')
+
+
+def claude_admission(model):
+    """The Claude child's exact boot command, its start text, and the flags that approve only that command."""
+    boot = 'python3 _Axis/Resources/boot.py --host "Claude Code" --model "' + model + '" --harness claude-code --spawn no --parallel no'
+    text = ('Read and follow AGENTS.md in this exact project root. Perform normal Axis session startup; its boot command is exactly `'
+            + boot + '`. Stop after the Ready greeting; do not execute queued work.')
+    flags = ['--permission-mode', 'manual', '--permission-prompts', 'none', '--tools', CLAUDE_TOOLS,
+             '--allowedTools', 'Bash(' + boot + ')', '--disallowedTools', CLAUDE_DENY, *NO_MCP]
+    return boot, text, flags
+
 
 def load_core():
     path = Path(__file__).with_name('coordination.py')
@@ -230,7 +250,8 @@ def probe(adapter, executable=None, timeout=5):
         else:
             help_text = outputs['--help']
             syntax = tuple(op for op, okay in (
-                ('start', all(s in help_text for s in ('--print', '--output-format', '--model', '--session-id', '--permission-mode', 'manual', 'json'))),
+                ('start', all(s in help_text for s in ('--print', '--output-format', '--model', '--session-id', '--permission-mode', 'manual', 'json',
+                                                     '--permission-prompts', '--tools', '--allowedTools', '--disallowedTools', '--strict-mcp-config', '--mcp-config'))),
                 ('resume', all(s in help_text for s in ('--resume', '--print', '--output-format', '--model')))) if okay)
         return Probe(adapter, str(path), before, version,
                      {k: hashlib.sha256(v.encode()).hexdigest() for k, v in outputs.items()},
@@ -240,15 +261,17 @@ def probe(adapter, executable=None, timeout=5):
 
 
 def lease_state(project, session):
-    """Read only: never renew, synthesize or repair a lease."""
+    """Read only: never renew, synthesize or repair a lease. A tombstone fences its session, Marker or not."""
     try:
         if not SID.fullmatch(session):
             return 'unknown'
         store = project.validate()
-        marker = store.path('_Axis/Agents/' + session + '.md')
         killed = store.root / '_Axis/Agents' / (session + '.kill')
         if killed.exists() or killed.is_symlink():
             return 'fenced'
+        if not os.path.lexists(store.root / '_Axis/Agents' / (session + '.md')):
+            return 'unknown'
+        marker = store.path('_Axis/Agents/' + session + '.md')
         lines = marker.read_text().splitlines()
         if len(lines) != 4 or lines[:3] != ['Main: session', '', 'session: ' + session] or not lines[3].startswith('host: ') or not lines[3][6:].strip():
             return 'unknown'
@@ -341,18 +364,20 @@ class Adapter:
                 raise ValueError('an exact model name is required')
             if 'start' not in self.probe.syntax or not self._same_executable():
                 return CapabilityResult('start', 'unavailable', 'installed CLI start syntax is unverified')
-            # Never quietly create a second session when a Main may already exist.
+            # Never quietly create a second session when a Main may already exist, live or idle: the
+            # boot of a child that still holds an idle Main could ask to take that session over.
             agents = target.root / '_Axis/Agents'
             for marker in agents.glob('*.md'):
                 if marker.is_symlink():
                     raise ValueError('unsafe session marker')
-                if marker.read_text().splitlines()[:1] == ['Main: session'] and time.time() - marker.stat().st_mtime < 3600 and not marker.with_suffix('.kill').exists():
-                    raise ValueError('target has a live Main; inspect its exact binding')
+                if marker.read_text().splitlines()[:1] == ['Main: session'] and not marker.with_suffix('.kill').exists():
+                    raise ValueError('target holds a Main Marker without a tombstone; inspect it or give the manual fallback')
             prompt = 'Read and follow AGENTS.md in this exact project root. Perform normal Axis session startup. Stop after the Ready greeting; do not execute queued work.'
             if self.probe.adapter == 'codex':
                 argv = [self.probe.executable, 'exec', '--json', '--model', model, '--sandbox', 'workspace-write', '--cd', project.root, '-']
             else:
-                argv = [self.probe.executable, '--print', '--output-format', 'json', '--model', model, '--permission-mode', 'manual', '--session-id', str(uuid.uuid4())]
+                _, prompt, flags = claude_admission(model)
+                argv = [self.probe.executable, '--print', '--output-format', 'json', '--model', model, *flags, '--session-id', str(uuid.uuid4())]
             store.guard()
             return CapabilityResult('start', 'unverified', 'startup plan prepared; auth, included allowance and runtime handoff require verification before execution',
                                     {'model': model, 'argv': argv, 'stdin': prompt, 'cwd': project.root, 'project': project.project, 'authority': checked, 'residency': residency,

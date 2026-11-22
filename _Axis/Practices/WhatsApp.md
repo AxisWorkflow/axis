@@ -3,6 +3,8 @@
 
 Where these steps describe live configuration writes, the fallback owner, per-account gates, onboarding defaults or the group declaration, they follow OpenClaw's documentation and are untested on an installed OpenClaw.
 
+Run this Practice only for explicit channel installation, migration or qualification. Every procedure below sets up a legacy profile, with the limits stated in [Practices > OpenClaw]. Strict per-chat WhatsApp service is unavailable in this release ([Practices > OpenClaw > Strict chat gate]): do not use these steps to set up a strict route or as a fallback after a strict failure. A strict route would find chat and sender identifiers only through a read-only host route or a separately approved isolated sink, never by opening unknown-group traffic into a project agent, and would never prewarm a group as Main or count an identity-free probe as success.
+
 ## Enable WhatsApp
 > **Purpose:** Enable the WhatsApp channel in the selected Axis OpenClaw profile. Run this section once per profile - if WhatsApp is already enabled there, SKIP its linking steps.
 

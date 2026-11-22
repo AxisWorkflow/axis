@@ -8,6 +8,10 @@
 // after the axis-role block, at most 8,000 characters, as the axis launcher caps it) to the system prompt, so it
 // survives compaction. A sub-agent run (a session key with :subagent: or :acp:), a run without a session key, an
 // unlisted agent and a missing role file get nothing.
+// Strict chat gate (optional `chatPolicy`, strict-chat.ts, loaded only when that key is present): absent, nothing below
+// changes. Present, its managed agents and any hook without an agent ID get no service: before_agent_run blocks the
+// model run and before_tool_call every tool, on the carriers that call those hooks (some skip the run hook), and
+// before_prompt_build adds nothing; an invalid chatPolicy, unreadable legacy list or failed load refuses every agent.
 import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
 import { spawnSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
@@ -19,6 +23,9 @@ const SECRETS = "_Axis/Secrets";
 const ROLE_GUIDANCE_LIMIT = 8000;
 const SUBAGENT_SESSION = /:(subagent|acp):/;
 type PromptContext = { appendSystemContext?: string };
+const STRICT_LOAD = "Axis strict chat gate: the strict branch did not load, so this call is refused.";
+const strictKey = (config: unknown): boolean => typeof config === "object" && config !== null && Object.hasOwn(config, "chatPolicy");
+const loadStrict = (config: unknown, guarded: { listed: Set<string> }[]) => strictKey(config) ? import("./strict-chat.ts").then((m) => m.strictBranch(config, new Set<string>(guarded.flatMap((g) => [...g.listed])))) : null;
 
 type Guard = { agents: (api: any) => Set<string>; spawn: string | null; secrets: string; args: (tool: string, path: string) => string[] };
 // BEGIN GENERATED: role-table
@@ -31,6 +38,10 @@ const GUARDED: Guard[] = [
   { agents: (api: any) => new Set<string>(((api as any).pluginConfig?.observerAgents as string[]) ?? []), spawn: "Axis guardrail: an Observer never spawns agents or sessions.", secrets: "Axis guardrail: an Observer never uses _Axis/Secrets/.", args: (tool: string, path: string) => ["--role", "observer", tool, path] },
 ];
 // END GENERATED: role-table
+// Under chatPolicy a legacy list that cannot be read counts as empty, so the hooks below still register and refuse
+// every agent (the strict branch finds that list invalid); without the key, or with readable lists, this is GUARDED.
+const strictGuarded = (api: any): Guard[] => !strictKey(api?.pluginConfig) || GUARDED.every((g) => { try { g.agents(api); return true; } catch { return false; } }) ? GUARDED :
+  GUARDED.map((g) => ({ ...g, agents: (x: any) => { try { return g.agents(x); } catch { return new Set<string>(); } } }));
 
 function projectRoot(path: string): string | null {
   let dir = dirname(path);
@@ -96,8 +107,9 @@ export default definePluginEntry({
   name: "Axis Guardrails",
   description: DESCRIPTION,
   register(api) {
+    const GUARDED = strictGuarded(api);
     const guarded = GUARDED.map((g) => ({ ...g, listed: g.agents(api) }));
-    api.on("before_tool_call", (event: any, ctx: any) => {
+    const legacyTool = (event: any, ctx: any): any => {
       const role = guarded.find((g) => g.listed.has(ctx?.agentId));
       if (!role) return {};
       const tool = String(event?.toolName ?? "");
@@ -112,14 +124,25 @@ export default definePluginEntry({
         if (r.status === 2) return { block: true, blockReason: (r.stdout || r.stderr || "Axis guardrail refused this call.").trim() };
       }
       return {};
+    };
+    const strict = loadStrict((api as any).pluginConfig, guarded);
+    strict?.catch(() => undefined); // a failed strict load is answered by each hook below, never left as an unhandled rejection
+    api.on("before_tool_call", (event: any, ctx: any) => {
+      if (strict) return strict.then((b) => b.tool(event, ctx, () => legacyTool(event, ctx))).catch(() => ({ block: true, blockReason: STRICT_LOAD }));
+      return legacyTool(event, ctx);
     });
     const root = pluginProject();
     const listed = (agentId: string): string | null => {
       const g = guarded.find((x) => x.listed.has(agentId));
       return g ? roleName(g) : null;
     };
-    api.on("before_prompt_build", (event: any, ctx: any): PromptContext => {
+    const legacyPrompt = (event: any, ctx: any): PromptContext => {
       try { return roleContext(listed, event, ctx, root); } catch { return {}; }
+    };
+    api.on("before_prompt_build", (event: any, ctx: any): PromptContext | Promise<PromptContext> => {
+      if (strict) return strict.then((b) => b.prompt(ctx, () => legacyPrompt(event, ctx))).catch(() => ({}));
+      return legacyPrompt(event, ctx);
     });
+    if (strict) api.on("before_agent_run", (event: any, ctx: any) => strict.then((b) => b.run(event, ctx)).catch(() => ({ outcome: "block", reason: STRICT_LOAD })));
   },
 });

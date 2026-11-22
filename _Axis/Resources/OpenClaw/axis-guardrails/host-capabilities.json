@@ -1,0 +1,1004 @@
+{
+ "schema": "axis.openclaw-host-capabilities/v1",
+ "about": "Strict chat admission capability of named OpenClaw builds, from static source review. Data only: it grants nothing, every carrier is unavailable for strict admission, and no value it can hold makes a strict route available. A build or carrier it does not name is unavailable.",
+ "predicates": {
+  "H1": "Physical transcript owned by its original audience before restore or model access",
+  "H2": "Complete required role guidance in the actual final model prompt",
+  "H3": "Required-guard latch across boot, reload and removal, activated only from a stopped, verified profile",
+  "H4": "Host-authenticated final effect plus an independent Axis lease check",
+  "H5": "Immutable v2 source origin metadata",
+  "tool-requester": "The host carries the exact current requester into every tool call"
+ },
+ "statuses": {
+  "denied": "Reviewed source shows the predicate absent",
+  "partial": "A primitive is present but does not meet the predicate alone",
+  "unavailable": "The predicate is not established; it counts as absent",
+  "met": "The predicate is established; strict admission still stays unavailable"
+ },
+ "evidence": [
+  {
+   "name": "installed OpenClaw carrier source review",
+   "sha256": "903f57f4134efaaa8f06774fdccc241f2f127b0b2e05762f8eb851777b49f5e7"
+  },
+  {
+   "name": "installed carrier source manifest",
+   "sha256": "381f1115fa8e74cd06c00fa4ae20a0734202d3060f554dfeeadf497955b9516b"
+  },
+  {
+   "name": "selected H1-H5 corrections",
+   "sha256": "6f38936d66e93d6bfec14ff2548a2b29c607f2251720b7c55d15279e8c9a8ae6"
+  }
+ ],
+ "builds": [
+  {
+   "package": "openclaw",
+   "version": "2026.10.2",
+   "pins": [
+    {
+     "path": "dist/active-sessions-shutdown-tracker-DQnXfTmA.mjs",
+     "bytes": 6936,
+     "sha256": "41d5cab55612560ba01de5473c276f93a99bb2003bc15c067582b1023746afc9"
+    },
+    {
+     "path": "dist/admission-evidence-D2DaumE3.mjs",
+     "bytes": 26770,
+     "sha256": "014205bf7892966eb62c356396e295f4386be4ac287503a5d3d3226e15b357e9"
+    },
+    {
+     "path": "dist/agent-tools-D4brJvKK.mjs",
+     "bytes": 40545,
+     "sha256": "702a64e9c5372272a62c1ae8baf830e08ce653a47f9638722b15f8112a7ef3c6"
+    },
+    {
+     "path": "dist/agent-tools.before-tool-call-DG_c7plZ.mjs",
+     "bytes": 155460,
+     "sha256": "ace2ea38117f5735bde3456415b30529e5bd0fb38b37b00987ed39e61f1f4cdb"
+    },
+    {
+     "path": "dist/before-agent-run-qJi2gUoT.mjs",
+     "bytes": 1156,
+     "sha256": "22bfbc1b29cee38bc3fd0722a803a2af33821b5a4db0c84f492e5b768bc2d958"
+    },
+    {
+     "path": "dist/builtin-openclaw-DkEpBBN1.mjs",
+     "bytes": 960234,
+     "sha256": "73da149c1c59aa7ae12484f16d331f430d258e80d0995f165bb86c8c74ba8775"
+    },
+    {
+     "path": "dist/cli-runner-Uu8jQ43H.mjs",
+     "bytes": 60032,
+     "sha256": "3a27b5cd82d6cc9212ab1bb8256128d017fc1157848b26ef5e2623360f9f9da8"
+    },
+    {
+     "path": "dist/context-ChHCb4LC.mjs",
+     "bytes": 11781,
+     "sha256": "8757545552074cca1784cd1fc7be49fd9cedc7ddcd5c088974abd2365ee4be73"
+    },
+    {
+     "path": "dist/get-reply-CtePPkmr.mjs",
+     "bytes": 289656,
+     "sha256": "114bd5216aad45a00a49909afcff127ace2f9d287890fe8c4ead885453526f8c"
+    },
+    {
+     "path": "dist/hook-agent-context-Bx9S6KFK.mjs",
+     "bytes": 3905,
+     "sha256": "7f2a3f5080a409709a37a447317b752b23d881a6de9ab8aa7fd5313c9c2d8608"
+    },
+    {
+     "path": "dist/hooks-YoifYPsl.mjs",
+     "bytes": 44964,
+     "sha256": "21896813c5477fb707592d3d641f02007cd40b8269b15049296075640aaf5c9a"
+    },
+    {
+     "path": "dist/host-context-builder-BceE-hym.mjs",
+     "bytes": 7595,
+     "sha256": "8c60cb436c0aeb2b9d8a4a1817c19f6a0601040ee23cad82d7e027445c3c21cf"
+    },
+    {
+     "path": "dist/loader-runtime-load-D_AISpL-.mjs",
+     "bytes": 115931,
+     "sha256": "3b1be552336614d7da9ddfbb8e9fa9026d7d5c4650a9c1e91354e21754012c9e"
+    },
+    {
+     "path": "dist/loader-shared-D7NVQNu-.mjs",
+     "bytes": 24470,
+     "sha256": "2e8eb83575009ffb3ce5920bf4b35bf76cfb0518357fc281386afeed88f00817"
+    },
+    {
+     "path": "dist/mcp-http-Nr5qKpiO.mjs",
+     "bytes": 27767,
+     "sha256": "46e270234931532532bac2b3647d230b3e1da3c08fe14d374337c7c2a5ee6deb"
+    },
+    {
+     "path": "dist/mcp-http.handlers-BKRuvOwo.mjs",
+     "bytes": 6944,
+     "sha256": "5ae10f944ead4e1ccb862fc85db946480825ae58ba68818af2174841fe896a97"
+    },
+    {
+     "path": "dist/native-hook-relay-CaKdpUk2.mjs",
+     "bytes": 73811,
+     "sha256": "a93ebc704e519d26bb23ac0a71d837cf7e48b7ab7b2403c1cbe24258c0e8868e"
+    },
+    {
+     "path": "dist/openclaw-tools-Dxfbrtff.mjs",
+     "bytes": 804590,
+     "sha256": "181c5f9673480fbdacfa3ff88ae83686d8d1cb6402f583c3546d87b6e468d53e"
+    },
+    {
+     "path": "dist/registry-854ZO8XT.mjs",
+     "bytes": 162881,
+     "sha256": "a58dcbbccc89c552e2d7679c485db4dd43d9c49d76f03443697f7c745b1907a1"
+    },
+    {
+     "path": "dist/server-plugins-D4RrxFnG.mjs",
+     "bytes": 35892,
+     "sha256": "27915cd95c10da1a7856205d99bfc77d9fe80708ff8035027f4fc9f3af95e81f"
+    },
+    {
+     "path": "dist/session-accessor.sqlite-entry-store-BY8lXVwl.mjs",
+     "bytes": 115801,
+     "sha256": "d66fb253e6f6bc228f42498c9817ca5a6d1c8ad3ec006380427075f7867dd524"
+    },
+    {
+     "path": "dist/session-accessor.transcript-target-DfVfyfX2.mjs",
+     "bytes": 4787,
+     "sha256": "ce5fc12d4022163108d5b540b1048c84e8568f4abf6799634205bab1d0b6e8e2"
+    },
+    {
+     "path": "dist/session-history-Bi5GzOFg.mjs",
+     "bytes": 36210,
+     "sha256": "41073d3babfad3a756a5ab4cfdb6d3e10ec3f54c34ea11838ef32f509407b722"
+    },
+    {
+     "path": "dist/session-prompt-state-CqyMzQqd.mjs",
+     "bytes": 15072,
+     "sha256": "99f6d6596010273367d992398ba7090fabd3041d5fe5ce15922524d178cb4c94"
+    },
+    {
+     "path": "dist/settled-turn-finalization-result-BO3P1zr_.mjs",
+     "bytes": 22489,
+     "sha256": "d9cd5b305e6db8052cc7d950b2e8d2b6ba8f4c4a2c1d84c62a1a60d1f133ceb7"
+    },
+    {
+     "path": "dist/tools-D5puytej.mjs",
+     "bytes": 27975,
+     "sha256": "488024743b30cebd05b7daf7a92f6ec124003bd1be4f6ea93c4faf267297b5c6"
+    },
+    {
+     "path": "dist/tools-invoke-shared-CAj0VQm9.mjs",
+     "bytes": 14326,
+     "sha256": "93249626041d20eba021fe5dd3e62e5db5684924c3964997c9e1dc48df960a48"
+    },
+    {
+     "path": "dist/worker-turn-execution-DXa02Kut.mjs",
+     "bytes": 63071,
+     "sha256": "57c999c28a5f24df33fa23de8a63d1d71f597e5545387255f5a5d809f2a1cce8"
+    },
+    {
+     "path": "docs/gateway/multiple-gateways.md",
+     "bytes": 6638,
+     "sha256": "b33e3587be2c839124a7dc78bbe5afbe90190d788ae3e77c448a6665abccb233"
+    },
+    {
+     "path": "package.json",
+     "bytes": 148559,
+     "sha256": "70ccefa13b0b997638a6faa1d427e964943d44e653851c25fc92a32a2b437271"
+    }
+   ],
+   "excluded": [
+    {
+     "path": "dist/agent-harness-runtime-BSwzyvzj.d.ts",
+     "bytes": 1555783,
+     "sha256": "db3f3f51512a23e2ce1f1a2c689ebbf1e7a897a7d5af03da9b2dc4f362973776",
+     "reason": "declaration over 1 MB; never opened by the check, size compared only"
+    },
+    {
+     "path": "dist/agent-harness-runtime-kXFWH-b2.d.ts",
+     "bytes": 2304279,
+     "sha256": "c14946a39ab4ee67a3ba2a6d10a837e699a57aac0175e606ae7f656a74c19018",
+     "reason": "declaration over 1 MB; never opened by the check, size compared only"
+    }
+   ],
+   "checks": {
+    "h1-origin-merge": {
+     "path": "dist/session-accessor.sqlite-entry-store-BY8lXVwl.mjs",
+     "lines": [
+      82,
+      108
+     ],
+     "present": [
+      "const mergeSessionOrigin",
+      "delete merged\\.accountId",
+      "mergeField\\(field, next\\?\\.\\[field\\]\\)"
+     ],
+     "absent": []
+    },
+    "h1-physical-store": {
+     "path": "dist/session-accessor.transcript-target-DfVfyfX2.mjs",
+     "lines": [
+      102,
+      105
+     ],
+     "present": [
+      "function resolveSessionTranscriptDatabasePath"
+     ],
+     "absent": []
+    },
+    "h1-primary-demotion": {
+     "path": "dist/session-accessor.sqlite-entry-store-BY8lXVwl.mjs",
+     "lines": [
+      475,
+      498
+     ],
+     "present": [
+      "conversation\\.role === \"primary\"",
+      "role: \"related\"",
+      "deleteFrom\\(\"session_conversations\"\\)"
+     ],
+     "absent": []
+    },
+    "h1-session-start-detached": {
+     "path": "dist/active-sessions-shutdown-tracker-DQnXfTmA.mjs",
+     "lines": [
+      119,
+      123
+     ],
+     "present": [
+      "runWithGatewayDetachedWorkContinuation\\(",
+      "\\.catch\\(\\(\\) => \\{\\}\\)"
+     ],
+     "absent": []
+    },
+    "h1-session-start-first-turn": {
+     "path": "dist/get-reply-CtePPkmr.mjs",
+     "lines": [
+      5501,
+      5506
+     ],
+     "present": [
+      "hasHooks\\(\"session_start\"\\)\\) emitReplySessionStartHook\\(",
+      "resumedFrom: previousSessionEntry\\?\\.sessionId"
+     ],
+     "absent": [
+      "\\bawait\\b"
+     ]
+    },
+    "h1-session-start-payload": {
+     "path": "dist/active-sessions-shutdown-tracker-DQnXfTmA.mjs",
+     "lines": [
+      109,
+      118
+     ],
+     "present": [
+      "function buildSessionStartHookPayload",
+      "sessionKey: params\\.sessionKey",
+      "resumedFrom: params\\.resumedFrom"
+     ],
+     "absent": [
+      "\\b(?:channel|channelId|accountId|senderId|chatId|audience|origin)\\b"
+     ]
+    },
+    "h2-cli-gate": {
+     "path": "dist/cli-runner-Uu8jQ43H.mjs",
+     "lines": [
+      1340,
+      1352
+     ],
+     "present": [
+      "runBeforeAgentRunGate\\(hookRunner",
+      "systemPrompt: context\\.systemPrompt"
+     ],
+     "absent": []
+    },
+    "h2-cli-recovery": {
+     "path": "dist/session-history-Bi5GzOFg.mjs",
+     "lines": [
+      407,
+      444
+     ],
+     "present": [
+      "async function runCliRecovery",
+      "executeAttempt\\(retryableSessionId"
+     ],
+     "absent": [
+      "runBeforeAgentRunGate"
+     ]
+    },
+    "h2-embedded-dispatch-refresh": {
+     "path": "dist/builtin-openclaw-DkEpBBN1.mjs",
+     "lines": [
+      7433,
+      7453
+     ],
+     "present": [
+      "prepareToolPrompt",
+      "setActiveSessionSystemPrompt\\(refreshedPrompt\\)"
+     ],
+     "absent": []
+    },
+    "h2-embedded-gate": {
+     "path": "dist/builtin-openclaw-DkEpBBN1.mjs",
+     "lines": [
+      5281,
+      5290
+     ],
+     "present": [
+      "runBeforeAgentRunGate\\(input\\.hookRunner",
+      "systemPrompt: input\\.systemPrompt"
+     ],
+     "absent": []
+    },
+    "h2-embedded-settled-skip": {
+     "path": "dist/builtin-openclaw-DkEpBBN1.mjs",
+     "lines": [
+      7266,
+      7266
+     ],
+     "present": [
+      "attempt\\.operation === \"settled-tool-finalization\" \\? void 0 :"
+     ],
+     "absent": []
+    },
+    "h2-gate-fail-closed": {
+     "path": "dist/hooks-YoifYPsl.mjs",
+     "lines": [
+      404,
+      406
+     ],
+     "present": [
+      "before_agent_run: \"fail-closed\""
+     ],
+     "absent": []
+    },
+    "h2-prompt-refresh-sections": {
+     "path": "dist/session-prompt-state-CqyMzQqd.mjs",
+     "lines": [
+      52,
+      63
+     ],
+     "present": [
+      "refreshSystemPrompt:",
+      "ATTEMPT_PROMPT_SECTION"
+     ],
+     "absent": []
+    },
+    "h2-worker-gate-no-prompt": {
+     "path": "dist/worker-turn-execution-DXa02Kut.mjs",
+     "lines": [
+      857,
+      864
+     ],
+     "present": [
+      "runBeforeAgentRunGate\\(runner",
+      "prompt: turn\\.prompt"
+     ],
+     "absent": [
+      "systemPrompt"
+     ]
+    },
+    "h3-conditional-throw": {
+     "path": "dist/loader-shared-D7NVQNu-.mjs",
+     "lines": [
+      433,
+      434
+     ],
+     "present": [
+      "function maybeThrowOnPluginLoadError",
+      "if \\(!throwOnLoadError\\) return;"
+     ],
+     "absent": []
+    },
+    "h3-invalid-config-returns": {
+     "path": "dist/loader-runtime-load-D_AISpL-.mjs",
+     "lines": [
+      894,
+      898
+     ],
+     "present": [
+      "prepareRuntimePluginConfig\\(params\\)",
+      "pushPluginLoadError\\(",
+      "return;"
+     ],
+     "absent": [
+      "\\bthrow\\b"
+     ]
+    },
+    "h3-no-hook-no-block": {
+     "path": "dist/before-agent-run-qJi2gUoT.mjs",
+     "lines": [
+      4,
+      4
+     ],
+     "present": [
+      "if \\(!runner\\?\\.hasHooks\\(\"before_agent_run\"\\)\\) return;"
+     ],
+     "absent": []
+    },
+    "h3-profile-staging-doc": {
+     "path": "docs/gateway/multiple-gateways.md",
+     "lines": [
+      85,
+      102
+     ],
+     "present": [
+      "OPENCLAW_CONFIG_PATH",
+      "OPENCLAW_STATE_DIR"
+     ],
+     "absent": []
+    },
+    "h3-replacement-only-throw": {
+     "path": "dist/server-plugins-D4RrxFnG.mjs",
+     "lines": [
+      661,
+      661
+     ],
+     "present": [
+      "throwOnLoadError: params\\.loadIntent === \"replacement\""
+     ],
+     "absent": []
+    },
+    "h4-callback-before-after": {
+     "path": "dist/tools-D5puytej.mjs",
+     "lines": [
+      103,
+      112
+     ],
+     "present": [
+      "assertInvocationCurrent\\?\\.\\(\\);",
+      "\\.then\\(\\(value\\) => \\{"
+     ],
+     "absent": []
+    },
+    "h4-factory-context": {
+     "path": "dist/openclaw-tools-Dxfbrtff.mjs",
+     "lines": [
+      549,
+      583
+     ],
+     "present": [
+      "sessionId: options\\?\\.sessionId",
+      "requesterSenderId:",
+      "sandboxed: options\\?\\.sandboxed"
+     ],
+     "absent": [
+      "\\brunId\\b",
+      "\\binputProvenance\\b",
+      "\\bsandbox\\s*:",
+      "sandbox\\.run"
+     ]
+    },
+    "h4-factory-v2-authority": {
+     "path": "dist/registry-854ZO8XT.mjs",
+     "lines": [
+      2900,
+      2913
+     ],
+     "present": [
+      "tool\\.contextVersion !== 2",
+      "Version 2 tool factories require host invocation authority"
+     ],
+     "absent": []
+    },
+    "h4-plugin-tools-guard": {
+     "path": "dist/openclaw-tools-Dxfbrtff.mjs",
+     "lines": [
+      779,
+      805
+     ],
+     "present": [
+      "assertInvocationCurrent: assertRequestCurrent \\?",
+      "ownerContinuation: requesterOwner"
+     ],
+     "absent": []
+    },
+    "h5-admission-evidence": {
+     "path": "dist/admission-evidence-D2DaumE3.mjs",
+     "lines": [
+      431,
+      457
+     ],
+     "present": [
+      "function prepareHostChannelContextAdmissionEvidence",
+      "binding\\.handoff\\.consumed = true"
+     ],
+     "absent": []
+    },
+    "h5-channel-context": {
+     "path": "dist/context-ChHCb4LC.mjs",
+     "lines": [
+      204,
+      211
+     ],
+     "present": [
+      "ChatId: params\\.conversation\\.id",
+      "SenderId: params\\.sender\\.id"
+     ],
+     "absent": []
+    },
+    "h5-inbound-flag": {
+     "path": "dist/context-ChHCb4LC.mjs",
+     "lines": [
+      238,
+      238
+     ],
+     "present": [
+      "InboundAccessAuthorized: true"
+     ],
+     "absent": []
+    },
+    "h5-ingress-builder": {
+     "path": "dist/host-context-builder-BceE-hym.mjs",
+     "lines": [
+      107,
+      116
+     ],
+     "present": [
+      "prepareHostChannelContextAdmissionEvidence\\(\\{",
+      "rawPrincipalRef: params\\.sender\\.id"
+     ],
+     "absent": []
+    },
+    "req-chat-id-alias": {
+     "path": "dist/hook-agent-context-Bx9S6KFK.mjs",
+     "lines": [
+      52,
+      63
+     ],
+     "present": [
+      "chatId: channelId"
+     ],
+     "absent": []
+    },
+    "req-embedded-hook-context": {
+     "path": "dist/settled-turn-finalization-result-BO3P1zr_.mjs",
+     "lines": [
+      170,
+      185
+     ],
+     "present": [
+      "function buildEmbeddedAgentHookContext",
+      "runId: run\\.runId"
+     ],
+     "absent": []
+    },
+    "req-embedded-provenance": {
+     "path": "dist/builtin-openclaw-DkEpBBN1.mjs",
+     "lines": [
+      6711,
+      6717
+     ],
+     "present": [
+      "inputProvenance: attempt\\.inputProvenance"
+     ],
+     "absent": []
+    },
+    "req-embedded-requester": {
+     "path": "dist/agent-tools-D4brJvKK.mjs",
+     "lines": [
+      727,
+      752
+     ],
+     "present": [
+      "const requester = \\{",
+      "senderId: options\\.senderId",
+      "runId: options\\?\\.runId",
+      "\\.\\.\\.hasRequester \\? \\{ requester \\} : \\{\\}"
+     ],
+     "absent": []
+    },
+    "req-hook-builder": {
+     "path": "dist/agent-tools.before-tool-call-DG_c7plZ.mjs",
+     "lines": [
+      2872,
+      2884
+     ],
+     "present": [
+      "args\\.ctx\\?\\.requester \\? \\{ requester: args\\.ctx\\.requester \\}"
+     ],
+     "absent": [
+      "\\bparams\\b"
+     ]
+    },
+    "req-http-hook-context": {
+     "path": "dist/tools-invoke-shared-CAj0VQm9.mjs",
+     "lines": [
+      237,
+      246
+     ],
+     "present": [
+      "ctx: \\{",
+      "agentId,",
+      "sessionKey,",
+      "workspaceDir,"
+     ],
+     "absent": [
+      "\\bsessionId\\b",
+      "\\brunId\\b",
+      "\\brequester\\b"
+     ]
+    },
+    "req-mcp-handler-order": {
+     "path": "dist/mcp-http.handlers-BKRuvOwo.mjs",
+     "lines": [
+      102,
+      134
+     ],
+     "present": [
+      "ctx: params\\.hookContext",
+      "(?s)runBeforeToolCallHook\\(\\{.*params\\.authorizeToolCall && !params\\.authorizeToolCall\\(\\).*tool\\.execute\\(toolCallId, finalizedToolArgs"
+     ],
+     "absent": []
+    },
+    "req-mcp-header-identity": {
+     "path": "dist/mcp-http-Nr5qKpiO.mjs",
+     "lines": [
+      222,
+      237
+     ],
+     "present": [
+      "getHeader\\(req, \"x-session-key\"\\)",
+      "getHeader\\(req, \"x-openclaw-account-id\"\\)"
+     ],
+     "absent": []
+    },
+    "req-mcp-hook-context": {
+     "path": "dist/mcp-http-Nr5qKpiO.mjs",
+     "lines": [
+      452,
+      469
+     ],
+     "present": [
+      "hookContext: \\{",
+      "sessionKey: requestContext\\.sessionKey",
+      "runId: requestContext\\.runId"
+     ],
+     "absent": [
+      "\\brequester\\b"
+     ]
+    },
+    "req-mcp-sender-modes": {
+     "path": "dist/mcp-http-Nr5qKpiO.mjs",
+     "lines": [
+      76,
+      98
+     ],
+     "present": [
+      "function resolveMcpSender",
+      "boundClientGrant: clientGrant",
+      "resolveAttachGrant\\(grantToken\\)"
+     ],
+     "absent": []
+    },
+    "req-native-relay-conditional": {
+     "path": "dist/native-hook-relay-CaKdpUk2.mjs",
+     "lines": [
+      1022,
+      1038
+     ],
+     "present": [
+      "params\\.registration\\.requester \\? \\{ requester: params\\.registration\\.requester \\} : \\{\\}",
+      "runId: params\\.registration\\.runId"
+     ],
+     "absent": []
+    }
+   },
+   "carriers": {
+    "embedded-external-user": {
+     "label": "Embedded agent run for an ordinary user message from a channel",
+     "strict_admission": "unavailable",
+     "predicates": {
+      "H1": {
+       "status": "denied",
+       "missing": "session_start is detached and carries only session ID, key and resumed-from; origin fields are merged and primary links demoted, so no immutable original audience or physical-store attestation exists before restore",
+       "evidence": [
+        "h1-session-start-payload",
+        "h1-session-start-detached",
+        "h1-session-start-first-turn",
+        "h1-origin-merge",
+        "h1-primary-demotion",
+        "h1-physical-store"
+       ]
+      },
+      "H2": {
+       "status": "partial",
+       "missing": "the constructed-prompt gate sees systemPrompt and fails closed, but the prompt is refreshed again at primary dispatch and settled-tool finalization skips the gate",
+       "evidence": [
+        "h2-embedded-gate",
+        "h2-gate-fail-closed",
+        "h2-embedded-settled-skip",
+        "h2-embedded-dispatch-refresh",
+        "h2-prompt-refresh-sections"
+       ]
+      },
+      "H3": {
+       "status": "denied",
+       "missing": "with no registered gate hook the run is not blocked, and load errors throw only on replacement; stopped-profile staging is documented but no outer latch requires this guard on boot, reload or removal",
+       "evidence": [
+        "h3-no-hook-no-block",
+        "h3-replacement-only-throw",
+        "h3-invalid-config-returns",
+        "h3-conditional-throw",
+        "h3-profile-staging-doc"
+       ]
+      },
+      "H4": {
+       "status": "denied",
+       "missing": "the tool factory context has no run ID, input provenance or confined sandbox command, and callbacks are checked only before and after, so no host-authenticated final effect joined to the Axis lease exists",
+       "evidence": [
+        "h4-factory-context",
+        "h4-callback-before-after",
+        "h4-factory-v2-authority",
+        "h4-plugin-tools-guard"
+       ]
+      },
+      "H5": {
+       "status": "unavailable",
+       "missing": "sender and chat come from channel parameters and the private admission evidence is not exposed to hooks; immutable Axis v2 origin metadata needs a trusted adapter after H1-H4, which this build cannot supply",
+       "evidence": [
+        "h5-channel-context",
+        "h5-inbound-flag",
+        "h5-ingress-builder",
+        "h5-admission-evidence"
+       ]
+      },
+      "tool-requester": {
+       "status": "partial",
+       "missing": "the tool hook receives a requester built from host run options, but provider authentication of those fields and the chat ID mapping are not established",
+       "evidence": [
+        "req-embedded-requester",
+        "req-hook-builder",
+        "req-embedded-hook-context",
+        "req-embedded-provenance",
+        "req-chat-id-alias"
+       ]
+      }
+     }
+    },
+    "cli-mcp": {
+     "label": "CLI backend run whose tools call back through the MCP loopback",
+     "strict_admission": "unavailable",
+     "predicates": {
+      "H1": {
+       "status": "denied",
+       "missing": "session_start is detached and carries only session ID, key and resumed-from; origin fields are merged and primary links demoted, so no immutable original audience or physical-store attestation exists before restore",
+       "evidence": [
+        "h1-session-start-payload",
+        "h1-session-start-detached",
+        "h1-session-start-first-turn",
+        "h1-origin-merge",
+        "h1-primary-demotion",
+        "h1-physical-store"
+       ]
+      },
+      "H2": {
+       "status": "partial",
+       "missing": "the CLI gate sees context.systemPrompt before user persistence, but recovery can retry an attempt after that gate",
+       "evidence": [
+        "h2-cli-gate",
+        "h2-gate-fail-closed",
+        "h2-cli-recovery"
+       ]
+      },
+      "H3": {
+       "status": "denied",
+       "missing": "with no registered gate hook the run is not blocked, and load errors throw only on replacement; stopped-profile staging is documented but no outer latch requires this guard on boot, reload or removal",
+       "evidence": [
+        "h3-no-hook-no-block",
+        "h3-replacement-only-throw",
+        "h3-invalid-config-returns",
+        "h3-conditional-throw",
+        "h3-profile-staging-doc"
+       ]
+      },
+      "H4": {
+       "status": "denied",
+       "missing": "the tool factory context has no run ID, input provenance or confined sandbox command, and callbacks are checked only before and after, so no host-authenticated final effect joined to the Axis lease exists",
+       "evidence": [
+        "h4-factory-context",
+        "h4-callback-before-after",
+        "h4-factory-v2-authority",
+        "h4-plugin-tools-guard"
+       ]
+      },
+      "H5": {
+       "status": "unavailable",
+       "missing": "sender and chat come from channel parameters and the private admission evidence is not exposed to hooks; immutable Axis v2 origin metadata needs a trusted adapter after H1-H4, which this build cannot supply",
+       "evidence": [
+        "h5-channel-context",
+        "h5-inbound-flag",
+        "h5-ingress-builder",
+        "h5-admission-evidence"
+       ]
+      },
+      "tool-requester": {
+       "status": "denied",
+       "missing": "the MCP hook-context literal forwards no requester, and generic-token mode takes routing fields from request headers",
+       "evidence": [
+        "req-mcp-hook-context",
+        "req-mcp-header-identity",
+        "req-mcp-sender-modes",
+        "req-mcp-handler-order"
+       ]
+      }
+     }
+    },
+    "http-rpc": {
+     "label": "Ordinary HTTP or RPC tool invocation",
+     "strict_admission": "unavailable",
+     "predicates": {
+      "H1": {
+       "status": "unavailable",
+       "missing": "not traced for this carrier: the H1 evidence cited for the embedded and CLI carriers (detached session_start, mutable origin, primary demotion) is the reply and session path, and this direct tool invocation path was not traced to a transcript restore, so original-audience ownership is not established",
+       "evidence": []
+      },
+      "H2": {
+       "status": "unavailable",
+       "missing": "a direct tool invocation passes no model prompt through a gate on this path, so final guidance is not established",
+       "evidence": []
+      },
+      "H3": {
+       "status": "denied",
+       "missing": "with no registered gate hook the run is not blocked, and load errors throw only on replacement; stopped-profile staging is documented but no outer latch requires this guard on boot, reload or removal",
+       "evidence": [
+        "h3-no-hook-no-block",
+        "h3-replacement-only-throw",
+        "h3-invalid-config-returns",
+        "h3-conditional-throw",
+        "h3-profile-staging-doc"
+       ]
+      },
+      "H4": {
+       "status": "denied",
+       "missing": "the tool factory context has no run ID, input provenance or confined sandbox command, and callbacks are checked only before and after, so no host-authenticated final effect joined to the Axis lease exists",
+       "evidence": [
+        "h4-factory-context",
+        "h4-callback-before-after",
+        "h4-factory-v2-authority",
+        "h4-plugin-tools-guard"
+       ]
+      },
+      "H5": {
+       "status": "unavailable",
+       "missing": "sender and chat come from channel parameters and the private admission evidence is not exposed to hooks; immutable Axis v2 origin metadata needs a trusted adapter after H1-H4, which this build cannot supply",
+       "evidence": [
+        "h5-channel-context",
+        "h5-inbound-flag",
+        "h5-ingress-builder",
+        "h5-admission-evidence"
+       ]
+      },
+      "tool-requester": {
+       "status": "denied",
+       "missing": "the tool hook context has agent, key and workspace only: no session ID, run ID or requester",
+       "evidence": [
+        "req-http-hook-context"
+       ]
+      }
+     }
+    },
+    "native-relay": {
+     "label": "Native harness tool call relayed to the OpenClaw tool hook",
+     "strict_admission": "unavailable",
+     "predicates": {
+      "H1": {
+       "status": "unavailable",
+       "missing": "not traced for this carrier: the relayed native harness supplies its own transcript path and that restore was not read, so original-audience ownership before restore or model access is not established",
+       "evidence": []
+      },
+      "H2": {
+       "status": "unavailable",
+       "missing": "no prompt gate for relayed native runs was traced in this build",
+       "evidence": []
+      },
+      "H3": {
+       "status": "denied",
+       "missing": "with no registered gate hook the run is not blocked, and load errors throw only on replacement; stopped-profile staging is documented but no outer latch requires this guard on boot, reload or removal",
+       "evidence": [
+        "h3-no-hook-no-block",
+        "h3-replacement-only-throw",
+        "h3-invalid-config-returns",
+        "h3-conditional-throw",
+        "h3-profile-staging-doc"
+       ]
+      },
+      "H4": {
+       "status": "denied",
+       "missing": "the tool factory context has no run ID, input provenance or confined sandbox command, and callbacks are checked only before and after, so no host-authenticated final effect joined to the Axis lease exists",
+       "evidence": [
+        "h4-factory-context",
+        "h4-callback-before-after",
+        "h4-factory-v2-authority",
+        "h4-plugin-tools-guard"
+       ]
+      },
+      "H5": {
+       "status": "unavailable",
+       "missing": "sender and chat come from channel parameters and the private admission evidence is not exposed to hooks; immutable Axis v2 origin metadata needs a trusted adapter after H1-H4, which this build cannot supply",
+       "evidence": [
+        "h5-channel-context",
+        "h5-inbound-flag",
+        "h5-ingress-builder",
+        "h5-admission-evidence"
+       ]
+      },
+      "tool-requester": {
+       "status": "partial",
+       "missing": "the relay forwards a requester only when its registration carries one; registration ingress authenticity and complete native-tool mediation are not established",
+       "evidence": [
+        "req-native-relay-conditional"
+       ]
+      }
+     }
+    },
+    "worker": {
+     "label": "Remote worker turn",
+     "strict_admission": "unavailable",
+     "predicates": {
+      "H1": {
+       "status": "unavailable",
+       "missing": "not traced for this carrier: the worker opens its model context with a turn-recorder admission receipt whose audience binding was not traced, so original-audience ownership before restore or model access is not established",
+       "evidence": []
+      },
+      "H2": {
+       "status": "denied",
+       "missing": "the worker before_agent_run gate is called without systemPrompt",
+       "evidence": [
+        "h2-worker-gate-no-prompt"
+       ]
+      },
+      "H3": {
+       "status": "denied",
+       "missing": "with no registered gate hook the run is not blocked, and load errors throw only on replacement; stopped-profile staging is documented but no outer latch requires this guard on boot, reload or removal",
+       "evidence": [
+        "h3-no-hook-no-block",
+        "h3-replacement-only-throw",
+        "h3-invalid-config-returns",
+        "h3-conditional-throw",
+        "h3-profile-staging-doc"
+       ]
+      },
+      "H4": {
+       "status": "denied",
+       "missing": "the tool factory context has no run ID, input provenance or confined sandbox command, and callbacks are checked only before and after, so no host-authenticated final effect joined to the Axis lease exists",
+       "evidence": [
+        "h4-factory-context",
+        "h4-callback-before-after",
+        "h4-factory-v2-authority",
+        "h4-plugin-tools-guard"
+       ]
+      },
+      "H5": {
+       "status": "unavailable",
+       "missing": "sender and chat come from channel parameters and the private admission evidence is not exposed to hooks; immutable Axis v2 origin metadata needs a trusted adapter after H1-H4, which this build cannot supply",
+       "evidence": [
+        "h5-channel-context",
+        "h5-inbound-flag",
+        "h5-ingress-builder",
+        "h5-admission-evidence"
+       ]
+      },
+      "tool-requester": {
+       "status": "unavailable",
+       "missing": "worker tool-call requester forwarding was not traced in this build",
+       "evidence": []
+      }
+     }
+    }
+   },
+   "final_effect_revocation": {
+    "revoke-host-invocation": {
+     "result": "not-runnable",
+     "reason": "needs a real carrier paused immediately before the confined commit; a mocked before-tool pass is not a substitute"
+    },
+    "revoke-policy": {
+     "result": "not-runnable",
+     "reason": "needs a real carrier paused immediately before the confined commit; a mocked before-tool pass is not a substitute"
+    },
+    "revoke-axis-lease": {
+     "result": "not-runnable",
+     "reason": "needs a real carrier paused immediately before the confined commit; a mocked before-tool pass is not a substitute"
+    }
+   }
+  }
+ ]
+}
