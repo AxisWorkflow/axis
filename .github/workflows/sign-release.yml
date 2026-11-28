@@ -25,7 +25,7 @@ jobs:
       GH_REPO: AxisWorkflow/axis
       RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
     steps:
-      - uses: sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532 # pinned installer
+      - uses: sigstore/cosign-installer@881c63bd87e38389154debd8331404ce7ca8a3ab # pinned installer
         with:
           cosign-release: v3.1.4
       - name: Download exact published assets and sign
