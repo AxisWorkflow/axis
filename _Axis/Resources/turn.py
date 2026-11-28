@@ -372,6 +372,12 @@ if role['created_by'] in ('helper','claim'):
             for x in r.get('tail',[]):print(x)
         except (Exception,SystemExit):print('Handle before answering: context check unavailable; re-read your recovery set before relying on Axis guidance.')
 for x in items:print('Handle before answering: '+x)
+# Daily brief (Practices > Status > Daily brief): its own line, only for the roles that give it; nothing without status.py.
+if role['name'] in ('Main','Auxiliary','Assistant') and not o.gate:
+    try:
+        spec=importlib.util.spec_from_file_location('axis_status_brief',Path(__file__).with_name('status.py'));brief=importlib.util.module_from_spec(spec);spec.loader.exec_module(brief)
+        for x in brief.due_lines(root,o.session):print(x)
+    except Exception:pass
 if role['reply_frame']:
     home=os.path.expanduser('~');folder=str(root);folder='~'+folder[len(home):] if folder==home or folder.startswith(home+'/') else folder
     project='Not set'  # the messaging opening names the Project as the startup banner does
@@ -380,4 +386,4 @@ if role['reply_frame']:
             with open(root/'_Config/PROJECT.md',encoding='utf-8',errors='replace') as handle:found=re.match(r'# Project: (.+)',handle.readline(400))
             if found and found.group(1).strip() and '{{' not in found.group(1) and all(ord(c)>=32 for c in found.group(1).strip()):project=found.group(1).strip()
     except OSError:pass
-    print(f'Reply frame: start your reply with the Axis header, with nothing before it, and on terminals end with one blank line, no divider, then > READY | {folder}: (or > READY | {folder}:  (Still working in the background) while background work you started still runs). On WhatsApp, SMS and equivalent messaging channels, open instead with the three lines A X I S   W O R K F L O W, " > {project}" and " > {folder}", then a blank line, without dividers, and omit the closing including its background-task variant. Separate paragraphs with blank lines. Progress notes get neither.')
+    print(f'Reply frame: start your reply with the Axis header, with nothing before it, and on terminals end with one blank line, no divider, then > READY | {folder}: (or > READY | {folder}:  (Still working in the background) while background work you started still runs). On WhatsApp, SMS and equivalent messaging channels, open instead with the two lines A X I S   W O R K F L O W and "{project}" directly under it, then a blank line, without dividers, and omit the closing including its background-task variant. Separate paragraphs with blank lines. On WhatsApp, SMS and equivalent messaging channels, every message you send, including interim notes sent through a message tool, opens with the two lines; on terminals, progress notes get no frame.')

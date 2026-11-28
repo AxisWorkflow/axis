@@ -18,7 +18,8 @@ shell command or helper script writes. Adoption repairs run only through the ver
 3.16 role link: a Claude Code session the `axis` launcher started for a declared role carries AXIS_ROLE (and
 AXIS_SURFACE); the hook then applies that role's guard to the session's own calls, and every declared role runs only
 read-only git (log, status, diff, show and listing forms); a Monitor or PowerShell command of a role serving the User
-gets the rules its Bash command has. A role serving other people also reads only the Axis
+gets the rules its Bash command has, and an Auxiliary Agent, whose row blocks starting agents, is refused Agent, Task
+and the newer tools that start or schedule agent work. A role serving other people also reads only the Axis
 workflow files and the folders that both its live surface row and the read scope the launcher pinned at launch
 (AXIS_READ_SCOPE, checked at admission) name, has no outbound tools, is refused every other tool this hook receives
 outside the tools its role is offered, and runs only Axis's own per-turn helpers and the request helper's `submit` in the shell;
@@ -26,8 +27,52 @@ an Observer writes nothing, and its shell runs only its own admission check. A G
 Main only through that `submit`: it writes nothing into `_Axis/Submissions/`, and no other shell command of its names
 that folder. Every agent session: the User-mode `axis retire` and `axis start` are refused (they are for the User's own
 terminal; Main through Bash, its Monitor and PowerShell calls passing as before the matcher named them); agent mode
-passes. The hook's Secrets checks fold letter case fully (a long s reaches the folder on a case-insensitive volume);
-the --role and --external route compares as before.
+passes. Every Secrets refusal folds letter case fully, the --role and --external route's included (a long s reaches the
+folder on a case-insensitive volume). The hook opens no script whose real path names any spelling of the folder that full
+case folding maps to it. Where it parses a shell command (Bash for every session; Monitor and PowerShell for Main, a role
+serving the User and a helper), it refuses running, sourcing or executing a script whose real path reaches this project's
+own `_Axis/Secrets/` through a spelling other than the exact one, Main included, and a script it no longer reads because a
+spelling only full case folding maps (such as a long s) names the folder elsewhere in its path; a declared role or helper
+gets its own Secrets reason, and Main's exact spelling runs unread as before. It finds this project's own folder by
+identity too, so a path through another mount (such as macOS's /System/Volumes/Data) counts. It parses each simple
+command with its wrappers, compounds, pipes and same-command assignments, bash's `$'...'` quoting, a leading `$PWD`
+(the project root, which relative paths are read from) or `~` (`$HOME`), and nested shell, eval, env -S and interpreter
+text only on lines naming axis in any letter case; each line is read first as before, and a script it reaches only
+through those added readings it opens only inside the project. For this refusal it does not follow: a change of
+directory (`cd`, `pushd`, `env -C`); exported, inherited or other variables beyond a leading `$PWD` (`BASH_ENV`, `$HOME`
+and `$IFS` included); variables set by builtins (`declare`, `local`, `readonly`, `printf -v`); parameter-expansion
+operators (`${X:-F/q.sh}`, `${PWD%/}`); positional parameters (`set --`, `$1`, the arguments after `bash -c` text); a
+redirection written before the command name (`>/dev/null sh F/q.sh`); links or files the command itself makes before the
+run (`ln -s`); a link to the Secrets folder that exists before the command; command substitution, quoted or not; process
+substitution; globs and brace expansion; a backslash-newline inside a word; a script file given to an interpreter
+(`python3 F/q.py`); shells other than sh, bash, zsh, dash and ksh (fish, csh, tcsh, busybox, pwsh); a shell or wrapper name in another letter case (`SH`, `Bash`, `/BIN/SH`); a function defined with `function NAME { ...; }`; commands that run
+another from their arguments or input, other than the wrappers it reads (`env`, `exec`, `nice`, `sudo`, `doas`,
+`stdbuf`, `caffeinate`, `timeout`, `nohup`, `time`, `setsid`, `script`, `xargs` with its arguments), such as `find
+-exec`, `xargs -I` or xargs input, `watch`, `osascript`, `arch`, `flock`, `sandbox-exec`, `su -c`, `trap` and `coproc`;
+an option of one of those wrappers that takes a value, other than the ones it reads (`env -P`); `hash -p` and aliases;
+nesting deeper than three levels; escapes, concatenation or encodings inside interpreter strings or piped input; bash's
+`$'...'` quoting written with an escaped dollar sign inside double-quoted nested shell, eval or `env -S` text; `env -S`
+with its text attached (`env -S'sh F/q.sh'`); `~user`, `~+` or `~-`; the runs inside a script's own text; or
+PowerShell's own syntax (backslash separators, the backtick escape, `Invoke-Expression` or `iex`, `Start-Process`). Some
+of these are still refused where the misspelled path also stands whole as a word the hook reads as a run, as in `` sh
+`echo F/q.sh` ``, `echo F/q.sh | xargs sh`, `echo x | xargs -I{} sh F/q.sh`, `echo 'sh F/q.sh' | sh` and `sh F/q.s*`.
+Its time is bounded and it fails closed: the Claude Code hook decides a Bash, Monitor or PowerShell call in a child
+process of its own, started in a process group of its own and ending itself by SIGALRM 3.5 seconds after it starts
+deciding, and refuses the call, naming the cause, when that child has not exited within 3.5 seconds (the installed entry
+allows 10), cannot be started, writes more than a decision (the hook reads no more than one byte past 64 bytes of its
+output or 64 KiB of its messages, and stops at once), or ends without an explicit allow or refusal (ended by a signal,
+stopped by an error or any other exit, named as ending before it had read the whole call when it did, or with unreadable
+output), and when the hook itself, while it reads or parses its event or waits, receives SIGINT or any other signal it
+can catch whose default action ends a process (every signal `signal.valid_signals()` lists but SIGKILL, SIGSTOP, those
+whose default is to ignore, continue or stop, such as SIGCHLD, SIGCONT, SIGWINCH and SIGTSTP, the fault signals SIGSEGV,
+SIGBUS, SIGILL, SIGFPE and SIGTRAP, and any whose handler was set outside Python), naming the signal; each of these
+refusals ends the child's whole process group, so a shell command it cannot finish reading is refused, never let through
+unread. The limit: SIGKILL sent to the hook's own process; SIGSTOP, SIGTSTP, SIGTTIN or SIGTTOU past the host's 10
+seconds; SIGSEGV, SIGBUS, SIGILL, SIGFPE or SIGTRAP, left at their default so that a fault inside the hook's own process
+ends it at once instead of repeating; an abort inside the hook's own process (SIGABRT raised by a fatal error), which ends it at once; a signal whose handler was set outside Python (such as faulthandler's, under
+PYTHONFAULTHANDLER), left as it was; or any signal in the start-up window before its handlers exist (Python's own start
+and its reading of the hook, under 50 milliseconds measured on a Mac at rest): each ends it before it can refuse, and
+the host then lets the call run, while a reading child it no longer ends still ends itself as above.
 
 Self-test without a host: python3 _Axis/Resources/guardrails.py --check {project-relative path} [--new] [--agent {type}]"""
 import importlib.util,json,os,re,shlex,stat,sys
@@ -96,7 +141,9 @@ QUEUE_NAMED=re.compile(r'_axis[\\/]+(?:\.[\\/]+)*submissions(?![a-z0-9_.-])',re.
 # The newer Claude Code tools the installed matcher names besides the file, shell, agent, web and MCP tools, each with
 # its decision for a helper: 'agents' starts or schedules agent work and is refused, as Agent and Task are; 'shell' runs
 # a shell command, which gets a helper's shell checks; None passes. Main passes every one, as before the matcher named
-# them; a declared role serving the User passes them too, but its 'shell' command gets the rules its Bash command has;
+# them, but its 'shell' commands get the spelling refusal its Bash commands have (unread_spelling()); a declared role
+# serving the User passes them too, but its 'shell' command gets the rules its Bash command has
+# and, where its row blocks starting agents (an Auxiliary Agent), an 'agents' tool is refused as Agent and Task are;
 # a role serving other people is refused every one, as none is offered.
 NEWER_TOOLS={'PowerShell':'shell','Monitor':'shell','SendMessage':'agents','Workflow':'agents','RemoteTrigger':'agents',
              'CronCreate':'agents','ScheduleWakeup':'agents','Skill':'agents','SendUserMessage':None,'ListAgents':None,
@@ -170,7 +217,7 @@ PLACES={'subfolders':'Project Subfolders','_Axis/Submissions/':'_Axis/Submission
 def guarded(row,rel,exists,write):
     """A refusal reason for a guarded session role's file tool on rel, or None."""
     who=row['article']+' '+row['title'];places=row['guard']['new_files']
-    if secret(rel):return who+' never uses _Axis/Secrets/'
+    if folded_secret(rel):return who+' never uses _Axis/Secrets/'
     if not write:return None
     if not places:return who+' writes nothing'
     if exists:return who+' adds new files only and never changes an existing file'
@@ -239,6 +286,9 @@ def references(root,rel,tool,ti):
     try:
         spec=importlib.util.spec_from_file_location('record_check',root/'_Axis/Resources/record-check.py')
         rc=importlib.util.module_from_spec(spec);spec.loader.exec_module(rc)
+        # Decided before the target is read: a file under any spelling of _Axis/Secrets/, or one outside record-check's
+        # scope (but its exceptions file), gets no reference check and is never opened here.
+        if folded_secret(rel) or rel!=rc.EXCEPTIONS_PATH and not rc.in_scope(rel):return None
         after=new_text(root,rel,tool,ti)
         if after is None:return None
         if rel==rc.EXCEPTIONS_PATH:
@@ -311,9 +361,9 @@ def secret(rel):
     return rel.lower()==SECRETS.lower() or rel.lower().startswith(SECRETS.lower()+'/')
 
 def folded_secret(rel):
-    """secret() after full case folding, for the Claude Code hook and its --check: a case-insensitive volume also reaches
-    the folder through a spelling lower() keeps apart, such as a long s (U+017F). The --role and --external route keeps
-    secret()."""
+    """secret() after full case folding, for every Secrets refusal (the Claude Code hook, its --check and the --role and
+    --external route): a case-insensitive volume also reaches the folder through a spelling lower() keeps apart, such as
+    a long s (U+017F)."""
     return secret(rel.casefold())
 
 def git_change(command,depth=0):
@@ -356,7 +406,7 @@ def git_words(words,depth):
 def role_refusal(root,row,tool,ti,event):
     """A refusal reason for a declared session's own call under its role row, or None."""
     others=row['serves']!='User';who=row['article']+' '+row['title']
-    if tool in SPAWN_TOOLS and row['guard']['block_spawn']:return who+' never starts agents'
+    if (tool in SPAWN_TOOLS or (NEWER_TOOLS.get(tool)=='agents' and not others)) and row['guard']['block_spawn']:return who+' never starts agents'
     if others and (tool in OUTBOUND or str(tool).startswith('mcp__')):return who+' has no outbound tools'
     if tool=='Bash':
         command=ti.get('command') if isinstance(ti.get('command'),str) else ''
@@ -381,7 +431,8 @@ def role_refusal(root,row,tool,ti,event):
     if NEWER_TOOLS.get(tool)=='shell' and isinstance(ti.get('command'),str) and queue_command(row,ti['command']):return submit_only(who)
     # A Monitor or PowerShell command of a role serving the User: the rules its Bash command has, the User-mode role
     # actions main() checks for every Bash command included. A role serving other people is offered neither tool.
-    if NEWER_TOOLS.get(tool)=='shell' and isinstance(ti.get('command'),str) and not others:return role_action(ti['command'],root) or role_refusal(root,row,'Bash',ti,event)
+    if NEWER_TOOLS.get(tool)=='shell' and isinstance(ti.get('command'),str) and not others:
+        return own_secrets(role_action(ti['command'],root),who+' never uses _Axis/Secrets/') or role_refusal(root,row,'Bash',ti,event)
     closed=who+' uses only the tools its role is offered ('+', '.join(offered_tools(row))+')'
     if tool not in PATH_TOOLS:return closed if others and tool not in offered_tools(row) else None
     path=ti.get('file_path') or ti.get('notebook_path') or ti.get('path')
@@ -469,50 +520,134 @@ def utility_action(sub,args):
     if sub=='start' and '--source-root' not in names:return 'User mode of `axis start` is for your own terminal; a supervising Main uses ^^start'
     return None
 
-def code_forms(text,root,depth,files):
+def code_forms(text,root,depth,files,only=False):
     """For an interpreter's program text that runs something (RUN_TEXT): a run of the utility with a quoted retire or
-    start, or a quoted shell string that is one; else None. Text that runs nothing, such as a print, is not read."""
+    start, or a quoted shell string that is one; else None. Text that runs nothing, such as a print, is not read. Each
+    text is read once per depth and mode within one hook call (MEMO): many interpreters reading the same standard input
+    cost one reading."""
+    key=(text,str(root),depth,files,only)
+    if key not in MEMO:MEMO[key]=program_forms(text,root,depth,files,only)
+    return MEMO[key]
+
+MEMO={}
+
+def program_forms(text,root,depth,files,only):
+    """code_forms() without its memo."""
     if not RUN_TEXT.search(text):return None
-    if UTILITY_TEXT.search(text):
+    if UTILITY_TEXT.search(text) and not only:
         for m in ACTION_TEXT.finditer(text):
             why=utility_action(m[1],re.findall(r'--[a-z-]+',text))
             if why:return why
     for m in LITERAL.finditer(text):
-        why=utility_forms(m[1] if m[1] is not None else m[2],root,depth+1,files)
+        why=utility_forms(m[1] if m[1] is not None else m[2],root,depth+1,files,only)
         if why:return why
     return None
 
-def script_text(root,path,head=False):
-    """A shell script's text (a regular file of at most SCRIPT_LIMIT bytes, never under _Axis/Secrets/), or None; with
-    head, only its first line."""
+def script_path(root,path):
+    """PATH's real path, or None."""
     if root is None or not path:return None
-    p=Path(path) if os.path.isabs(path) else Path(root)/path
+    try:return Path(os.path.realpath(Path(path) if os.path.isabs(path) else Path(root)/path)).as_posix()
+    except (OSError,ValueError):return None
+
+def script_text(root,path,head=False,own=False):
+    """A shell script's text (a regular file of at most SCRIPT_LIMIT bytes whose real path names no spelling of
+    _Axis/Secrets/ that full case folding maps to it, in this project or elsewhere; with OWN, only one whose real path
+    lies inside the project), or None; with head, only its first line."""
+    real=script_path(root,path)
+    if real is None or SECRETS.casefold() in real.casefold():return None
+    top=script_path(root,'.') if own else None
+    if own and not (top and (real==top or real.startswith(top.rstrip('/')+'/'))):return None
     try:
-        real=Path(os.path.realpath(p))
-        if SECRETS.lower() in real.as_posix().lower():return None
         info=os.stat(real)
         if not stat.S_ISREG(info.st_mode) or (info.st_size>SCRIPT_LIMIT and not head):return None
         with open(real,'rb') as handle:data=handle.read(256 if head else SCRIPT_LIMIT)
         text=data.decode('utf-8','replace');return text.split('\n',1)[0] if head else text
     except (OSError,ValueError):return None
 
-def utility_forms(command,root=None,depth=0,files=True):
+SPELLING='the hook opens no script under _Axis/Secrets/, and one runs unread only through that exact spelling, not another letter case or a long s'
+UNREAD='the hook opens no script under a folder that full case folding spells _Axis/Secrets/ (here through a long s or a similar character), so it cannot check this one'
+
+def unread_spelling(root,path):
+    """The refusal for running, sourcing or executing the script at PATH, or None: SPELLING when its real path reaches
+    this project's own _Axis/Secrets/ through a spelling other than the exact one; UNREAD when script_text() no longer
+    opens it because a spelling only full case folding maps (such as a long s) names the folder elsewhere in its real
+    path, where lower() kept it apart and the hook read it before. A spelling lower() also maps, outside this project's
+    own folder (an outer folder or a Project Subfolder), is neither opened nor refused, as before."""
+    real=script_path(root,path)
+    if real is None or SECRETS.casefold() not in real.casefold():return None
+    # This project's own folder: the part of the real path below the project root, the root matched by its text (the
+    # same folder when only its spelling differs) or by identity; a non-exact spelling below any of them is refused.
+    rels=own_parts(root,real)
+    if any(folded_secret(r) and not exact_secret(r) for r in rels):return SPELLING
+    if any(folded_secret(r) for r in rels):return None
+    return None if SECRETS.lower() in real.lower() else UNREAD
+
+def exact_secret(rel):
+    """True when project-relative REL is _Axis/Secrets or lies below it, spelled exactly."""
+    return rel==SECRETS or rel.startswith(SECRETS+'/')
+
+def own_parts(root,real):
+    """The parts of the real path REAL below this project's root: below the prefix that names the root (in its letter
+    case, or the same folder when only that differs) and below every ancestor that is the root's folder by identity
+    (same device and inode), such as a path through another mount (macOS's /System/Volumes/Data, a bind mount). It reads
+    metadata only and opens nothing."""
+    top=script_path(root,'.')
+    if not top:return []
+    parts=real.split('/');n=len(top.rstrip('/').split('/'));head='/'.join(parts[:n]);out=[]
+    try:
+        if head==top or head.casefold()==top.casefold() and os.path.samefile(head,top):out.append('/'.join(parts[n:]))
+    except (OSError,ValueError):pass
+    try:
+        mine=os.stat(top)
+        for k in range(1,len(parts)):
+            info=os.stat('/'.join(parts[:k]) or '/')
+            if (info.st_dev,info.st_ino)==(mine.st_dev,mine.st_ino):out.append('/'.join(parts[k:]))
+    except (OSError,ValueError):pass
+    return out
+
+def own_secrets(why,reason):
+    """WHY, or REASON (a declared role's or helper's own Secrets reason) in place of a spelling refusal."""
+    return reason if reason and why in (SPELLING,UNREAD) else why
+
+def utility_forms(command,root=None,depth=0,files=True,only=False):
     """The utility_words refusal for any simple command in a shell command text, or None. Below the top level only
-    lines that name the utility are read, and a script file's own text opens no further file."""
+    lines whose case-folded text names axis are read, one naming it only in another letter case for unread_spelling()'s
+    refusals alone, and a script file's own text opens no further file. With ONLY, just unread_spelling()'s refusals,
+    and no file is opened (Main's Monitor and PowerShell commands). Every line is read first exactly as before, with its
+    own map of assignments (KNOWN). A line holding bash's $'...' or $" quoting, and every later line once one has, is
+    then read a second time: decoded (ansi_c()) and with a second map, copied at the first such line and updated only by
+    second readings, so a decoded assignment never changes the first reading of a later line. A second reading opens a
+    script only inside the project (FILES 'own')."""
     if depth>3 or not isinstance(command,str):return None
-    known={}
-    for line in command.replace('\\\n',' ').splitlines():
-        if depth and 'axis' not in line:continue
-        tokens=line_words(line.replace('`',' ; '));words=[];commands=[]
-        for t in tokens+[';']:
-            if t and all(ch in ';&|()`<>' for ch in t):commands.append(words);words=[]
-            else:words.append(t)
-        for words in commands:
-            why=utility_words(words,root,depth,files,known,line,command)
-            if why:return why
+    if not depth:MEMO.clear()
+    known={};second=None
+    for raw in command.replace('\\\n',' ').splitlines():
+        quoted="$'" in raw or '$"' in raw
+        before=dict(known) if quoted and second is None else None
+        why=utility_line(raw,root,depth,files,only,known,command)
+        if why:return why
+        line=(ansi_c(raw) or (raw,))[0] if quoted else raw
+        if line is raw and second is None:continue
+        if second is None:second=before
+        why=utility_line(line,root,depth,files and 'own',only,second,command)
+        if why:return why
     return None
 
-def utility_words(words,root,depth,files,known,line,command):
+def utility_line(line,root,depth,files,only,known,command):
+    """utility_words() for each simple command on one line, its assignments kept in KNOWN; below the top level only a
+    line whose case-folded text names axis is read."""
+    if depth and 'axis' not in line.casefold():return None
+    alone=only or bool(depth) and 'axis' not in line
+    tokens=line_words(line.replace('`',' ; '));words=[];commands=[]
+    for t in tokens+[';']:
+        if t and all(ch in ';&|()`<>' for ch in t):commands.append(words);words=[]
+        else:words.append(t)
+    for words in commands:
+        why=utility_words(words,root,depth,files,known,line,command,alone)
+        if why:return why
+    return None
+
+def utility_words(words,root,depth,files,known,line,command,only=False):
     """A refusal for one simple command that runs the utility's User-mode retire or start, or None."""
     if not words:return None
     if all(ASSIGNMENT.fullmatch(w) for w in words):
@@ -525,16 +660,20 @@ def utility_words(words,root,depth,files,known,line,command):
         i+=1
         if name=='env' and any(x in ('-S','--split-string') for x in words[i:]):
             j=next(k for k in range(i,len(words)) if words[k] in ('-S','--split-string'))
-            return utility_forms(' '.join(words[j+1:]),root,depth+1,files)
+            return utility_forms(' '.join(words[j+1:]),root,depth+1,files,only)
         while i<len(words) and (words[i].startswith('-') or (name=='env' and ASSIGNMENT.fullmatch(words[i]))):i+=1+(words[i] in WRAPPER_VALUES[name])
         if name=='timeout' and i<len(words):i+=1
     if i>=len(words):return None
     name=os.path.basename(words[i]);rest=words[i+1:]
-    nested=lambda text:utility_forms(text,root,depth+1,files)
-    opened=lambda path:utility_forms(script_text(root,path) if files else None,root,depth+1,False)
+    nested=lambda text:utility_forms(text,root,depth+1,files,only)
+    # A script run, sourced or executed: its spelling, then its text with MODE ('own': only inside the project).
+    one=lambda path,mode:(unread_spelling(root,path) if mode else None) or (None if only else utility_forms(script_text(root,path,own=mode=='own') if mode else None,root,depth+1,False))
+    # As typed with this reading's FILES first, then as the shell expands a leading $PWD or ~ (typed_paths()), read only
+    # inside the project; the first refusal wins.
+    opened=lambda path:next((why for why in (one(p,files if k==0 else files and 'own') for k,p in enumerate(typed_paths(root,path))) if why),None)
     if name in UTILITY:
         sub=next((w for w in rest if not w.startswith('-')),None)
-        return utility_action(sub,rest) if sub in ('retire','start') else None
+        return utility_action(sub,rest) if sub in ('retire','start') and not only else None
     if name=='eval':return nested(' '.join(rest))
     if name in ('source','.'):return opened(rest[0]) if rest else None
     if name in SHELLS:
@@ -553,13 +692,13 @@ def utility_words(words,root,depth,files,known,line,command):
             return nested(rest[k+1]) if k+1<len(rest) else None
         j=0
         while j<len(rest) and rest[j].startswith('-'):j+=1+(rest[j] in SCRIPT_VALUES)
-        return utility_words(rest[j+1:],root,depth+1,files,known,line,command)
+        return utility_words(rest[j+1:],root,depth+1,files,known,line,command,only)
     if name=='xargs':
         j=0
         while j<len(rest) and rest[j].startswith('-'):j+=1+(rest[j] in XARGS_VALUES)
-        if j<len(rest) and os.path.basename(rest[j]) in UTILITY and not [w for w in rest[j+1:] if not w.startswith('-')]:
+        if not only and j<len(rest) and os.path.basename(rest[j]) in UTILITY and not [w for w in rest[j+1:] if not w.startswith('-')]:
             return 'the `axis` subcommand would come from xargs input, which this check cannot see; a supervising Main uses agent mode'
-        return utility_words(rest[j:],root,depth+1,files,known,line,command)
+        return utility_words(rest[j:],root,depth+1,files,known,line,command,only)
     if INTERPRETER.fullmatch(name):
         j=0;code=CODE_FLAGS[INTERPRETER.fullmatch(name)[1]]
         while j<len(rest) and rest[j].startswith('-') and rest[j]!='-':
@@ -567,14 +706,60 @@ def utility_words(words,root,depth,files,known,line,command):
             if opt=='-m':
                 if rest[j+1:j+2]!=['runpy']:return None
                 j+=2;break
-            if re.fullmatch(code,opt):return code_forms(rest[j+1],root,depth,files) if j+1<len(rest) else None
+            if re.fullmatch(code,opt):return code_forms(rest[j+1],root,depth,files,only) if j+1<len(rest) else None
             j+=1+(opt in ('-W','-X'))
-        if j>=len(rest) or rest[j]=='-':return code_forms(command,root,depth,files)
-        return utility_words(rest[j:],root,depth+1,files,known,line,command) if os.path.basename(rest[j]) in UTILITY else None
+        if j>=len(rest) or rest[j]=='-':return code_forms(command,root,depth,files,only)
+        return utility_words(rest[j:],root,depth+1,files,known,line,command,only) if os.path.basename(rest[j]) in UTILITY else None
     if '/' in words[i] and files:
-        first=script_text(root,words[i],head=True) or ''
-        if words[i].endswith('.sh') or (first.startswith('#!') and any(re.search(r'\b'+s+r'\b',first) for s in SHELLS)):return opened(words[i])
+        for k,path in enumerate(typed_paths(root,words[i])):
+            why=unread_spelling(root,path)
+            if why:return why
+            if only:continue  # Main's Monitor and PowerShell: no file is opened, not even a first line
+            mode=files if k==0 else 'own'
+            first=script_text(root,path,head=True,own=mode=='own') or ''
+            why=one(path,mode) if path.endswith('.sh') or (first.startswith('#!') and any(re.search(r'\b'+s+r'\b',first) for s in SHELLS)) else None
+            if why:return why
     return None
+
+def typed_paths(root,path):
+    """A script path as typed, then as the shell expands a leading $PWD or ${PWD} (the project root, which relative
+    paths are read from too) or a leading ~ or ~/ ($HOME, when it is absolute); ~user, ~+ and ~- are not followed."""
+    out=[path];m=re.match(r'\$(?:PWD(?!\w)|\{PWD\})',path);home=os.environ.get('HOME','')
+    if m and root is not None:out.append(str(root)+path[m.end():])
+    if (path=='~' or path.startswith('~/')) and os.path.isabs(home):out.append(home.rstrip('/')+path[1:])
+    return out
+
+# bash's ANSI-C quoting: $'...' with its backslash escapes; $"..." (locale translation) reads as "...".
+ANSI_C=re.compile(r"\$'((?:[^'\\]|\\.)*)'|\$\"",re.S)
+ANSI_ESCAPES={'a':7,'b':8,'e':27,'E':27,'f':12,'n':10,'r':13,'t':9,'v':11,'\\':92,"'":39,'"':34,'?':63}
+ANSI_DIGITS={'x':re.compile(r'[0-9A-Fa-f]{1,2}'),'u':re.compile(r'[0-9A-Fa-f]{1,4}'),'U':re.compile(r'[0-9A-Fa-f]{1,8}')}
+ANSI_OCTAL=re.compile(r'[0-7]{1,3}')
+
+def ansi_c(line):
+    """LINE once more in a one-item tuple, each $'...' written as the single-quoted string bash makes of it (its bytes
+    read as UTF-8) and each $" as "; () when LINE holds neither or cannot be decoded. Escapes are matched at their
+    position, so the work grows with the line's length."""
+    if "$'" not in line and '$"' not in line:return ()
+    def decode(m):
+        if m[1] is None:return '"'
+        s=m[1];out=bytearray();i=0
+        while i<len(s):
+            if s[i]!='\\' or i+1==len(s):
+                j=s.find('\\',i+1)
+                if j<0 or j+1==len(s):j=len(s)
+                out+=s[i:j].encode('utf-8','surrogateescape');i=j;continue
+            e=s[i+1];hexa=ANSI_DIGITS[e].match(s,i+2) if e in ANSI_DIGITS else None;value=int(hexa[0],16) if hexa else None
+            if e in ANSI_ESCAPES:out.append(ANSI_ESCAPES[e]);i+=2
+            elif e in '01234567':k=ANSI_OCTAL.match(s,i+1)[0];out.append(int(k,8)&255);i+=1+len(k)
+            elif hexa and e=='x':out.append(value);i+=2+len(hexa[0])
+            elif hexa and value<0x110000 and not 0xD800<=value<0xE000:out+=chr(value).encode('utf-8');i+=2+len(hexa[0])
+            elif e=='c' and i+2<len(s):out.append(ord(s[i+2])&31);i+=3
+            else:out+=('\\'+e).encode('utf-8','surrogateescape');i+=2
+        text=bytes(out).split(b'\0',1)[0].decode('utf-8','surrogateescape')
+        return "'"+text.replace("'","'\\''")+"'"
+    try:decoded=ANSI_C.sub(decode,line)
+    except Exception:return ()
+    return (decoded,) if decoded!=line else ()
 
 def line_words(line):
     """A shell line's words, with the separators ; & | ( ) < > as their own tokens."""
@@ -663,14 +848,22 @@ def main():
     # A helper is a call from a spawned agent (agent_id); agent_type only picks its row. A session run as an agent type
     # without agent_id is a top-level session, not a helper.
     agent=(event.get('agent_type') or 'helper') if event.get('agent_id') else None
-    if tool=='Bash' and isinstance(ti.get('command'),str):
-        why=role_action(ti['command'],root)
-        if why:print(f'Axis guardrail: {why}.',file=sys.stderr);return 2
     row=declared_row() if not agent else None
+    if tool=='Bash' and isinstance(ti.get('command'),str):
+        # A declared role or helper keeps its own Secrets reason for a script run through a spelling of the folder.
+        mine='helpers never read or write _Axis/Secrets/' if agent else row['article']+' '+row['title']+' never uses _Axis/Secrets/' if isinstance(row,dict) else None
+        why=own_secrets(role_action(ti['command'],root),mine)
+        # A declared role's own Secrets reason points at its role file, as its role_refusal() reasons do.
+        if why:print(f'Axis guardrail: {why}.'+(f' See _Axis/Roles/{row["name"]}.md.' if isinstance(row,dict) and why==mine else ''),file=sys.stderr);return 2
     if row=='unknown':print('Axis guardrail: AXIS_ROLE names no Axis role; this session gets no service until the declaration is corrected.',file=sys.stderr);return 2
     if row is not None:
         why=role_refusal(root,row,tool,ti,event)
         if why:print(f'Axis guardrail: {why}. See _Axis/Roles/{row["name"]}.md.',file=sys.stderr);return 2
+    if row is None and not agent and NEWER_TOOLS.get(tool)=='shell' and isinstance(ti.get('command'),str):
+        # Main's Monitor and PowerShell commands: option C as on its Bash commands; their User-mode axis retire and
+        # start pass as before, and no file is opened.
+        why=utility_forms(ti['command'],root,only=True)
+        if why:print(f'Axis guardrail: {why}.',file=sys.stderr);return 2
     if tool=='Bash' and agent and isinstance(ti.get('command'),str) and SECRETS.casefold() in ti['command'].casefold():
         print('Axis guardrail: helpers never read or write _Axis/Secrets/.',file=sys.stderr);return 2
     if tool=='Bash' and agent and isinstance(ti.get('command'),str):
@@ -682,7 +875,7 @@ def main():
         print(f'Axis guardrail: helpers never start other agents ({tool} starts or schedules agent work); a granted start goes through the spawner. See _Axis/Roles/Delegating.md.',file=sys.stderr);return 2
     if agent and NEWER_TOOLS.get(tool)=='shell' and isinstance(ti.get('command'),str):
         command=ti['command']
-        why=role_action(command,root) or ('helpers never read or write _Axis/Secrets/' if SECRETS.casefold() in command.casefold() else None) or helper_command(command)
+        why=own_secrets(role_action(command,root),'helpers never read or write _Axis/Secrets/') or ('helpers never read or write _Axis/Secrets/' if SECRETS.casefold() in command.casefold() else None) or helper_command(command)
         if why:print(f'Axis guardrail: {why}. See _Axis/Roles/Delegating.md.',file=sys.stderr);return 2
     if tool not in PATH_TOOLS:return 0
     path=ti.get('file_path') or ti.get('notebook_path') or ti.get('path')
@@ -694,4 +887,191 @@ def main():
         print(f'Axis guardrail: {why} ({rel}). See _Axis/Rules/RecordsAndWORM.md and _Axis/Rules/Subagents.md.',file=sys.stderr);return 2
     return 0
 
-if __name__=='__main__':sys.exit(main())
+# The hook's own time: the installed entry allows it 10 seconds, and reading a long or contrived shell command (its
+# patterns, a script it reads, nested text) can take longer. A shell call is decided in a child process and refused when
+# that child has not exited within BOUND_SECONDS, well inside the entry's time, when it cannot be started, writes more
+# than a decision or ends without its decision (a signal, an error, any other exit, unreadable output), and when the
+# hook itself, while it reads or parses its event or waits, receives SIGINT or another signal of ending_signals(); each
+# such refusal ends the child's process group, and a child the hook no longer ends still ends itself by SIGALRM past the
+# bound: never let through unread.
+BOUND_SECONDS=3.5
+BOUND=('the hook could not finish reading this shell command within its 3.5-second bound, so it refuses it rather than '
+       'let it run unread; split the command, or put long text in a file')
+UNFINISHED='the hook could not finish reading this shell command ({}), so it refuses it rather than let it run unread'
+# The child's one line of standard output once main() has decided: this word and the exit it returns.
+DECIDED='axis-guardrails-decided'
+# The most bytes of messages passed on from the child; its reasons are one short line.
+CHILD_OUTPUT=65536
+# The most bytes of the child's standard output held (its DECIDED line is at most 26). With CHILD_OUTPUT this caps what
+# the hook holds of its child's output: each read asks for at most one byte past what is left, and the child is ended
+# the moment either cap is passed, so output without end is refused at once, never gathered until the bound.
+DECISION_OUTPUT=64
+OVERFLOW='its reading process gave more output than a decision'
+# The signals whose default action does not end a process (it ignores, continues or stops it) and the two no process
+# can catch (SIGKILL, SIGSTOP: the stated limit); SIGIO's default ends a process on Linux only. bounded() turns every
+# other signal the platform lists into a refusal, SIGINT included, but FAULTS and any whose handler was set outside
+# Python (signal.getsignal() gives None, as for faulthandler's), which it leaves as they were.
+NOT_ENDING=('SIGKILL','SIGSTOP','SIGTSTP','SIGTTIN','SIGTTOU','SIGCONT','SIGCHLD','SIGCLD','SIGURG','SIGWINCH','SIGINFO')
+# The signals a fault inside the hook's own process raises synchronously. A Python handler only marks the signal and
+# returns, so the faulting instruction runs again and the hook would spin until SIGKILL; at their default action such a
+# crash ends the hook at once (a stated limit). SIGSYS from a bad system call returns an error instead, and abort() ends
+# the process even after a handler returns, so SIGSYS and SIGABRT stay refused.
+FAULTS=('SIGSEGV','SIGBUS','SIGILL','SIGFPE','SIGTRAP')
+
+def ending_signals():
+    """The signals bounded() turns into a refusal: every one signal.valid_signals() lists but NOT_ENDING and FAULTS (and
+    SIGIO and SIGPOLL outside Linux, where their default is to ignore)."""
+    import signal
+    skip={getattr(signal,n) for n in NOT_ENDING+FAULTS+(() if sys.platform.startswith('linux') else ('SIGIO','SIGPOLL')) if hasattr(signal,n)}
+    return sorted(s for s in signal.valid_signals() if s not in skip)
+
+def within_bound():
+    """The child of bounded(): main()'s decision, then DECIDED and that exit as its one line of standard output (main()
+    prints nothing there for a host call), so the parent passes on only a decision reached in full. It ends itself by
+    SIGALRM at its default action BOUND_SECONDS after it starts deciding, later than the parent's deadline, so a child the
+    hook no longer ends (only the hook's own process group ended) still ends within the bound of its own start."""
+    import signal
+    try:
+        if hasattr(signal,'setitimer'):signal.signal(signal.SIGALRM,signal.SIG_DFL);signal.setitimer(signal.ITIMER_REAL,BOUND_SECONDS)
+    except (OSError,ValueError,AttributeError):pass
+    code=main()
+    sys.stdout.write(f'{DECIDED} {code}\n');sys.stdout.flush()
+    return code
+
+def unfinished(q):
+    """Why the finished child Q gave no explicit allow (exit 0) or refusal (exit 2): a signal, another exit (with the
+    last line of its messages, such as an exception), no DECIDED line for its exit, or messages that are too long or
+    not UTF-8; None when it gave one."""
+    import signal
+    if q.returncode<0:
+        try:name=signal.Signals(-q.returncode).name
+        except ValueError:name=str(-q.returncode)
+        return f'its reading process was ended by signal {name}'
+    if q.returncode not in (0,2):
+        last=(q.stderr or b'')[-4096:].decode('utf-8','replace').strip().splitlines()[-1:]
+        return f'its reading process stopped with exit code {q.returncode}'+(': '+''.join(c if c.isprintable() else '?' for c in last[0][:160]) if last else '')
+    if q.stdout!=f'{DECIDED} {q.returncode}\n'.encode():return 'its reading process gave no readable decision'
+    if len(q.stderr)>CHILD_OUTPUT:return OVERFLOW
+    try:q.stderr.decode('utf-8')
+    except UnicodeDecodeError:return 'its reading process gave unreadable output'
+    return None
+
+def finished(child,data,deadline):
+    """Give CHILD the event DATA on its standard input and read its standard output and messages until both close and it
+    exits: then an object with its returncode, stdout, stderr and unread (true when the child closed its input before
+    taking the whole event). BOUND when DEADLINE (time.monotonic()) passes first (or the child's own SIGALRM, which comes
+    after DEADLINE, ended it),
+    OVERFLOW the moment its output passes DECISION_OUTPUT or its messages CHILD_OUTPUT: the hook never holds more than
+    one byte past either cap. Plain threads with blocking reads, so it works on every platform the hook runs on."""
+    import signal,subprocess,threading,time,types
+    got={'out':bytearray(),'err':bytearray()};state={'over':False,'open':2,'unread':False};lock=threading.Lock();done=threading.Event()
+    # A child that ends before reading the whole event breaks this pipe: the write then fails here instead of raising
+    # SIGPIPE in the hook, which would be refused as a signal to the hook. The pipe is marked not to raise it where the
+    # platform allows (macOS); where a write raises it in the writing thread (Linux), that thread blocks it.
+    try:
+        import fcntl
+        nosig=getattr(fcntl,'F_SETNOSIGPIPE',73 if sys.platform=='darwin' else None)
+        if nosig is not None:fcntl.fcntl(child.stdin.fileno(),nosig,1)
+    except (ImportError,OSError,ValueError):pass
+    def feed():
+        try:
+            if hasattr(signal,'pthread_sigmask'):signal.pthread_sigmask(signal.SIG_BLOCK,{signal.SIGPIPE})
+        except (OSError,ValueError,AttributeError):pass
+        try:child.stdin.write(data);child.stdin.close()
+        except (OSError,ValueError):state['unread']=True
+    def drain(key,fd,cap):
+        buf=got[key]
+        try:
+            while True:
+                chunk=os.read(fd,cap-len(buf)+1)
+                if not chunk:break
+                buf+=chunk
+                if len(buf)>cap:state['over']=True;break
+        except (OSError,ValueError):pass
+        with lock:
+            state['open']-=1
+            if state['over'] or not state['open']:done.set()
+    threads=[threading.Thread(target=target,args=args,daemon=True) for target,args in ((feed,()),(drain,('out',child.stdout.fileno(),DECISION_OUTPUT)),(drain,('err',child.stderr.fileno(),CHILD_OUTPUT)))]
+    for thread in threads:thread.start()
+    if not done.wait(max(0.0,deadline-time.monotonic())):return BOUND
+    if state['over']:return OVERFLOW
+    try:code=child.wait(max(0.0,deadline-time.monotonic()))
+    except subprocess.TimeoutExpired:return BOUND
+    if hasattr(signal,'SIGALRM') and code==-signal.SIGALRM and time.monotonic()>=deadline:return BOUND
+    threads[0].join(max(0.0,deadline-time.monotonic()))
+    return types.SimpleNamespace(returncode=code,stdout=bytes(got['out']),stderr=bytes(got['err']),unread=state['unread'])
+
+def bounded():
+    """The Claude Code hook with its time bound. A Bash, Monitor or PowerShell call is decided by this script in a child
+    process given the same input, environment and folder (within_bound()); its messages and exit are passed on only when
+    it gives an explicit allow or refusal within BOUND_SECONDS, holding no more of its output than the caps allow
+    (finished(); unfinished() finds none wanting). Otherwise the call is refused, naming the cause: BOUND when the child
+    has not exited in time, UNFINISHED when it cannot be started, writes more than a decision, ends without its decision,
+    or the hook fails or receives a signal of ending_signals(), SIGINT included, while it reads or parses its event or
+    waits (the child's whole process group is then ended; the handlers go in before the event is read, none where a
+    handler was set outside Python, and are put back as they were for any other call; FAULTS keep their default, so a
+    fault inside the hook ends it at once); so a fault in
+    the hook or the machine shows as a refusal, never as a call run unread. Every other call and every other mode (any
+    argument) is decided here, as before."""
+    if sys.argv[1:]==['--within-bound']:return within_bound()
+    if sys.argv[1:]:return main()
+    import io,signal,subprocess,time
+    child=[]
+    def ended(c):
+        """End child C and every process it started: its own process group (C alone where there are no groups)."""
+        try:os.killpg(c.pid,signal.SIGKILL)
+        except (AttributeError,OSError):
+            try:c.kill()
+            except OSError:pass
+    def caught(number,frame):
+        """A signal of ending_signals() to the hook while it reads its event or waits: end the child's process group,
+        refuse naming the signal, and exit at once."""
+        for c in child:ended(c)
+        try:name=signal.Signals(number).name
+        except ValueError:name=str(number)
+        try:os.write(2,('Axis guardrail: '+UNFINISHED.format(f'the hook itself received signal {name} while it waited')+'.\n').encode())
+        except OSError:pass
+        os._exit(2)
+    # The handlers go in before the event is read, so a signal while the host is still writing it, or while the hook
+    # parses it, is refused too; none goes in where a handler was set outside Python (getsignal() gives None, as for
+    # faulthandler's), which stays as it was; they are put back as they were for a call that is not a shell call.
+    before={}
+    try:
+        for number in ending_signals():
+            try:
+                if signal.getsignal(number) is None:continue
+                before[number]=signal.signal(number,caught)
+            except (OSError,ValueError,RuntimeError):pass
+        data=sys.stdin.buffer.read()
+    except BaseException as error:
+        print('Axis guardrail: '+UNFINISHED.format(f'the hook was stopped while reading its call: {type(error).__name__}')+'.',file=sys.stderr);return 2
+    try:event=json.loads(data)
+    except ValueError:event=None
+    tool=event.get('tool_name') if isinstance(event,dict) else None;ti=event.get('tool_input') if isinstance(event,dict) else None
+    if isinstance(tool,str) and (tool=='Bash' or NEWER_TOOLS.get(tool)=='shell') and isinstance(ti,dict) and isinstance(ti.get('command'),str):
+        try:
+            try:
+                deadline=time.monotonic()+BOUND_SECONDS
+                try:child.append(subprocess.Popen([sys.executable,'-B',os.path.abspath(__file__),'--within-bound'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,start_new_session=True))
+                except (OSError,ValueError,subprocess.SubprocessError) as error:why=f'its reading process could not be started: {type(error).__name__}'
+                else:
+                    q=finished(child[0],data,deadline)
+                    if q==BOUND:print(f'Axis guardrail: {BOUND}.',file=sys.stderr);return 2
+                    why=q if isinstance(q,str) else unfinished(q)
+                    if why is None:sys.stderr.write(q.stderr.decode('utf-8'));return q.returncode
+                    if not isinstance(q,str) and q.unread:why+=', before it had read the whole call'
+            except BaseException as error:why=f'the hook failed while waiting for its reading process: {type(error).__name__}'
+        finally:
+            for c in child:
+                ended(c)
+                if c.poll() is None:
+                    try:c.wait(1)
+                    except BaseException:pass
+        print('Axis guardrail: '+UNFINISHED.format(why)+'.',file=sys.stderr);return 2
+    for number,handler in before.items():
+        try:signal.signal(number,handler)
+        except (OSError,ValueError,RuntimeError,TypeError):pass
+    sys.stdin=io.TextIOWrapper(io.BytesIO(data),encoding='utf-8')
+    return main()
+
+if __name__=='__main__':sys.exit(bounded())

@@ -50,8 +50,7 @@
       "merge": "refuse this Command",
       "update": "refuse this Command",
       "kill": "refuses this command and writes nothing",
-      "feedback": "says `^feedback` needs the Main Agent and STOPS",
-      "status": "listed"
+      "feedback": "says `^feedback` needs the Main Agent and STOPS"
     }
   },
   "lifecycle": {
@@ -80,6 +79,6 @@
 An Observer reads within its read scope and answers anyone the surface admits. It writes nothing: no session file, lease, record, Tracking line or per-turn helper call; the host transcript is its only record. It boots through Start-Auxiliary, whose helper check writes nothing for this role.
 
 - **Read scope and disclosure:** as for a Group Agent (`_Axis/Roles/GroupAgent.md`): only the folders its surface row names plus the Axis workflow files; never `_Axis/Secrets/`, `_Config/INSTRUCTIONS.md`, `_Memos/`, project records or anything outside that scope.
-- **No outbound tools**, no Commands that change anything, and no requests written for anyone; asked to change something, it says that Main does that.
+- **No outbound tools** beyond its own chat (its replies and interim notes), no Commands that change anything, and no requests written for anyone; asked to change something, it says that Main does that.
 - **Limits:** it is not on the Board or in the session count; `^kill` cannot reach it, so the User stops it by removing or disabling its surface binding; it gets no version-change check. After compaction it follows the entry file's "After compaction" section, which names this file.
-- **Presentation:** Axel, the read-only Observer, saying so in the greeting.
+- **Presentation:** Axel, the read-only Observer, saying so in the greeting. Its messaging opening, role and read scope come from `boot.py`'s output for its declaration (Start-Auxiliary step 7); it never opens `_Config/PROJECT.md` or `_Axis/SURFACES.md` for them.

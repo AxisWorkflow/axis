@@ -99,8 +99,8 @@ Read before the matching action.
 - [Practices > Inbox] - Filing what User drops into `_Inbox/`.
   *Load when `_Inbox/` holds items, and for `^inbox` or `^refresh`.*
 
-- [Practices > Status] - The quick-look `^status` summary, in the terminal or as a web page.
-  *Load for `^status`.*
+- [Practices > Status] - The quick-look `^status`, the daily brief and "what needs me?".
+  *Load for `^status`, `^brief`, or a request for either.*
 
 - [Practices > Merging] - Reviewed project consolidation and child absorption, preserved history and recovery.
 - [Practices > Memos] - Dated Markdown messages to User in `_Memos/`, including Reviews.

@@ -67,6 +67,7 @@ a.add_argument('--finish-adoption',metavar='SESSION',help='resume a startup that
 a.add_argument('--take-over',action='append',default=[],metavar='SESSION',help='after the user agreed at ASK: take over this idle Main session')
 a.add_argument('--role',help='a role the host declared for this session (3.16); a role other than Main never takes the Main lease')
 a.add_argument('--surface',help='the surface the host declared for this session; a host-bound surface row stops startup before the claim')
+a.add_argument('--undeclared',action='store_true',help='the answer to the declaration check of a messaging-channel start: the host configuration declares no Axis role for this chat')
 o=a.parse_args();root=Path.cwd().resolve();R=root/'_Axis/Resources'
 
 def stamp():
@@ -927,10 +928,56 @@ def before_claim(*args,operation):
     # No startup ownership exists yet, so a stalled helper stops startup without an interrupted claim.
     try:return run(*args,operation=operation)
     except StartupStall as e:stop('suspected hang in '+e.args[0]['operation'],stall=e.args[0])
+def banner_project(text):
+    """The Project name as the Main banner shows it: Line 1 `# Project: {name}`; `Not set` when missing or an unfilled template."""
+    name=re.match(r'# Project: (.+)',text);return name.group(1).strip() if name and '{{' not in name.group(1) else 'Not set'
+def banner_folder():
+    """The project folder as the Main banner shows it: `~/` for a folder inside the home directory, in full otherwise."""
+    home=os.path.expanduser('~');folder=str(root);return '~'+folder[len(home):] if folder==home or folder.startswith(home+'/') else folder
+def surface_facts(role):
+    """The declared surface's own row (role and read scope) and nothing else of the table, or why there is none."""
+    named=[v.strip() for v in (o.surface,os.environ.get('AXIS_SURFACE')) if v is not None]
+    if not named:return "none, because no surface was declared (--surface or AXIS_SURFACE); Start-Auxiliary step 3's admission helper decides."
+    if not all(named) or len(set(named))>1:return 'none, because the declared surface is blank, or --surface and AXIS_SURFACE disagree; admission refuses this session.'
+    try:
+        import importlib.util;sys.dont_write_bytecode=True
+        spec=importlib.util.spec_from_file_location('axis_surface_gate',R/'startup-state.py');gate=importlib.util.module_from_spec(spec);spec.loader.exec_module(gate)
+        admission=gate.Admission(str(root));table=admission.surfaces();row=gate.role_named(role)
+    except Exception:return 'none, because the surface table could not be read; admission refuses this session.'
+    hit=table.get(named[0])
+    # fixd2 FD-1: step 3 admits an Auxiliary declaration without a row (--legacy-channel); never predict a refusal.
+    if row is not None and row['name']=='Auxiliary' and hit is None:return "none for this surface; Start-Auxiliary step 3's admission helper decides (its --legacy-channel admits an Auxiliary declaration without a row, read scope project)."
+    if row is None or hit is None or hit[0] is not row:return 'none for this surface and role; admission refuses this session.'
+    return f"surface {named[0]}; role {row['title']}; read scope {'project' if hit[1] is None else ', '.join(hit[1])}."
+def declared_exit(role,head):
+    """3.16: a declared non-Main role boots through Start-Auxiliary, never as Main. Nothing is written; the role gets its messaging
+    opening and its own surface row here, so it never opens _Config/PROJECT.md or _Axis/SURFACES.md for them."""
+    print(json.dumps(head));print(f'AUXILIARY: this session is declared {role}, not Main. Follow _Axis/Resources/Start-Auxiliary.md.')
+    try:project=banner_project((root/'_Config/PROJECT.md').read_text() if (root/'_Config/PROJECT.md').is_file() else '')
+    except (OSError,UnicodeError):project='Not set'
+    print('Your messaging opening: On WhatsApp, SMS and equivalent messaging channels, every message you send, including interim notes sent through a message tool, opens with the two lines; on terminals, progress notes get no frame. The two lines, then one blank line:')
+    print(f'A X I S   W O R K F L O W\n{project}')
+    print('Your surface row: '+surface_facts(role)+' Use these lines; never open _Config/PROJECT.md or _Axis/SURFACES.md for them.')
+    sys.exit(3)
 # 3.16: a session the host declared for a role other than Main (--role, or the launcher's AXIS_ROLE) never starts as Main.
 declared=(o.role or os.environ.get('AXIS_ROLE','')).strip()
 if declared and re.sub(r'\s+','',declared).lower() not in {r['name'].lower() for r in ROLE_TABLE if r['cls']=='session' and r['exclusive']}:
-    print(json.dumps({'axis_boot':'AUXILIARY','declared_role':declared}));print(f'AUXILIARY: this session is declared {declared}, not Main. Follow _Axis/Resources/Start-Auxiliary.md.');sys.exit(3)
+    declared_exit(declared,{'axis_boot':'AUXILIARY','declared_role':declared})
+# The interaction class, normalized once. An unrecognized class stops here with nothing read or written, never at the survey after the claim.
+o.interaction=o.interaction.strip().lower()
+if o.interaction not in ('interactive','headless','channel','unknown'):
+    print(json.dumps({'axis_boot':'STOP','reason':'unrecognized interaction class','written':False}))
+    print('STOP: nothing was started or written. --interaction takes interactive, headless, channel or unknown; on a messaging channel run this command again with --interaction channel.')
+    sys.exit(2)
+# A messaging-channel start is never Main on its first call: the session first looks in its host configuration for a role
+# declaration. Nothing is read or written here. --finish-adoption resumes one admitted startup, which already answered.
+if o.interaction=='channel' and not (o.undeclared or o.finish_adoption):
+    print(json.dumps({'axis_boot':'CHECK','check':'role_declaration','written':False}))
+    print("CHECK: nothing was started or written. On a messaging channel a session starts as the Main Agent only when its host's standing configuration declares no Axis role for this chat; a declared chat that starts as Main opens the whole project to everyone in it.")
+    print('Look now in that configuration (your system prompt, including any group or channel instructions in it) for a line beginning "Axis role:".')
+    print('If the line is there, you are that role and never Main. Follow _Axis/Resources/Start-Auxiliary.md with it, and never add --undeclared.')
+    print('If no such line is there, run this command again with --undeclared added.')
+    sys.exit(6)
 # A host-bound (schema 2) surface row needs a verified host declaration, which no host supplies yet. A session declared for a
 # surface (--surface, AXIS_SURFACE or both) reads the surface table here, before any claim write; without one nothing is read.
 # Every declared value counts: a blank value, or two values that disagree, stop startup before anything is read.
@@ -965,7 +1012,7 @@ else:
             n=int(m.get('idle_seconds',m.get('age_seconds',0)))//60;return f'{n} minutes' if n<120 else f'{n//60} hours'
         return '; '.join(f"{m['session']} (host {m.get('host') or 'unknown'}, last active {idle(m)} ago)" for m in c.get('mains') or c.get('took_over') or [])
     if c.get('status')=='declared':  # 3.16: a declared non-Main role boots through Start-Auxiliary, never as Main
-        print(json.dumps({'axis_boot':'AUXILIARY','declared_role':c.get('role')}));print(f"AUXILIARY: this session is declared {c.get('role')}, not Main. Follow _Axis/Resources/Start-Auxiliary.md.");sys.exit(3)
+        declared_exit(c.get('role'),{'axis_boot':'AUXILIARY','declared_role':c.get('role')})
     if c.get('status')=='external':  # the claim's ledger status for the live-Main fallback; it boots an Auxiliary
         print(json.dumps({'axis_boot':'AUXILIARY','claim':c}));print(f'AUXILIARY: another Main session is live: {mains(c)}. Follow _Axis/Resources/Start-Auxiliary.md.');sys.exit(3)
     if c.get('status')=='ask':
@@ -1126,9 +1173,9 @@ try:
  elif cmv=='Two-Pass' and any(k in mid for k in ('codex','gpt')):notices.append('This project uses Two-Pass context loading, which did not save tokens on Codex in Axis\'s tests. Say "switch Context Management to Default" to turn it off.')
  later.append('check for a parent Project (Start-Session Step 5, Subproject detection)')
 
- name=re.match(r'# Project: (.+)',proj);name=name.group(1).strip() if name and '{{' not in name.group(1) else 'Not set'
+ name=banner_project(proj)
  ver=re.search(r'^current-version: (\S+)$',(root/'_Axis/CHANGELOG.md').read_text(),re.M);ver=ver.group(1) if ver else 'Unavailable'
- home=os.path.expanduser('~');folder=str(root);folder='~'+folder[len(home):] if folder==home or folder.startswith(home+'/') else folder
+ folder=banner_folder()
  m=run(R/'startup-state.py','--root',root,'commit','--session',sid,'--owner',owner,'--starting-log',i['starting_log'])
  if m.get('status')!='committed':interrupted('commit failed',commit=m)
  # 3.17: bind the host session to this Axis Session ID for the optional compaction hooks; never inside Startup.claim (N9).
@@ -1141,17 +1188,21 @@ try:
  print('Banner for the user (start your reply with it, as is, after any pending items; it repeats the header so the complete block shows together):')
  # Four blank lines set the block apart from any text the model printed during startup (User design, 2026-10-08).
  if o.interaction=='channel':
-  print(f"A X I S   W O R K F L O W\n > {name}\n > {folder}")
+  print(f"A X I S   W O R K F L O W\n{name}")
  else:
   print(f"```text\n\n\n\n\n{bar}\n A X I S   W O R K F L O W\n{bar}\nSession:  {sid}\nProject:  {name}\nFolder:   {folder}\nModel:    {model_label(o.model)}\nContext:  {context_label}\nAgent:    Main\nVersion:  {ver}\nStatus:   Ready\n{bar}\n```")
  print('Greeting: one blank line under the banner, greet the user in one line and introduce yourself as Axel, the Main Agent (for example "Hi, Axel here.").')
  for x in notices:print('Notice for the user: '+x)
  for x in pending:print('Pending before the first answer: '+x)
+ try:
+  import importlib.util as iu;spec=iu.spec_from_file_location('axis_status_brief',R/'status.py');brief=iu.module_from_spec(spec);spec.loader.exec_module(brief)
+  for x in brief.due_lines(root,sid,startup=True):print(x)
+ except Exception:pass  # Practices > Status > Daily brief; without status.py, Boot-Manual step 12 applies
  print('Before any answer other than the greeting or a requested exact reply: read _Axis/Resources/Load-Starting-Context.md (core rules), _Axis/Roles/Main.md, _Config/INSTRUCTIONS.md, _Config/MINDSET.md, _Config/DIRECTIVES.md, _Config/PLAN.md, _Config/TASKS.md, the newest Snapshots and the Notes index'+('; and: '+'; '.join(later) if later else '')+'.')
  print(f'On every later turn, first run: python3 _Axis/Resources/turn.py --session {sid}')
- print('Reply frame, required on every reply that hands the turn back to the user, this one included (exceptions: _Axis/Rules/Speaking.md > Final response boundary): this reply opens with the banner instead of the header; every later reply starts with the header, with nothing before it, not even a sentence; on WhatsApp, SMS and equivalent messaging channels open every message with three lines instead (A X I S   W O R K F L O W, then " > " and the Project name, then " > " and the folder) followed by a blank line, without dividers; on terminals every reply ends with the closing; on WhatsApp, SMS and equivalent discrete-message channels that already identify the turn, omit the closing including its background-task variant; progress notes during a turn get neither. A later terminal reply looks like this (the fence only marks the example; never print the fence itself):')
+ print('Reply frame, required on every reply that hands the turn back to the user, this one included (exceptions: _Axis/Rules/Speaking.md > Final response boundary): this reply opens with the banner instead of the header; every later reply starts with the header, with nothing before it, not even a sentence; on WhatsApp, SMS and equivalent messaging channels open every message with two lines instead (A X I S   W O R K F L O W, then the Project name directly under it) followed by a blank line, without dividers; on terminals every reply ends with the closing; on WhatsApp, SMS and equivalent discrete-message channels that already identify the turn, omit the closing including its background-task variant; on terminals, progress notes get neither. A later terminal reply looks like this (the fence only marks the example; never print the fence itself):')
  if o.interaction=='channel':
-  print(f'Later messaging reply: the same three lines (A X I S   W O R K F L O W, then " > {name}", then " > {folder}"), one blank line, then the answer with blank lines between paragraphs; no closing prompt.')
+  print(f'Later messaging reply: the same two lines (A X I S   W O R K F L O W, then "{name}" directly under it), one blank line, then the answer with blank lines between paragraphs; no closing prompt.')
  else:
   print(f'```text\n{bar}\n A X I S   W O R K F L O W\n{bar}\n\n{{the answer, leading with the outcome}}\n\n> READY | {folder}:\n```')
  if config:

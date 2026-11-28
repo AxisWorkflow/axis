@@ -11,7 +11,10 @@ Run from the project root:
       Staged changes against HEAD. A modified write-once file refuses the commit; renames (archive moves) and
       deletions pass. A reconciliation edit passes when a completion receipt added in the same commit binds its
       path to the exact staged bytes; so do an identifier correction whose Log the same commit adds (below) and
-      the exact paths of a checkpoint override receipt.
+      the exact paths of a checkpoint override receipt. A terminal Task, Follow-Up or Reminder moved into its own
+      family's Archive/ with its relative link destinations rebased passes when the same commit adds the Reference
+      move receipt for its HEAD bytes and one --link Identifier correction Log per rebased destination at the new
+      path, each prefixing its old destination with exactly ../, which in Log order reproduce the staged bytes from HEAD.
   python3 _Axis/Resources/record-check.py correct --path {path} --old {wrong identifier} --new {right identifier}
       The one edit a write-once record takes, under LinkMaintenance Permissions: replace a wrong record
       identifier (a timestamp ID, or a path or reference built on one) with the right one, and change nothing else.
@@ -33,7 +36,7 @@ Run from the project root:
       one call with one exit status. With --session it records reference warnings in a Log, stages that Log and
       reruns the three checks. The last line is always the verdict, so a pipe cannot hide a refusal from a reader.
 Exit 0 prints OK (after any warning lines); 1 prints REFUSED; 2 means this check cannot run: use the manual steps."""
-import argparse,datetime as dt,hashlib,json,os,re,subprocess,sys
+import argparse,datetime as dt,hashlib,json,os,posixpath,re,subprocess,sys
 from pathlib import Path,PurePosixPath
 
 # BEGIN GENERATED: role-table
@@ -404,6 +407,75 @@ def corrections(root,added):
         elif mode=='identifier':
             old,new=f['correction-old'],f['correction-new']
             if REF.fullmatch(old) and REF.fullmatch(new) and old!=new and IDENT.search(new) and re.search(r'\d{4}\.\d{2}\.\d{2}',old) and head.count(old.encode()) and head.replace(old.encode(),new.encode())==staged:ok.add(f['correction-path'])
+    return ok
+
+TERMINAL=('Tasks','Followups','Reminders')
+
+def same_target(old_rel,old_dest,new_dest):
+    """The rebased destination is exactly '../' plus the old one, so from Archive/ it reaches what the old one reached from
+    old_rel under lexical, URL and filesystem resolution alike, query and fragment included. The old destination must be a
+    relative path without a scheme that stays inside the project, read as written and percent-decoded; decoded, it holds no
+    backslash and starts with no drive (C:) or scheme, which Windows path or URL rules would read differently. Raw or decoded,
+    its first segment is also no single character before a colon (C:, 1:) and no letter before a pipe (C|) followed by a
+    slash, ?, # or the end (trailing spaces and controls removed first, as a drive letter in a file: URL reads), and, with tabs and
+    newlines dropped and leading spaces and controls stripped as a URL reader does, it starts with no scheme. The outside and
+    absolute test also runs on that stripped form, and a path whose raw text holds a control character or DEL is refused."""
+    from urllib.parse import unquote
+    path=re.match(r'[^?#]*',old_dest)[0]
+    if new_dest!='../'+old_dest or not path or path.startswith('/') or re.match(r'[A-Za-z][A-Za-z0-9+.-]*:',path):return False
+    if '\\' in unquote(path) or re.match(r'[A-Za-z][A-Za-z0-9+.-]*:',unquote(path)):return False
+    for q in (path,unquote(path)):
+        u=re.sub(r'^[\x00-\x20]+','',re.sub(r'[\t\n\r]','',q))
+        if any(re.match(r'[^/]:|[A-Za-z]\|(?:[/?#]|$)',re.sub(r'[\x00-\x20]+$','',s)) for s in (q,u)) or re.match(r'[A-Za-z][A-Za-z0-9+.-]*:',u):return False
+    if re.search(r'[\x00-\x1f\x7f]',path):return False
+    for p in (path,unquote(path)):
+        for r in (p,re.sub(r'^[\x00-\x20]+','',re.sub(r'[\t\n\r]','',p))):
+            a=posixpath.normpath(posixpath.join(posixpath.dirname(old_rel),r))
+            if a=='..' or a.startswith(('../','/')):return False
+    return True
+
+def link_occurs(data,dest):
+    """dest is already an unquoted Markdown destination in data, by replace_link's own scan (swapped for a distinct
+    token of the same length and characters, so the scan's limits apply to it exactly as to dest)."""
+    try:replace_link(data,dest,dest[:-1]+('-' if dest.endswith('_') else '_'));return True
+    except (ValueError,UnicodeError):return False
+
+def archive_rebasing(root,entries,added):
+    """(old, new) renames of a record terminal at HEAD into its own family's Archive/ whose only changes are receipted
+    link rebasing: this commit adds the Reference move receipt, with a reason, binding old, new and the HEAD bytes, and
+    Identifier correction Logs whose Subject names the new path that, applied in Log order from those bytes, are each an
+    exact --link correction prefixing a destination with '../' (never one an earlier correction produced, never onto one
+    the record holds) and together reproduce the staged bytes. Anything else stays refused."""
+    ok=set();moves=None;chains=None
+    for status,old,new in entries:
+        if status[:1]!='R' or status=='R100' or not new:continue
+        parts=old.split('/')
+        if len(parts)!=3 or parts[0]!='_Axis' or parts[1] not in TERMINAL or not NAME.fullmatch(parts[2]):continue
+        if new!='_Axis/'+parts[1]+'/Archive/'+parts[2] or rule(root,old) is None:continue
+        head,staged=git(root,'show','HEAD:'+old),git(root,'show',':'+new)
+        if head is None or staged is None or git(root,'show',':'+old) is not None or git(root,'show','HEAD:'+new) is not None:continue
+        if protected_coordination_detail(new,head) or protected_coordination_detail(new,staged):continue
+        if moves is None:moves=[v for log,v in staged_receipts(root,'move') if not ever_committed(root,log)]
+        if not any(set(v)-{'source_commit'}=={'schema','kind','source','target','sha256','reason'} and v['source']==old and v['target']==new and isinstance(v['reason'],str) and v['reason'].strip() and v['sha256']==hashlib.sha256(head).hexdigest() for v in moves):continue
+        if chains is None:
+            # Read each added Log once per check, not once per moved record, so a batch archive commit stays fast.
+            chains={}
+            for log in sorted(p for p in added if p.startswith('_Axis/Logs/') and p.endswith('.md')):
+                data=git(root,'show',':'+log) or b'';text=data.decode('utf-8','replace')
+                if text.startswith('Identifier correction: '):chains.setdefault(field(text,'correction-path'),[]).append((log,text))
+        chain=chains.get(new,[])
+        cur=head;made=set()
+        for log,text in chain:
+            if not re.fullmatch(r'_Axis/Logs/'+IDENT.pattern+r'\.md',log) or ever_committed(root,log) or field(text,'correction-mode')!='link':break
+            if text.split('\n',1)[0].rstrip(' \t\r')!='Identifier correction: '+new:break
+            o,n=field(text,'correction-old'),field(text,'correction-new')
+            if not o or not n or o in made or link_occurs(cur,n) or not same_target(old,o,n) or field(text,'before-sha256')!=hashlib.sha256(cur).hexdigest():break
+            try:after,count=replace_link(cur,o,n)
+            except (ValueError,UnicodeError):break
+            if field(text,'occurrences')!=str(count) or field(text,'after-sha256')!=hashlib.sha256(after).hexdigest():break
+            cur=after;made.add(n)
+        else:
+            if chain and cur==staged:ok.add((old,new))
     return ok
 
 
@@ -1127,11 +1199,11 @@ def write_once(root):
         candidates=[old for old in candidates if not update_transaction(old) and (Path(old).parent==Path(path).parent or NAME.fullmatch(Path(path).name))]
         old=candidates[0] if len(candidates)==1 else None
         if old and git(root,'rev-parse','HEAD:'+old)!=git(root,'rev-parse',':'+path):entries.append(('R000',old,path))
-    overrides=approved_paths(root,'write-once');refused=[]
+    overrides=approved_paths(root,'write-once');refused=[];rebased=archive_rebasing(root,entries,[p for s,p,_ in entries if s=='A'])
     for status,path,new in entries:
         if path.startswith('_Axis/Merges/') and status[:1] in 'DR':why=rule(root,path);label=path+(' -> '+new if new else '')
         elif status[:1] in 'MT':why=rule(root,path);label=path
-        elif status[:1]=='R' and status!='R100':why=rule(root,path);label=path+' -> '+new;why=why and why+' (renamed with changes)'
+        elif status[:1]=='R' and status!='R100' and (path,new) not in rebased:why=rule(root,path);label=path+' -> '+new;why=why and why+' (renamed with changes)'
         else:continue
         if why and path not in exempt and not (path in overrides and (new is None or new in overrides)):refused.append('WRITE-ONCE '+label+': '+why)
     if refused:return 1,refused[:LIMIT]+[f'REFUSED: {len(refused)} write-once file(s) changed; do not commit; show User these paths and ask how to proceed']

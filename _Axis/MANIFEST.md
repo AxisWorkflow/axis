@@ -187,6 +187,7 @@ Optional project state: `EXCEPTIONS.md` in the Axis control folder, created on f
 - `_Axis/Commands/archive.md`
 - `_Axis/Commands/audit.md`
 - `_Axis/Commands/backup.md`
+- `_Axis/Commands/brief.md`
 - `_Axis/Commands/board.md`
 - `_Axis/Commands/axis.md`
 - `_Axis/Commands/schedule.md`
@@ -255,7 +256,7 @@ Optional project state: `EXCEPTIONS.md` in the Axis control folder, created on f
 - `_Axis/Resources/startup-state.py` - optional local startup record accelerator and `record` command for any Index-Detail record; manual startup and minting remain available.
 - `_Axis/Resources/record-check.py` - optional `^save` checks of record names and write-once files before a commit; the manual checks remain available.
 - `_Axis/Resources/envelope.py` - optional send-side Subagent envelope check (carried blocks, Role Text, Task Contract labels), nonce generator, prompt assembler, governance list and Instructions extractor; it writes only a governance list file on request, and Main's reading check remains available.
-- `_Axis/Resources/status.py` - optional read-only `^status` helper; the Agent can compose the same summary by hand.
+- `_Axis/Resources/status.py` - optional `^status` and `^brief` helper; its only writes are under `_Temp/status/`; the Agent can compose the same by hand.
 - `_Axis/Resources/startup-survey.py` - optional one-call startup survey; the numbered Start-Session steps remain available.
 - `_Axis/Resources/boot.py` - one-command Main startup used by the entry files.
 - `_Axis/Resources/turn.py` - per-turn lease check and renewal used by the entry files.
@@ -277,6 +278,8 @@ Optional project state: `EXCEPTIONS.md` in the Axis control folder, created on f
 - `_Axis/Resources/OpenClaw/axis-guardrails/openclaw.plugin.json` and `index.ts` - optional OpenClaw plugin (`^install guardrails`) that applies `guardrails.py --external` to agents configured as Auxiliary Agents, and `--role` for the declared roles' configuration keys, and appends each listed agent's role guidance to its system prompt on every run.
 - `_Axis/Resources/OpenClaw/axis-guardrails/strict-chat.ts` and `identity-state.ts` - the plugin's dormant strict chat branch, loaded only when the plugin configuration has a `chatPolicy` key; on every installed build it refuses every chat in its domain.
 - `_Axis/Resources/OpenClaw/host-capabilities.py` and `axis-guardrails/host-capabilities.json` - read-only record and checker of what the installed OpenClaw build can guarantee to the strict chat gate; every carrier answers unavailable.
+- `_Axis/Resources/OpenClaw/group-check.py` - optional read-only checker of one OpenClaw configuration file for WhatsApp group and direct-message admission (an admitted group without a valid declaration, an empty or `*` group map with allowed senders, direct messages open to anyone besides User); reports every other channel as not checked, prints no identifier or path and never runs OpenClaw. `^audit openclaw` and `^install openclaw` use it when present.
+- `_Axis/Resources/OpenClaw/profile-staging.py` - operator-run H3 staging checker: stages a copied, stopped profile's `axis-guardrails` stanza with the schema-2 surface table as a numbered generation with retained preimages and checks it back; it refuses every live OpenClaw path and never activates anything (activation needs a qualified outer latch, which no installed build has).
 - `_Axis/Resources/team-plan.py` - optional structural plan validator.
 - `_Axis/Resources/Team-Patterns/meta-team.json`, `assistance.json`, `delegated-report.json` - editable examples, never execution authority.
 - `_Axis/Resources/coordination.py`

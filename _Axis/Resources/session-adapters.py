@@ -8,6 +8,7 @@ verified included access and finite launch/time/output bounds. No daemon or shel
 from __future__ import annotations
 import argparse
 from dataclasses import asdict, dataclass, field
+from datetime import datetime, timezone
 import hashlib
 import importlib.util
 import json
@@ -105,6 +106,27 @@ def file_digest(path):
         for data in iter(lambda: stream.read(1024 * 1024), b''):
             h.update(data)
     return h.hexdigest()
+
+
+def log_time(ref, what, rule):
+    """Unix seconds of the UTC identifier of the Log `ref` names, exactly `_Axis/Logs/{ID}.md` as minted."""
+    match = re.fullmatch(r'_Axis/Logs/([0-9]{4}(?:\.[0-9]{2}){5}\.[0-9]{3}Z)\.md', ref) if isinstance(ref, str) else None
+    try:
+        if match is None:
+            raise ValueError(ref)
+        return datetime.strptime(match.group(1), '%Y.%m.%d.%H.%M.%S.%fZ').replace(tzinfo=timezone.utc).timestamp()
+    except ValueError:
+        raise ValueError(what + ' time unreadable: ' + rule + ' as _Axis/Logs/{ID}.md') from None
+
+
+def instruction_time(ref):
+    """Unix seconds of the User's instruction: the identifier of the Log an authority names."""
+    return log_time(ref, 'instruction', 'the authority ref must name the instruction Log')
+
+
+def reading_time(ref):
+    """Unix seconds when the User's usage reading was logged: the identifier of the Log the access evidence names."""
+    return log_time(ref, 'usage reading', "the access evidence's authority ref must name the Log of the User's usage reading")
 
 
 @dataclass(frozen=True)
@@ -642,6 +664,15 @@ def execute_start(adapter, plan, *, store, authority, access, operation, explici
             raise ValueError('exact authenticated access has not been verified')
         when = access.get('verified_at')
         if not isinstance(when, (int, float)) or not 0 <= time.time() - when <= 900:
+            raise ValueError('fresh access evidence required')
+        # A usage reading serves only an instruction given before it: the Log that records the User's reading, and
+        # the reading's own time, are at or after the instruction Log the authority names (in both access modes).
+        instructed = instruction_time(authority.get('ref'))
+        evidence = access.get('authority')
+        logged = reading_time(evidence.get('ref') if isinstance(evidence, dict) else None)
+        if logged < instructed or when < instructed:
+            raise ValueError('usage reading predates the instruction it serves; a new instruction needs a fresh reading')
+        if not 0 <= time.time() - logged <= 900:
             raise ValueError('fresh access evidence required')
         store.validate_authority(access.get('authority', {}))
         mode = access.get('mode')

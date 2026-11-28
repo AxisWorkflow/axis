@@ -437,6 +437,8 @@ class AxisDashboardHandler(BaseHTTPRequestHandler):
 
 class AxisDashboardServer(ThreadingHTTPServer):
     daemon_threads = True
+    # A client may open many connections at once; queue them rather than reset them.
+    request_queue_size = 128
     project_root: Path
     allowed_authorities: set[str]
 

@@ -7,7 +7,7 @@ When checked tools are in use, load `_Axis/Resources/Checked-Completion.md` for 
 
 2. **Preflight Git receive.** Read `host-shell` under [Practices > Flags > Reading Flags]. When it is valid `yes` and an exact-root repository with upstream exists, read [Practices > GIT] and run the outgoing mode's early fetch/classification before changing save state. Integrate incoming work under its Take one action (a fast-forward, or a merge when the two sides changed different files) through Incoming Change Validation; if Workflow machinery changed, shut down for a fresh session and do not save under stale instructions. When a file changed on both sides, remember that this save can finish only as a local checkpoint. No repository, no remote, unavailable Git/authentication, or `host-shell` not valid `yes` never blocks the local Snapshot.
 
-3. **Clear Temp scratch.** List your own scratch files in `_Temp/` and confirm deletions with User (if blocked, follow [Rules > HostAndMeta > Deletion Fallback]). Anything User may still want belongs in a Project Subfolder - offer to move it. Never silently delete a User-managed working file.
+3. **Clear Temp scratch.** List your own scratch files in `_Temp/`, except the brief's day files in `_Temp/status/brief/`, which `^refresh` prunes, and confirm deletions with User (if blocked, follow [Rules > HostAndMeta > Deletion Fallback]). Anything User may still want belongs in a Project Subfolder - offer to move it. Never silently delete a User-managed working file.
 
 4. **Archive Note overflow.** If Notes exceed [Settings > Max Notes], retain the most recent active Notes and move the oldest excess under [Practices > Archiving > Automatic Note Overflow].
 

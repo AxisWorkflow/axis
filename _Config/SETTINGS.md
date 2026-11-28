@@ -175,6 +175,22 @@
 
 **Value:** 2
 
+### Daily Brief
+
+**Description:** Whether Axel adds the daily brief, what needs you and what changed ([Practices > Status > Daily brief]), to its reply to your first message each day. `No` = only when you ask (`^brief`). Missing or malformed means `Yes`.
+
+**Range:** `Yes` or `No`
+
+**Value:** Yes
+
+### Daily Memo
+
+**Description:** Whether Main also saves the daily brief as a Memo in `_Memos/` once a day. `No` = only when you ask (`^brief memo`). Missing or malformed means `No`.
+
+**Range:** `Yes` or `No`
+
+**Value:** No
+
 ## Mindset Settings
 ### Reasoning
 

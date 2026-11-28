@@ -1,5 +1,6 @@
 // Axis guardrails for OpenClaw (optional; `^install guardrails`). For each agent listed under a guarded role's config
-// key (the generated table below), refuse before it runs: spawning an agent or session, any use of _Axis/Secrets/, and
+// key (the generated table below), refuse before it runs: spawning an agent or session, any use of _Axis/Secrets/ in any
+// spelling that full case folding maps to it (as guardrails.py checks; a long s reaches it on a case-insensitive volume), and
 // any file write that guardrails.py refuses for that role (changing an existing file, or a new file outside the places
 // its row allows). Other agents are untouched. If this hook throws or times out, OpenClaw blocks the call; if
 // guardrails.py itself fails or times out, the hook lets the call through. It catches file-tool mistakes; it is not a
@@ -20,6 +21,9 @@ import { fileURLToPath } from "node:url";
 
 const SPAWN = /^(agent|task|spawn_agent|sessions_spawn|subagent|subagents)$/i;
 const SECRETS = "_Axis/Secrets";
+// Python's str.casefold() for every character that folds into a letter of _axis/secrets: lower case first, so a capital
+// sharp s folds too, and a long s (U+017F) becomes s. It also folds a few characters casefold() keeps, such as a dotless i.
+export const fold = (text: string): string => text.toLowerCase().toUpperCase().toLowerCase();
 const ROLE_GUIDANCE_LIMIT = 8000;
 const SUBAGENT_SESSION = /:(subagent|acp):/;
 type PromptContext = { appendSystemContext?: string };
@@ -115,7 +119,7 @@ export default definePluginEntry({
       const tool = String(event?.toolName ?? "");
       if (role.spawn && SPAWN.test(tool)) return { block: true, blockReason: role.spawn };
       const params = event?.params ?? {};
-      if (JSON.stringify(params).includes(SECRETS)) return { block: true, blockReason: role.secrets };
+      if (fold(JSON.stringify(params)).includes(fold(SECRETS))) return { block: true, blockReason: role.secrets };
       for (const raw of targetPaths(params)) {
         const path = isAbsolute(raw) ? raw : resolve(process.cwd(), raw);
         const root = projectRoot(path);
